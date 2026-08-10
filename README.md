@@ -1,2 +1,2 @@
 # jumpin-for-tacos
-A color platformer about tacos and adventure
+Jumpin' for Tacos. Jumpin' for Tacos is a 2D platformer where you leap through vibrant levels, dodge hazards, and grab as many tacos as you can. Project Goals: - Build a polished platformer. - Add engaging levels and enemies. - Iterate with version control. Repo Structure. -docs documentation, -assets images, audio, -src code. Next Steps: - Import latest project build - Tag v0.1, - Open issues for features. Then commit with a message like "Flesh out project readme.
