@@ -1,0 +1,1372 @@
+{
+  "title": "Turn the Sunset Up",
+  "artist": "Neon Neckties",
+  "version": "power-trio-arrangement-v3",
+  "status": "instrumental master complete; final original vocal pending",
+  "key": "D major",
+  "bpm": 126,
+  "timeSignature": "4/4",
+  "bars": 48,
+  "durationSeconds": 94.929,
+  "sections": [
+    {
+      "id": "intro",
+      "name": "Sunset Soundcheck",
+      "startBar": 0,
+      "endBar": 4,
+      "startSeconds": 0.0,
+      "endSeconds": 7.619,
+      "energy": 2,
+      "vocalRole": "Instrumental stage reveal"
+    },
+    {
+      "id": "verse-1",
+      "name": "Verse One",
+      "startBar": 4,
+      "endBar": 12,
+      "startSeconds": 7.619,
+      "endSeconds": 22.857,
+      "energy": 4,
+      "vocalRole": "Lead vocal enters"
+    },
+    {
+      "id": "pre-chorus",
+      "name": "Pre-Chorus",
+      "startBar": 12,
+      "endBar": 16,
+      "startSeconds": 22.857,
+      "endSeconds": 30.476,
+      "energy": 6,
+      "vocalRole": "Harmony lift"
+    },
+    {
+      "id": "chorus-1",
+      "name": "First Chorus",
+      "startBar": 16,
+      "endBar": 24,
+      "startSeconds": 30.476,
+      "endSeconds": 45.714,
+      "energy": 8,
+      "vocalRole": "Full five-member hook"
+    },
+    {
+      "id": "verse-2",
+      "name": "Verse Two",
+      "startBar": 24,
+      "endBar": 32,
+      "startSeconds": 45.714,
+      "endSeconds": 60.952,
+      "energy": 5,
+      "vocalRole": "Lead vocal with response lines"
+    },
+    {
+      "id": "bridge",
+      "name": "Crowd-Light Bridge",
+      "startBar": 32,
+      "endBar": 36,
+      "startSeconds": 60.952,
+      "endSeconds": 68.571,
+      "energy": 6,
+      "vocalRole": "Half-time crowd response"
+    },
+    {
+      "id": "final-chorus",
+      "name": "Final Chorus",
+      "startBar": 36,
+      "endBar": 44,
+      "startSeconds": 68.571,
+      "endSeconds": 83.81,
+      "energy": 10,
+      "vocalRole": "Largest stacked harmonies"
+    },
+    {
+      "id": "outro",
+      "name": "Neon Bow",
+      "startBar": 44,
+      "endBar": 48,
+      "startSeconds": 83.81,
+      "endSeconds": 91.429,
+      "energy": 9,
+      "vocalRole": "Final hook and band bow"
+    }
+  ],
+  "vocalGuide": [
+    {
+      "bar": 4,
+      "beat": 0.0,
+      "note": "F♯4",
+      "midi": 66,
+      "durationBeats": 1.0,
+      "startSeconds": 7.619
+    },
+    {
+      "bar": 4,
+      "beat": 1.25,
+      "note": "A4",
+      "midi": 69,
+      "durationBeats": 0.5,
+      "startSeconds": 8.214
+    },
+    {
+      "bar": 4,
+      "beat": 2.0,
+      "note": "B4",
+      "midi": 71,
+      "durationBeats": 1.0,
+      "startSeconds": 8.571
+    },
+    {
+      "bar": 4,
+      "beat": 3.25,
+      "note": "A4",
+      "midi": 69,
+      "durationBeats": 0.5,
+      "startSeconds": 9.167
+    },
+    {
+      "bar": 5,
+      "beat": 0.0,
+      "note": "F♯4",
+      "midi": 66,
+      "durationBeats": 1.5,
+      "startSeconds": 9.524
+    },
+    {
+      "bar": 5,
+      "beat": 2.0,
+      "note": "E4",
+      "midi": 64,
+      "durationBeats": 0.75,
+      "startSeconds": 10.476
+    },
+    {
+      "bar": 5,
+      "beat": 3.0,
+      "note": "F♯4",
+      "midi": 66,
+      "durationBeats": 0.75,
+      "startSeconds": 10.952
+    },
+    {
+      "bar": 6,
+      "beat": 0.0,
+      "note": "G4",
+      "midi": 67,
+      "durationBeats": 1.0,
+      "startSeconds": 11.429
+    },
+    {
+      "bar": 6,
+      "beat": 1.25,
+      "note": "A4",
+      "midi": 69,
+      "durationBeats": 0.75,
+      "startSeconds": 12.024
+    },
+    {
+      "bar": 6,
+      "beat": 2.25,
+      "note": "B4",
+      "midi": 71,
+      "durationBeats": 1.25,
+      "startSeconds": 12.5
+    },
+    {
+      "bar": 7,
+      "beat": 0.25,
+      "note": "C♯5",
+      "midi": 73,
+      "durationBeats": 0.75,
+      "startSeconds": 13.452
+    },
+    {
+      "bar": 7,
+      "beat": 1.25,
+      "note": "B4",
+      "midi": 71,
+      "durationBeats": 0.75,
+      "startSeconds": 13.929
+    },
+    {
+      "bar": 7,
+      "beat": 2.25,
+      "note": "A4",
+      "midi": 69,
+      "durationBeats": 1.5,
+      "startSeconds": 14.405
+    },
+    {
+      "bar": 8,
+      "beat": 0.0,
+      "note": "B4",
+      "midi": 71,
+      "durationBeats": 1.0,
+      "startSeconds": 15.238
+    },
+    {
+      "bar": 8,
+      "beat": 1.25,
+      "note": "D5",
+      "midi": 74,
+      "durationBeats": 0.75,
+      "startSeconds": 15.833
+    },
+    {
+      "bar": 8,
+      "beat": 2.25,
+      "note": "C♯5",
+      "midi": 73,
+      "durationBeats": 1.0,
+      "startSeconds": 16.31
+    },
+    {
+      "bar": 9,
+      "beat": 0.0,
+      "note": "B4",
+      "midi": 71,
+      "durationBeats": 1.5,
+      "startSeconds": 17.143
+    },
+    {
+      "bar": 9,
+      "beat": 2.0,
+      "note": "A4",
+      "midi": 69,
+      "durationBeats": 0.75,
+      "startSeconds": 18.095
+    },
+    {
+      "bar": 9,
+      "beat": 3.0,
+      "note": "G4",
+      "midi": 67,
+      "durationBeats": 0.75,
+      "startSeconds": 18.571
+    },
+    {
+      "bar": 10,
+      "beat": 0.0,
+      "note": "F♯4",
+      "midi": 66,
+      "durationBeats": 1.0,
+      "startSeconds": 19.048
+    },
+    {
+      "bar": 10,
+      "beat": 1.25,
+      "note": "A4",
+      "midi": 69,
+      "durationBeats": 0.75,
+      "startSeconds": 19.643
+    },
+    {
+      "bar": 10,
+      "beat": 2.25,
+      "note": "D5",
+      "midi": 74,
+      "durationBeats": 1.25,
+      "startSeconds": 20.119
+    },
+    {
+      "bar": 11,
+      "beat": 0.25,
+      "note": "C♯5",
+      "midi": 73,
+      "durationBeats": 0.75,
+      "startSeconds": 21.071
+    },
+    {
+      "bar": 11,
+      "beat": 1.25,
+      "note": "B4",
+      "midi": 71,
+      "durationBeats": 0.75,
+      "startSeconds": 21.548
+    },
+    {
+      "bar": 11,
+      "beat": 2.25,
+      "note": "A4",
+      "midi": 69,
+      "durationBeats": 1.5,
+      "startSeconds": 22.024
+    },
+    {
+      "bar": 12,
+      "beat": 0.0,
+      "note": "G4",
+      "midi": 67,
+      "durationBeats": 1.0,
+      "startSeconds": 22.857
+    },
+    {
+      "bar": 12,
+      "beat": 1.0,
+      "note": "A4",
+      "midi": 69,
+      "durationBeats": 1.0,
+      "startSeconds": 23.333
+    },
+    {
+      "bar": 12,
+      "beat": 2.0,
+      "note": "B4",
+      "midi": 71,
+      "durationBeats": 1.5,
+      "startSeconds": 23.81
+    },
+    {
+      "bar": 13,
+      "beat": 0.0,
+      "note": "B4",
+      "midi": 71,
+      "durationBeats": 1.0,
+      "startSeconds": 24.762
+    },
+    {
+      "bar": 13,
+      "beat": 1.0,
+      "note": "D5",
+      "midi": 74,
+      "durationBeats": 1.0,
+      "startSeconds": 25.238
+    },
+    {
+      "bar": 13,
+      "beat": 2.0,
+      "note": "E5",
+      "midi": 76,
+      "durationBeats": 1.5,
+      "startSeconds": 25.714
+    },
+    {
+      "bar": 14,
+      "beat": 0.0,
+      "note": "D5",
+      "midi": 74,
+      "durationBeats": 0.75,
+      "startSeconds": 26.667
+    },
+    {
+      "bar": 14,
+      "beat": 1.0,
+      "note": "E5",
+      "midi": 76,
+      "durationBeats": 0.75,
+      "startSeconds": 27.143
+    },
+    {
+      "bar": 14,
+      "beat": 2.0,
+      "note": "F♯5",
+      "midi": 78,
+      "durationBeats": 1.5,
+      "startSeconds": 27.619
+    },
+    {
+      "bar": 15,
+      "beat": 0.0,
+      "note": "E5",
+      "midi": 76,
+      "durationBeats": 0.75,
+      "startSeconds": 28.571
+    },
+    {
+      "bar": 15,
+      "beat": 1.0,
+      "note": "F♯5",
+      "midi": 78,
+      "durationBeats": 0.75,
+      "startSeconds": 29.048
+    },
+    {
+      "bar": 15,
+      "beat": 2.0,
+      "note": "A5",
+      "midi": 81,
+      "durationBeats": 1.5,
+      "startSeconds": 29.524
+    },
+    {
+      "bar": 16,
+      "beat": 0.0,
+      "note": "F♯5",
+      "midi": 78,
+      "durationBeats": 0.75,
+      "startSeconds": 30.476
+    },
+    {
+      "bar": 16,
+      "beat": 1.0,
+      "note": "F♯5",
+      "midi": 78,
+      "durationBeats": 0.5,
+      "startSeconds": 30.952
+    },
+    {
+      "bar": 16,
+      "beat": 1.75,
+      "note": "E5",
+      "midi": 76,
+      "durationBeats": 0.75,
+      "startSeconds": 31.31
+    },
+    {
+      "bar": 16,
+      "beat": 2.75,
+      "note": "D5",
+      "midi": 74,
+      "durationBeats": 1.0,
+      "startSeconds": 31.786
+    },
+    {
+      "bar": 17,
+      "beat": 0.0,
+      "note": "C♯5",
+      "midi": 73,
+      "durationBeats": 0.75,
+      "startSeconds": 32.381
+    },
+    {
+      "bar": 17,
+      "beat": 1.0,
+      "note": "E5",
+      "midi": 76,
+      "durationBeats": 0.75,
+      "startSeconds": 32.857
+    },
+    {
+      "bar": 17,
+      "beat": 2.0,
+      "note": "F♯5",
+      "midi": 78,
+      "durationBeats": 1.5,
+      "startSeconds": 33.333
+    },
+    {
+      "bar": 18,
+      "beat": 0.0,
+      "note": "F♯5",
+      "midi": 78,
+      "durationBeats": 0.75,
+      "startSeconds": 34.286
+    },
+    {
+      "bar": 18,
+      "beat": 1.0,
+      "note": "A5",
+      "midi": 81,
+      "durationBeats": 0.75,
+      "startSeconds": 34.762
+    },
+    {
+      "bar": 18,
+      "beat": 2.0,
+      "note": "F♯5",
+      "midi": 78,
+      "durationBeats": 1.5,
+      "startSeconds": 35.238
+    },
+    {
+      "bar": 19,
+      "beat": 0.0,
+      "note": "E5",
+      "midi": 76,
+      "durationBeats": 0.75,
+      "startSeconds": 36.19
+    },
+    {
+      "bar": 19,
+      "beat": 1.0,
+      "note": "D5",
+      "midi": 74,
+      "durationBeats": 0.75,
+      "startSeconds": 36.667
+    },
+    {
+      "bar": 19,
+      "beat": 2.0,
+      "note": "B4",
+      "midi": 71,
+      "durationBeats": 1.5,
+      "startSeconds": 37.143
+    },
+    {
+      "bar": 20,
+      "beat": 0.0,
+      "note": "F♯5",
+      "midi": 78,
+      "durationBeats": 0.75,
+      "startSeconds": 38.095
+    },
+    {
+      "bar": 20,
+      "beat": 1.0,
+      "note": "F♯5",
+      "midi": 78,
+      "durationBeats": 0.5,
+      "startSeconds": 38.571
+    },
+    {
+      "bar": 20,
+      "beat": 1.75,
+      "note": "A5",
+      "midi": 81,
+      "durationBeats": 0.75,
+      "startSeconds": 38.929
+    },
+    {
+      "bar": 20,
+      "beat": 2.75,
+      "note": "F♯5",
+      "midi": 78,
+      "durationBeats": 1.0,
+      "startSeconds": 39.405
+    },
+    {
+      "bar": 21,
+      "beat": 0.0,
+      "note": "E5",
+      "midi": 76,
+      "durationBeats": 0.75,
+      "startSeconds": 40.0
+    },
+    {
+      "bar": 21,
+      "beat": 1.0,
+      "note": "C♯5",
+      "midi": 73,
+      "durationBeats": 0.75,
+      "startSeconds": 40.476
+    },
+    {
+      "bar": 21,
+      "beat": 2.0,
+      "note": "E5",
+      "midi": 76,
+      "durationBeats": 1.5,
+      "startSeconds": 40.952
+    },
+    {
+      "bar": 22,
+      "beat": 0.0,
+      "note": "D5",
+      "midi": 74,
+      "durationBeats": 0.75,
+      "startSeconds": 41.905
+    },
+    {
+      "bar": 22,
+      "beat": 1.0,
+      "note": "E5",
+      "midi": 76,
+      "durationBeats": 0.75,
+      "startSeconds": 42.381
+    },
+    {
+      "bar": 22,
+      "beat": 2.0,
+      "note": "F♯5",
+      "midi": 78,
+      "durationBeats": 1.5,
+      "startSeconds": 42.857
+    },
+    {
+      "bar": 23,
+      "beat": 0.0,
+      "note": "E5",
+      "midi": 76,
+      "durationBeats": 0.75,
+      "startSeconds": 43.81
+    },
+    {
+      "bar": 23,
+      "beat": 1.0,
+      "note": "D5",
+      "midi": 74,
+      "durationBeats": 0.75,
+      "startSeconds": 44.286
+    },
+    {
+      "bar": 23,
+      "beat": 2.0,
+      "note": "C♯5",
+      "midi": 73,
+      "durationBeats": 1.75,
+      "startSeconds": 44.762
+    },
+    {
+      "bar": 24,
+      "beat": 0.0,
+      "note": "F♯4",
+      "midi": 66,
+      "durationBeats": 0.75,
+      "startSeconds": 45.714
+    },
+    {
+      "bar": 24,
+      "beat": 1.0,
+      "note": "A4",
+      "midi": 69,
+      "durationBeats": 0.5,
+      "startSeconds": 46.19
+    },
+    {
+      "bar": 24,
+      "beat": 1.75,
+      "note": "B4",
+      "midi": 71,
+      "durationBeats": 0.75,
+      "startSeconds": 46.548
+    },
+    {
+      "bar": 24,
+      "beat": 2.75,
+      "note": "D5",
+      "midi": 74,
+      "durationBeats": 1.0,
+      "startSeconds": 47.024
+    },
+    {
+      "bar": 25,
+      "beat": 0.0,
+      "note": "C♯5",
+      "midi": 73,
+      "durationBeats": 1.0,
+      "startSeconds": 47.619
+    },
+    {
+      "bar": 25,
+      "beat": 1.25,
+      "note": "B4",
+      "midi": 71,
+      "durationBeats": 0.75,
+      "startSeconds": 48.214
+    },
+    {
+      "bar": 25,
+      "beat": 2.25,
+      "note": "A4",
+      "midi": 69,
+      "durationBeats": 1.25,
+      "startSeconds": 48.69
+    },
+    {
+      "bar": 26,
+      "beat": 0.0,
+      "note": "G4",
+      "midi": 67,
+      "durationBeats": 0.75,
+      "startSeconds": 49.524
+    },
+    {
+      "bar": 26,
+      "beat": 1.0,
+      "note": "A4",
+      "midi": 69,
+      "durationBeats": 0.5,
+      "startSeconds": 50.0
+    },
+    {
+      "bar": 26,
+      "beat": 1.75,
+      "note": "B4",
+      "midi": 71,
+      "durationBeats": 0.75,
+      "startSeconds": 50.357
+    },
+    {
+      "bar": 26,
+      "beat": 2.75,
+      "note": "E5",
+      "midi": 76,
+      "durationBeats": 1.0,
+      "startSeconds": 50.833
+    },
+    {
+      "bar": 27,
+      "beat": 0.0,
+      "note": "C♯5",
+      "midi": 73,
+      "durationBeats": 1.0,
+      "startSeconds": 51.429
+    },
+    {
+      "bar": 27,
+      "beat": 1.25,
+      "note": "B4",
+      "midi": 71,
+      "durationBeats": 0.75,
+      "startSeconds": 52.024
+    },
+    {
+      "bar": 27,
+      "beat": 2.25,
+      "note": "A4",
+      "midi": 69,
+      "durationBeats": 1.25,
+      "startSeconds": 52.5
+    },
+    {
+      "bar": 28,
+      "beat": 0.0,
+      "note": "B4",
+      "midi": 71,
+      "durationBeats": 0.75,
+      "startSeconds": 53.333
+    },
+    {
+      "bar": 28,
+      "beat": 1.0,
+      "note": "D5",
+      "midi": 74,
+      "durationBeats": 0.75,
+      "startSeconds": 53.81
+    },
+    {
+      "bar": 28,
+      "beat": 2.0,
+      "note": "F♯5",
+      "midi": 78,
+      "durationBeats": 1.5,
+      "startSeconds": 54.286
+    },
+    {
+      "bar": 29,
+      "beat": 0.0,
+      "note": "E5",
+      "midi": 76,
+      "durationBeats": 1.0,
+      "startSeconds": 55.238
+    },
+    {
+      "bar": 29,
+      "beat": 1.25,
+      "note": "D5",
+      "midi": 74,
+      "durationBeats": 0.75,
+      "startSeconds": 55.833
+    },
+    {
+      "bar": 29,
+      "beat": 2.25,
+      "note": "B4",
+      "midi": 71,
+      "durationBeats": 1.25,
+      "startSeconds": 56.31
+    },
+    {
+      "bar": 30,
+      "beat": 0.0,
+      "note": "A4",
+      "midi": 69,
+      "durationBeats": 0.75,
+      "startSeconds": 57.143
+    },
+    {
+      "bar": 30,
+      "beat": 1.0,
+      "note": "B4",
+      "midi": 71,
+      "durationBeats": 0.75,
+      "startSeconds": 57.619
+    },
+    {
+      "bar": 30,
+      "beat": 2.0,
+      "note": "D5",
+      "midi": 74,
+      "durationBeats": 1.5,
+      "startSeconds": 58.095
+    },
+    {
+      "bar": 31,
+      "beat": 0.0,
+      "note": "C♯5",
+      "midi": 73,
+      "durationBeats": 0.75,
+      "startSeconds": 59.048
+    },
+    {
+      "bar": 31,
+      "beat": 1.0,
+      "note": "B4",
+      "midi": 71,
+      "durationBeats": 0.75,
+      "startSeconds": 59.524
+    },
+    {
+      "bar": 31,
+      "beat": 2.0,
+      "note": "A4",
+      "midi": 69,
+      "durationBeats": 1.5,
+      "startSeconds": 60.0
+    },
+    {
+      "bar": 32,
+      "beat": 0.0,
+      "note": "B4",
+      "midi": 71,
+      "durationBeats": 1.5,
+      "startSeconds": 60.952
+    },
+    {
+      "bar": 32,
+      "beat": 2.0,
+      "note": "D5",
+      "midi": 74,
+      "durationBeats": 1.5,
+      "startSeconds": 61.905
+    },
+    {
+      "bar": 33,
+      "beat": 0.0,
+      "note": "B4",
+      "midi": 71,
+      "durationBeats": 1.5,
+      "startSeconds": 62.857
+    },
+    {
+      "bar": 33,
+      "beat": 2.0,
+      "note": "E5",
+      "midi": 76,
+      "durationBeats": 1.5,
+      "startSeconds": 63.81
+    },
+    {
+      "bar": 34,
+      "beat": 0.0,
+      "note": "D5",
+      "midi": 74,
+      "durationBeats": 1.0,
+      "startSeconds": 64.762
+    },
+    {
+      "bar": 34,
+      "beat": 1.25,
+      "note": "E5",
+      "midi": 76,
+      "durationBeats": 1.0,
+      "startSeconds": 65.357
+    },
+    {
+      "bar": 34,
+      "beat": 2.5,
+      "note": "F♯5",
+      "midi": 78,
+      "durationBeats": 1.0,
+      "startSeconds": 65.952
+    },
+    {
+      "bar": 35,
+      "beat": 0.0,
+      "note": "E5",
+      "midi": 76,
+      "durationBeats": 0.75,
+      "startSeconds": 66.667
+    },
+    {
+      "bar": 35,
+      "beat": 1.0,
+      "note": "F♯5",
+      "midi": 78,
+      "durationBeats": 0.75,
+      "startSeconds": 67.143
+    },
+    {
+      "bar": 35,
+      "beat": 2.0,
+      "note": "A5",
+      "midi": 81,
+      "durationBeats": 1.5,
+      "startSeconds": 67.619
+    },
+    {
+      "bar": 36,
+      "beat": 0.0,
+      "note": "F♯5",
+      "midi": 78,
+      "durationBeats": 0.75,
+      "startSeconds": 68.571
+    },
+    {
+      "bar": 36,
+      "beat": 1.0,
+      "note": "F♯5",
+      "midi": 78,
+      "durationBeats": 0.5,
+      "startSeconds": 69.048
+    },
+    {
+      "bar": 36,
+      "beat": 1.75,
+      "note": "E5",
+      "midi": 76,
+      "durationBeats": 0.75,
+      "startSeconds": 69.405
+    },
+    {
+      "bar": 36,
+      "beat": 2.75,
+      "note": "D5",
+      "midi": 74,
+      "durationBeats": 1.0,
+      "startSeconds": 69.881
+    },
+    {
+      "bar": 37,
+      "beat": 0.0,
+      "note": "C♯5",
+      "midi": 73,
+      "durationBeats": 0.75,
+      "startSeconds": 70.476
+    },
+    {
+      "bar": 37,
+      "beat": 1.0,
+      "note": "E5",
+      "midi": 76,
+      "durationBeats": 0.75,
+      "startSeconds": 70.952
+    },
+    {
+      "bar": 37,
+      "beat": 2.0,
+      "note": "F♯5",
+      "midi": 78,
+      "durationBeats": 1.5,
+      "startSeconds": 71.429
+    },
+    {
+      "bar": 38,
+      "beat": 0.0,
+      "note": "F♯5",
+      "midi": 78,
+      "durationBeats": 0.75,
+      "startSeconds": 72.381
+    },
+    {
+      "bar": 38,
+      "beat": 1.0,
+      "note": "A5",
+      "midi": 81,
+      "durationBeats": 0.75,
+      "startSeconds": 72.857
+    },
+    {
+      "bar": 38,
+      "beat": 2.0,
+      "note": "B5",
+      "midi": 83,
+      "durationBeats": 1.5,
+      "startSeconds": 73.333
+    },
+    {
+      "bar": 39,
+      "beat": 0.0,
+      "note": "A5",
+      "midi": 81,
+      "durationBeats": 0.75,
+      "startSeconds": 74.286
+    },
+    {
+      "bar": 39,
+      "beat": 1.0,
+      "note": "F♯5",
+      "midi": 78,
+      "durationBeats": 0.75,
+      "startSeconds": 74.762
+    },
+    {
+      "bar": 39,
+      "beat": 2.0,
+      "note": "E5",
+      "midi": 76,
+      "durationBeats": 1.5,
+      "startSeconds": 75.238
+    },
+    {
+      "bar": 40,
+      "beat": 0.0,
+      "note": "F♯5",
+      "midi": 78,
+      "durationBeats": 0.75,
+      "startSeconds": 76.19
+    },
+    {
+      "bar": 40,
+      "beat": 1.0,
+      "note": "F♯5",
+      "midi": 78,
+      "durationBeats": 0.5,
+      "startSeconds": 76.667
+    },
+    {
+      "bar": 40,
+      "beat": 1.75,
+      "note": "A5",
+      "midi": 81,
+      "durationBeats": 0.75,
+      "startSeconds": 77.024
+    },
+    {
+      "bar": 40,
+      "beat": 2.75,
+      "note": "B5",
+      "midi": 83,
+      "durationBeats": 1.0,
+      "startSeconds": 77.5
+    },
+    {
+      "bar": 41,
+      "beat": 0.0,
+      "note": "A5",
+      "midi": 81,
+      "durationBeats": 0.75,
+      "startSeconds": 78.095
+    },
+    {
+      "bar": 41,
+      "beat": 1.0,
+      "note": "F♯5",
+      "midi": 78,
+      "durationBeats": 0.75,
+      "startSeconds": 78.571
+    },
+    {
+      "bar": 41,
+      "beat": 2.0,
+      "note": "E5",
+      "midi": 76,
+      "durationBeats": 1.5,
+      "startSeconds": 79.048
+    },
+    {
+      "bar": 42,
+      "beat": 0.0,
+      "note": "D5",
+      "midi": 74,
+      "durationBeats": 0.75,
+      "startSeconds": 80.0
+    },
+    {
+      "bar": 42,
+      "beat": 1.0,
+      "note": "E5",
+      "midi": 76,
+      "durationBeats": 0.75,
+      "startSeconds": 80.476
+    },
+    {
+      "bar": 42,
+      "beat": 2.0,
+      "note": "F♯5",
+      "midi": 78,
+      "durationBeats": 1.5,
+      "startSeconds": 80.952
+    },
+    {
+      "bar": 43,
+      "beat": 0.0,
+      "note": "E5",
+      "midi": 76,
+      "durationBeats": 0.75,
+      "startSeconds": 81.905
+    },
+    {
+      "bar": 43,
+      "beat": 1.0,
+      "note": "D5",
+      "midi": 74,
+      "durationBeats": 0.75,
+      "startSeconds": 82.381
+    },
+    {
+      "bar": 43,
+      "beat": 2.0,
+      "note": "C♯5",
+      "midi": 73,
+      "durationBeats": 1.75,
+      "startSeconds": 82.857
+    },
+    {
+      "bar": 44,
+      "beat": 0.0,
+      "note": "B4",
+      "midi": 71,
+      "durationBeats": 0.75,
+      "startSeconds": 83.81
+    },
+    {
+      "bar": 44,
+      "beat": 1.0,
+      "note": "D5",
+      "midi": 74,
+      "durationBeats": 0.75,
+      "startSeconds": 84.286
+    },
+    {
+      "bar": 44,
+      "beat": 2.0,
+      "note": "F♯5",
+      "midi": 78,
+      "durationBeats": 1.5,
+      "startSeconds": 84.762
+    },
+    {
+      "bar": 45,
+      "beat": 0.0,
+      "note": "E5",
+      "midi": 76,
+      "durationBeats": 0.75,
+      "startSeconds": 85.714
+    },
+    {
+      "bar": 45,
+      "beat": 1.0,
+      "note": "D5",
+      "midi": 74,
+      "durationBeats": 0.75,
+      "startSeconds": 86.19
+    },
+    {
+      "bar": 45,
+      "beat": 2.0,
+      "note": "C♯5",
+      "midi": 73,
+      "durationBeats": 1.5,
+      "startSeconds": 86.667
+    },
+    {
+      "bar": 46,
+      "beat": 0.0,
+      "note": "D5",
+      "midi": 74,
+      "durationBeats": 3.25,
+      "startSeconds": 87.619
+    }
+  ],
+  "waveform": [
+    0.3808,
+    0.3345,
+    0.2973,
+    0.2516,
+    0.383,
+    0.3327,
+    0.2884,
+    0.3426,
+    0.3708,
+    0.3714,
+    0.3706,
+    0.4202,
+    0.3096,
+    0.3894,
+    0.3864,
+    0.45,
+    0.3867,
+    0.4487,
+    0.4611,
+    0.4543,
+    0.3719,
+    0.4859,
+    0.4073,
+    0.442,
+    0.4081,
+    0.5054,
+    0.4075,
+    0.4629,
+    0.4103,
+    0.5105,
+    0.4203,
+    0.4074,
+    0.3934,
+    0.511,
+    0.4614,
+    0.3879,
+    0.3953,
+    0.5312,
+    0.4483,
+    0.3744,
+    0.4132,
+    0.4669,
+    0.4763,
+    0.3736,
+    0.46,
+    0.4375,
+    0.5839,
+    0.4567,
+    0.5529,
+    0.4804,
+    0.6186,
+    0.5208,
+    0.5457,
+    0.5303,
+    0.5903,
+    0.571,
+    0.4849,
+    0.6071,
+    0.479,
+    0.6012,
+    0.4722,
+    0.7403,
+    0.5929,
+    0.6841,
+    0.6325,
+    0.7573,
+    0.4901,
+    0.6528,
+    0.6061,
+    0.6849,
+    0.495,
+    0.6761,
+    0.6356,
+    0.7241,
+    0.5287,
+    0.6575,
+    0.5743,
+    0.75,
+    0.5877,
+    0.7235,
+    0.6322,
+    0.6897,
+    0.6085,
+    0.5863,
+    0.7061,
+    0.5629,
+    0.5815,
+    0.6197,
+    0.6992,
+    0.5199,
+    0.6381,
+    0.5723,
+    0.6474,
+    0.4136,
+    0.427,
+    0.4831,
+    0.4563,
+    0.3741,
+    0.4743,
+    0.4225,
+    0.4425,
+    0.4069,
+    0.4988,
+    0.4004,
+    0.4674,
+    0.4129,
+    0.5145,
+    0.4079,
+    0.4126,
+    0.3934,
+    0.5113,
+    0.4553,
+    0.3961,
+    0.3952,
+    0.5307,
+    0.4464,
+    0.3751,
+    0.3927,
+    0.4795,
+    0.4733,
+    0.3756,
+    0.4524,
+    0.4635,
+    0.6415,
+    0.3717,
+    0.6151,
+    0.3744,
+    0.6197,
+    0.3036,
+    0.6484,
+    0.3248,
+    0.6292,
+    0.3674,
+    0.5953,
+    0.4111,
+    0.5194,
+    0.4645,
+    0.4928,
+    0.6789,
+    0.647,
+    0.7354,
+    0.6969,
+    0.828,
+    0.5174,
+    0.7064,
+    0.6255,
+    0.7365,
+    0.4983,
+    0.7299,
+    0.6522,
+    0.7647,
+    0.5317,
+    0.7058,
+    0.6326,
+    0.7987,
+    0.6023,
+    0.8014,
+    0.685,
+    0.766,
+    0.6236,
+    0.6763,
+    0.7094,
+    0.6161,
+    0.6225,
+    0.6398,
+    0.7589,
+    0.5638,
+    0.6904,
+    0.6319,
+    0.851,
+    0.5961,
+    0.6808,
+    0.6307,
+    0.7289,
+    0.5629,
+    0.6761,
+    0.593,
+    1.0,
+    0.667,
+    0.7576,
+    0.5598,
+    0.7542,
+    0.6361,
+    0.7557,
+    0.533,
+    0.2555,
+    0.0009,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "mixStemRmsDb": {
+    "drums": -32.98,
+    "bass": -27.67,
+    "guitar_left": -29.14,
+    "guitar_right": -31.4,
+    "guitar_lead": -35.09,
+    "keys": -45.57,
+    "synth": -45.39,
+    "effects": -56.32
+  },
+  "powerTrioStemRmsDb": {
+    "drums": -32.26,
+    "bass": -26.98,
+    "guitar_left": -28.39,
+    "guitar_right": -30.65,
+    "guitar_lead": -34.17
+  },
+  "productionNotes": [
+    "Lead vocal intentionally absent from instrumental master",
+    "Guide mix uses a clearly synthetic melody reference only",
+    "Band-forward balance features electric bass, two rhythm guitars and lead guitar",
+    "Power-trio cut contains only drums, electric bass and electric guitars",
+    "Keyboards and synths support the band instead of carrying the mix",
+    "Full-band arrangement reserves the center vocal register",
+    "Final vocal will be original and will not imitate an identifiable singer",
+    "Stage lighting and animation can lock to bar-accurate cue points"
+  ]
+}

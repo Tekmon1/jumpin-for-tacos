@@ -1,0 +1,97 @@
+:root {
+  --showdown-gold: #ffd65a;
+  --showdown-pink: #ff5e9c;
+  --showdown-blue: #59d5ff;
+  --showdown-lime: #92ef70;
+  --showdown-ink: #2b1530;
+}
+
+.showdown-body {
+  background:
+    radial-gradient(circle at 20% 0%, rgba(255, 120, 88, 0.38), transparent 34%),
+    radial-gradient(circle at 82% 10%, rgba(171, 86, 216, 0.3), transparent 30%),
+    linear-gradient(180deg, #532548, #25152e 70%, #130f22);
+}
+
+.showdown-topbar {
+  background: linear-gradient(90deg, rgba(63, 24, 48, 0.38), rgba(83, 37, 72, 0.3));
+  border: 1px solid rgba(255, 214, 90, 0.42);
+}
+
+.showdown-topbar .level-switch {
+  color: #fff5c8;
+  background: rgba(255, 190, 86, 0.18);
+  border-color: rgba(255, 225, 137, 0.52);
+}
+
+.showdown-stage {
+  background: #ce5b4f;
+  border-color: rgba(255, 214, 90, 0.38);
+}
+
+.showdown-overlay {
+  background: linear-gradient(180deg, rgba(58, 18, 42, 0.08), rgba(25, 12, 33, 0.5));
+}
+
+.showdown-title-card,
+.showdown-win-card,
+.showdown-settings-card {
+  background: linear-gradient(150deg, rgba(67, 25, 48, 0.72), rgba(31, 20, 43, 0.68));
+  border-color: rgba(255, 214, 90, 0.48);
+}
+
+.showdown-title-card h1 {
+  color: #fff5c8;
+  text-shadow: 0 4px 0 #8d374d, 0 0 28px rgba(255, 94, 156, 0.38);
+}
+
+.showdown-kicker {
+  margin: 0;
+  color: var(--showdown-gold) !important;
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.showdown-primary {
+  background: linear-gradient(180deg, #ffe978, #ff9d55);
+  box-shadow: 0 7px 0 #a63e48, 0 0 24px rgba(255, 214, 90, 0.28);
+}
+
+.showdown-next {
+  display: block;
+  width: fit-content;
+  margin: 18px auto 0;
+  color: #65d8ff;
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.showdown-next:hover,
+.showdown-next:focus-visible { color: #fff5c8; text-decoration: underline; }
+
+.showdown-touch {
+  background: rgba(69, 24, 52, 0.14);
+  border-color: rgba(255, 214, 90, 0.66);
+}
+
+.showdown-jump {
+  background: rgba(255, 197, 84, 0.22);
+  color: #fff9ef;
+}
+
+.showdown-shell:fullscreen,
+.standalone-game .showdown-shell {
+  background: #21142d;
+}
+
+@media (max-width: 700px) {
+  .showdown-topbar { gap: 6px; }
+  .showdown-topbar .top-btn,
+  .showdown-topbar .back-link,
+  .showdown-topbar .level-switch { padding: 8px 9px; font-size: 11px; }
+  .showdown-title-card { padding: 18px; }
+  .showdown-title-card h1 { font-size: 25px; }
+}

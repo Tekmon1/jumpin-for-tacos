@@ -1,0 +1,17 @@
+{
+  "name": "Jumpin For Tacos: Coconut Crunch Cove",
+  "short_name": "Taco Cove",
+  "display": "fullscreen",
+  "background_color": "#082a43",
+  "theme_color": "#20c8d8",
+  "start_url": "./level2.html",
+  "scope": "./",
+  "orientation": "landscape",
+  "icons": [
+    {
+      "src": "assets/icon_512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#3b1738" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Sunset Salsa Showdown (World 1-3) | Jumpin’ For Tacos</title>
+  <meta name="description" content="Build splat chains and battle El Guacodillo in Sunset Salsa Showdown, a free neon desert platformer ending with a rainbow-tunnel victory dash and cheering fiesta." />
+  <meta name="robots" content="index,follow,max-image-preview:large" />
+  <link rel="canonical" href="https://jumpinfortacos.com/game/level1-3" />
+  <meta property="og:type" content="website" /><meta property="og:site_name" content="Jumpin’ For Tacos" />
+  <meta property="og:title" content="Sunset Salsa Showdown (World 1-3) | Jumpin’ For Tacos" />
+  <meta property="og:description" content="Chain enemy splats, defeat El Guacodillo, and race through the rainbow tunnel to a cheering fiesta." />
+  <meta property="og:url" content="https://jumpinfortacos.com/game/level1-3" />
+  <meta property="og:image" content="https://jumpinfortacos.com/assets/jumpin-for-tacos-social-v1.jpg" />
+  <meta property="og:image:width" content="1200" /><meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" /><meta name="twitter:title" content="Sunset Salsa Showdown | Jumpin’ For Tacos" />
+  <meta name="twitter:description" content="Play the free splat-chain showdown against El Guacodillo." />
+  <meta name="twitter:image" content="https://jumpinfortacos.com/assets/jumpin-for-tacos-social-v1.jpg" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="assets/icon_512.png" />
+  <link rel="apple-touch-icon" href="assets/icon_512.png" />
+  <link rel="stylesheet" href="style.css?v=27" />
+  <link rel="stylesheet" href="level1-3.css?v=5" />
+  <script src="/analytics.js?v=1"></script>
+</head>
+<body class="showdown-body">
+  <div id="gameShell" class="app-shell showdown-shell">
+    <header class="hud-strip showdown-topbar">
+      <a class="back-link" href="/" aria-label="Back to Jumpin’ For Tacos home">← Arcade</a>
+      <a class="level-switch" href="index.html">World 1-1</a>
+      <a class="level-switch" href="level1-2.html">World 1-2</a>
+      <div class="brand">Sunset Salsa Showdown</div>
+      <div class="hud-right">
+        <button id="muteBtn" class="top-btn" type="button">🔊 Sound On</button>
+        <button id="fullscreenBtn" class="top-btn" type="button" aria-pressed="false">⛶ Full Screen</button>
+        <button id="settingsBtn" class="top-btn" type="button">⚙ Settings</button>
+        <button id="restartBtn" class="top-btn" type="button">↺ Restart</button>
+      </div>
+    </header>
+
+    <main class="game-stage showdown-stage">
+      <canvas id="game" width="960" height="540" aria-label="Sunset Salsa Showdown platform game canvas"></canvas>
+
+      <section id="startOverlay" class="overlay visible showdown-overlay level-start-overlay">
+        <div class="card title-card showdown-title-card level-start-card">
+          <p class="showdown-kicker">World 1 • Level 1-3 • 35,800 units</p>
+          <h1>🌮 Sunset Salsa Showdown</h1>
+          <p>
+            Chain enemy splats across a desert that transforms from golden sunset
+            into a neon block party. Survive the stampede, cross the parade floats,
+            send El Guacodillo rolling home, and sprint through a cheering victory dash.
+          </p>
+          <button id="startBtn" class="primary-btn showdown-primary level-start-btn" type="button" aria-label="Start World 1-3: Sunset Salsa Showdown">💥 Bring On the Showdown!</button>
+          <div class="controls-grid">
+            <span><strong>Move:</strong> A / D or ← / →</span>
+            <span><strong>Jump:</strong> Space, W, ↑</span>
+            <span><strong>Phone:</strong> Use the on-screen controls</span>
+            <span><strong>Special:</strong> Splat Chains, Taco Frenzy, and Taco Magnet</span>
+          </div>
+          <p id="personalBestText" class="personal-best">Your first showdown sets the record!</p>
+          <p class="fullscreen-tip">Tip: use <strong>Full Screen</strong> above. On iPhone, add the game to your Home Screen for the largest view.</p>
+        </div>
+      </section>
+
+      <section id="winOverlay" class="overlay hidden showdown-overlay">
+        <div class="card win-card showdown-win-card">
+          <h2>🎺 Salsa Showdown Complete! 🌮</h2>
+          <div id="medalBadge" class="medal-badge">SPLAT STARTER</div>
+          <div class="results-grid" aria-label="Level results">
+            <div><span>Score</span><strong id="resultScore">0</strong></div>
+            <div><span>Time</span><strong id="resultTime">0:00</strong></div>
+            <div><span>Tacos</span><strong id="resultTacos">0</strong></div>
+            <div><span>Best chain</span><strong id="resultChain">×0</strong></div>
+            <div><span>Hot sauce</span><strong id="resultSauce">0/6</strong></div>
+            <div><span>Guacodillo</span><strong id="resultBoss">Escaped</strong></div>
+          </div>
+          <p id="winText">You turned the whole desert into a splat-powered dance floor.</p>
+          <p id="newBestText" class="new-best hidden">NEW SHOWDOWN BEST!</p>
+          <button id="playAgainBtn" class="primary-btn showdown-primary" type="button">Splat Again</button>
+          <a class="showdown-next" href="level2.html" data-next-level>Next adventure: World 2-1 • Coconut Crunch Cove →</a>
+        </div>
+      </section>
+
+      <section id="settingsOverlay" class="overlay hidden showdown-overlay" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+        <div class="card settings-card showdown-settings-card">
+          <h2 id="settingsTitle">Showdown Settings</h2>
+          <label for="musicVolume">Music volume <output id="musicVolumeValue">70%</output></label>
+          <input id="musicVolume" type="range" min="0" max="100" value="70" />
+          <label for="effectsVolume">Effects volume <output id="effectsVolumeValue">80%</output></label>
+          <input id="effectsVolume" type="range" min="0" max="100" value="80" />
+          <label class="check-row" for="reducedShake">
+            <input id="reducedShake" type="checkbox" />
+            Reduce screen shake and celebration effects
+          </label>
+          <button id="closeSettingsBtn" class="primary-btn showdown-primary" type="button">Back to the Showdown</button>
+        </div>
+      </section>
+
+      <section id="fullscreenHelp" class="overlay hidden fullscreen-help showdown-overlay" role="dialog" aria-modal="true" aria-labelledby="fullscreenHelpTitle">
+        <div class="card settings-card showdown-settings-card">
+          <h2 id="fullscreenHelpTitle">Full-screen play</h2>
+          <p id="fullscreenHelpText">Install Jumpin’ For Tacos to your Home Screen for the largest game view.</p>
+          <button id="closeFullscreenHelp" class="primary-btn showdown-primary" type="button">Got it</button>
+        </div>
+      </section>
+
+      <div class="touch-controls" aria-label="Touch controls">
+        <div class="touch-row left-row">
+          <button class="touch-btn showdown-touch" data-input="left" aria-label="Move left">◀</button>
+          <button class="touch-btn showdown-touch" data-input="right" aria-label="Move right">▶</button>
+        </div>
+        <div class="touch-row right-row">
+          <button class="touch-btn jump-btn showdown-jump" data-input="jump" aria-label="Jump">▲ Jump</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <audio id="musicGauntlet" src="assets/level1_2_music/music_showdown_gauntlet.ogg?v=3" preload="metadata" loop></audio>
+  <audio id="musicStampede" src="assets/level1_2_music/music_showdown_stampede.ogg?v=3" preload="metadata" loop></audio>
+  <audio id="musicMercado" src="assets/level1_2_music/music_showdown_mercado.ogg?v=3" preload="metadata" loop></audio>
+  <audio id="musicParade" src="assets/level1_2_music/music_showdown_parade.ogg?v=3" preload="metadata" loop></audio>
+  <audio id="musicBoss" src="assets/level1_2_music/music_showdown_boss.ogg?v=3" preload="metadata" loop></audio>
+  <audio id="musicBossAir" src="assets/level1_2_music/music_showdown_boss_air.ogg?v=1" preload="metadata" loop></audio>
+  <audio id="musicBossRage" src="assets/level1_2_music/music_showdown_boss_rage.ogg?v=1" preload="metadata" loop></audio>
+  <audio id="musicVictory" src="assets/level1_2_music/music_showdown_victory.ogg?v=3" preload="metadata" loop></audio>
+  <audio id="musicFiesta" src="assets/level1_2_music/music_showdown_fiesta.ogg?v=3" preload="metadata" loop></audio>
+
+  <script src="controller.js?v=8"></script>
+  <script src="levels.js?v=31"></script>
+  <script src="abilities.js?v=1"></script>
+  <script src="world1-backgrounds.js?v=1"></script>
+  <script src="level1-3.js?v=21"></script>
+  <script src="fullscreen.js?v=1"></script>
+</body>
+</html>

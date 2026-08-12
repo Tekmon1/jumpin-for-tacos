@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#140c43" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Taco Nova Firework Finale (World 3-3) | Jumpin’ For Tacos</title>
+  <meta name="description" content="Chase the Starlight Taco Carnival into the stars, defeat Ringmaster Radish, ignite the Golden Taco Star, and ride the biggest fiesta yet." />
+  <meta name="robots" content="index,follow,max-image-preview:large" />
+  <link rel="canonical" href="https://jumpinfortacos.com/game/level3-3" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Jumpin’ For Tacos" />
+  <meta property="og:title" content="Taco Nova Firework Finale | Jumpin’ For Tacos" />
+  <meta property="og:description" content="Launch through a cosmic carnival, defeat Ringmaster Radish, and light a rainbow across every Jumpin’ For Tacos world." />
+  <meta property="og:url" content="https://jumpinfortacos.com/game/level3-3" />
+  <meta property="og:image" content="https://jumpinfortacos.com/assets/jumpin-for-tacos-social-v1.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="manifest" href="manifest-level3-3.json" />
+  <link rel="icon" href="assets/icon_512.png" />
+  <link rel="apple-touch-icon" href="assets/icon_512.png" />
+  <link rel="stylesheet" href="style.css?v=25" />
+  <link rel="stylesheet" href="world3.css?v=10" />
+  <script src="/analytics.js?v=1"></script>
+</head>
+<body class="carnival-body" data-world3-level="3-3">
+  <div id="gameShell" class="app-shell carnival-shell">
+    <header class="hud-strip carnival-topbar">
+      <a class="back-link" href="/" aria-label="Back to Jumpin’ For Tacos home">← Arcade</a>
+      <a class="level-switch" href="level3.html">World 3-1</a>
+      <a class="level-switch" href="level3-2.html">World 3-2</a>
+      <span class="world3-level-mark">WORLD 3-3</span>
+      <div class="brand">Taco Nova Firework Finale</div>
+      <div class="hud-right">
+        <button id="muteBtn" class="top-btn" type="button">🔊 Sound On</button>
+        <button id="fullscreenBtn" class="top-btn" type="button" aria-pressed="false">⛶ Full Screen</button>
+        <button id="settingsBtn" class="top-btn" type="button">⚙ Settings</button>
+        <button id="restartBtn" class="top-btn" type="button">↺ Restart</button>
+      </div>
+    </header>
+
+    <main class="game-stage carnival-stage">
+      <canvas id="game" width="960" height="540" aria-label="Taco Nova Firework Finale platform game canvas"></canvas>
+
+      <section id="startOverlay" class="overlay visible carnival-overlay level-start-overlay">
+        <div class="card title-card carnival-title-card level-start-card">
+          <p class="carnival-kicker">World 3 • Level 3-3 • 35,000 units</p>
+          <h1>🌠 Taco Nova <span>Firework Finale</span></h1>
+          <p>
+            Ride rocket floats into the stars, chase Olivia’s taco zeppelin,
+            bounce through Ringmaster Radish’s aerial attack, and ignite the
+            Golden Taco Star above every world you have saved.
+          </p>
+          <button id="startBtn" class="primary-btn carnival-primary level-start-btn" type="button" aria-label="Start World 3-3: Taco Nova Firework Finale">🚀 Light the Taco Star!</button>
+          <div class="controls-grid">
+            <span><strong>Move:</strong> A / D, arrows, stick or touch</span>
+            <span><strong>Jump:</strong> Standard height remains unchanged</span>
+            <span><strong>Launch:</strong> Carnival cannons provide marked boosts</span>
+            <span><strong>Finale:</strong> The post-boss victory route has no enemies</span>
+          </div>
+          <p id="personalBestText" class="personal-best">Your first Taco Nova run sets the record!</p>
+          <p class="carnival-tip">Ringmaster Radish’s attacks create the bounce route toward his blimp. If it sparkles suspiciously, Taco Hero can probably jump on it.</p>
+        </div>
+      </section>
+
+      <section id="winOverlay" class="overlay hidden carnival-overlay">
+        <div class="card win-card carnival-win-card">
+          <h2>🌮 The Sky Has Been Taco’d! 🌈</h2>
+          <div id="medalBadge" class="medal-badge">STARLIGHT ROOKIE</div>
+          <div class="results-grid" aria-label="Level results">
+            <div><span>Score</span><strong id="resultScore">0</strong></div>
+            <div><span>Time</span><strong id="resultTime">0:00</strong></div>
+            <div><span>Tacos</span><strong id="resultTacos">0</strong></div>
+            <div><span>Golden tickets</span><strong id="resultGolden">0/8</strong></div>
+            <div><span>Taco Nova</span><strong id="resultNova">0</strong></div>
+            <div><span>Taco Star</span><strong id="resultSetPiece">Waiting</strong></div>
+          </div>
+          <p id="winText">Sunset Salsa and Coconut Crunch Cove are now connected by one deeply unnecessary rainbow.</p>
+          <p id="newBestText" class="new-best hidden">NEW STARLIGHT BEST!</p>
+          <div class="carnival-results-actions">
+            <button id="playAgainBtn" class="primary-btn carnival-primary" type="button">Launch Again</button>
+            <a class="carnival-map-link" href="/" data-next-level>Return to the World Map →</a>
+          </div>
+        </div>
+      </section>
+
+      <section id="settingsOverlay" class="overlay hidden carnival-overlay" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+        <div class="card settings-card carnival-settings-card">
+          <h2 id="settingsTitle">Taco Nova Settings</h2>
+          <label for="musicVolume">Music volume <output id="musicVolumeValue">70%</output></label>
+          <input id="musicVolume" type="range" min="0" max="100" value="70" />
+          <label for="effectsVolume">Effects volume <output id="effectsVolumeValue">80%</output></label>
+          <input id="effectsVolume" type="range" min="0" max="100" value="80" />
+          <label class="check-row" for="reducedShake">
+            <input id="reducedShake" type="checkbox" />
+            Reduce screen shake and celebration density
+          </label>
+          <button id="closeSettingsBtn" class="primary-btn carnival-primary" type="button">Back to the Stars</button>
+        </div>
+      </section>
+
+      <section id="fullscreenHelp" class="overlay hidden fullscreen-help carnival-overlay" role="dialog" aria-modal="true" aria-labelledby="fullscreenHelpTitle">
+        <div class="card settings-card carnival-settings-card">
+          <h2 id="fullscreenHelpTitle">Full-screen play</h2>
+          <p id="fullscreenHelpText">Install Jumpin’ For Tacos to your Home Screen for the largest game view.</p>
+          <button id="closeFullscreenHelp" class="primary-btn carnival-primary" type="button">Got it</button>
+        </div>
+      </section>
+
+      <div class="touch-controls" aria-label="Touch game controls">
+        <div class="touch-row left-row">
+          <button class="touch-btn carnival-touch" data-input="left" aria-label="Move left">◀</button>
+          <button class="touch-btn carnival-touch" data-input="right" aria-label="Move right">▶</button>
+        </div>
+        <div class="touch-row right-row">
+          <button class="touch-btn jump-btn carnival-jump" data-input="jump" aria-label="Jump">▲ Jump</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <audio data-world3-music="starlight" src="assets/world3_music/music_taconova_starlight.ogg" preload="auto" loop></audio>
+  <audio data-world3-music="rings" src="assets/world3_music/music_taconova_rings.ogg" preload="auto" loop></audio>
+  <audio data-world3-music="ringmaster" src="assets/world3_music/music_taconova_ringmaster.ogg" preload="auto" loop></audio>
+  <audio data-world3-music="fiesta" src="assets/world3_music/music_taconova_fiesta.ogg" preload="auto" loop></audio>
+  <audio data-world3-music="cosmic-reprise" src="assets/world3_music/jump_for_tacos_cosmic_reprise_v1.ogg" preload="auto"></audio>
+
+  <script src="levels.js?v=31"></script>
+  <script src="abilities.js?v=1"></script>
+  <script src="controller.js?v=8" data-jft-controller="true"></script>
+  <script src="world3.js?v=29"></script>
+  <script src="fullscreen.js?v=1"></script>
+</body>
+</html>

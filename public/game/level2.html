@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b6e8b" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Coconut Crunch Cove (World 2-1) | Jumpin’ For Tacos</title>
+  <meta name="description" content="Explore Coconut Crunch Cove, a free 36,000-unit island platformer with tides, moving rafts, four powers, Olivia’s premium taco catamaran, a playable big-wave surf rescue, and a moonlit fiesta." />
+  <meta name="robots" content="index,follow,max-image-preview:large" />
+  <link rel="canonical" href="https://jumpinfortacos.com/game/level2" />
+  <meta property="og:type" content="website" /><meta property="og:site_name" content="Jumpin’ For Tacos" />
+  <meta property="og:title" content="Coconut Crunch Cove (World 2-1) | Jumpin’ For Tacos" />
+  <meta property="og:description" content="Ride the tides, chase Olivia’s taco catamaran, surf a giant moonlit wave over five obstacles, launch onto the beach, and reach a spectacular island fiesta." />
+  <meta property="og:url" content="https://jumpinfortacos.com/game/level2" />
+  <meta property="og:image" content="https://jumpinfortacos.com/assets/jumpin-for-tacos-social-v1.jpg" />
+  <meta property="og:image:width" content="1200" /><meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" /><meta name="twitter:title" content="Coconut Crunch Cove | Jumpin’ For Tacos" />
+  <meta name="twitter:description" content="Play the free 36,000-unit island taco adventure and its new big-wave surf finale." />
+  <meta name="twitter:image" content="https://jumpinfortacos.com/assets/jumpin-for-tacos-social-v1.jpg" />
+  <link rel="manifest" href="manifest-level2.json" />
+  <link rel="icon" href="assets/icon_512.png" />
+  <link rel="apple-touch-icon" href="assets/icon_512.png" />
+  <link rel="stylesheet" href="style.css?v=27" />
+  <link rel="stylesheet" href="level2.css?v=4" />
+  <script src="/analytics.js?v=1"></script>
+</head>
+<body class="island-body">
+  <div id="gameShell" class="app-shell island-shell">
+    <header class="hud-strip island-topbar">
+      <a class="back-link" href="/" aria-label="Back to Jumpin’ For Tacos home">← Arcade</a>
+      <a class="level-switch" href="index.html">World 1-1</a>
+      <a class="level-switch" href="level1-2.html">World 1-2</a>
+      <a class="level-switch" href="level1-3.html">World 1-3</a>
+      <a class="level-switch" href="level2-2.html">World 2-2</a>
+      <div class="brand">Coconut Crunch Cove</div>
+      <div class="hud-right">
+        <button id="muteBtn" class="top-btn" type="button">🔊 Sound On</button>
+        <button id="fullscreenBtn" class="top-btn" type="button" aria-pressed="false">⛶ Full Screen</button>
+        <button id="settingsBtn" class="top-btn" type="button">⚙ Settings</button>
+        <button id="restartBtn" class="top-btn" type="button">↺ Restart</button>
+      </div>
+    </header>
+
+    <main class="game-stage island-stage">
+      <canvas id="game" width="960" height="540" aria-label="Coconut Crunch Cove platform game canvas"></canvas>
+
+      <section id="startOverlay" class="overlay visible island-overlay level-start-overlay">
+        <div class="card title-card island-title-card level-start-card">
+          <p class="island-kicker">World 2 • Level 2-1 • 36,000 units</p>
+          <h1>🏝️ Coconut Crunch Cove</h1>
+          <p>
+            Surf shimmering shores, bounce through the palm canopy, ride the tides,
+            chase Olivia’s premium taco catamaran, watch her surf past, ride your
+            own board over five obstacles, and beach-launch into a spectacular island fiesta.
+          </p>
+          <button id="startBtn" class="primary-btn island-primary level-start-btn" type="button" aria-label="Start World 2-1: Coconut Crunch Cove">🏝️ Launch the Island Adventure</button>
+          <div class="controls-grid">
+            <span><strong>Move:</strong> A / D or ← / →</span>
+            <span><strong>Jump:</strong> Space, W, ↑</span>
+            <span><strong>Phone:</strong> Use the on-screen controls</span>
+            <span><strong>Powerups:</strong> Lime, Pepper, Shell, Coconut, Taco Frenzy and Magnet</span>
+          </div>
+          <p id="personalBestText" class="personal-best">Your first island run sets the record!</p>
+          <p class="fullscreen-tip">Tip: use <strong>Full Screen</strong> above. On iPhone, add the game to your Home Screen for the largest view.</p>
+        </div>
+      </section>
+
+      <section id="winOverlay" class="overlay hidden island-overlay">
+        <div class="card win-card island-win-card">
+          <h2>🌈 Island Fiesta Complete! 🌮</h2>
+          <div id="medalBadge" class="medal-badge">COVE CRUISER</div>
+          <div class="results-grid" aria-label="Level results">
+            <div><span>Score</span><strong id="resultScore">0</strong></div>
+            <div><span>Time</span><strong id="resultTime">0:00</strong></div>
+            <div><span>Tacos</span><strong id="resultTacos">0</strong></div>
+            <div><span>Golden</span><strong id="resultGolden">0/8</strong></div>
+            <div><span>Boat catches</span><strong id="resultBoat">0</strong></div>
+            <div><span>Final wave</span><strong id="resultWave">Waiting</strong></div>
+          </div>
+          <p id="winText">You brought the crunch to Coconut Crunch Cove.</p>
+          <p id="newBestText" class="new-best hidden">NEW ISLAND BEST!</p>
+          <div class="island-result-actions">
+            <button id="playAgainBtn" class="primary-btn island-primary" type="button">Cruise Again</button>
+            <a class="island-next" href="level2-2.html" data-next-level>Next: World 2-2 • Campfire Caldera Caper →</a>
+          </div>
+        </div>
+      </section>
+
+      <section id="settingsOverlay" class="overlay hidden island-overlay" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+        <div class="card settings-card island-settings-card">
+          <h2 id="settingsTitle">Island Settings</h2>
+          <label for="musicVolume">Music volume <output id="musicVolumeValue">70%</output></label>
+          <input id="musicVolume" type="range" min="0" max="100" value="70" />
+          <label for="effectsVolume">Effects volume <output id="effectsVolumeValue">80%</output></label>
+          <input id="effectsVolume" type="range" min="0" max="100" value="80" />
+          <label class="check-row" for="reducedShake">
+            <input id="reducedShake" type="checkbox" />
+            Reduce screen shake and celebration effects
+          </label>
+          <button id="closeSettingsBtn" class="primary-btn island-primary" type="button">Back to the Cove</button>
+        </div>
+      </section>
+
+      <section id="fullscreenHelp" class="overlay hidden fullscreen-help island-overlay" role="dialog" aria-modal="true" aria-labelledby="fullscreenHelpTitle">
+        <div class="card settings-card island-settings-card">
+          <h2 id="fullscreenHelpTitle">Full-screen play</h2>
+          <p id="fullscreenHelpText">Install Jumpin’ For Tacos to your Home Screen for the largest game view.</p>
+          <button id="closeFullscreenHelp" class="primary-btn island-primary" type="button">Got it</button>
+        </div>
+      </section>
+
+      <div class="touch-controls" aria-label="Touch controls">
+        <div class="touch-row left-row">
+          <button class="touch-btn island-touch" data-input="left" aria-label="Move left">◀</button>
+          <button class="touch-btn island-touch" data-input="right" aria-label="Move right">▶</button>
+        </div>
+        <div class="touch-row right-row">
+          <button class="touch-btn jump-btn island-jump" data-input="jump" aria-label="Jump">▲ Jump</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <audio id="musicIslandShore" src="assets/level2_music/music_island_shore.ogg" preload="auto" loop></audio>
+  <audio id="musicIslandCanopy" src="assets/level2_music/music_island_canopy.ogg" preload="auto" loop></audio>
+  <audio id="musicIslandTides" src="assets/level2_music/music_island_tides.ogg" preload="auto" loop></audio>
+  <audio id="musicIslandSurge" src="assets/level2_music/music_island_surge.ogg" preload="auto" loop></audio>
+  <audio id="musicIslandFiesta" src="assets/level2_music/music_island_fiesta.ogg" preload="auto" loop></audio>
+
+  <script src="controller.js?v=8"></script>
+  <script src="levels.js?v=31"></script>
+  <script src="abilities.js?v=1"></script>
+  <script src="level2.js?v=22"></script>
+  <script src="fullscreen.js?v=1"></script>
+</body>
+</html>

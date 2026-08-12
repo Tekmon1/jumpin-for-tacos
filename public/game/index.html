@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#10131d" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Sunset Salsa Run (World 1-1) | Jumpin’ For Tacos</title>
+  <meta name="description" content="Start Jumpin’ For Tacos with Sunset Salsa Run, a free taco-collecting desert platformer featuring moving platforms, Olivia’s taco truck, special abilities, and a spectacular fiesta finish." />
+  <meta name="robots" content="index,follow,max-image-preview:large" />
+  <link rel="canonical" href="https://jumpinfortacos.com/game/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Jumpin’ For Tacos" />
+  <meta property="og:title" content="Sunset Salsa Run (World 1-1) | Jumpin’ For Tacos" />
+  <meta property="og:description" content="Run, jump, collect tacos, and reach the desert fiesta in the first free Jumpin’ For Tacos adventure." />
+  <meta property="og:url" content="https://jumpinfortacos.com/game/" />
+  <meta property="og:image" content="https://jumpinfortacos.com/assets/jumpin-for-tacos-social-v1.jpg" />
+  <meta property="og:image:width" content="1200" /><meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Sunset Salsa Run | Jumpin’ For Tacos" />
+  <meta name="twitter:description" content="Play the free taco-collecting desert platformer adventure." />
+  <meta name="twitter:image" content="https://jumpinfortacos.com/assets/jumpin-for-tacos-social-v1.jpg" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="assets/icon_512.png" />
+  <link rel="apple-touch-icon" href="assets/icon_512.png" />
+  <link rel="stylesheet" href="style.css?v=27" />
+  <script src="/analytics.js?v=1"></script>
+</head>
+<body>
+  <div id="gameShell" class="app-shell">
+    <header class="hud-strip">
+      <a class="back-link" href="/" aria-label="Back to Jumpin’ For Tacos home">← Arcade</a>
+      <div class="brand">Jumpin’ For Tacos</div>
+      <div class="hud-right">
+        <button id="muteBtn" class="top-btn" type="button">🔊 Sound On</button>
+        <button id="fullscreenBtn" class="top-btn" type="button" aria-pressed="false">⛶ Full Screen</button>
+        <button id="settingsBtn" class="top-btn" type="button">⚙ Settings</button>
+        <button id="restartBtn" class="top-btn" type="button">↺ Restart</button>
+      </div>
+    </header>
+
+    <main class="game-stage">
+      <canvas id="game" width="960" height="540" aria-label="Jumpin For Tacos game canvas"></canvas>
+
+      <section id="startOverlay" class="overlay visible level-start-overlay">
+        <div class="card title-card level-start-card">
+          <img src="assets/title_logo.png" alt="Jumpin’ For Tacos" class="title-logo" />
+          <h1 id="currentLevelTitle">World 1-1: Sunset Salsa Run</h1>
+          <p>
+            Run, jump, chain satisfying enemy splats, and explore layered desert
+            routes where risky jumps can lead to bonus powers and premium taco
+            rewards. Catch Olivia’s taco-truck drops, survive the Salsa Showdown,
+            and reach the fiesta gate.
+          </p>
+          <button id="startBtn" class="primary-btn salsa-primary level-start-btn" type="button" aria-label="Start World 1-1: Sunset Salsa Run">🌮 Start the Salsa Adventure</button>
+          <div class="controls-grid">
+            <span><strong>Move:</strong> A / D or ← / →</span>
+            <span><strong>Jump:</strong> Space, W, ↑</span>
+            <span><strong>Mobile:</strong> Use the on-screen controls</span>
+            <span><strong>Goal:</strong> Find Golden Tacos and reach the fiesta</span>
+          </div>
+          <p id="personalBestText" class="personal-best">No personal best yet. Your first fiesta sets the record!</p>
+        </div>
+      </section>
+
+      <section id="fullscreenHelp" class="overlay hidden fullscreen-help" role="dialog" aria-modal="true" aria-labelledby="fullscreenHelpTitle">
+        <div class="card settings-card">
+          <h2 id="fullscreenHelpTitle">Full-screen play</h2>
+          <p id="fullscreenHelpText">Install Jumpin’ For Tacos to your Home Screen for the largest game view.</p>
+          <button id="closeFullscreenHelp" class="primary-btn" type="button">Got it</button>
+        </div>
+      </section>
+
+      <section id="winOverlay" class="overlay hidden">
+        <div class="card win-card">
+          <h2>🌮 Fiesta Complete! 🌮</h2>
+          <div id="medalBadge" class="medal-badge">TACO ROOKIE</div>
+          <div class="results-grid" aria-label="Level results">
+            <div><span>Score</span><strong id="resultScore">0</strong></div>
+            <div><span>Time</span><strong id="resultTime">0:00</strong></div>
+            <div><span>Best splat</span><strong id="resultSplat">×0</strong></div>
+            <div><span>Airborne</span><strong id="resultAir">×0</strong></div>
+            <div><span>Chase catches</span><strong id="resultChase">0</strong></div>
+            <div><span>Piñata</span><strong id="resultPinata">Missed</strong></div>
+          </div>
+          <p id="winText">You cleared Level 1 and brought the tacos home.</p>
+          <p id="newBestText" class="new-best hidden">NEW PERSONAL BEST!</p>
+          <button id="playAgainBtn" class="primary-btn" type="button">Play Again</button>
+          <a class="salsa-next" href="level1-2.html" data-next-level>Continue to World 1-2 • Sky-High Salsa Rescue →</a>
+        </div>
+      </section>
+
+      <section id="settingsOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+        <div class="card settings-card">
+          <h2 id="settingsTitle">Game Settings</h2>
+          <label for="musicVolume">Music volume <output id="musicVolumeValue">70%</output></label>
+          <input id="musicVolume" type="range" min="0" max="100" value="70" />
+          <label for="effectsVolume">Effects volume <output id="effectsVolumeValue">80%</output></label>
+          <input id="effectsVolume" type="range" min="0" max="100" value="80" />
+          <label class="check-row" for="reducedShake">
+            <input id="reducedShake" type="checkbox" />
+            Reduce screen shake
+          </label>
+          <button id="closeSettingsBtn" class="primary-btn" type="button">Back to the Fiesta</button>
+        </div>
+      </section>
+
+      <div class="touch-controls" aria-label="Touch controls">
+        <div class="touch-row left-row">
+          <button class="touch-btn" data-input="left" aria-label="Move left">◀</button>
+          <button class="touch-btn" data-input="right" aria-label="Move right">▶</button>
+        </div>
+        <div class="touch-row right-row">
+          <button class="touch-btn jump-btn" data-input="jump" aria-label="Jump">▲ Jump</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <audio id="musicExploration" src="assets/music_exploration.ogg" preload="auto" loop></audio>
+  <audio id="musicShowdown" src="assets/music_showdown.ogg" preload="auto" loop></audio>
+  <audio id="musicChase" src="assets/music_chase.ogg" preload="auto" loop></audio>
+  <audio id="musicFiesta" src="assets/music_fiesta.ogg" preload="auto" loop></audio>
+  <audio id="musicIslandShore" src="assets/level2_music/music_island_shore.ogg" preload="metadata" loop></audio>
+  <audio id="musicIslandCanopy" src="assets/level2_music/music_island_canopy.ogg" preload="metadata" loop></audio>
+  <audio id="musicIslandTides" src="assets/level2_music/music_island_tides.ogg" preload="metadata" loop></audio>
+  <audio id="musicIslandLava" src="assets/level2_music/music_island_lava.ogg" preload="metadata" loop></audio>
+  <audio id="musicIslandFiesta" src="assets/level2_music/music_island_fiesta.ogg" preload="metadata" loop></audio>
+
+  <script src="controller.js?v=8"></script>
+  <script src="levels.js?v=31"></script>
+  <script src="world1-backgrounds.js?v=1"></script>
+  <script src="game.js?v=44"></script>
+  <script src="fullscreen.js?v=1"></script>
+</body>
+</html>

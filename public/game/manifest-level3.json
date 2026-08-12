@@ -1,0 +1,12 @@
+{
+  "name": "Jumpin’ For Tacos — Cloudtop Carnival Kickoff",
+  "short_name": "Cloudtop Carnival",
+  "start_url": "./level3.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#35144f",
+  "theme_color": "#ff68b4",
+  "icons": [
+    { "src": "assets/icon_512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

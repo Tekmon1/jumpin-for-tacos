@@ -1,0 +1,62 @@
+:root {
+  --sky-blue: #65d8ff;
+  --sky-gold: #ffd65a;
+  --sky-coral: #ff775d;
+  --sky-pink: #ff6fae;
+  --sky-ink: #242044;
+}
+
+.sky-body {
+  background:
+    radial-gradient(circle at 16% 0%, rgba(101, 216, 255, .42), transparent 36%),
+    radial-gradient(circle at 86% 10%, rgba(255, 167, 94, .36), transparent 34%),
+    linear-gradient(180deg, #286fa7, #50365f 72%, #1c1c38);
+}
+
+.sky-topbar {
+  background: linear-gradient(90deg, rgba(28, 66, 105, .38), rgba(78, 50, 83, .31));
+  border-color: rgba(255, 214, 90, .46);
+}
+
+.sky-topbar .level-switch { color: #f1fbff; background: rgba(101, 216, 255, .18); border-color: rgba(191, 243, 255, .52); }
+.sky-stage { background: #4abde0; border-color: rgba(255, 229, 139, .52); }
+.sky-overlay { background: linear-gradient(180deg, rgba(31, 102, 146, .08), rgba(31, 24, 58, .5)); }
+
+.sky-title-card,
+.sky-win-card,
+.sky-settings-card {
+  background: linear-gradient(150deg, rgba(31, 73, 111, .72), rgba(48, 32, 75, .68));
+  border-color: rgba(255, 220, 108, .55);
+}
+
+.sky-title-card h1 { color: #fff7cf; text-shadow: 0 4px 0 #95506a, 0 0 28px rgba(101, 216, 255, .45); }
+.sky-kicker { margin: 0; color: var(--sky-gold) !important; font-size: 12px; font-weight: 950; letter-spacing: .14em; text-transform: uppercase; }
+.sky-start-btn { display: block; margin: 14px auto 4px; min-width: min(320px, 100%); }
+.sky-primary { background: linear-gradient(180deg, #fff18b, #ff9e59); box-shadow: 0 7px 0 #a34b59, 0 0 26px rgba(255, 214, 90, .34); }
+.sky-next { display: block; width: fit-content; margin: 18px auto 0; color: #78e5ff; font-size: 13px; font-weight: 900; text-decoration: none; }
+.sky-next:hover, .sky-next:focus-visible { color: #fff5c8; text-decoration: underline; }
+.sky-win-card .results-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.sky-touch { background: rgba(34, 79, 118, .14); border-color: rgba(255, 224, 113, .66); }
+.sky-jump { background: rgba(255, 178, 83, .22); color: #fff9ef; }
+.sky-shell:fullscreen, .standalone-game .sky-shell { background: #1b2946; }
+
+@media (max-width: 700px) {
+  .sky-topbar { gap: 5px; }
+  .sky-topbar .top-btn, .sky-topbar .back-link, .sky-topbar .level-switch { padding: 8px 8px; font-size: 10px; }
+  .sky-title-card { padding: 18px; }
+  .sky-title-card h1 { font-size: 25px; }
+  .sky-win-card .results-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Short landscape phones have less vertical space than the 16:9 game canvas.
+   Keep the action control visible and allow the supporting copy to scroll. */
+@media (max-height: 620px) and (orientation: landscape) {
+  .sky-overlay { align-items: start; overflow-y: auto; padding: 8px; -webkit-overflow-scrolling: touch; }
+  .sky-title-card { max-height: 100%; overflow-y: auto; padding: 12px 16px 16px; border-radius: 16px; -webkit-overflow-scrolling: touch; }
+  .sky-title-card h1 { margin: 4px 0 6px; font-size: 23px; }
+  .sky-title-card > p:not(.sky-kicker):not(.personal-best):not(.fullscreen-tip) { margin: 5px 0; line-height: 1.3; font-size: 13px; }
+  .sky-title-card .controls-grid { margin: 10px 0; gap: 5px 12px; font-size: 12px; }
+  .sky-title-card .personal-best,
+  .sky-title-card .fullscreen-tip { margin: 8px 0 4px; font-size: 11px; line-height: 1.25; }
+  .sky-start-btn { position: relative; margin: 9px auto 5px; padding: 11px 18px; min-height: 44px; }
+}

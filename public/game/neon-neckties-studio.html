@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#180f35" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Neon Neckties Studio | Jumpin’ For Tacos</title>
+  <meta
+    name="description"
+    content="Preview the full vocal Neon Neckties concert master selected for the World 2-3 finale in Jumpin’ For Tacos."
+  />
+  <link rel="icon" href="assets/icon_512.png" />
+  <link rel="apple-touch-icon" href="assets/icon_512.png" />
+  <link rel="stylesheet" href="neon-neckties-studio.css?v=4" />
+  <script src="/analytics.js?v=1"></script>
+</head>
+<body>
+  <main class="studio-shell">
+    <header class="studio-nav">
+      <a class="back-link" href="/" aria-label="Back to Jumpin’ For Tacos">
+        <span aria-hidden="true">←</span> Jumpin’ For Tacos
+      </a>
+      <div class="studio-status">
+        <span class="live-dot" aria-hidden="true"></span>
+        World 2-3 music production
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Neon Neckties Studio • Final Concert Master</p>
+        <h1>Jump for<br /><span>Tacos</span></h1>
+        <p class="dek">
+          The full-band vocal performance selected to power World 2-3’s ending:
+          a playable sunset concert, Olivia crowd surfing, and a proper neon encore.
+        </p>
+        <div class="track-facts" aria-label="Song information">
+          <span><strong>3:07</strong> full song</span>
+          <span><strong>Full vocal</strong></span>
+          <span><strong>48 kHz</strong> stereo</span>
+          <span><strong>Concert finale</strong></span>
+        </div>
+      </div>
+
+      <div class="band-mark" aria-label="Five original Neon Neckties band-member colors">
+        <div class="sun-disc" aria-hidden="true"></div>
+        <div class="stage-grid" aria-hidden="true"></div>
+        <div class="ties" aria-hidden="true">
+          <span class="tie magenta"></span>
+          <span class="tie cyan"></span>
+          <span class="tie lime"></span>
+          <span class="tie amber"></span>
+          <span class="tie violet"></span>
+        </div>
+        <div class="band-wordmark">
+          <small>THE</small>
+          <strong>NEON</strong>
+          <em>NECKTIES</em>
+        </div>
+        <div class="equalizer" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+      </div>
+    </section>
+
+    <section class="player-card" aria-labelledby="playerTitle">
+      <div class="player-heading">
+        <div>
+          <p>Now reviewing</p>
+          <h2 id="playerTitle">Final concert master</h2>
+        </div>
+        <div class="mix-switch" role="group" aria-label="Choose a review mix">
+          <button class="mix-button active" type="button" data-mix="concert" aria-pressed="true">
+            Final concert
+          </button>
+          <button class="mix-button" type="button" data-mix="trio" aria-pressed="false">
+            Power trio draft
+          </button>
+          <button class="mix-button" type="button" data-mix="instrumental" aria-pressed="false">
+            Full band V2
+          </button>
+          <button class="mix-button" type="button" data-mix="guide" aria-pressed="false">
+            Melody guide
+          </button>
+        </div>
+      </div>
+
+      <div class="waveform-wrap">
+        <canvas id="waveform" width="1200" height="210" aria-label="Song waveform and playback position"></canvas>
+        <input id="seekBar" type="range" min="0" max="186.72" step="0.01" value="0" aria-label="Song position" />
+      </div>
+
+      <div class="transport">
+        <button id="playButton" class="play-button" type="button">
+          <span aria-hidden="true">▶</span>
+          <strong>Play final concert song</strong>
+        </button>
+        <div class="time-readout" aria-live="off">
+          <span id="currentTime">0:00</span>
+          <i aria-hidden="true">/</i>
+          <span id="duration">3:07</span>
+        </div>
+        <label class="volume-control">
+          <span>Volume</span>
+          <input id="volume" type="range" min="0" max="100" value="86" />
+        </label>
+      </div>
+
+      <p id="playbackStatus" class="playback-status" aria-live="polite">
+        Final concert master selected. This is the song that will play through the complete World 2-3 finale.
+      </p>
+
+      <audio id="concertTrack" preload="metadata">
+        <source src="assets/neon_neckties/jump_for_tacos_final_concert_master.mp3?mix=4" type="audio/mpeg" />
+      </audio>
+      <audio id="trioTrack" preload="metadata">
+        <source src="assets/neon_neckties/turn_the_sunset_up_power_trio_v1.m4a?mix=3" type="audio/mp4" />
+        <source src="assets/neon_neckties/turn_the_sunset_up_power_trio_v1.ogg?mix=3" type="audio/ogg" />
+      </audio>
+      <audio id="instrumentalTrack" preload="metadata">
+        <source src="assets/neon_neckties/turn_the_sunset_up_instrumental_v1.m4a?mix=3" type="audio/mp4" />
+        <source src="assets/neon_neckties/turn_the_sunset_up_instrumental_v1.ogg?mix=3" type="audio/ogg" />
+      </audio>
+      <audio id="guideTrack" preload="metadata">
+        <source src="assets/neon_neckties/turn_the_sunset_up_melody_guide_v1.m4a?mix=3" type="audio/mp4" />
+        <source src="assets/neon_neckties/turn_the_sunset_up_melody_guide_v1.ogg?mix=3" type="audio/ogg" />
+      </audio>
+    </section>
+
+    <section class="song-map" aria-labelledby="songMapTitle">
+      <div class="section-heading">
+        <p>Song architecture</p>
+        <h2 id="songMapTitle">A real song, not a dressed-up loop.</h2>
+        <p>
+          Every section changes the arrangement and creates a future animation beat
+          for the band, crowd, Olivia and Taco Hero.
+        </p>
+      </div>
+      <div id="sectionGrid" class="section-grid">
+        <button type="button" data-start="0" data-section="concert-open"><span>00:00</span><strong>Stage Lights Rise</strong><small>Crowd and band reveal</small></button>
+        <button type="button" data-start="22" data-section="verse-one"><span>00:22</span><strong>First Verse</strong><small>Band close-ups</small></button>
+        <button type="button" data-start="45" data-section="first-lift"><span>00:45</span><strong>First Lift</strong><small>Beach-ball bounce</small></button>
+        <button type="button" data-start="68" data-section="chorus-one"><span>01:08</span><strong>First Big Chorus</strong><small>Olivia crowd surfs</small></button>
+        <button type="button" data-start="93" data-section="second-act"><span>01:33</span><strong>Second Act</strong><small>Playable note platforms</small></button>
+        <button type="button" data-start="117" data-section="crowd-break"><span>01:57</span><strong>Crowd Break</strong><small>Audience response</small></button>
+        <button type="button" data-start="142" data-section="finale-lift"><span>02:22</span><strong>Finale Lift</strong><small>Fireworks and lasers</small></button>
+        <button type="button" data-start="168" data-section="encore"><span>02:48</span><strong>Neon Encore</strong><small>Band bow and fiesta payoff</small></button>
+      </div>
+    </section>
+
+    <section class="production-grid" aria-label="Production notes">
+      <article>
+        <span class="number">01</span>
+        <p class="article-kicker">What is complete</p>
+        <h2>The musical foundation</h2>
+        <p>
+          The supplied full-band vocal master is now the authoritative World 2-3
+          finale track. Earlier synthetic mixes remain available only as development references.
+        </p>
+      </article>
+      <article>
+        <span class="number">02</span>
+        <p class="article-kicker">What comes next</p>
+        <h2>The playable concert</h2>
+        <p>
+          The finished level will let the performance breathe: band close-ups,
+          crowd surfing, beach-ball routes, synchronized lights, fireworks and an encore.
+        </p>
+      </article>
+      <article>
+        <span class="number">03</span>
+        <p class="article-kicker">Concert integration</p>
+        <h2>Every beat becomes visible</h2>
+        <p>
+          A production cue map is ready for instrument animation, colored necktie
+          lights, Olivia’s crowd surfing, fireworks and the playable encore.
+        </p>
+      </article>
+    </section>
+
+    <section class="quality-banner">
+      <div>
+        <p>Production standard</p>
+        <h2>The song is the reward.</h2>
+      </div>
+      <p>
+        World 2-3 will not interrupt the reward with an immediate results card.
+        The whole song, crowd celebration, encore and band bow will play before the level closes.
+      </p>
+    </section>
+
+    <footer>
+      <a href="/">← Return to the adventure map</a>
+      <span>Neon Neckties • Original Jumpin’ For Tacos music</span>
+    </footer>
+  </main>
+
+  <script src="neon-neckties-studio.js?v=4"></script>
+</body>
+</html>

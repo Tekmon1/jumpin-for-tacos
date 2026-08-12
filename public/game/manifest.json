@@ -1,0 +1,17 @@
+{
+  "name": "Jumpin For Tacos",
+  "short_name": "J4T",
+  "display": "fullscreen",
+  "background_color": "#10131d",
+  "theme_color": "#ffca57",
+  "start_url": "./index.html",
+  "scope": "./",
+  "orientation": "landscape",
+  "icons": [
+    {
+      "src": "assets/icon_512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

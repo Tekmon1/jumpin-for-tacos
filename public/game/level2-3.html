@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#190c3b" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Neon Neckties: Turn the Sunset Up (World 2-3) | Jumpin’ For Tacos</title>
+  <meta name="description" content="Race across Coconut Crunch Cove, power up the Neon Neckties stage, and play through a complete three-minute island concert in World 2-3." />
+  <meta name="robots" content="index,follow,max-image-preview:large" />
+  <link rel="canonical" href="https://jumpinfortacos.com/game/level2-3" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Jumpin’ For Tacos" />
+  <meta property="og:title" content="Neon Neckties: Turn the Sunset Up | Jumpin’ For Tacos" />
+  <meta property="og:description" content="Help Olivia reach the island’s biggest concert, then crowd surf through the full Neon Neckties finale." />
+  <meta property="og:url" content="https://jumpinfortacos.com/game/level2-3" />
+  <meta property="og:image" content="https://jumpinfortacos.com/assets/jumpin-for-tacos-social-v1.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="manifest" href="manifest-level2-3.json" />
+  <link rel="icon" href="assets/icon_512.png" />
+  <link rel="apple-touch-icon" href="assets/icon_512.png" />
+  <link rel="stylesheet" href="style.css?v=27" />
+  <link rel="stylesheet" href="level2-3.css?v=3" />
+  <script src="/analytics.js?v=1"></script>
+</head>
+<body class="neon-body">
+  <div id="gameShell" class="app-shell neon-shell">
+    <header class="hud-strip neon-topbar">
+      <a class="back-link" href="/" aria-label="Back to Jumpin’ For Tacos home">← Arcade</a>
+      <a class="level-switch" href="level2.html">World 2-1</a>
+      <a class="level-switch" href="level2-2.html">World 2-2</a>
+      <div class="brand">Neon Neckties: Turn the Sunset Up</div>
+      <div class="hud-right">
+        <button id="muteBtn" class="top-btn" type="button">🔊 Sound On</button>
+        <button id="fullscreenBtn" class="top-btn" type="button" aria-pressed="false">⛶ Full Screen</button>
+        <button id="settingsBtn" class="top-btn" type="button">⚙ Settings</button>
+        <button id="restartBtn" class="top-btn" type="button">↺ Restart</button>
+      </div>
+    </header>
+
+    <main class="game-stage neon-stage">
+      <canvas id="game" width="960" height="540" aria-label="Neon Neckties World 2-3 platform game canvas"></canvas>
+
+      <button
+        id="skipConcertBtn"
+        class="concert-skip-btn"
+        type="button"
+        aria-label="Skip the rest of the concert and view level results"
+        title="Skip the rest of the concert and view your results"
+        hidden
+      >
+        <span class="concert-skip-copy">
+          <strong>Skip Concert</strong>
+          <small>View results</small>
+        </span>
+        <span class="concert-skip-arrow" aria-hidden="true">→</span>
+      </button>
+
+      <section id="startOverlay" class="overlay visible neon-overlay level-start-overlay">
+        <div class="card title-card neon-title-card level-start-card">
+          <p class="neon-kicker">World 2 • Level 2-3 • 35,000 units</p>
+          <h1>🎸 Neon Neckties:<br /><span>Turn the Sunset Up</span></h1>
+          <p>
+            Help Olivia and Taco Hero recover the show, power up the island stage,
+            and reach a complete playable Neon Neckties concert under the stars.
+          </p>
+          <button id="startBtn" class="primary-btn neon-primary level-start-btn" type="button" aria-label="Start World 2-3: Neon Neckties">🎟 Get to the Show!</button>
+          <div class="controls-grid">
+            <span><strong>Move:</strong> A / D or ← / →</span>
+            <span><strong>Jump:</strong> Space, W, ↑</span>
+            <span><strong>Phone:</strong> Transparent on-screen controls</span>
+            <span id="controllerHint" data-controller-hint><strong>Controller:</strong> Xbox/standard gamepad supported</span>
+            <span><strong>Special:</strong> Taco Frenzy and Taco Magnet carry forward</span>
+          </div>
+          <p id="personalBestText" class="personal-best">Your first concert run sets the record!</p>
+          <p class="fullscreen-tip">Follow the organized taco trails. Every required platform uses the shared Taco Hero jump and bounce physics.</p>
+        </div>
+      </section>
+
+      <section id="winOverlay" class="overlay hidden neon-overlay">
+        <div class="card win-card neon-win-card">
+          <h2>🌮 Neon Encore Complete! 🎸</h2>
+          <div id="medalBadge" class="medal-badge">TIE-HARD FAN</div>
+          <div class="results-grid" aria-label="Level results">
+            <div><span>Score</span><strong id="resultScore">0</strong></div>
+            <div><span>Adventure</span><strong id="resultTime">0:00</strong></div>
+            <div><span>Tacos</span><strong id="resultTacos">0</strong></div>
+            <div><span>Backstage</span><strong id="resultGolden">0/8</strong></div>
+            <div><span>Concert energy</span><strong id="resultEnergy">0%</strong></div>
+            <div><span>Encore</span><strong id="resultConcert">Complete</strong></div>
+          </div>
+          <p id="winText">You turned the sunset all the way up.</p>
+          <p id="newBestText" class="new-best hidden">NEW CONCERT BEST!</p>
+          <div class="neon-result-actions">
+            <button id="playAgainBtn" class="primary-btn neon-primary" type="button">Play the Show Again</button>
+            <a class="neon-map-link" href="level3.html" data-next-level>Next adventure: World 3-1 →</a>
+            <a class="neon-map-link" href="/">Choose Another Level →</a>
+          </div>
+        </div>
+      </section>
+
+      <section id="settingsOverlay" class="overlay hidden neon-overlay" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+        <div class="card settings-card neon-settings-card">
+          <h2 id="settingsTitle">Concert Settings</h2>
+          <label for="musicVolume">Music volume <output id="musicVolumeValue">70%</output></label>
+          <input id="musicVolume" type="range" min="0" max="100" value="70" />
+          <label for="effectsVolume">Effects volume <output id="effectsVolumeValue">80%</output></label>
+          <input id="effectsVolume" type="range" min="0" max="100" value="80" />
+          <label class="check-row" for="reducedShake">
+            <input id="reducedShake" type="checkbox" />
+            Reduce screen shake and concert effects
+          </label>
+          <button id="closeSettingsBtn" class="primary-btn neon-primary" type="button">Back to the Show</button>
+        </div>
+      </section>
+
+      <section id="fullscreenHelp" class="overlay hidden fullscreen-help neon-overlay" role="dialog" aria-modal="true" aria-labelledby="fullscreenHelpTitle">
+        <div class="card settings-card neon-settings-card">
+          <h2 id="fullscreenHelpTitle">Full-screen play</h2>
+          <p id="fullscreenHelpText">Install Jumpin’ For Tacos to your Home Screen for the largest game view.</p>
+          <button id="closeFullscreenHelp" class="primary-btn neon-primary" type="button">Got it</button>
+        </div>
+      </section>
+
+      <div class="touch-controls" aria-label="Touch controls">
+        <div class="touch-row left-row">
+          <button class="touch-btn neon-touch" data-input="left" aria-label="Move left">◀</button>
+          <button class="touch-btn neon-touch" data-input="right" aria-label="Move right">▶</button>
+        </div>
+        <div class="touch-row right-row">
+          <button class="touch-btn jump-btn neon-jump" data-input="jump" aria-label="Jump">▲ Jump</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <audio id="musicSoundcheck" src="assets/level2_music/music_island_shore.ogg" preload="auto" loop></audio>
+  <audio id="musicRooftops" src="assets/neon_neckties/turn_the_sunset_up_power_trio_v1.ogg" preload="auto" loop></audio>
+  <audio id="musicStampede" src="assets/level2_music/music_island_surge.ogg" preload="auto" loop></audio>
+  <audio id="musicLagoon" src="assets/level2_music/music_island_tides.ogg" preload="auto" loop></audio>
+  <audio id="musicPowerup" src="assets/neon_neckties/turn_the_sunset_up_instrumental_v1.ogg" preload="auto" loop></audio>
+  <audio id="musicConcert" src="assets/neon_neckties/jump_for_tacos_final_concert_master.mp3?concert=1" preload="auto"></audio>
+
+  <script src="controller.js?v=8"></script>
+  <script src="levels.js?v=31"></script>
+  <script src="abilities.js?v=1"></script>
+  <script src="level2-3.js?v=13"></script>
+  <script src="fullscreen.js?v=1"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "Jumpin For Tacos: Campfire Caldera Caper",
+  "short_name": "Caldera Caper",
+  "display": "fullscreen",
+  "background_color": "#24133f",
+  "theme_color": "#ff6b4a",
+  "start_url": "./level2-2.html",
+  "scope": "./",
+  "orientation": "landscape",
+  "icons": [
+    {
+      "src": "assets/icon_512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

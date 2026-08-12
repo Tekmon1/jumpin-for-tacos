@@ -1,0 +1,12 @@
+{
+  "name": "Jumpin’ For Tacos — Midnight Midway Mayhem",
+  "short_name": "Midnight Midway",
+  "start_url": "./level3-2.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#160c3d",
+  "theme_color": "#65e7ff",
+  "icons": [
+    { "src": "assets/icon_512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#251047" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Midnight Midway Mayhem (World 3-2) | Jumpin’ For Tacos</title>
+  <meta name="description" content="Ride rollercoasters, bumper cars and neon attractions through World 3-2, then defeat Sir Cornelius Pop in a spectacular popcorn showdown." />
+  <meta name="robots" content="index,follow,max-image-preview:large" />
+  <link rel="canonical" href="https://jumpinfortacos.com/game/level3-2" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Jumpin’ For Tacos" />
+  <meta property="og:title" content="Midnight Midway Mayhem | Jumpin’ For Tacos" />
+  <meta property="og:description" content="Race Olivia’s maintenance coaster across a neon carnival and pop World 3’s most overinflated boss." />
+  <meta property="og:url" content="https://jumpinfortacos.com/game/level3-2" />
+  <meta property="og:image" content="https://jumpinfortacos.com/assets/jumpin-for-tacos-social-v1.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="manifest" href="manifest-level3-2.json" />
+  <link rel="icon" href="assets/icon_512.png" />
+  <link rel="apple-touch-icon" href="assets/icon_512.png" />
+  <link rel="stylesheet" href="style.css?v=25" />
+  <link rel="stylesheet" href="world3.css?v=10" />
+  <script src="/analytics.js?v=1"></script>
+</head>
+<body class="carnival-body" data-world3-level="3-2">
+  <div id="gameShell" class="app-shell carnival-shell">
+    <header class="hud-strip carnival-topbar">
+      <a class="back-link" href="/" aria-label="Back to Jumpin’ For Tacos home">← Arcade</a>
+      <a class="level-switch" href="level3.html">World 3-1</a>
+      <span class="world3-level-mark">WORLD 3-2</span>
+      <div class="brand">Midnight Midway Mayhem</div>
+      <div class="hud-right">
+        <button id="muteBtn" class="top-btn" type="button">🔊 Sound On</button>
+        <button id="fullscreenBtn" class="top-btn" type="button" aria-pressed="false">⛶ Full Screen</button>
+        <button id="settingsBtn" class="top-btn" type="button">⚙ Settings</button>
+        <button id="restartBtn" class="top-btn" type="button">↺ Restart</button>
+      </div>
+    </header>
+
+    <main class="game-stage carnival-stage">
+      <canvas id="game" width="960" height="540" aria-label="Midnight Midway Mayhem platform game canvas"></canvas>
+
+      <section id="startOverlay" class="overlay visible carnival-overlay level-start-overlay">
+        <div class="card title-card carnival-title-card level-start-card">
+          <p class="carnival-kicker">World 3 • Level 3-2 • 35,000 units</p>
+          <h1>🎢 Midnight Midway <span>Mayhem</span></h1>
+          <p>
+            Race across rollercoasters, bumper cars and glowing attractions,
+            catch Olivia’s maintenance-coaster taco drop, then reduce Sir
+            Cornelius Pop’s pressure rating from “concerning” to “delicious.”
+          </p>
+          <button id="startBtn" class="primary-btn carnival-primary level-start-btn" type="button" aria-label="Start World 3-2: Midnight Midway Mayhem">🎢 Punch the Ride Ticket!</button>
+          <div class="controls-grid">
+            <span><strong>Move:</strong> A / D, arrows, stick or touch</span>
+            <span><strong>Jump:</strong> Shared Taco Hero jump physics</span>
+            <span><strong>Ride:</strong> Cars and teacups have stable platform tops</span>
+            <span><strong>Boss:</strong> Three telegraphed stomps unlock the exit</span>
+          </div>
+          <p id="personalBestText" class="personal-best">Your first midnight run sets the record!</p>
+          <p class="carnival-tip">Olivia Radio says the rides are inspected every time somebody remembers where the clipboard went.</p>
+        </div>
+      </section>
+
+      <section id="winOverlay" class="overlay hidden carnival-overlay">
+        <div class="card win-card carnival-win-card">
+          <h2>🍿 Midnight Midway Saved! 🎉</h2>
+          <div id="medalBadge" class="medal-badge">MIDWAY ROOKIE</div>
+          <div class="results-grid" aria-label="Level results">
+            <div><span>Score</span><strong id="resultScore">0</strong></div>
+            <div><span>Time</span><strong id="resultTime">0:00</strong></div>
+            <div><span>Tacos</span><strong id="resultTacos">0</strong></div>
+            <div><span>Golden tickets</span><strong id="resultGolden">0/8</strong></div>
+            <div><span>Taco Nova</span><strong id="resultNova">0</strong></div>
+            <div><span>Cornelius</span><strong id="resultSetPiece">Unpopped</strong></div>
+          </div>
+          <p id="winText">The popcorn pressure is once again within snack regulations.</p>
+          <p id="newBestText" class="new-best hidden">NEW MIDWAY BEST!</p>
+          <div class="carnival-results-actions">
+            <button id="playAgainBtn" class="primary-btn carnival-primary" type="button">Ride Again</button>
+            <a class="carnival-map-link" href="level3-3.html" data-next-level>Continue to World 3-3 →</a>
+            <a class="carnival-map-link" href="/">Choose Another Level →</a>
+          </div>
+        </div>
+      </section>
+
+      <section id="settingsOverlay" class="overlay hidden carnival-overlay" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+        <div class="card settings-card carnival-settings-card">
+          <h2 id="settingsTitle">Midway Settings</h2>
+          <label for="musicVolume">Music volume <output id="musicVolumeValue">70%</output></label>
+          <input id="musicVolume" type="range" min="0" max="100" value="70" />
+          <label for="effectsVolume">Effects volume <output id="effectsVolumeValue">80%</output></label>
+          <input id="effectsVolume" type="range" min="0" max="100" value="80" />
+          <label class="check-row" for="reducedShake">
+            <input id="reducedShake" type="checkbox" />
+            Reduce screen shake and celebration density
+          </label>
+          <button id="closeSettingsBtn" class="primary-btn carnival-primary" type="button">Back to the Ride</button>
+        </div>
+      </section>
+
+      <section id="fullscreenHelp" class="overlay hidden fullscreen-help carnival-overlay" role="dialog" aria-modal="true" aria-labelledby="fullscreenHelpTitle">
+        <div class="card settings-card carnival-settings-card">
+          <h2 id="fullscreenHelpTitle">Full-screen play</h2>
+          <p id="fullscreenHelpText">Install Jumpin’ For Tacos to your Home Screen for the largest game view.</p>
+          <button id="closeFullscreenHelp" class="primary-btn carnival-primary" type="button">Got it</button>
+        </div>
+      </section>
+
+      <div class="touch-controls" aria-label="Touch game controls">
+        <div class="touch-row left-row">
+          <button class="touch-btn carnival-touch" data-input="left" aria-label="Move left">◀</button>
+          <button class="touch-btn carnival-touch" data-input="right" aria-label="Move right">▶</button>
+        </div>
+        <div class="touch-row right-row">
+          <button class="touch-btn jump-btn carnival-jump" data-input="jump" aria-label="Jump">▲ Jump</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <audio data-world3-music="neon" src="assets/world3_music/music_midnight_neon.ogg" preload="auto" loop></audio>
+  <audio data-world3-music="coaster" src="assets/world3_music/music_midnight_coaster.ogg" preload="auto" loop></audio>
+  <audio data-world3-music="boss" src="assets/world3_music/music_midnight_boss.ogg" preload="auto" loop></audio>
+  <audio data-world3-music="victory" src="assets/world3_music/music_midnight_victory.ogg" preload="auto" loop></audio>
+
+  <script src="levels.js?v=31"></script>
+  <script src="abilities.js?v=1"></script>
+  <script src="controller.js?v=8" data-jft-controller="true"></script>
+  <script src="world3.js?v=29"></script>
+  <script src="fullscreen.js?v=1"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "Jumpin’ For Tacos — Taco Nova Firework Finale",
+  "short_name": "Taco Nova Finale",
+  "start_url": "./level3-3.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#080622",
+  "theme_color": "#a87bff",
+  "icons": [
+    { "src": "assets/icon_512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

@@ -1,0 +1,599 @@
+:root {
+  color-scheme: dark;
+  --bg: #1b2233;
+  --panel: rgba(16, 20, 32, 0.64);
+  --panel-border: rgba(255, 220, 140, 0.38);
+  --ui-glass: rgba(12, 18, 30, 0.28);
+  --ui-control: rgba(20, 27, 43, 0.18);
+  --ui-border: rgba(255, 255, 255, 0.3);
+  --touch-glass: rgba(12, 18, 30, 0.14);
+  --touch-accent: rgba(255, 182, 63, 0.22);
+  --text: #fff9ef;
+  --accent: #ffca57;
+  --accent-2: #ff6b6b;
+  --accent-3: #53d18f;
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(circle at top, #3e5b99 0%, #23293f 38%, #151822 100%);
+  color: var(--text);
+  font-family: Inter, Arial, Helvetica, sans-serif;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+}
+
+button {
+  font: inherit;
+}
+
+.app-shell {
+  width: min(1200px, 100%);
+  display: grid;
+  gap: 12px;
+}
+
+.hud-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: var(--ui-glass);
+  border: 1px solid var(--ui-border);
+  -webkit-backdrop-filter: blur(6px) saturate(1.12);
+  backdrop-filter: blur(6px) saturate(1.12);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+}
+
+.back-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 800;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: var(--ui-control);
+  border: 1px solid var(--ui-border);
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.72);
+}
+
+.back-link:hover,
+.back-link:focus-visible {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.brand {
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.hud-right {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.top-btn,
+.primary-btn,
+.touch-btn {
+  border: 0;
+  cursor: pointer;
+  border-radius: 14px;
+  transition: transform 0.12s ease, filter 0.12s ease, opacity 0.12s ease;
+}
+
+.top-btn {
+  padding: 10px 14px;
+  background: var(--ui-control);
+  border: 1px solid var(--ui-border);
+  color: var(--text);
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.72);
+}
+
+.level-switch {
+  padding: 9px 12px;
+  border: 1px solid var(--ui-border);
+  border-radius: 12px;
+  background: var(--ui-control);
+  color: var(--text);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 950;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, 0.72);
+}
+
+.top-btn:hover,
+.top-btn:focus-visible,
+.level-switch:hover,
+.level-switch:focus-visible {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.primary-btn {
+  padding: 14px 22px;
+  background: linear-gradient(180deg, var(--accent), #ef9b2d);
+  color: #392400;
+  font-weight: 800;
+}
+
+.top-btn:hover,
+.primary-btn:hover,
+.touch-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+.salsa-next {
+  display: block;
+  width: fit-content;
+  margin: 18px auto 0;
+  color: #65d8ff;
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.salsa-next:hover,
+.salsa-next:focus-visible {
+  color: #fff5c8;
+  text-decoration: underline;
+}
+
+.game-stage {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #10131d;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: #10131d;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: linear-gradient(180deg, rgba(14, 16, 28, 0.12), rgba(14, 16, 28, 0.46));
+  z-index: 5;
+}
+
+.overlay.hidden {
+  display: none;
+}
+
+.overlay.visible {
+  display: grid;
+}
+
+/* Shared level-start contract. Every current and future level gets a reachable,
+   touch-friendly themed start control that belongs to the introduction card. */
+.level-start-overlay {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.level-start-card {
+  max-height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.level-start-btn {
+  display: block;
+  width: min(360px, 100%);
+  min-height: 52px;
+  margin: 14px auto 12px;
+  border: 1px solid rgba(255, 249, 210, 0.58);
+  letter-spacing: 0.015em;
+  box-shadow: 0 7px 0 rgba(102, 54, 25, 0.72), 0 0 28px rgba(255, 214, 90, 0.26);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.salsa-primary {
+  background: linear-gradient(180deg, #ffe779, #ffad4f 58%, #ef783f);
+  color: #402000;
+  box-shadow: 0 7px 0 #923d35, 0 0 28px rgba(255, 202, 87, 0.34);
+}
+
+.card {
+  width: min(680px, 100%);
+  padding: 24px;
+  border-radius: 24px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--shadow);
+  -webkit-backdrop-filter: blur(8px) saturate(1.12);
+  backdrop-filter: blur(8px) saturate(1.12);
+  text-align: center;
+}
+
+.title-logo {
+  width: min(320px, 85%);
+  image-rendering: pixelated;
+}
+
+.title-card h1,
+.win-card h2 {
+  margin: 8px 0 12px;
+}
+
+.title-card p,
+.win-card p {
+  line-height: 1.5;
+  color: rgba(255, 249, 239, 0.9);
+}
+
+.personal-best {
+  margin: -6px 0 16px;
+  color: #ffd166 !important;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.next-world-strip {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 9px;
+  width: min(590px, 100%);
+  margin: 14px auto -3px;
+  padding: 8px 12px;
+  border: 1px solid rgba(85, 230, 193, 0.45);
+  border-radius: 12px;
+  background: linear-gradient(90deg, rgba(32, 200, 216, 0.18), rgba(31, 157, 98, 0.16));
+  color: #fff9ef;
+  text-align: left;
+  text-decoration: none;
+}
+
+.fullscreen-help {
+  z-index: 12;
+}
+
+.fullscreen-help p {
+  color: rgba(255, 249, 239, 0.9);
+  line-height: 1.55;
+}
+
+.app-shell:fullscreen,
+.standalone-game .app-shell {
+  width: 100vw;
+  min-height: 100dvh;
+  padding: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+  grid-template-rows: auto minmax(0, 1fr);
+  background: #10131d;
+}
+
+.app-shell:fullscreen .game-stage,
+.standalone-game .game-stage {
+  align-self: center;
+}
+
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  body { padding: 0; }
+}
+
+.next-world-strip span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #55e6c1;
+  color: #12392f;
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.next-world-strip strong { font-size: 12px; }
+.next-world-strip small { color: rgba(255, 249, 239, 0.72); font-size: 10px; }
+
+.medal-badge {
+  width: fit-content;
+  margin: 0 auto 14px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ffd166, #ff8f45);
+  color: #3a2100;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  box-shadow: 0 0 24px rgba(255, 209, 102, 0.42);
+}
+
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.results-grid div {
+  padding: 10px 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.results-grid span,
+.results-grid strong {
+  display: block;
+}
+
+.results-grid span {
+  color: rgba(255, 249, 239, 0.68);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.results-grid strong {
+  margin-top: 3px;
+  color: #ffd166;
+  font-size: 18px;
+}
+
+.new-best {
+  color: #65d8ff !important;
+  font-size: 20px;
+  font-weight: 950;
+  animation: best-pulse 0.7s ease-in-out infinite alternate;
+}
+
+@keyframes best-pulse {
+  to { transform: scale(1.07); filter: brightness(1.25); }
+}
+
+.settings-card {
+  width: min(480px, 100%);
+  text-align: left;
+}
+
+.settings-card h2 {
+  margin-top: 0;
+  text-align: center;
+}
+
+.settings-card label:not(.check-row) {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 18px;
+  font-weight: 800;
+}
+
+.settings-card input[type="range"] {
+  width: 100%;
+  margin: 10px 0 4px;
+  accent-color: #ffd166;
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 22px 0;
+  font-weight: 800;
+}
+
+.check-row input {
+  width: 20px;
+  height: 20px;
+  accent-color: #ff67ad;
+}
+
+.settings-card .primary-btn {
+  display: block;
+  margin: 0 auto;
+}
+
+.controls-grid {
+  margin: 18px 0 22px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  text-align: left;
+}
+
+.touch-controls {
+  position: absolute;
+  inset: auto 0 max(10px, env(safe-area-inset-bottom)) 0;
+  display: flex;
+  justify-content: space-between;
+  padding-left: max(12px, env(safe-area-inset-left));
+  padding-right: max(12px, env(safe-area-inset-right));
+  pointer-events: none;
+  z-index: 4;
+}
+
+.touch-row {
+  display: flex;
+  gap: 10px;
+}
+
+.touch-btn {
+  width: 72px;
+  height: 72px;
+  font-size: 24px;
+  font-weight: 800;
+  color: white;
+  background: var(--touch-glass);
+  border: 2px solid rgba(255, 255, 255, 0.46);
+  -webkit-backdrop-filter: blur(2px) saturate(1.08);
+  backdrop-filter: blur(2px) saturate(1.08);
+  box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.04), 0 4px 14px rgba(0, 0, 0, 0.14);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.92), 0 0 8px rgba(255, 255, 255, 0.28);
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.jump-btn {
+  width: 110px;
+  font-size: 20px;
+  background: var(--touch-accent);
+  color: #fff9ef;
+}
+
+.touch-btn:active,
+.touch-btn.is-active {
+  transform: translateY(1px) scale(0.96);
+  background: rgba(255, 255, 255, 0.38);
+  border-color: rgba(255, 255, 255, 0.82);
+  filter: brightness(1.14);
+}
+
+.jump-btn:active,
+.jump-btn.is-active {
+  background: rgba(255, 190, 76, 0.48);
+}
+
+.touch-btn:focus-visible,
+.win-card :is(button, a):focus-visible {
+  outline: 4px solid #fff1a6;
+  outline-offset: 3px;
+}
+
+.win-card [data-next-level] {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (pointer: fine) and (min-width: 900px) {
+  .touch-controls {
+    opacity: 0.18;
+  }
+}
+
+/* Match World 1-2's successful phone treatment: the whole loading card scrolls
+   naturally, and the themed start button stays in the card's reading order. */
+@media (max-width: 700px), (max-height: 620px) {
+  .level-start-overlay {
+    place-items: start center;
+    padding: 8px;
+  }
+
+  .level-start-card {
+    width: min(680px, 100%);
+    padding: 12px 16px 16px;
+    border-radius: 16px;
+  }
+
+  .level-start-card .title-logo {
+    max-height: 58px;
+    width: auto;
+    max-width: 75%;
+    object-fit: contain;
+  }
+
+  .level-start-card h1 {
+    margin: 4px 0 6px;
+    font-size: clamp(20px, 4.8vw, 26px);
+  }
+
+  .level-start-card > p {
+    margin: 6px 0;
+    line-height: 1.3;
+    font-size: 12px;
+  }
+
+  .level-start-card .controls-grid {
+    margin: 8px 0;
+    gap: 5px 12px;
+    font-size: 11px;
+  }
+
+  .level-start-card .next-world-strip {
+    margin-top: 9px;
+  }
+
+  .level-start-overlay .level-start-btn {
+    position: relative;
+    width: min(360px, 100%);
+    min-height: 52px;
+    margin: 9px auto 11px;
+    padding: 12px 18px;
+  }
+
+  .level-start-overlay .level-start-btn:hover,
+  .level-start-overlay .level-start-btn:focus-visible {
+    transform: translateY(-1px);
+  }
+
+  .level-start-overlay .level-start-btn:active {
+    transform: translateY(2px);
+  }
+}
+
+@media (max-width: 700px) {
+  body {
+    padding: 8px;
+  }
+
+  .hud-strip {
+    padding: 10px;
+  }
+
+  .brand {
+    display: none;
+  }
+
+  .controls-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .results-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .next-world-strip {
+    grid-template-columns: auto 1fr;
+  }
+
+  .next-world-strip small {
+    grid-column: 2;
+  }
+
+  .touch-btn {
+    width: 66px;
+    height: 66px;
+  }
+
+  .jump-btn {
+    width: 104px;
+  }
+
+  .win-card [class$='result-actions'] {
+    flex-direction: column;
+  }
+
+  .win-card [data-next-level] {
+    width: min(100%, 390px);
+  }
+}

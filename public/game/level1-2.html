@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#278fd0" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Sky-High Salsa Rescue (World 1-2) | Jumpin’ For Tacos</title>
+  <meta name="description" content="Chase Olivia’s guacamole-hit airplane in Sky-High Salsa Rescue, a free cinematic taco platformer with three comedy flybys, an inverted plane, a piñata jackpot, and a turbo rescue run." />
+  <meta name="robots" content="index,follow,max-image-preview:large" />
+  <link rel="canonical" href="https://jumpinfortacos.com/game/level1-2" />
+  <meta property="og:type" content="website" /><meta property="og:site_name" content="Jumpin’ For Tacos" />
+  <meta property="og:title" content="Sky-High Salsa Rescue (World 1-2) | Jumpin’ For Tacos" />
+  <meta property="og:description" content="Olivia’s plane has been guac’d. Turbo-race across the desert to her emergency taco landing." />
+  <meta property="og:url" content="https://jumpinfortacos.com/game/level1-2" />
+  <meta property="og:image" content="https://jumpinfortacos.com/assets/jumpin-for-tacos-social-v1.jpg" />
+  <meta property="og:image:width" content="1200" /><meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" /><meta name="twitter:title" content="Sky-High Salsa Rescue | Jumpin’ For Tacos" />
+  <meta name="twitter:description" content="Play the free cinematic taco-powered airplane rescue adventure." />
+  <meta name="twitter:image" content="https://jumpinfortacos.com/assets/jumpin-for-tacos-social-v1.jpg" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="assets/icon_512.png" />
+  <link rel="apple-touch-icon" href="assets/icon_512.png" />
+  <link rel="stylesheet" href="style.css?v=27" />
+  <link rel="stylesheet" href="level1-2.css?v=4" />
+  <script src="/analytics.js?v=1"></script>
+</head>
+<body class="sky-body">
+  <div id="gameShell" class="app-shell sky-shell">
+    <header class="hud-strip sky-topbar">
+      <a class="back-link" href="/" aria-label="Back to Jumpin’ For Tacos home">← Arcade</a>
+      <a class="level-switch" href="index.html">World 1-1</a>
+      <a class="level-switch" href="level1-3.html">World 1-3</a>
+      <div class="brand">Sky-High Salsa Rescue</div>
+      <div class="hud-right">
+        <button id="muteBtn" class="top-btn" type="button">🔊 Sound On</button>
+        <button id="fullscreenBtn" class="top-btn" type="button" aria-pressed="false">⛶ Full Screen</button>
+        <button id="settingsBtn" class="top-btn" type="button">⚙ Settings</button>
+        <button id="restartBtn" class="top-btn" type="button">↺ Restart</button>
+      </div>
+    </header>
+
+    <main class="game-stage sky-stage">
+      <canvas id="game" width="960" height="540" aria-label="Sky-High Salsa Rescue platform game canvas"></canvas>
+
+      <section id="startOverlay" class="overlay visible sky-overlay level-start-overlay">
+        <div class="card title-card sky-title-card level-start-card">
+          <p class="sky-kicker">World 1 • Level 1-2 • 33,600 units</p>
+          <h1>✈️ Sky-High Salsa Rescue</h1>
+          <p>
+            Wave Olivia off after her full runway takeoff, follow three questionable banner flybys,
+            crack the taco piñata, survive flying guacamole, and turbo-race to her emergency landing.
+          </p>
+          <button id="startBtn" class="primary-btn sky-primary sky-start-btn level-start-btn" type="button" aria-label="Start World 1-2: Sky-High Salsa Rescue">✈️ Start Olivia’s Flight</button>
+          <div class="controls-grid">
+            <span><strong>Move:</strong> A / D or ← / →</span>
+            <span><strong>Jump:</strong> Space, W, ↑</span>
+            <span><strong>Phone:</strong> Use the on-screen controls</span>
+            <span><strong>Special:</strong> Taco Frenzy and Taco Magnet carry forward</span>
+          </div>
+          <p id="personalBestText" class="personal-best">Your first rescue sets the record!</p>
+          <p class="fullscreen-tip">Enjoy the cinematic takeoff—controls unlock when the camera returns to Taco Hero.</p>
+        </div>
+      </section>
+
+      <section id="winOverlay" class="overlay hidden sky-overlay">
+        <div class="card win-card sky-win-card">
+          <h2>🌮 Emergency Taco Landing Complete! ✈️</h2>
+          <div id="medalBadge" class="medal-badge">SKY CHASER</div>
+          <div class="results-grid" aria-label="Level results">
+            <div><span>Score</span><strong id="resultScore">0</strong></div>
+            <div><span>Time</span><strong id="resultTime">0:00</strong></div>
+            <div><span>Tacos</span><strong id="resultTacos">0</strong></div>
+            <div><span>Splats</span><strong id="resultSplats">0</strong></div>
+            <div><span>Air Mail</span><strong id="resultAirMail">0/5</strong></div>
+            <div><span>Rescue</span><strong id="resultRescue">Complete</strong></div>
+            <div><span>Plane</span><strong id="resultPlane">Toasty</strong></div>
+          </div>
+          <p id="winText">The plane is toast. The tacos are fine.</p>
+          <p id="newBestText" class="new-best hidden">NEW SKY-HIGH BEST!</p>
+          <button id="playAgainBtn" class="primary-btn sky-primary" type="button">Fly Again</button>
+          <a class="sky-next" href="level1-3.html" data-next-level>Continue to World 1-3 • Sunset Salsa Showdown →</a>
+        </div>
+      </section>
+
+      <section id="settingsOverlay" class="overlay hidden sky-overlay" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+        <div class="card settings-card sky-settings-card">
+          <h2 id="settingsTitle">Flight Settings</h2>
+          <label for="musicVolume">Music volume <output id="musicVolumeValue">70%</output></label>
+          <input id="musicVolume" type="range" min="0" max="100" value="70" />
+          <label for="effectsVolume">Effects volume <output id="effectsVolumeValue">80%</output></label>
+          <input id="effectsVolume" type="range" min="0" max="100" value="80" />
+          <label class="check-row" for="reducedShake"><input id="reducedShake" type="checkbox" /> Reduce screen shake and smoke</label>
+          <button id="closeSettingsBtn" class="primary-btn sky-primary" type="button">Back to the Rescue</button>
+        </div>
+      </section>
+
+      <section id="fullscreenHelp" class="overlay hidden fullscreen-help sky-overlay" role="dialog" aria-modal="true" aria-labelledby="fullscreenHelpTitle">
+        <div class="card settings-card sky-settings-card">
+          <h2 id="fullscreenHelpTitle">Full-screen play</h2>
+          <p id="fullscreenHelpText">Install Jumpin’ For Tacos to your Home Screen for the largest game view.</p>
+          <button id="closeFullscreenHelp" class="primary-btn sky-primary" type="button">Got it</button>
+        </div>
+      </section>
+
+      <div class="touch-controls" aria-label="Touch controls">
+        <div class="touch-row left-row"><button class="touch-btn sky-touch" data-input="left" aria-label="Move left">◀</button><button class="touch-btn sky-touch" data-input="right" aria-label="Move right">▶</button></div>
+        <div class="touch-row right-row"><button class="touch-btn jump-btn sky-jump" data-input="jump" aria-label="Jump">▲ Jump</button></div>
+      </div>
+    </main>
+  </div>
+
+  <audio id="musicDeparture" src="assets/level1_2_sky_music/cinematic80s_v1/music_sky_departure.ogg" preload="metadata" loop></audio>
+  <audio id="musicCruise" src="assets/level1_2_sky_music/cinematic80s_v1/music_sky_cruise.ogg" preload="metadata" loop></audio>
+  <audio id="musicBanner" src="assets/level1_2_sky_music/cinematic80s_v1/music_sky_banner.ogg" preload="metadata" loop></audio>
+  <audio id="musicAmbush" src="assets/level1_2_sky_music/cinematic80s_v1/music_sky_ambush.ogg" preload="metadata" loop></audio>
+  <audio id="musicRescue" src="assets/level1_2_sky_music/cinematic80s_v1/music_sky_rescue.ogg" preload="metadata" loop></audio>
+  <audio id="musicFiesta" src="assets/level1_2_sky_music/cinematic80s_v1/music_sky_fiesta.ogg" preload="metadata" loop></audio>
+
+  <script src="controller.js?v=8"></script>
+  <script src="levels.js?v=31"></script>
+  <script src="abilities.js?v=1"></script>
+  <script src="world1-backgrounds.js?v=1"></script>
+  <script src="level1-2.js?v=27"></script>
+  <script src="fullscreen.js?v=1"></script>
+</body>
+</html>

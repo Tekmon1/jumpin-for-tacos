@@ -1,0 +1,170 @@
+:root {
+  --island-aqua: #20c8d8;
+  --island-mint: #55e6c1;
+  --island-sand: #ffd67a;
+  --island-pink: #ff718f;
+  --island-ink: #082a43;
+}
+
+.island-body {
+  background:
+    radial-gradient(circle at 22% 0%, rgba(85, 230, 193, 0.42), transparent 34%),
+    radial-gradient(circle at 78% 12%, rgba(255, 113, 143, 0.28), transparent 32%),
+    linear-gradient(180deg, #0d6581, #082a43 70%, #061b31);
+}
+
+.island-topbar {
+  background: linear-gradient(90deg, rgba(8, 42, 67, 0.38), rgba(11, 110, 139, 0.3));
+  border: 1px solid rgba(85, 230, 193, 0.42);
+}
+
+.level-switch {
+  color: #e9fff9;
+  background: rgba(85, 230, 193, 0.17);
+  border: 1px solid rgba(146, 255, 231, 0.5);
+  padding: 9px 12px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.island-stage {
+  background: linear-gradient(180deg, #0a7892, #083a62);
+  border-color: rgba(150, 255, 232, 0.5);
+  box-shadow:
+    0 24px 70px rgba(1, 21, 42, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 0 36px rgba(85, 230, 193, 0.14);
+}
+
+.island-overlay {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(85, 230, 193, 0.2), transparent 30%),
+    radial-gradient(circle at 82% 24%, rgba(255, 113, 143, 0.17), transparent 28%),
+    linear-gradient(180deg, rgba(3, 46, 70, 0.1), rgba(3, 27, 49, 0.5));
+}
+
+.island-title-card,
+.island-win-card,
+.island-settings-card {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.06), transparent 35%),
+    linear-gradient(155deg, rgba(6, 66, 84, 0.72), rgba(16, 31, 68, 0.68));
+  border-color: rgba(146, 255, 231, 0.58);
+  box-shadow:
+    0 28px 80px rgba(1, 18, 38, 0.52),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 42px rgba(85, 230, 193, 0.12);
+}
+
+.island-title-card h1 {
+  color: #fff6c9;
+  text-shadow: 0 4px 0 #0a4f65, 0 0 32px rgba(85, 230, 193, 0.56);
+}
+
+.island-kicker {
+  margin: 0;
+  color: var(--island-mint) !important;
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.island-primary {
+  background: linear-gradient(180deg, #fff8a9, #ffd05d 58%, #ff9c54);
+  box-shadow: 0 7px 0 #a94f3d, 0 0 30px rgba(255, 240, 138, 0.34);
+}
+
+.island-primary:hover {
+  filter: brightness(1.06) saturate(1.08);
+}
+
+.fullscreen-tip {
+  margin: 17px auto 0;
+  max-width: 560px;
+  color: rgba(219, 255, 248, 0.76) !important;
+  font-size: 12px;
+}
+
+.island-touch {
+  background: rgba(8, 70, 90, 0.14);
+  border-color: rgba(85, 230, 193, 0.66);
+}
+
+.island-jump {
+  background: rgba(255, 214, 122, 0.22);
+  color: #fff9ef;
+}
+
+.island-shell:fullscreen,
+.standalone-game .island-shell {
+  background: #082a43;
+}
+
+.island-result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.island-next {
+  color: #dffef6;
+  font-weight: 900;
+  text-decoration: none;
+  border-bottom: 2px solid rgba(85, 230, 193, 0.72);
+  padding: 8px 2px;
+}
+
+.island-next:hover,
+.island-next:focus-visible {
+  color: #fff6bf;
+}
+
+@media (max-width: 700px) {
+  .island-topbar {
+    gap: 6px;
+  }
+
+  .island-topbar .top-btn,
+  .island-topbar .back-link,
+  .island-topbar .level-switch {
+    padding: 8px 9px;
+    font-size: 11px;
+  }
+
+  .island-title-card {
+    padding: 18px;
+  }
+
+  .island-title-card h1 {
+    font-size: 26px;
+  }
+}
+
+@media (max-height: 610px) and (orientation: landscape) {
+  .hud-strip {
+    padding: 6px 8px;
+  }
+
+  .top-btn,
+  .back-link,
+  .level-switch {
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+  }
+
+  .app-shell {
+    gap: 5px;
+  }
+
+  .title-card p,
+  .controls-grid {
+    margin-top: 8px;
+    margin-bottom: 10px;
+  }
+}

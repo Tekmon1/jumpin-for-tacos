@@ -1,0 +1,240 @@
+:root {
+  --carnival-gold: #ffd65a;
+  --carnival-pink: #ff4fac;
+  --carnival-cyan: #50e7ff;
+  --carnival-violet: #9f68ff;
+  --carnival-cream: #fff7d7;
+  --carnival-ink: #180b3b;
+}
+
+.carnival-body {
+  background:
+    radial-gradient(circle at 17% 0%, rgba(255, 214, 90, .33), transparent 34%),
+    radial-gradient(circle at 83% 8%, rgba(80, 231, 255, .28), transparent 35%),
+    linear-gradient(180deg, #713768, #2c175c 66%, #11092c);
+}
+
+.carnival-body[data-world3-level="3-2"] {
+  background:
+    radial-gradient(circle at 16% 0%, rgba(255, 79, 172, .35), transparent 34%),
+    radial-gradient(circle at 84% 5%, rgba(80, 231, 255, .3), transparent 36%),
+    linear-gradient(180deg, #401968, #191242 67%, #08071d);
+}
+
+.carnival-body[data-world3-level="3-3"] {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(111, 95, 255, .38), transparent 34%),
+    radial-gradient(circle at 82% 7%, rgba(255, 79, 172, .27), transparent 35%),
+    linear-gradient(180deg, #23145c, #100c37 66%, #06061b);
+}
+
+.carnival-topbar {
+  background: linear-gradient(90deg, rgba(39, 13, 70, .58), rgba(110, 34, 88, .43));
+  border: 1px solid rgba(255, 219, 105, .57);
+  box-shadow: inset 0 1px rgba(255, 255, 255, .1), 0 0 32px rgba(255, 79, 172, .13);
+}
+
+.carnival-topbar .level-switch {
+  color: #f7fdff;
+  background: rgba(80, 231, 255, .12);
+  border: 1px solid rgba(80, 231, 255, .48);
+  padding: 9px 12px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.carnival-stage {
+  background: linear-gradient(180deg, #724076, #1c1247);
+  border-color: rgba(255, 219, 105, .65);
+  box-shadow:
+    0 25px 78px rgba(8, 3, 29, .64),
+    inset 0 0 0 1px rgba(255, 255, 255, .09),
+    0 0 46px rgba(80, 231, 255, .18);
+}
+
+.carnival-stage canvas {
+  image-rendering: auto;
+}
+
+.world3-level-mark {
+  flex: 0 0 auto;
+  padding: 7px 11px;
+  border: 1px solid rgba(255, 214, 90, .58);
+  border-radius: 999px;
+  background: rgba(255, 214, 90, .12);
+  color: #fff2ac;
+  font-size: 11px;
+  font-weight: 1000;
+  letter-spacing: .08em;
+}
+
+.carnival-overlay {
+  background:
+    radial-gradient(circle at 18% 20%, rgba(255, 214, 90, .16), transparent 30%),
+    radial-gradient(circle at 82% 24%, rgba(80, 231, 255, .18), transparent 29%),
+    linear-gradient(180deg, rgba(19, 7, 46, .09), rgba(16, 7, 38, .59));
+}
+
+.carnival-title-card,
+.carnival-win-card,
+.carnival-settings-card {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, .1), transparent 34%),
+    linear-gradient(155deg, rgba(85, 27, 92, .83), rgba(23, 13, 59, .84));
+  border-color: rgba(255, 222, 112, .7);
+  box-shadow:
+    0 29px 88px rgba(8, 2, 27, .66),
+    inset 0 1px rgba(255, 255, 255, .14),
+    0 0 50px rgba(255, 79, 172, .19);
+}
+
+.carnival-title-card h1 {
+  color: #fff4b8;
+  text-shadow: 0 4px 0 #7c2b73, 0 0 30px rgba(255, 79, 172, .62);
+}
+
+.carnival-title-card h1 span {
+  color: var(--carnival-cyan);
+}
+
+.carnival-kicker {
+  margin: 0;
+  color: var(--carnival-gold) !important;
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+}
+
+.carnival-primary {
+  color: #32133f;
+  background: linear-gradient(180deg, #fff7a8, #ffd252 55%, #ff69ad);
+  box-shadow: 0 7px 0 #872b69, 0 0 35px rgba(255, 210, 82, .43);
+}
+
+.carnival-primary:hover,
+.carnival-primary:focus-visible {
+  filter: brightness(1.08) saturate(1.08);
+}
+
+.carnival-touch {
+  color: #f7ffff;
+  background: rgba(31, 14, 67, .1);
+  border-color: rgba(80, 231, 255, .61);
+  opacity: .74;
+}
+
+.carnival-jump {
+  color: #fff9ef;
+  background: rgba(255, 79, 172, .12);
+  border-color: rgba(255, 140, 215, .67);
+}
+
+.carnival-touch:active,
+.carnival-touch.is-active {
+  opacity: .96;
+}
+
+.carnival-results-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 13px;
+  margin-top: 18px;
+}
+
+.carnival-map-link {
+  color: var(--carnival-cyan);
+  font-weight: 900;
+}
+
+.carnival-shell:fullscreen,
+.standalone-game .carnival-shell {
+  background: var(--carnival-ink);
+}
+
+.carnival-tip {
+  margin: 16px auto 0;
+  max-width: 600px;
+  color: rgba(229, 252, 255, .79) !important;
+  font-size: 12px;
+}
+
+.world3-level-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 9px;
+  color: #2d1546;
+  background: linear-gradient(180deg, #fff6ae, #ffd65a);
+  border-radius: 999px;
+  box-shadow: 0 3px 0 #9e4475;
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: .08em;
+}
+
+@media (max-width: 760px) {
+  .carnival-topbar {
+    gap: 5px;
+  }
+
+  .carnival-topbar .brand {
+    display: none;
+  }
+
+  .carnival-topbar .top-btn,
+  .carnival-topbar .back-link,
+  .carnival-topbar .level-switch {
+    padding: 7px 8px;
+    font-size: 10px;
+  }
+
+  .carnival-title-card {
+    padding: 17px;
+  }
+
+  .carnival-title-card h1 {
+    font-size: 25px;
+  }
+
+  .carnival-results-actions {
+    flex-direction: column;
+  }
+
+  .carnival-results-actions > * {
+    width: min(360px, 100%);
+    text-align: center;
+  }
+
+  .touch-controls {
+    bottom: max(8px, env(safe-area-inset-bottom));
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
+  }
+}
+
+@media (max-height: 610px) and (orientation: landscape) {
+  .hud-strip {
+    padding: 6px 8px;
+  }
+
+  .title-card p,
+  .controls-grid {
+    margin-top: 7px;
+    margin-bottom: 9px;
+  }
+
+  .carnival-title-card {
+    max-height: calc(100% - 18px);
+    overflow: auto;
+  }
+
+  .carnival-tip,
+  .personal-best {
+    font-size: 10px;
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "Jumpin’ For Tacos — Neon Neckties",
+  "short_name": "Neon Neckties",
+  "start_url": "./level2-3.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#190c3b",
+  "theme_color": "#ff4fac",
+  "icons": [
+    { "src": "assets/icon_512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
