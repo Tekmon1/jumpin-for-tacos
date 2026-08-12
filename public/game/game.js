@@ -1,15 +1,15 @@
 (() => {
-  const SOURCE_VERSION = 'w1-1-v44';
+  const SOURCE_VERSION = 'w1-1-v45-sfx-remaster';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
   const heroCore = window.JFT_HERO_CORE;
   const heroPhysics = heroCore.physics;
+  const audio = window.JFT_AUDIO;
 
   const startOverlay = document.getElementById('startOverlay');
   const winOverlay = document.getElementById('winOverlay');
   const winText = document.getElementById('winText');
-  const startBtn = document.getElementById('startBtn');
   const restartBtn = document.getElementById('restartBtn');
   const playAgainBtn = document.getElementById('playAgainBtn');
   const muteBtn = document.getElementById('muteBtn');
@@ -163,7 +163,6 @@
     musicVolume: 0.7,
     effectsVolume: 0.8,
     reducedShake: false,
-    musicDuck: 0,
     radioMessage: '',
     radioTimer: 0,
     radioFlags: { intro: false, showdown: false, chase: false, finale: false },
@@ -209,6 +208,7 @@
     partyRank: '',
     finishHypeStage: 0,
     finishSparkTimer: 0,
+    fallSoundPlayed: false,
     respawn: heroCore.createRespawnState(),
     respawnCount: 0,
     respawnFallbacks: 0,
@@ -424,7 +424,6 @@
   };
   const oliviaThrowTacoFrame = Object.freeze({ sx: 1916, sy: 317, sw: 164, sh: 105 });
 
-  let audioContext = null;
   let lastFrame = 0;
   const localPreviewStart = location.hostname === 'terminal.local'
     ? Number(new URLSearchParams(location.search).get('startX') || 0)
@@ -497,6 +496,7 @@
     effectsVolumeValue.textContent = `${effectsVolume.value}%`;
     muteBtn.textContent = game.muted ? '🔇 Sound Off' : '🔊 Sound On';
     for (const track of allMusic) track.muted = game.muted;
+    syncAudioSettings();
   }
 
   function updatePersonalBestText() {
@@ -549,6 +549,19 @@
     game.muted = Boolean(savedProgress.settings.muted);
   }
   if (savedProgress.personalBest) game.personalBest = { ...game.personalBest, ...savedProgress.personalBest };
+
+  function syncAudioSettings() {
+    if (!audio) return;
+    audio.setMusicVolume(game.musicVolume);
+    audio.setEffectsVolume(game.effectsVolume);
+    audio.setMuted(game.muted);
+  }
+
+  audio?.registerMusicTracks(musicTracks);
+  syncAudioSettings();
+  audio?.preload().catch(() => {
+    // The shared engine supplies a centralized fallback when an asset cannot load.
+  });
 
   function spawnConfetti(x, y, amount = 50) {
     for (let i = 0; i < amount; i++) {
@@ -1379,6 +1392,7 @@
     game.partyRank = '';
     game.finishHypeStage = 0;
     game.finishSparkTimer = 0;
+    game.fallSoundPlayed = false;
     Object.assign(game.respawn, heroCore.createRespawnState());
     game.respawnCount = 0;
     game.respawnFallbacks = 0;
@@ -1478,8 +1492,7 @@
     game.radioFlags[section] = true;
     game.radioMessage = choices[Math.floor(Math.random() * choices.length)];
     game.radioTimer = 4.2;
-    sfx(880, 0.045, 'square', 0.025, 120);
-    window.setTimeout(() => sfx(1120, 0.04, 'square', 0.02, -90), 65);
+    playAudio('ui.radio');
   }
 
   function startCinematic(section, label, targetX, duration = 1.35) {
@@ -1496,6 +1509,8 @@
     hideWin();
     game.state = 'playing';
     game.startTime = performance.now();
+    unlockAudio();
+    playAudio('ui.start');
     if (localPreviewStart > 0) {
       player.x = clamp(localPreviewStart, 0, game.levelWidth - player.w);
       player.y = localPreviewY > 0 ? clamp(localPreviewY, 0, canvas.height - player.h) : 360;
@@ -1516,126 +1531,24 @@
       }
       beginRespawn(false, player.x, canvas.height - player.h - 10);
     }
-    unlockAudio();
     playLevelMusic();
     triggerRadio('intro');
   }
 
   function unlockAudio() {
-    if (!audioContext) {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (AudioCtx) audioContext = new AudioCtx();
-    }
-    if (audioContext && audioContext.state === 'suspended') {
-      audioContext.resume();
-    }
-  }
-
-  function sfx(freq = 440, duration = 0.08, type = 'square', volume = 0.04, slide = 0) {
-    if (game.muted || !audioContext) return;
-    game.musicDuck = Math.max(game.musicDuck, Math.min(0.35, volume * 3.5));
-    const osc = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    const t = audioContext.currentTime;
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, t);
-    if (slide !== 0) osc.frequency.linearRampToValueAtTime(freq + slide, t + duration);
-    gain.gain.setValueAtTime(volume * game.effectsVolume, t);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
-    osc.connect(gain).connect(audioContext.destination);
-    osc.start(t);
-    osc.stop(t + duration);
-  }
-
-  function splatSfx(combo = 1, type = 'tomato') {
-    if (game.muted || !audioContext) return;
-    game.musicDuck = Math.max(game.musicDuck, 0.32);
-    const t = audioContext.currentTime;
-    const duration = 0.13;
-    const pitchBoost = Math.min(190, combo * 28);
-
-    // A filtered noise thump supplies the wet "splat" layer.
-    const buffer = audioContext.createBuffer(1, Math.floor(audioContext.sampleRate * duration), audioContext.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < data.length; i++) {
-      const decay = 1 - i / data.length;
-      data[i] = (Math.random() * 2 - 1) * decay * decay;
-    }
-    const noise = audioContext.createBufferSource();
-    const filter = audioContext.createBiquadFilter();
-    const noiseGain = audioContext.createGain();
-    noise.buffer = buffer;
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(type === 'onion' ? 680 : 520, t);
-    noiseGain.gain.setValueAtTime(0.065 * game.effectsVolume, t);
-    noiseGain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
-    noise.connect(filter).connect(noiseGain).connect(audioContext.destination);
-    noise.start(t);
-
-    // A rising cartoon pop makes every chained stomp sound increasingly rewarding.
-    const pop = audioContext.createOscillator();
-    const popGain = audioContext.createGain();
-    pop.type = combo >= 4 ? 'triangle' : 'sine';
-    pop.frequency.setValueAtTime(170 + pitchBoost, t);
-    pop.frequency.exponentialRampToValueAtTime(72 + pitchBoost * 0.35, t + duration);
-    popGain.gain.setValueAtTime(0.075 * game.effectsVolume, t);
-    popGain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
-    pop.connect(popGain).connect(audioContext.destination);
-    pop.start(t);
-    pop.stop(t + duration);
-  }
-
-  function pinataKaboomSfx() {
-    if (game.muted || !audioContext) return;
-    game.musicDuck = Math.max(game.musicDuck, 0.62);
-    const t = audioContext.currentTime;
-
-    // A short filtered-noise crack gives the hit a crunchy shell-breaking snap.
-    const duration = 0.34;
-    const buffer = audioContext.createBuffer(1, Math.floor(audioContext.sampleRate * duration), audioContext.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < data.length; i++) {
-      const decay = 1 - i / data.length;
-      data[i] = (Math.random() * 2 - 1) * decay * decay;
-    }
-    const crack = audioContext.createBufferSource();
-    const crackFilter = audioContext.createBiquadFilter();
-    const crackGain = audioContext.createGain();
-    crack.buffer = buffer;
-    crackFilter.type = 'lowpass';
-    crackFilter.frequency.setValueAtTime(1450, t);
-    crackFilter.frequency.exponentialRampToValueAtTime(220, t + duration);
-    crackGain.gain.setValueAtTime(0.085 * game.effectsVolume, t);
-    crackGain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
-    crack.connect(crackFilter).connect(crackGain).connect(audioContext.destination);
-    crack.start(t);
-
-    // A round bass drop supplies the KABOOM without becoming harsh.
-    const boom = audioContext.createOscillator();
-    const boomGain = audioContext.createGain();
-    boom.type = 'triangle';
-    boom.frequency.setValueAtTime(185, t);
-    boom.frequency.exponentialRampToValueAtTime(48, t + 0.38);
-    boomGain.gain.setValueAtTime(0.1 * game.effectsVolume, t);
-    boomGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
-    boom.connect(boomGain).connect(audioContext.destination);
-    boom.start(t);
-    boom.stop(t + 0.4);
-
-    // A quick major-sixth sparkle turns the explosion into a happy jackpot.
-    [523.25, 659.25, 783.99, 1046.5].forEach((frequency, index) => {
-      const sparkle = audioContext.createOscillator();
-      const sparkleGain = audioContext.createGain();
-      const start = t + 0.055 + index * 0.045;
-      sparkle.type = index % 2 ? 'sine' : 'triangle';
-      sparkle.frequency.setValueAtTime(frequency, start);
-      sparkle.frequency.exponentialRampToValueAtTime(frequency * 1.08, start + 0.16);
-      sparkleGain.gain.setValueAtTime(0.038 * game.effectsVolume, start);
-      sparkleGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.24);
-      sparkle.connect(sparkleGain).connect(audioContext.destination);
-      sparkle.start(start);
-      sparkle.stop(start + 0.24);
+    audio?.init({
+      musicVolume: game.musicVolume,
+      effectsVolume: game.effectsVolume,
+      muted: game.muted,
     });
+  }
+
+  function playAudio(eventId, options = {}) {
+    return audio?.play(eventId, options) || null;
+  }
+
+  function audioPosition(worldX) {
+    return clamp(((worldX - game.cameraX) / canvas.width) * 2 - 1, -1, 1);
   }
 
   function spawnSplatParticles(enemy, amount = 24) {
@@ -1695,7 +1608,7 @@
       game.messageTimer = 1.15;
       game.score += game.airChain * 8;
       spawnConfetti(canvas.width * 0.5, 190, 36);
-      sfx(720 + Math.min(300, game.airChain * 12), 0.12, 'triangle', 0.045, 180);
+      playAudio('combat.comboMilestone', { combo: game.airChain });
     }
   }
 
@@ -1705,7 +1618,10 @@
     pinata.hits += 1;
     pinata.wobble = 0.5;
     spawnConfetti(pinata.x - game.cameraX + pinata.w / 2, pinata.y + pinata.h / 2, 28);
-    sfx(580 + pinata.hits * 120, 0.11, 'square', 0.045, 190);
+    playAudio('pinata.hit', {
+      combo: pinata.hits,
+      position: audioPosition(pinata.x + pinata.w / 2),
+    });
 
     if (pinata.hits < pinata.targetHits) {
       spawnImpactText(pinata.x + pinata.w / 2, pinata.y - 10, `PIÑATA HIT ${pinata.hits}/${pinata.targetHits}!`, '#ff67ad', 24);
@@ -1733,7 +1649,7 @@
     }
     spawnConfetti(pinata.x - game.cameraX + pinata.w / 2, pinata.y + pinata.h / 2, 220);
     for (let i = 0; i < 5; i++) spawnFirework();
-    pinataKaboomSfx();
+    playAudio('pinata.break', { position: audioPosition(pinata.x + pinata.w / 2) });
   }
 
   function defeatEnemy(enemy, stomped = true, stompOptions = {}) {
@@ -1779,7 +1695,11 @@
     const feedback = heroCore.splatFeedback(combo, stomped);
     spawnSplatParticles(enemy, stomped ? 24 + combo * 3 : 20);
     spawnImpactText(enemy.x + enemy.w / 2, enemy.y - 8, feedback.text, feedback.color, feedback.size);
-    splatSfx(combo, enemy.type);
+    playAudio(stomped ? 'combat.enemyStomp' : 'combat.enemySplat', {
+      enemyType: enemy.type,
+      combo,
+      position: audioPosition(enemy.x + enemy.w / 2),
+    });
     game.hitStop = stomped ? 0.065 : 0.035;
     game.cameraShake = Math.max(game.cameraShake, stomped ? 7 + combo * 1.7 : 5);
 
@@ -1813,13 +1733,10 @@
               round: true,
             });
           });
-          sfx(
-            reward.tier === 'supremacy' ? 520 : 680,
-            reward.tier === 'supremacy' ? 0.24 : 0.14,
-            'triangle',
-            reward.tier === 'supremacy' ? 0.065 : 0.045,
-            reward.tier === 'supremacy' ? 620 : 260,
-          );
+          playAudio('combat.comboMilestone', {
+            combo,
+            gain: reward.tier === 'supremacy' ? 1.08 : 1,
+          });
         },
       });
     }
@@ -1855,7 +1772,7 @@
       game.magnetTimer = Math.max(game.magnetTimer, 5);
       game.message = 'RAINBOW RAMPAGE! TACO MAGNET!';
       game.messageTimer = 2;
-      sfx(620, 0.22, 'triangle', 0.06, 520);
+      playAudio('ability.magnetStart');
     }
     if (stomped && combo === 8) {
       game.frenzyTimer = Math.max(game.frenzyTimer, 8);
@@ -1863,7 +1780,7 @@
       game.magnetTimer = Math.max(game.magnetTimer, 8);
       game.message = 'SALSA SUPREMACY! TACO FRENZY!';
       game.messageTimer = 2.5;
-      sfx(520, 0.28, 'sawtooth', 0.06, 620);
+      playAudio('ability.frenzyStart');
     }
     // Every splatted enemy in the dedicated three-enemy arena counts. Taco
     // Frenzy defeats use stomped=false, but they should never strand the
@@ -1910,7 +1827,7 @@
     }
     next.playbackRate = 1;
     next.currentTime = 0;
-    next.volume = immediate || !from ? game.musicVolume : 0;
+    next.volume = immediate || !from ? (game.settingsOpen ? 0.48 : 1) : 0;
     next.play().catch(() => {});
     activeMusicName = name;
 
@@ -1924,14 +1841,13 @@
       musicTransition = null;
     } else {
       const durations = { exploration: 1.8, showdown: 1.8, chase: 1.2, fiesta: 2.1 };
-      const fromGain = clamp(from.volume / Math.max(0.001, game.musicVolume), 0, 1);
+      const fromGain = clamp(from.volume / Math.max(0.001, game.settingsOpen ? 0.48 : 1), 0, 1);
       musicTransition = { from, to: next, fromGain, elapsed: 0, duration: durations[name] || 1.8 };
     }
   }
 
   function updateMusicMix(dt) {
-    game.musicDuck = Math.max(0, game.musicDuck - dt * 1.9);
-    const base = game.musicVolume * (1 - game.musicDuck * 0.58) * (game.settingsOpen ? 0.48 : 1);
+    const base = game.settingsOpen ? 0.48 : 1;
     if (musicTransition) {
       musicTransition.elapsed += dt;
       const t = clamp(musicTransition.elapsed / musicTransition.duration, 0, 1);
@@ -1975,6 +1891,7 @@
 
   function toggleMute() {
     game.muted = !game.muted;
+    audio?.setMuted(game.muted);
     for (const track of allMusic) track.muted = game.muted;
     muteBtn.textContent = game.muted ? '🔇 Sound Off' : '🔊 Sound On';
     if (!game.muted) {
@@ -2081,20 +1998,26 @@
       startGame();
     });
     muteBtn.addEventListener('click', toggleMute);
-    settingsBtn.addEventListener('click', openSettings);
+    settingsBtn.addEventListener('click', () => {
+      playAudio('ui.confirm');
+      openSettings();
+    });
     closeSettingsBtn.addEventListener('click', () => {
+      playAudio('ui.confirm');
       closeSettings();
       settingsBtn.focus();
     });
     musicVolume.addEventListener('input', () => {
       game.musicVolume = Number(musicVolume.value) / 100;
       musicVolumeValue.textContent = `${musicVolume.value}%`;
+      audio?.setMusicVolume(game.musicVolume);
       updateMusicMix(0);
       saveProgress();
     });
     effectsVolume.addEventListener('input', () => {
       game.effectsVolume = Number(effectsVolume.value) / 100;
       effectsVolumeValue.textContent = `${effectsVolume.value}%`;
+      audio?.setEffectsVolume(game.effectsVolume);
       saveProgress();
     });
     reducedShake.addEventListener('change', () => {
@@ -2132,7 +2055,7 @@
       player.platform = null;
       player.coyote = 0;
       player.jumpBuffer = 0;
-      sfx(420, 0.1, 'square', 0.05, 120);
+      playAudio('hero.jump', { position: audioPosition(player.x + player.w / 2) });
     }
     keys.jumpQueued = false;
   }
@@ -2244,7 +2167,7 @@
     }
 
     spawnConfetti(player.x - game.cameraX + player.w * 0.5, player.y + player.h * 0.5, 18);
-    sfx(220, 0.16, 'sawtooth', 0.045, -180);
+    playAudio('hero.respawnBeam', { position: audioPosition(player.x + player.w / 2) });
   }
 
   function updateRespawning(dt) {
@@ -2265,7 +2188,6 @@
     if (respawnStep.shouldPlace) {
       heroCore.placeRespawn(r, player);
       spawnConfetti(player.x - game.cameraX + player.w * 0.5, 84, 18);
-      sfx(620, 0.12, 'triangle', 0.04, 220);
     }
 
     if (!r.spawnPlaced) return;
@@ -2297,6 +2219,8 @@
         grounded: true,
         fallback: r.timer > 3,
       };
+      playAudio('hero.respawnLand', { position: audioPosition(player.x + player.w / 2) });
+      game.fallSoundPlayed = false;
       heroCore.finishRespawn(r, player);
       game.state = 'playing';
     }
@@ -2310,7 +2234,7 @@
     player.invulnerable = 1.2;
     player.vx = fromX < player.x ? 260 : -260;
     player.vy = -240;
-    sfx(180, 0.16, 'sawtooth', 0.045, -120);
+    playAudio('hero.hurt', { position: audioPosition(player.x + player.w / 2) });
     if (game.hearts <= 0) {
       beginRespawn(true, player.x, player.y);
     }
@@ -2318,6 +2242,10 @@
 
   function collectItem(item) {
     item.collected = true;
+    const collectionEventId = item.type === 'taco' ? 'collect.taco'
+      : item.type === 'golden' ? 'collect.goldenTaco'
+        : item.type === 'rainbow' ? 'collect.rainbowTaco'
+          : item.type === 'magnet' ? null : 'collect.powerup';
     if (!item.bonusReward) game.collected += 1;
     game.streak += 1;
     game.streakTimer = 2.4;
@@ -2351,7 +2279,7 @@
       game.message = 'TACO MAGNET! EVERYTHING IS COMING TO YOU!';
       game.messageTimer = 2.1;
       spawnConfetti(item.x - game.cameraX + item.w / 2, item.y + item.h / 2, 70);
-      sfx(260, 0.24, 'sine', 0.05, 640);
+      playAudio('ability.magnetStart', { position: audioPosition(item.x + item.w / 2) });
     }
     if (item.type === 'rainbow') {
       if (!item.bonusReward) game.rainbowCollected += 1;
@@ -2364,7 +2292,6 @@
       spawnConfetti(item.x - game.cameraX + item.w / 2, item.y + item.h / 2, 110);
       spawnFirework();
       spawnFirework();
-      sfx(420, 0.28, 'triangle', 0.055, 760);
     }
     if (item.type === 'guac') game.hearts = Math.min(3, game.hearts + 1);
     if (item.type === 'pepper') player.vy = Math.min(player.vy, -360);
@@ -2376,7 +2303,7 @@
       game.message = 'TACO FRENZY!';
       game.messageTimer = 2.3;
       spawnConfetti(canvas.width * 0.5, 170, 70);
-      sfx(520, 0.2, 'sawtooth', 0.06, 480);
+      playAudio('ability.frenzyStart');
     } else if (game.streak === 5) {
       game.message = 'TACO STREAK!';
       game.messageTimer = 1.4;
@@ -2388,7 +2315,12 @@
       game.messageTimer = 1.8;
     }
     spawnConfetti(item.x + 12 - game.cameraX, item.y + 12, 10);
-    sfx(620 + Math.min(360, game.streak * 18), 0.07, 'triangle', 0.04, 80);
+    if (collectionEventId) {
+      playAudio(collectionEventId, {
+        streak: game.streak,
+        position: audioPosition(item.x + item.w / 2),
+      });
+    }
   }
 
   function spawnTruckTaco(truckX, chaseDrop = false, burstOffset = 0, dropStyle = 'standard') {
@@ -2426,7 +2358,9 @@
         game.message = checkpoint.sign;
         game.messageTimer = 2.2;
         spawnConfetti(checkpoint.x - game.cameraX + checkpoint.w / 2, checkpoint.y + 30, 60);
-        sfx(480, 0.18, 'triangle', 0.05, 340);
+        playAudio('checkpoint.activate', {
+          position: audioPosition(checkpoint.x + checkpoint.w / 2),
+        });
       }
     }
   }
@@ -2527,8 +2461,7 @@
       spawnConfetti(canvas.width - 120, 260, 70);
       for (let i = 0; i < 10 + Math.floor(completion * 16) + game.goldenCollected * 4; i++) spawnFirework();
       for (let i = 0; i < 16; i++) spawnTacoRain();
-      sfx(520, 0.2, 'triangle', 0.05, 220);
-      sfx(780, 0.35, 'triangle', 0.04, 180);
+      playAudio('goal.enter');
     }
   }
 
@@ -2562,10 +2495,12 @@
     applyHorizontalInput(dt);
     doJump();
 
+    const airborneBeforePhysics = !player.grounded;
     const prevY = player.y;
     player.vy = Math.min(heroPhysics.maxFallVelocity, player.vy + heroPhysics.gravity * dt);
     player.x += player.vx * dt;
     player.y += player.vy * dt;
+    const landingVelocity = player.vy;
 
     if (player.x < 0) {
       player.x = 0;
@@ -2577,6 +2512,18 @@
     }
 
     resolvePlatformCollision(prevY);
+
+    if (airborneBeforePhysics && player.grounded && landingVelocity > 90) {
+      playAudio(landingVelocity >= 830 ? 'hero.landHard' : 'hero.landSoft', {
+        position: audioPosition(player.x + player.w / 2),
+      });
+      game.fallSoundPlayed = false;
+    }
+
+    if (player.y > canvas.height + 20 && !game.fallSoundPlayed) {
+      game.fallSoundPlayed = true;
+      playAudio('hero.fall', { position: audioPosition(player.x + player.w / 2) });
+    }
 
     if (player.y > canvas.height + 140) {
       game.hearts -= 1;
@@ -2633,7 +2580,7 @@
       game.message = 'DOUBLE SALSA SHOWDOWN! STOMP, BOUNCE, REPEAT!';
       game.messageTimer = 2.5;
       spawnConfetti(canvas.width * 0.62, 190, 80);
-      sfx(300, 0.22, 'sawtooth', 0.05, 580);
+      playAudio('world1.showdown');
     }
 
     const checkpointOnScreen = level.checkpoints.some((checkpoint) => Math.abs(checkpoint.x - player.x) < canvas.width * 0.64);
@@ -2644,7 +2591,7 @@
         game.midTruckEntrySpeed = 520;
         game.message = 'OLIVIA INCOMING! TACO DROP APPROACHING!';
         game.messageTimer = 2.1;
-        sfx(320, 0.24, 'sawtooth', 0.035, 420);
+        playAudio('vehicle.arrive', { position: -0.8 });
       }
       if (game.midTruckEntering) {
         const entranceTarget = Math.min(zones.dropTruckLimit, player.x + 245);
@@ -2659,7 +2606,7 @@
           game.message = 'DROP ZONE OPEN! TACOS OUT BACK!';
           game.messageTimer = 1.25;
           spawnConfetti(canvas.width * 0.72, 245, 35);
-          sfx(620, 0.12, 'triangle', 0.04, 210);
+          playAudio('vehicle.ready', { position: audioPosition(game.dropTruckX) });
         }
       } else if (game.midTruckActive) {
         game.dropTruckX = Math.min(zones.dropTruckLimit, Math.max(game.dropTruckX, player.x + 245));
@@ -2677,7 +2624,7 @@
       game.midTruckEscapeSpeed = 430;
       game.message = 'RUNWAY CLEARED! OLIVIA: BYEEE!';
       game.messageTimer = 1.5;
-      sfx(260, 0.32, 'sawtooth', 0.045, 610);
+      playAudio('vehicle.depart', { position: audioPosition(game.dropTruckX) });
     }
 
     if (game.midTruckEscaping) {
@@ -2696,7 +2643,7 @@
         game.encoreTruckEntrySpeed = 560;
         game.message = 'OLIVIA INCOMING! DELIVERY APP IS GLITCHING!';
         game.messageTimer = 2.2;
-        sfx(350, 0.24, 'sawtooth', 0.035, 450);
+        playAudio('vehicle.arrive', { position: -0.8, pitchCents: 70 });
       }
       if (game.encoreTruckEntering) {
         const entranceTarget = Math.min(zones.encoreDropTruckLimit, player.x + 250);
@@ -2711,7 +2658,7 @@
           game.message = 'DELIVERY GLITCH! OLIVIA ORDERED 6–7. THE APP SENT 67!';
           game.messageTimer = 2.5;
           spawnConfetti(canvas.width * 0.72, 235, 48);
-          sfx(660, 0.12, 'square', 0.035, 230);
+          playAudio('vehicle.ready', { position: audioPosition(game.encoreTruckX), pitchCents: 90 });
         }
       } else if (game.encoreTruckActive) {
         const glitchLead = player.x + 250 + Math.sin(game.levelTime * 4.5) * 24;
@@ -2725,7 +2672,7 @@
           spawnTruckTaco(game.encoreTruckX, false, 52, 'glitch');
           if (game.encoreDropBurst % 3 === 0) {
             spawnImpactText(game.encoreTruckX + 55, 305, '×3 GLITCH!', '#b78cff', 24);
-            sfx(650, 0.08, 'square', 0.03, 180);
+            playAudio('vehicle.drop', { position: audioPosition(game.encoreTruckX), pitchCents: 80 });
           }
         }
       }
@@ -2738,7 +2685,7 @@
       game.message = 'GLITCH PATCHED. PROBABLY. OLIVIA: BYEEE!';
       game.messageTimer = 1.8;
       spawnConfetti(canvas.width * 0.65, 245, 42);
-      sfx(285, 0.34, 'sawtooth', 0.045, 640);
+      playAudio('vehicle.depart', { position: audioPosition(game.encoreTruckX), pitchCents: 70 });
     }
 
     if (game.encoreTruckEscaping) {
@@ -2765,7 +2712,7 @@
         game.chaseDropTimer = 0.15 + Math.random() * 0.09;
         spawnTruckTaco(game.chaseTruckX, true);
         if (Math.random() < 0.44) spawnTruckTaco(game.chaseTruckX, true, 24);
-        sfx(520, 0.05, 'triangle', 0.025, 120);
+        playAudio('vehicle.drop', { position: audioPosition(game.chaseTruckX) });
       }
     } else if (player.x >= zones.chaseEnd && game.chaseTruckActive) {
       game.chaseTruckActive = false;
@@ -2775,7 +2722,7 @@
       game.message = 'OLIVIA HITS THE TURBO!';
       game.messageTimer = 1.5;
       spawnConfetti(game.chaseTruckX - game.cameraX + 70, 390, 75);
-      sfx(340, 0.35, 'sawtooth', 0.045, 680);
+      playAudio('vehicle.depart', { position: audioPosition(game.chaseTruckX), pitchCents: 90 });
     }
 
     if (game.chaseTruckEscaping) {
@@ -2791,7 +2738,7 @@
         game.message = `TACO CHASE COMPLETE! ${game.chaseCatchCount} AIR CATCHES!`;
         game.messageTimer = 2.2;
         spawnConfetti(canvas.width * 0.65, 220, 110);
-        sfx(720, 0.2, 'triangle', 0.05, 260);
+        playAudio('vehicle.chaseComplete');
       }
     }
 
@@ -2822,7 +2769,7 @@
         } else if (nextStage === 3) {
           game.message = 'SEND IT THROUGH THE FIESTA GATE!';
           game.messageTimer = 1.6;
-          sfx(660, 0.16, 'triangle', 0.045, 320);
+          playAudio('goal.warning');
         }
       }
     }
@@ -2848,8 +2795,10 @@
     const beat = Math.floor(celebrationElapsed * 2.15);
     if (beat !== game.partyBeat) {
       game.partyBeat = beat;
-      const notes = [523, 659, 784, 1047];
-      sfx(notes[beat % notes.length], 0.12, beat % 2 ? 'triangle' : 'square', 0.035, 80);
+      playAudio('level.celebrationPulse', {
+        pitchCents: (beat % 4) * 18,
+        position: beat % 2 ? -0.35 : 0.35,
+      });
       spawnConfetti(beat % 2 ? 110 : canvas.width - 110, 245, 22);
       spawnFirework();
       spawnFirework();
@@ -2859,6 +2808,7 @@
     if (Math.random() < dt * 1.2) spawnFirework();
     if (celebrationElapsed > 7.2) {
       game.state = 'won';
+      playAudio('level.complete');
       const seconds = Math.round((game.finishTime - game.startTime) / 1000);
       const crown = game.collected === game.totalCollectibles ? ' 👑 PERFECT TACO RUN!' : '';
       const gold = game.goldenCollected === game.totalGolden ? ` All ${game.totalGolden} Golden Tacos found!` : ` Golden Tacos: ${game.goldenCollected}/${game.totalGolden}.`;
@@ -4635,6 +4585,7 @@
             .map(([name, track]) => ({ name, volume: Number(track.volume.toFixed(3)) })),
           overlapSafe: Object.values(musicTracks).filter((track) => !track.paused).length <= 2,
         },
+        audio: audio?.getTelemetry() || null,
         background: world1Background.qaState(),
         foregroundRemaster: {
           paintedTerrain: true,

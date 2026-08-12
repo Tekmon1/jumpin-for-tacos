@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="robots" content="noindex,nofollow" />
+  <meta name="theme-color" content="#120f21" />
+  <title>Private Audio Lab | Jumpin' For Tacos</title>
+  <link rel="stylesheet" href="audio-lab.css?v=1" />
+</head>
+<body>
+  <main class="lab-shell">
+    <header class="hero-panel">
+      <p class="eyebrow">Private review utility - Phase 1</p>
+      <h1>Jumpin' For Tacos Audio Lab</h1>
+      <p>
+        Audition the shared mix, World 1-1 semantic effects, aggregation behavior,
+        priority limits, and music ducking. This page is intentionally not linked
+        from the public landing page.
+      </p>
+      <button id="enableAudio" class="primary" type="button">Enable Audio</button>
+      <span id="audioStatus" class="status" role="status">Audio is locked until interaction.</span>
+    </header>
+
+    <section class="panel" aria-labelledby="mixHeading">
+      <h2 id="mixHeading">Representative music and bus mix</h2>
+      <div class="music-row">
+        <label for="musicTrack">Music stress source</label>
+        <select id="musicTrack">
+          <option value="assets/music_exploration.ogg" data-start="0">World 1-1 - Exploration</option>
+          <option value="assets/music_showdown.ogg" data-start="0">World 1-1 - Showdown</option>
+          <option value="assets/music_chase.ogg" data-start="0">World 1-1 - Chase</option>
+          <option value="assets/music_fiesta.ogg" data-start="0">World 1-1 - Fiesta</option>
+          <option value="assets/neon_neckties/jump_for_tacos_final_concert_master.mp3" data-start="142" data-end="168">Neon Neckties final concert master - loudest stress</option>
+        </select>
+        <div class="button-row">
+          <button id="playMusic" type="button">Play selected music</button>
+          <button id="pauseMusic" type="button">Pause music</button>
+          <button id="toggleMute" type="button" aria-pressed="false">Mute</button>
+        </div>
+      </div>
+      <div class="sliders">
+        <label for="musicVolume">Music <output id="musicVolumeValue">70%</output></label>
+        <input id="musicVolume" type="range" min="0" max="100" value="70" />
+        <label for="effectsVolume">Effects <output id="effectsVolumeValue">80%</output></label>
+        <input id="effectsVolume" type="range" min="0" max="100" value="80" />
+      </div>
+      <p class="mix-note">
+        The Neon option loops only the existing 142-168 second finale-lift segment.
+        The source file is not edited, recompressed, retimed, or replaced.
+      </p>
+    </section>
+
+    <section class="panel" aria-labelledby="controlsHeading">
+      <h2 id="controlsHeading">Effect controls</h2>
+      <div class="control-grid">
+        <label for="enemyType">Enemy type
+          <select id="enemyType">
+            <option value="tomato">Tomato Trouble</option>
+            <option value="onion">Onion Drama</option>
+            <option value="chili">Chili Bandit</option>
+            <option value="jalapeno">Jalapeno Popper</option>
+          </select>
+        </label>
+        <label for="combo">Stomp combo
+          <input id="combo" type="number" min="1" max="12" value="1" />
+        </label>
+      </div>
+      <div id="effectButtons" class="effect-grid" aria-label="Phase 1 effect buttons"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="stressHeading">
+      <h2 id="stressHeading">Gameplay and stress sequences</h2>
+      <div class="stress-grid">
+        <button id="tacoStreak" type="button">Taco-streak simulation</button>
+        <button id="magnetStress" type="button">Magnet-cascade stress test</button>
+        <button id="stompStress" type="button">10-stomp stress test</button>
+        <button id="coreDemo" class="primary" type="button">Core Gameplay Demo</button>
+        <button id="ambienceToggle" type="button" aria-pressed="false">Start desert ambience loop</button>
+      </div>
+      <p id="sequenceStatus" class="status" role="status">Ready.</p>
+    </section>
+
+    <section class="panel telemetry-panel" aria-labelledby="telemetryHeading">
+      <h2 id="telemetryHeading">Live audio telemetry</h2>
+      <pre id="telemetry">Waiting for engine...</pre>
+    </section>
+  </main>
+
+  <audio id="labMusic" preload="metadata" loop></audio>
+  <script src="audio-catalog.js?v=1"></script>
+  <script src="audio-engine.js?v=1"></script>
+  <script src="audio-lab.js?v=1"></script>
+</body>
+</html>

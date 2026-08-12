@@ -28,6 +28,22 @@ http://localhost:8000
 - Mobile: use the on-screen buttons
 - Xbox/standard controller: left stick or D-pad to move, `A` to jump/confirm, `B` to close dialogs, `Y` for fullscreen where supported, and Menu for settings/pause
 
+## Shared audio foundation
+
+World 1-1 loads `audio-catalog.js` and `audio-engine.js` before `game.js` and
+uses semantic calls such as `JFT_AUDIO.play('combat.enemyStomp', options)`.
+The engine owns the Music, Gameplay SFX, UI, Ambience, and Master buses,
+centralized ducking, limiting, voice priority, cooldown, polyphony, variation,
+and telemetry. Raw oscillator synthesis is reserved for its emergency fallback.
+
+Review the Phase 1 mix locally at `/game/audio-lab.html`. The page is private
+in the sense that no public game or landing-page navigation links to it. Its
+representative music playback uses the existing music files unchanged.
+
+Regenerate the committed original WAV library from the repository root with
+`npm run generate:sfx`. The deterministic asset hashes and measurements are in
+`assets/sfx/sfx-manifest.json`.
+
 Controller support lives in `controller.js` and is loaded automatically by
 `levels.js`. New levels inherit controller support when they load the shared
 level catalog. The `X` button emits the shared `jft:controlleraction` special

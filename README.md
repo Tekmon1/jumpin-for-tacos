@@ -64,6 +64,21 @@ npm run lint
 - `docs/`: gameplay and remaster QA notes
 - `scripts/`: build validation and music-generation utilities
 
+## Phase 1 shared audio foundation
+
+World 1-1 uses the shared vanilla-JavaScript audio engine in
+`public/game/audio-engine.js` and the semantic event catalog in
+`public/game/audio-catalog.js`. The committed Phase 1 effects are original,
+procedurally rendered WAV files. Rebuild them deterministically with:
+
+```bash
+npm run generate:sfx
+```
+
+The private local review surface is `/game/audio-lab.html`; it is intentionally
+not linked from the public landing page. See `docs/sfx-remaster-phase1.md` for
+the architecture, mix calibration, test evidence, and later-world rollout plan.
+
 ## GitHub setup
 
 This source package intentionally excludes generated dependencies, local caches, build output, and prior Git metadata. Extract it into a new repository, commit the contents, and push the repository normally.
