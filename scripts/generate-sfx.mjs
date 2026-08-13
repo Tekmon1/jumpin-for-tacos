@@ -177,7 +177,7 @@ function addShellCrunch(sound, { start = 0, gain = 0.7, brightness = 1 } = {}) {
   });
 }
 
-const cartoonSplatTraits = Object.freeze({
+const cartoonSquishTraits = Object.freeze({
   tomato: Object.freeze({ body: 330, smear: 920, pop: 560, brightness: 0.94 }),
   onion: Object.freeze({ body: 390, smear: 1_080, pop: 640, brightness: 1.08 }),
   chili: Object.freeze({ body: 365, smear: 1_220, pop: 720, brightness: 1.2 }),
@@ -210,105 +210,111 @@ const cartoonSplatTraits = Object.freeze({
   corndog: Object.freeze({ body: 370, smear: 1_050, pop: 650, brightness: 1.16 }),
 });
 
-function addCartoonEnemySplat(sound, {
+function addCartoonEnemySquish(sound, {
   start = 0,
   gain = 0.8,
   type = "tomato",
   variant = 0,
 } = {}) {
-  const traits = cartoonSplatTraits[type] || cartoonSplatTraits.tomato;
+  const traits = cartoonSquishTraits[type] || cartoonSquishTraits.tomato;
   const alternate = variant % 2;
-  const body = traits.body * (alternate ? 1.1 : 1);
-  const smear = traits.smear * (alternate ? 0.92 : 1);
-  const pop = traits.pop * (alternate ? 1.08 : 1);
+  const body = traits.body * (alternate ? 0.94 : 1);
+  const smear = traits.smear * (alternate ? 0.9 : 1);
+  const pop = traits.pop * (alternate ? 0.92 : 1);
+  const coreDuration = 0.148 + alternate * 0.018;
 
-  // Dry, irregular food-shell contact makes the hit physical rather than
-  // electronic and carries the transient through small phone speakers.
-  addShellCrunch(sound, {
-    start,
-    gain: gain * (alternate ? 0.52 : 0.58),
-    brightness: traits.brightness + alternate * 0.08,
-  });
+  // A padded compression transient gives the contact a physical beginning
+  // without the dry shell-crack that made ordinary contacts read as impacts.
   addNoise(sound, {
     start,
-    duration: 0.032,
-    gain: gain * 0.34,
-    attack: 0.0003,
-    releasePower: 4.2,
-    lowpassHz: 7_200,
-    highpassHz: 1_250,
-    crackle: 0.08,
+    duration: 0.038,
+    gain: gain * (alternate ? 0.13 : 0.15),
+    attack: 0.0008,
+    releasePower: 2.7,
+    lowpassHz: 1_900 + traits.brightness * 360,
+    highpassHz: 150,
+    crackle: 0.004,
+  });
+  addTone(sound, {
+    start,
+    duration: 0.052,
+    frequency: body * 1.32,
+    endFrequency: body * 0.68,
+    gain: gain * 0.12,
+    wave: "sine",
+    attack: 0.0015,
+    releasePower: 2.25,
   });
 
-  // Two overlapping, band-limited smears form the unmistakable juicy center.
-  // Their useful energy is concentrated above deep bass so the splat remains
-  // readable on an iPhone speaker without relying on extra loudness.
+  // The broad wet smear is deliberately louder and longer than the transient.
+  // Its midrange stays readable on a phone while the descending body supplies
+  // the playful SQUISH / SQUASH / SCHLUP gesture without a synthetic chirp.
   addNoise(sound, {
     start: start + 0.012,
-    duration: 0.118 + alternate * 0.012,
-    gain: gain * 0.9,
-    attack: 0.001,
-    releasePower: 2.45,
-    lowpassHz: 1_500 + alternate * 180,
-    highpassHz: 180,
-    crackle: 0.018,
+    duration: coreDuration,
+    gain: gain * (alternate ? 1 : 0.96),
+    attack: 0.006,
+    releasePower: alternate ? 1.32 : 1.42,
+    lowpassHz: 1_450 + traits.brightness * 190,
+    highpassHz: 125,
+    crackle: 0.006,
   });
   addNoise(sound, {
-    start: start + 0.018,
-    duration: 0.092,
-    gain: gain * 0.42,
-    attack: 0.001,
-    releasePower: 2.8,
-    lowpassHz: smear * 2.25,
-    highpassHz: smear * 0.42,
-    crackle: 0.012,
+    start: start + 0.02,
+    duration: coreDuration - 0.018,
+    gain: gain * 0.46,
+    attack: 0.005,
+    releasePower: alternate ? 1.55 : 1.68,
+    lowpassHz: smear * 1.62,
+    highpassHz: Math.max(190, smear * 0.28),
+    crackle: 0.004,
   });
   addTone(sound, {
     start: start + 0.01,
-    duration: 0.13,
-    frequency: body * 1.28,
-    endFrequency: body * 0.36,
-    gain: gain * 0.38,
+    duration: coreDuration,
+    frequency: body * (alternate ? 1.02 : 1.1),
+    endFrequency: body * (alternate ? 0.3 : 0.36),
+    gain: gain * 0.44,
     wave: "sine",
-    attack: 0.001,
-    releasePower: 2.55,
-    vibratoHz: 31 + alternate * 4,
-    vibratoDepth: 0.035,
+    attack: 0.006,
+    releasePower: alternate ? 1.4 : 1.52,
+    vibratoHz: 21 + alternate * 3,
+    vibratoDepth: 0.022,
   });
   addTone(sound, {
-    start: start + 0.018,
-    duration: 0.094,
-    frequency: smear * 1.18,
-    endFrequency: smear * 0.38,
-    gain: gain * 0.16,
-    wave: "triangle",
-    attack: 0.001,
-    releasePower: 3.1,
-    vibratoHz: 38,
-    vibratoDepth: 0.028,
+    start: start + 0.022,
+    duration: coreDuration - 0.028,
+    frequency: smear * 0.72,
+    endFrequency: smear * (alternate ? 0.25 : 0.3),
+    gain: gain * 0.09,
+    wave: "sine",
+    attack: 0.005,
+    releasePower: 1.82,
+    vibratoHz: 19,
+    vibratoDepth: 0.018,
   });
 
-  // A deliberately tiny squish/pop tail completes the normal SPLAT without
-  // implying the elastic reward reserved for a perfect bounce.
+  // A tiny wet release completes the squash. It falls downward and never
+  // rises, reserving the unmistakable upward BOING for a perfect bounce.
   addNoise(sound, {
-    start: start + 0.105 + alternate * 0.008,
-    duration: 0.047,
-    gain: gain * 0.24,
-    attack: 0.0008,
-    releasePower: 3.3,
-    lowpassHz: 2_300,
-    highpassHz: 420,
-    crackle: 0.025,
+    start: start + 0.118 + alternate * 0.012,
+    duration: 0.062,
+    gain: gain * 0.28,
+    attack: 0.0018,
+    releasePower: 2.15,
+    lowpassHz: 1_650,
+    highpassHz: 230,
+    crackle: 0.006,
   });
   addTone(sound, {
-    start: start + 0.108 + alternate * 0.008,
-    duration: 0.058,
-    frequency: pop,
-    endFrequency: pop * 0.58,
-    gain: gain * 0.2,
+    start: start + 0.126 + alternate * 0.014,
+    duration: 0.054,
+    frequency: pop * 0.66,
+    endFrequency: pop * 0.38,
+    gain: gain * 0.14,
     wave: "sine",
-    attack: 0.001,
-    releasePower: 3.5,
+    attack: 0.002,
+    releasePower: 2.8,
   });
 }
 
@@ -456,7 +462,7 @@ const recipes = {
       chili: { boing: 392, rise: 1.84 },
       jalapeno: { boing: 430, rise: 1.9 },
     }[type];
-    addCartoonEnemySplat(sound, { start: 0, gain: 0.88, type, variant: 0 });
+    addCartoonEnemySquish(sound, { start: 0, gain: 0.88, type, variant: 0 });
     addNoise(sound, {
       start: 0.07,
       duration: 0.045,
@@ -466,10 +472,11 @@ const recipes = {
       lowpassHz: 4_800,
       highpassHz: 720,
     });
-    addBoing(sound, { start: 0.078, gain: 0.68, frequency: traits.boing, rise: traits.rise });
+    addBoing(sound, { start: 0.094, gain: 0.68, frequency: traits.boing, rise: traits.rise });
   },
   enemySplat(sound, type = "tomato", variant = 0) {
-    addCartoonEnemySplat(sound, { start: 0, gain: 0.94, type, variant });
+    // Keep this recipe name for the frozen semantic event and asset paths.
+    addCartoonEnemySquish(sound, { start: 0, gain: 0.94, type, variant });
   },
   combo(sound, variant = 0) {
     const notes = variant ? [523.25, 659.25, 783.99, 1_046.5] : [440, 554.37, 659.25];
@@ -709,7 +716,7 @@ const worldOneEnemyTypes = ["lime", "queso", "slime", "knight", "guac", "churro"
 worldOneEnemyTypes.forEach((type) => {
   assets.push([`world1/enemy-stomp-${type}-01.wav`, 0.38, -3.8, (s) => {
     recipes.enemySplat(s, type, 0);
-    addBoing(s, { start: 0.078, gain: 0.68, frequency: cartoonSplatTraits[type].body, rise: 1.82 });
+    addBoing(s, { start: 0.094, gain: 0.68, frequency: cartoonSquishTraits[type].body, rise: 1.82 });
   }]);
   [0, 1].forEach((variant) => assets.push([
     `world1/enemy-splat-${type}-0${variant + 1}.wav`, 0.22, -4.8, (s) => recipes.enemySplat(s, type, variant),
@@ -745,7 +752,7 @@ const worldTwoEnemyTypes = ["crab", "coconut", "seagull", "puffer", "tiki", "mar
 worldTwoEnemyTypes.forEach((type) => {
   assets.push([`world2/enemy-stomp-${type}-01.wav`, 0.38, -3.8, (s) => {
     recipes.enemySplat(s, type, 0);
-    addBoing(s, { start: 0.078, gain: 0.68, frequency: cartoonSplatTraits[type].body, rise: 1.8 });
+    addBoing(s, { start: 0.094, gain: 0.68, frequency: cartoonSquishTraits[type].body, rise: 1.8 });
   }]);
   [0, 1].forEach((variant) => assets.push([
     `world2/enemy-splat-${type}-0${variant + 1}.wav`, 0.22, -4.8, (s) => recipes.enemySplat(s, type, variant),
@@ -779,7 +786,7 @@ const worldThreeEnemyTypes = ["popcorn", "cotton", "pretzel", "lemon", "bumper",
 worldThreeEnemyTypes.forEach((type) => {
   assets.push([`world3/enemy-stomp-${type}-01.wav`, 0.38, -3.8, (s) => {
     recipes.enemySplat(s, type, 0);
-    addBoing(s, { start: 0.078, gain: 0.68, frequency: cartoonSplatTraits[type].body, rise: 1.88 });
+    addBoing(s, { start: 0.094, gain: 0.68, frequency: cartoonSquishTraits[type].body, rise: 1.88 });
   }]);
   [0, 1].forEach((variant) => assets.push([
     `world3/enemy-splat-${type}-0${variant + 1}.wav`, 0.22, -4.8, (s) => recipes.enemySplat(s, type, variant),
@@ -828,7 +835,7 @@ async function main() {
   }
 
   const manifest = {
-    generatorVersion: "jft-sfx-phase2-v1-full-game",
+    generatorVersion: "jft-sfx-phase3-v1-final-polish",
     generatedAt: "deterministic-build-no-timestamp",
     source: "Original procedural synthesis; no third-party samples.",
     sampleRate: SAMPLE_RATE,
