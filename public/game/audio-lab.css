@@ -59,6 +59,10 @@ h3 { margin: 0; }
 .comparison-language { font-size: 0.92rem; }
 .effect-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 0.55rem; }
 .effect-grid button { text-align: left; font-family: ui-monospace, "Cascadia Code", monospace; font-size: 0.86rem; }
+.catalog-sections { display: grid; gap: 0.7rem; }
+.catalog-category { border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 0.85rem; background: rgba(8, 7, 13, 0.22); }
+.catalog-category summary { cursor: pointer; padding: 0.9rem 1rem; color: #ffd166; font-weight: 800; }
+.catalog-category .effect-grid { padding: 0 0.8rem 0.8rem; }
 .telemetry-panel pre { max-height: 32rem; overflow: auto; margin: 0; padding: 1rem; border-radius: 0.8rem; background: #08070d; color: #aef5d9; font: 0.78rem/1.45 ui-monospace, "Cascadia Code", monospace; white-space: pre-wrap; }
 
 @media (min-width: 760px) {

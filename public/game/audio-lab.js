@@ -1,28 +1,20 @@
 (() => {
   const audio = window.JFT_AUDIO;
-  const catalog = window.JFT_AUDIO_CATALOG;
-  const labMusic = document.getElementById('labMusic');
-  const enableAudio = document.getElementById('enableAudio');
-  const audioStatus = document.getElementById('audioStatus');
-  const musicTrack = document.getElementById('musicTrack');
-  const playMusic = document.getElementById('playMusic');
-  const pauseMusic = document.getElementById('pauseMusic');
-  const toggleMute = document.getElementById('toggleMute');
-  const musicVolume = document.getElementById('musicVolume');
-  const musicVolumeValue = document.getElementById('musicVolumeValue');
-  const effectsVolume = document.getElementById('effectsVolume');
-  const effectsVolumeValue = document.getElementById('effectsVolumeValue');
-  const effectButtons = document.getElementById('effectButtons');
-  const enemyType = document.getElementById('enemyType');
-  const combo = document.getElementById('combo');
-  const sequenceStatus = document.getElementById('sequenceStatus');
-  const telemetry = document.getElementById('telemetry');
-  const ambienceToggle = document.getElementById('ambienceToggle');
-  const normalEnemySplat = document.getElementById('normalEnemySplat');
-  const perfectEnemyStomp = document.getElementById('perfectEnemyStomp');
+  const byId = (id) => document.getElementById(id);
+  const labMusic = byId('labMusic');
+  const musicTrack = byId('musicTrack');
+  const musicVolume = byId('musicVolume');
+  const effectsVolume = byId('effectsVolume');
+  const sceneDuck = byId('sceneDuck');
+  const enemyType = byId('enemyType');
+  const combo = byId('combo');
+  const vehicleType = byId('vehicleType');
+  const bossType = byId('bossType');
+  const sequenceStatus = byId('sequenceStatus');
   let muted = false;
   let ambienceHandle = null;
   let musicSegment = { start: 0, end: 0 };
+  const sequenceTimers = new Set();
 
   function savedSettings() {
     try {
@@ -38,12 +30,14 @@
   muted = Boolean(settings.muted);
 
   function syncMixControls() {
-    musicVolumeValue.textContent = `${musicVolume.value}%`;
-    effectsVolumeValue.textContent = `${effectsVolume.value}%`;
-    toggleMute.textContent = muted ? 'Unmute' : 'Mute';
-    toggleMute.setAttribute('aria-pressed', String(muted));
+    byId('musicVolumeValue').textContent = `${musicVolume.value}%`;
+    byId('effectsVolumeValue').textContent = `${effectsVolume.value}%`;
+    byId('sceneDuckValue').textContent = `${sceneDuck.value}%`;
+    byId('toggleMute').textContent = muted ? 'Unmute' : 'Mute';
+    byId('toggleMute').setAttribute('aria-pressed', String(muted));
     audio.setMusicVolume(Number(musicVolume.value) / 100);
     audio.setEffectsVolume(Number(effectsVolume.value) / 100);
+    audio.setMusicDuck(Number(sceneDuck.value) / 100);
     audio.setMuted(muted);
   }
 
@@ -54,18 +48,14 @@
       muted,
     });
     const state = audio.getTelemetry().audioContextState;
-    audioStatus.textContent = `AudioContext: ${state}.`;
-    enableAudio.textContent = state === 'running' ? 'Audio Enabled' : 'Retry Audio Unlock';
+    byId('audioStatus').textContent = `AudioContext: ${state}.`;
+    byId('enableAudio').textContent = state === 'running' ? 'Audio Enabled' : 'Retry Audio Unlock';
     return state === 'running';
   }
 
   function selectedMusicSegment() {
     const option = musicTrack.selectedOptions[0];
-    return {
-      src: option.value,
-      start: Number(option.dataset.start || 0),
-      end: Number(option.dataset.end || 0),
-    };
+    return { src: option.value, start: Number(option.dataset.start || 0), end: Number(option.dataset.end || 0) };
   }
 
   function loadSelectedMusic() {
@@ -83,9 +73,7 @@
     loadSelectedMusic();
     const seekAndPlay = () => {
       if (musicSegment.start > 0) labMusic.currentTime = musicSegment.start;
-      labMusic.play().catch((error) => {
-        audioStatus.textContent = `Music could not start: ${error.message}`;
-      });
+      labMusic.play().catch((error) => { byId('audioStatus').textContent = `Music could not start: ${error.message}`; });
     };
     if (labMusic.readyState >= 1) seekAndPlay();
     else labMusic.addEventListener('loadedmetadata', seekAndPlay, { once: true });
@@ -93,136 +81,222 @@
 
   function eventOptions(eventId) {
     const selectedCombo = Math.max(1, Math.min(12, Number(combo.value) || 1));
-    const options = { combo: selectedCombo, streak: selectedCombo };
-    if (eventId.startsWith('combat.')) options.enemyType = enemyType.value;
+    const options = {
+      combo: selectedCombo,
+      streak: selectedCombo,
+      enemyType: enemyType.value,
+      vehicleType: vehicleType.value,
+      bossType: bossType.value,
+    };
+    if (eventId.startsWith('boss.elGuacodillo')) options.bossType = 'elGuacodillo';
     return options;
   }
 
-  function playEvent(eventId, options = {}) {
-    unlock();
+  async function playEvent(eventId, options = {}) {
+    await unlock();
     audio.play(eventId, { ...eventOptions(eventId), ...options });
     sequenceStatus.textContent = `Played ${eventId}`;
   }
 
-  function scheduleSequence(label, events) {
-    unlock();
-    sequenceStatus.textContent = `${label} running...`;
-    events.forEach(({ at, eventId, options = {} }) => {
-      window.setTimeout(() => audio.play(eventId, options), at);
-    });
-    const duration = Math.max(...events.map((event) => event.at), 0) + 650;
-    window.setTimeout(() => {
-      sequenceStatus.textContent = `${label} complete.`;
-    }, duration);
+  function queueSequenceCallback(callback, delay) {
+    const timer = window.setTimeout(() => {
+      sequenceTimers.delete(timer);
+      callback();
+    }, delay);
+    sequenceTimers.add(timer);
   }
 
-  const contactComparisonEvents = new Set(['combat.enemySplat', 'combat.enemyStomp']);
-  catalog.requiredPhase1Events.filter((eventId) => !contactComparisonEvents.has(eventId)).forEach((eventId) => {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.textContent = eventId;
-    button.addEventListener('click', () => playEvent(eventId));
-    effectButtons.appendChild(button);
+  async function scheduleSequence(label, scheduledEvents) {
+    await unlock();
+    sequenceStatus.textContent = `${label} running...`;
+    scheduledEvents.forEach(({ at, eventId, options = {} }) => {
+      queueSequenceCallback(() => audio.play(eventId, { ...eventOptions(eventId), ...options }), at);
+    });
+    const duration = Math.max(...scheduledEvents.map((entry) => entry.at), 0) + 700;
+    queueSequenceCallback(() => { sequenceStatus.textContent = `${label} complete.`; }, duration);
+  }
+
+  const categoryRules = [
+    ['Taco Hero', /^(hero\.|checkpoint\.|goal\.|level\.(complete|victoryDashStart))/],
+    ['Taco Collection', /^collect\./],
+    ['Power-Ups', /^ability\./],
+    ['Enemy Splats', /^combat\.enemySplat$/],
+    ['Perfect Stomps', /^(combat\.enemyStomp|combat\.comboMilestone)$/],
+    ['World 1', /^(world1\.|vehicle\.aircraft|hazard\.(guac|stampede|nearMiss)|impact\.|movement\.|sequence\.)/],
+    ['World 2', /^(surf\.|volcano\.|stage\.|concert\.|hazard\.(coconut|geyser))/],
+    ['World 3', /^(ride\.|cosmic\.|carnival\.|ambience\.cosmic|hazard\.comet)/],
+    ['Olivia Vehicles', /^vehicle\.(?!aircraft)/],
+    ['Hazards', /^hazard\./],
+    ['Bosses', /^boss\./],
+    ['Celebrations', /^(pinata\.|level\.celebration|celebration\.)/],
+    ['UI', /^ui\./],
+    ['Ambience', /^ambience\./],
+  ];
+
+  const categorized = new Map(categoryRules.map(([name]) => [name, []]));
+  const seen = new Set();
+  audio.listEvents().forEach((eventId) => {
+    const match = categoryRules.find(([, pattern]) => pattern.test(eventId) && !seen.has(eventId));
+    const category = match?.[0] || 'World 3';
+    categorized.get(category).push(eventId);
+    seen.add(eventId);
   });
 
-  normalEnemySplat.addEventListener('click', () => playEvent('combat.enemySplat'));
-  perfectEnemyStomp.addEventListener('click', () => playEvent('combat.enemyStomp'));
-
-  document.getElementById('tacoStreak').addEventListener('click', () => {
-    scheduleSequence('Taco streak', Array.from({ length: 16 }, (_, index) => ({
-      at: index * 105,
-      eventId: 'collect.taco',
-      options: { streak: index + 1, position: (index % 5 - 2) / 2 },
-    })));
+  const catalogSections = byId('catalogSections');
+  categorized.forEach((eventIds, category) => {
+    if (!eventIds.length) return;
+    const details = document.createElement('details');
+    details.className = 'catalog-category';
+    if (['Taco Hero', 'Power-Ups', 'Bosses'].includes(category)) details.open = true;
+    const summary = document.createElement('summary');
+    summary.textContent = `${category} (${eventIds.length})`;
+    const grid = document.createElement('div');
+    grid.className = 'effect-grid';
+    eventIds.forEach((eventId) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = eventId;
+      button.addEventListener('click', () => playEvent(eventId));
+      grid.appendChild(button);
+    });
+    details.append(summary, grid);
+    catalogSections.appendChild(details);
   });
 
-  document.getElementById('magnetStress').addEventListener('click', () => {
-    const events = [{ at: 0, eventId: 'ability.magnetStart' }];
-    for (let index = 0; index < 48; index += 1) {
-      events.push({
-        at: 220 + index * 18,
-        eventId: 'collect.taco',
-        options: { streak: index + 1, position: Math.sin(index * 0.7) },
-      });
+  byId('normalEnemySplat').addEventListener('click', () => playEvent('combat.enemySplat'));
+  byId('perfectEnemyStomp').addEventListener('click', () => playEvent('combat.enemyStomp'));
+
+  byId('powerDemo').addEventListener('click', () => scheduleSequence('Power-Up Demo', [
+    { at: 0, eventId: 'ability.limeStart' }, { at: 650, eventId: 'ability.limeBreak' },
+    { at: 1_250, eventId: 'ability.pepperStart' }, { at: 2_000, eventId: 'ability.pepperEnd' },
+    { at: 2_500, eventId: 'ability.coconutStart' }, { at: 3_050, eventId: 'ability.coconutBounce' },
+    { at: 3_700, eventId: 'ability.magnetStart' }, { at: 4_450, eventId: 'ability.frenzyStart' },
+    { at: 5_300, eventId: 'ability.tacoNovaStart' },
+  ]));
+
+  byId('enemyComboDemo').addEventListener('click', () => scheduleSequence('Enemy Stomp Combo Demo',
+    Array.from({ length: 8 }, (_, index) => ({
+      at: index * 230,
+      eventId: index === 0 ? 'combat.enemySplat' : 'combat.enemyStomp',
+      options: { combo: index + 1, enemyType: enemyType.value },
+    })).concat([{ at: 1_720, eventId: 'combat.comboMilestone', options: { combo: 8 } }])));
+
+  byId('oliviaDemo').addEventListener('click', () => {
+    const cosmic = ['balloon', 'coaster', 'zeppelin'].includes(vehicleType.value);
+    const prefix = cosmic ? 'vehicle.cosmic' : 'vehicle.';
+    const id = (phase) => cosmic ? `${prefix}${phase[0].toUpperCase()}${phase.slice(1)}` : `${prefix}${phase}`;
+    const events = [{ at: 0, eventId: id('approach') }, { at: 600, eventId: id('accelerate') }];
+    for (let index = 0; index < 8; index += 1) events.push({ at: 1_000 + index * 115, eventId: id('tacoDrop') });
+    events.push({ at: 2_150, eventId: id('depart') });
+    scheduleSequence('Olivia Taco Drop Demo', events);
+  });
+
+  byId('bossDemo').addEventListener('click', () => {
+    if (bossType.value === 'elGuacodillo') {
+      scheduleSequence('El Guacodillo Combat Demo', [
+        { at: 0, eventId: 'boss.elGuacodillo.enter' }, { at: 700, eventId: 'boss.elGuacodillo.chargeWindup' },
+        { at: 1_250, eventId: 'boss.elGuacodillo.charge' }, { at: 1_850, eventId: 'boss.elGuacodillo.crashStun' },
+        { at: 2_550, eventId: 'boss.elGuacodillo.damage' }, { at: 3_350, eventId: 'boss.elGuacodillo.phaseTransition' },
+        { at: 4_200, eventId: 'boss.elGuacodillo.defeat' },
+      ]);
+      return;
     }
-    scheduleSequence('Magnet cascade', events);
-  });
-
-  document.getElementById('splatStress').addEventListener('click', () => {
-    const types = ['tomato', 'onion', 'chili', 'jalapeno'];
-    scheduleSequence('Normal splat variants', Array.from({ length: 10 }, (_, index) => ({
-      at: index * 105,
-      eventId: 'combat.enemySplat',
-      options: { enemyType: types[index % types.length], position: (index % 5 - 2) / 2 },
-    })));
-  });
-
-  document.getElementById('stompStress').addEventListener('click', () => {
-    const types = ['tomato', 'onion', 'chili', 'jalapeno'];
-    const events = [];
-    for (let index = 0; index < 10; index += 1) {
-      events.push({
-        at: index * 85,
-        eventId: 'combat.enemyStomp',
-        options: { enemyType: types[index % types.length], combo: index + 1, position: (index % 5 - 2) / 2 },
-      });
-      if ([2, 4, 7].includes(index)) {
-        events.push({ at: index * 85 + 36, eventId: 'combat.comboMilestone', options: { combo: index + 1 } });
-      }
-    }
-    scheduleSequence('Perfect stomp stress', events);
-  });
-
-  document.getElementById('coreDemo').addEventListener('click', () => {
-    scheduleSequence('Core Gameplay Demo', [
-      { at: 0, eventId: 'ui.start' },
-      { at: 380, eventId: 'hero.jump' },
-      { at: 720, eventId: 'collect.taco', options: { streak: 1, position: -0.25 } },
-      { at: 860, eventId: 'collect.taco', options: { streak: 2, position: 0 } },
-      { at: 1_000, eventId: 'collect.taco', options: { streak: 3, position: 0.25 } },
-      { at: 1_280, eventId: 'hero.landSoft' },
-      { at: 1_720, eventId: 'combat.enemySplat', options: { enemyType: enemyType.value } },
-      { at: 2_180, eventId: 'combat.enemyStomp', options: { enemyType: enemyType.value, combo: 1 } },
-      { at: 2_640, eventId: 'combat.enemyStomp', options: { enemyType: 'onion', combo: 2 } },
-      { at: 3_100, eventId: 'combat.enemyStomp', options: { enemyType: 'chili', combo: 3 } },
-      { at: 3_180, eventId: 'combat.comboMilestone', options: { combo: 3 } },
-      { at: 3_300, eventId: 'collect.goldenTaco' },
-      { at: 4_000, eventId: 'checkpoint.activate' },
-      { at: 4_850, eventId: 'hero.hurt' },
-      { at: 5_550, eventId: 'hero.respawnBeam' },
-      { at: 6_250, eventId: 'hero.respawnLand' },
-      { at: 6_900, eventId: 'goal.enter' },
-      { at: 7_900, eventId: 'level.complete' },
+    scheduleSequence('World 3 Boss Combat Demo', [
+      { at: 0, eventId: 'boss.enter' }, { at: 700, eventId: 'boss.windup' },
+      { at: 1_250, eventId: 'boss.attack' }, { at: 1_950, eventId: 'boss.vulnerable' },
+      { at: 2_550, eventId: 'boss.damage' }, { at: 3_300, eventId: 'boss.phase' },
+      { at: 4_000, eventId: 'boss.special' }, { at: 4_850, eventId: 'boss.defeat' },
     ]);
   });
 
-  ambienceToggle.addEventListener('click', async () => {
+  byId('pinataDemo').addEventListener('click', () => scheduleSequence('Piñata Celebration Demo', [
+    { at: 0, eventId: 'pinata.hit', options: { combo: 1 } },
+    { at: 420, eventId: 'pinata.hit', options: { combo: 2 } },
+    { at: 860, eventId: 'pinata.break' }, { at: 1_300, eventId: 'pinata.aftershock' },
+    { at: 1_680, eventId: 'pinata.jackpotSparkle' },
+  ]));
+
+  byId('cosmicDemo').addEventListener('click', () => scheduleSequence('World 3 Cosmic Finale Demo', [
+    { at: 0, eventId: 'vehicle.cosmicApproach', options: { vehicleType: 'zeppelin' } },
+    { at: 700, eventId: 'collect.goldenTaco' }, { at: 1_350, eventId: 'cosmic.starRelight' },
+    { at: 1_700, eventId: 'cosmic.starRelight', options: { pitchCents: 100 } },
+    { at: 2_050, eventId: 'cosmic.starRelight', options: { pitchCents: 200 } },
+    { at: 2_500, eventId: 'ability.tacoNovaStart' }, { at: 3_300, eventId: 'ability.lowGravityStart' },
+    { at: 4_000, eventId: 'cosmic.finale' }, { at: 5_000, eventId: 'cosmic.landing' },
+    { at: 5_700, eventId: 'level.complete' },
+  ]));
+
+  byId('tacoStreak').addEventListener('click', () => scheduleSequence('Taco streak', Array.from({ length: 16 }, (_, index) => ({
+    at: index * 105, eventId: 'collect.taco', options: { streak: index + 1, position: (index % 5 - 2) / 2 },
+  }))));
+
+  byId('magnetStress').addEventListener('click', () => {
+    const events = [{ at: 0, eventId: 'ability.magnetStart' }];
+    for (let index = 0; index < 48; index += 1) events.push({
+      at: 220 + index * 18, eventId: 'collect.taco', options: { streak: index + 1, position: Math.sin(index * 0.7) },
+    });
+    scheduleSequence('Magnet cascade', events);
+  });
+
+  const stressEnemyTypes = ['tomato', 'lime', 'slime', 'crab', 'coconut', 'spaghetti', 'popcorn', 'cotton', 'bumper', 'corndog'];
+  byId('splatStress').addEventListener('click', () => scheduleSequence('Normal splat variants', Array.from({ length: 10 }, (_, index) => ({
+    at: index * 105, eventId: 'combat.enemySplat', options: { enemyType: stressEnemyTypes[index], position: (index % 5 - 2) / 2 },
+  }))));
+  byId('stompStress').addEventListener('click', () => scheduleSequence('Perfect stomp stress', Array.from({ length: 10 }, (_, index) => ({
+    at: index * 85, eventId: 'combat.enemyStomp', options: { enemyType: stressEnemyTypes[index], combo: index + 1, position: (index % 5 - 2) / 2 },
+  }))));
+
+  byId('coreDemo').addEventListener('click', () => scheduleSequence('Core Gameplay Demo', [
+    { at: 0, eventId: 'ui.start' }, { at: 380, eventId: 'hero.jump' },
+    { at: 720, eventId: 'collect.taco', options: { streak: 1 } }, { at: 860, eventId: 'collect.taco', options: { streak: 2 } },
+    { at: 1_000, eventId: 'collect.taco', options: { streak: 3 } }, { at: 1_280, eventId: 'hero.landSoft' },
+    { at: 1_720, eventId: 'combat.enemySplat' }, { at: 2_180, eventId: 'combat.enemyStomp', options: { combo: 1 } },
+    { at: 2_640, eventId: 'combat.enemyStomp', options: { combo: 2 } }, { at: 3_100, eventId: 'combat.comboMilestone', options: { combo: 3 } },
+    { at: 3_500, eventId: 'collect.goldenTaco' }, { at: 4_100, eventId: 'checkpoint.activate' },
+    { at: 4_850, eventId: 'hero.hurt' }, { at: 5_550, eventId: 'hero.respawnBeam' },
+    { at: 6_250, eventId: 'hero.respawnLand' }, { at: 6_900, eventId: 'goal.enter' }, { at: 7_900, eventId: 'level.complete' },
+  ]));
+
+  byId('ambienceToggle').addEventListener('click', async () => {
     await unlock();
     if (ambienceHandle) {
       audio.stopLoop(ambienceHandle);
       ambienceHandle = null;
-      ambienceToggle.textContent = 'Start desert ambience loop';
-      ambienceToggle.setAttribute('aria-pressed', 'false');
+      byId('ambienceToggle').textContent = 'Start selected ambience';
+      byId('ambienceToggle').setAttribute('aria-pressed', 'false');
     } else {
-      ambienceHandle = audio.startLoop('ambience.desertBreeze', { gain: 0.55 });
-      ambienceToggle.textContent = 'Stop desert ambience loop';
-      ambienceToggle.setAttribute('aria-pressed', 'true');
+      const eventId = ['balloon', 'coaster', 'zeppelin'].includes(vehicleType.value)
+        ? 'ambience.cosmicCarnival'
+        : 'ambience.desertBreeze';
+      ambienceHandle = audio.startLoop(eventId, { gain: 0.55 });
+      byId('ambienceToggle').textContent = `Stop ${eventId}`;
+      byId('ambienceToggle').setAttribute('aria-pressed', 'true');
     }
   });
 
-  enableAudio.addEventListener('click', () => unlock().then(() => audio.play('ui.confirm')));
-  playMusic.addEventListener('click', startSelectedMusic);
-  pauseMusic.addEventListener('click', () => labMusic.pause());
+  byId('enableAudio').addEventListener('click', () => unlock().then(() => audio.play('ui.confirm')));
+  byId('playMusic').addEventListener('click', startSelectedMusic);
+  byId('pauseMusic').addEventListener('click', () => labMusic.pause());
   musicTrack.addEventListener('change', loadSelectedMusic);
-  toggleMute.addEventListener('click', () => {
-    muted = !muted;
-    syncMixControls();
-  });
+  byId('toggleMute').addEventListener('click', () => { muted = !muted; syncMixControls(); });
   musicVolume.addEventListener('input', syncMixControls);
   effectsVolume.addEventListener('input', syncMixControls);
+  sceneDuck.addEventListener('input', syncMixControls);
   labMusic.addEventListener('timeupdate', () => {
-    if (musicSegment.end > musicSegment.start && labMusic.currentTime >= musicSegment.end) {
-      labMusic.currentTime = musicSegment.start;
+    if (musicSegment.end > musicSegment.start && labMusic.currentTime >= musicSegment.end) labMusic.currentTime = musicSegment.start;
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      sequenceTimers.forEach((timer) => window.clearTimeout(timer));
+      sequenceTimers.clear();
+      if (ambienceHandle) audio.stopLoop(ambienceHandle);
+      ambienceHandle = null;
+      labMusic.pause();
+      sequenceStatus.textContent = 'Sequence stopped while the page was hidden.';
+      byId('ambienceToggle').textContent = 'Start selected ambience';
+      byId('ambienceToggle').setAttribute('aria-pressed', 'false');
+    } else {
+      audio.init().catch(() => {});
     }
   });
 
@@ -231,10 +305,7 @@
   loadSelectedMusic();
   audio.preload().then(() => {
     const data = audio.getTelemetry();
-    audioStatus.textContent = `${data.loadedAssets.length} SFX assets ready; audio unlock still requires interaction.`;
+    byId('audioStatus').textContent = `${data.loadedAssets.length} SFX assets ready; audio unlock still requires interaction.`;
   });
-
-  window.setInterval(() => {
-    telemetry.textContent = JSON.stringify(audio.getTelemetry(), null, 2);
-  }, 250);
+  window.setInterval(() => { byId('telemetry').textContent = JSON.stringify(audio.getTelemetry(), null, 2); }, 250);
 })();
