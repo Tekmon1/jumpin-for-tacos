@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow" />
   <meta name="theme-color" content="#120f21" />
   <title>Private Audio Lab | Jumpin' For Tacos</title>
-  <link rel="stylesheet" href="audio-lab.css?v=1" />
+  <link rel="stylesheet" href="audio-lab.css?v=2" />
 </head>
 <body>
   <main class="lab-shell">
@@ -66,6 +66,17 @@
           <input id="combo" type="number" min="1" max="12" value="1" />
         </label>
       </div>
+      <div class="contact-comparison" aria-labelledby="contactComparisonHeading">
+        <div>
+          <h3 id="contactComparisonHeading">Enemy-contact comparison</h3>
+          <p>Use the selected enemy and combo to compare the shared splat body with and without the earned rebound layer.</p>
+        </div>
+        <div class="comparison-buttons">
+          <button id="normalEnemySplat" type="button">Normal Enemy Splat</button>
+          <button id="perfectEnemyStomp" class="primary" type="button">Perfect Stomp / Bounce</button>
+        </div>
+        <p class="comparison-language"><strong>Normal:</strong> SPLAT! <strong>Perfect:</strong> SPLAT! BOING!</p>
+      </div>
       <div id="effectButtons" class="effect-grid" aria-label="Phase 1 effect buttons"></div>
     </section>
 
@@ -74,7 +85,8 @@
       <div class="stress-grid">
         <button id="tacoStreak" type="button">Taco-streak simulation</button>
         <button id="magnetStress" type="button">Magnet-cascade stress test</button>
-        <button id="stompStress" type="button">10-stomp stress test</button>
+        <button id="splatStress" type="button">10 normal-splat variant test</button>
+        <button id="stompStress" type="button">10 perfect-stomp stress test</button>
         <button id="coreDemo" class="primary" type="button">Core Gameplay Demo</button>
         <button id="ambienceToggle" type="button" aria-pressed="false">Start desert ambience loop</button>
       </div>
@@ -88,8 +100,8 @@
   </main>
 
   <audio id="labMusic" preload="metadata" loop></audio>
-  <script src="audio-catalog.js?v=1"></script>
-  <script src="audio-engine.js?v=1"></script>
-  <script src="audio-lab.js?v=1"></script>
+  <script src="audio-catalog.js?v=2"></script>
+  <script src="audio-engine.js?v=2"></script>
+  <script src="audio-lab.js?v=2"></script>
 </body>
 </html>

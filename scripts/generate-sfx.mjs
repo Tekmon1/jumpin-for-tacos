@@ -177,25 +177,112 @@ function addShellCrunch(sound, { start = 0, gain = 0.7, brightness = 1 } = {}) {
   });
 }
 
-function addSplat(sound, { start = 0.025, gain = 0.55, tone = 360 } = {}) {
+const cartoonSplatTraits = Object.freeze({
+  tomato: Object.freeze({ body: 330, smear: 920, pop: 560, brightness: 0.94 }),
+  onion: Object.freeze({ body: 390, smear: 1_080, pop: 640, brightness: 1.08 }),
+  chili: Object.freeze({ body: 365, smear: 1_220, pop: 720, brightness: 1.2 }),
+  jalapeno: Object.freeze({ body: 410, smear: 1_340, pop: 790, brightness: 1.3 }),
+});
+
+function addCartoonEnemySplat(sound, {
+  start = 0,
+  gain = 0.8,
+  type = "tomato",
+  variant = 0,
+} = {}) {
+  const traits = cartoonSplatTraits[type] || cartoonSplatTraits.tomato;
+  const alternate = variant % 2;
+  const body = traits.body * (alternate ? 1.1 : 1);
+  const smear = traits.smear * (alternate ? 0.92 : 1);
+  const pop = traits.pop * (alternate ? 1.08 : 1);
+
+  // Dry, irregular food-shell contact makes the hit physical rather than
+  // electronic and carries the transient through small phone speakers.
+  addShellCrunch(sound, {
+    start,
+    gain: gain * (alternate ? 0.52 : 0.58),
+    brightness: traits.brightness + alternate * 0.08,
+  });
   addNoise(sound, {
     start,
-    duration: 0.12,
-    gain,
+    duration: 0.032,
+    gain: gain * 0.34,
+    attack: 0.0003,
+    releasePower: 4.2,
+    lowpassHz: 7_200,
+    highpassHz: 1_250,
+    crackle: 0.08,
+  });
+
+  // Two overlapping, band-limited smears form the unmistakable juicy center.
+  // Their useful energy is concentrated above deep bass so the splat remains
+  // readable on an iPhone speaker without relying on extra loudness.
+  addNoise(sound, {
+    start: start + 0.012,
+    duration: 0.118 + alternate * 0.012,
+    gain: gain * 0.9,
+    attack: 0.001,
+    releasePower: 2.45,
+    lowpassHz: 1_500 + alternate * 180,
+    highpassHz: 180,
+    crackle: 0.018,
+  });
+  addNoise(sound, {
+    start: start + 0.018,
+    duration: 0.092,
+    gain: gain * 0.42,
     attack: 0.001,
     releasePower: 2.8,
-    lowpassHz: tone,
-    crackle: 0.035,
+    lowpassHz: smear * 2.25,
+    highpassHz: smear * 0.42,
+    crackle: 0.012,
   });
   addTone(sound, {
-    start,
-    duration: 0.14,
-    frequency: tone * 0.74,
-    endFrequency: 62,
-    gain: gain * 0.55,
+    start: start + 0.01,
+    duration: 0.13,
+    frequency: body * 1.28,
+    endFrequency: body * 0.36,
+    gain: gain * 0.38,
     wave: "sine",
     attack: 0.001,
-    releasePower: 2.7,
+    releasePower: 2.55,
+    vibratoHz: 31 + alternate * 4,
+    vibratoDepth: 0.035,
+  });
+  addTone(sound, {
+    start: start + 0.018,
+    duration: 0.094,
+    frequency: smear * 1.18,
+    endFrequency: smear * 0.38,
+    gain: gain * 0.16,
+    wave: "triangle",
+    attack: 0.001,
+    releasePower: 3.1,
+    vibratoHz: 38,
+    vibratoDepth: 0.028,
+  });
+
+  // A deliberately tiny squish/pop tail completes the normal SPLAT without
+  // implying the elastic reward reserved for a perfect bounce.
+  addNoise(sound, {
+    start: start + 0.105 + alternate * 0.008,
+    duration: 0.047,
+    gain: gain * 0.24,
+    attack: 0.0008,
+    releasePower: 3.3,
+    lowpassHz: 2_300,
+    highpassHz: 420,
+    crackle: 0.025,
+  });
+  addTone(sound, {
+    start: start + 0.108 + alternate * 0.008,
+    duration: 0.058,
+    frequency: pop,
+    endFrequency: pop * 0.58,
+    gain: gain * 0.2,
+    wave: "sine",
+    attack: 0.001,
+    releasePower: 3.5,
   });
 }
 
@@ -338,18 +425,25 @@ const recipes = {
   },
   enemyStomp(sound, type = "tomato") {
     const traits = {
-      tomato: { crunch: 1.12, splat: 350, boing: 238, rise: 1.86 },
-      onion: { crunch: 1.34, splat: 470, boing: 278, rise: 1.72 },
-      chili: { crunch: 1.5, splat: 420, boing: 318, rise: 1.94 },
-      jalapeno: { crunch: 1.42, splat: 390, boing: 350, rise: 2.02 },
+      tomato: { boing: 320, rise: 1.78 },
+      onion: { boing: 352, rise: 1.72 },
+      chili: { boing: 392, rise: 1.84 },
+      jalapeno: { boing: 430, rise: 1.9 },
     }[type];
-    addShellCrunch(sound, { start: 0, gain: 0.82, brightness: traits.crunch });
-    addSplat(sound, { start: 0.02, gain: 0.68, tone: traits.splat });
-    addBoing(sound, { start: 0.065, gain: 0.64, frequency: traits.boing, rise: traits.rise });
+    addCartoonEnemySplat(sound, { start: 0, gain: 0.88, type, variant: 0 });
+    addNoise(sound, {
+      start: 0.07,
+      duration: 0.045,
+      gain: 0.2,
+      attack: 0.0005,
+      releasePower: 3.8,
+      lowpassHz: 4_800,
+      highpassHz: 720,
+    });
+    addBoing(sound, { start: 0.078, gain: 0.68, frequency: traits.boing, rise: traits.rise });
   },
-  enemySplat(sound, variant = 0) {
-    addShellCrunch(sound, { gain: 0.52, brightness: 0.9 + variant * 0.18 });
-    addSplat(sound, { start: 0.014, gain: 0.72, tone: 330 + variant * 90 });
+  enemySplat(sound, type = "tomato", variant = 0) {
+    addCartoonEnemySplat(sound, { start: 0, gain: 0.94, type, variant });
   },
   combo(sound, variant = 0) {
     const notes = variant ? [523.25, 659.25, 783.99, 1_046.5] : [440, 554.37, 659.25];
@@ -454,8 +548,15 @@ const assets = [
   ["global/level-complete-01.wav", 0.92, -3, (s) => recipes.levelComplete(s)],
   ["global/collect-powerup-01.wav", 0.28, -8, (s) => recipes.powerup(s)],
   ["global/ambience-desert-breeze-01.wav", 1.8, -20, (s) => recipes.ambience(s)],
-  ...["tomato", "onion", "chili", "jalapeno"].map((type) => [`world1/enemy-stomp-${type}-01.wav`, 0.36, -3.5, (s) => recipes.enemyStomp(s, type)]),
-  ...[0, 1].map((variant) => [`world1/enemy-splat-0${variant + 1}.wav`, 0.22, -5.5, (s) => recipes.enemySplat(s, variant)]),
+  ...["tomato", "onion", "chili", "jalapeno"].map((type) => [`world1/enemy-stomp-${type}-01.wav`, 0.38, -3.8, (s) => recipes.enemyStomp(s, type)]),
+  ...["tomato", "onion", "chili", "jalapeno"].flatMap((type) => (
+    [0, 1].map((variant) => [
+      `world1/enemy-splat-${type}-0${variant + 1}.wav`,
+      0.22,
+      -4.8,
+      (s) => recipes.enemySplat(s, type, variant),
+    ])
+  )),
   ...[0, 1].map((variant) => [`world1/pinata-hit-0${variant + 1}.wav`, 0.22, -6, (s) => recipes.pinataHit(s, variant)]),
   ["world1/pinata-break-01.wav", 0.72, -2.5, (s) => recipes.pinataBreak(s)],
   ["world1/showdown-enter-01.wav", 0.52, -5, (s) => recipes.showdown(s)],
@@ -492,7 +593,7 @@ async function main() {
   }
 
   const manifest = {
-    generatorVersion: "jft-sfx-phase1-v1",
+    generatorVersion: "jft-sfx-phase1-v2-splat-clarification",
     generatedAt: "deterministic-build-no-timestamp",
     source: "Original procedural synthesis; no third-party samples.",
     sampleRate: SAMPLE_RATE,

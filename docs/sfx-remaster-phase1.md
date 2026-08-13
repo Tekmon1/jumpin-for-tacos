@@ -61,9 +61,11 @@ pitch, gain, and optional stereo variation.
 
 Regular taco events use a 92 ms aggregation window. The first taco remains
 immediate; a dense burst becomes one short cluster response rather than one
-full voice per pickup. Stomps select enemy-specific shell/crunch, splat, and
-elastic rebound renders. Combo excitement comes from bounded pitch lift and
-punctuation at milestones, not additional uncontrolled gain.
+full voice per pickup. Enemy contact has two deliberately related outcomes:
+normal non-bounce destruction plays impact, a juicy midrange splat, and a tiny
+residual squish/pop; a perfect downward stomp uses that same physical splat
+family and adds the pronounced elastic rebound. Combo excitement comes from
+bounded pitch lift and punctuation at milestones, not uncontrolled gain.
 
 The existing `jumpinForTacosProgressV2` record and its Music, Effects, and Mute
 fields are preserved. Existing defaults remain Music 70 and Effects 80, and
@@ -78,8 +80,8 @@ procedural synthesis. It consumes no samples. The committed manifest records
 the seed, duration, byte count, sample rate, channel count, peak, RMS, and
 SHA-256 for every output.
 
-- Asset count: 51
-- Total size: 1,687,752 bytes (1.61 MiB)
+- Asset count: 57
+- Total size: 1,811,496 bytes (1.73 MiB)
 - Largest individual asset: below 200 KiB
 - Determinism check: regenerating the full library leaves the manifest SHA-256
   unchanged
@@ -98,14 +100,19 @@ they are not claims of a hardware true-peak measurement inside a browser.
 - The master ceiling is fixed at -1 dB after a DynamicsCompressor stage.
 - A regular taco is staged around -13.7 dBFS peak at 70/80 before simultaneous
   mix summing and compression.
-- The signature stomp is staged around -6.9 dBFS peak at 70/80.
+- A normal enemy splat is staged around -8.2 dBFS peak at 70/80; its important
+  transient and squish energy is concentrated in the iPhone-readable midrange.
+- The perfect stomp is staged around -7.2 dBFS peak at 70/80. Its roughly 1 dB
+  peak advantage is intentionally small: the reward comes from the added boing
+  and combo punctuation rather than a large loudness jump.
 - Hurt is staged around -7.9 dBFS peak; piñata break around -5.9 dBFS; level
   complete around -6.4 dBFS.
 - Ducking is event-owned but envelope-centralized: regular taco 1 dB, taco
-  cluster 1.8 dB, stomp 5 dB, hurt 6.5 dB, rainbow taco 7.5 dB, and major
+  cluster 1.8 dB, normal splat 4.5 dB, perfect stomp 5 dB, hurt 6.5 dB,
+  rainbow taco 7.5 dB, and major
   piñata/complete moments 8 dB. Attack is normally 18 ms with smooth releases
   selected per event.
-- The browser lab analyser observed a maximum sample peak of -4.45 dBFS during
+- The browser lab analyser observed a maximum sample peak of -3.58 dBFS during
   the Neon-backed rapid-stomp and core-demo runs. This is safely below the
   configured ceiling but is not a true-peak meter reading.
 
@@ -125,12 +132,13 @@ Automated:
 
 In-app browser review:
 
-- AudioContext reached `running`; 51 assets loaded and 0 failed.
+- AudioContext reached `running`; 57 assets loaded and 0 failed.
 - Neon Neckties final concert master played as the loudest stress source.
 - Forty-source magnet cascade: 40 suppressed source events, 8 cluster voices,
   peak 5 simultaneous voices, 0 priority drops, and 0 fallback plays.
-- Ten rapid stomps: peak 6 simultaneous voices, 0 priority drops, 0 fallback
-  plays, and no sample-peak clipping observed.
+- Ten rapid normal splats followed by ten rapid perfect stomps: peak 6
+  simultaneous voices, 0 priority drops, 0 fallback plays, and no sample-peak
+  clipping observed.
 - Core Gameplay Demo completed with peak 6 simultaneous voices, 0 failed
   assets, 0 drops, and 0 fallback plays.
 - Ambience loop start/stop, Music/Effects changes, and mute/unmute all updated

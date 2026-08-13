@@ -18,6 +18,8 @@
   const sequenceStatus = document.getElementById('sequenceStatus');
   const telemetry = document.getElementById('telemetry');
   const ambienceToggle = document.getElementById('ambienceToggle');
+  const normalEnemySplat = document.getElementById('normalEnemySplat');
+  const perfectEnemyStomp = document.getElementById('perfectEnemyStomp');
   let muted = false;
   let ambienceHandle = null;
   let musicSegment = { start: 0, end: 0 };
@@ -114,13 +116,17 @@
     }, duration);
   }
 
-  catalog.requiredPhase1Events.forEach((eventId) => {
+  const contactComparisonEvents = new Set(['combat.enemySplat', 'combat.enemyStomp']);
+  catalog.requiredPhase1Events.filter((eventId) => !contactComparisonEvents.has(eventId)).forEach((eventId) => {
     const button = document.createElement('button');
     button.type = 'button';
     button.textContent = eventId;
     button.addEventListener('click', () => playEvent(eventId));
     effectButtons.appendChild(button);
   });
+
+  normalEnemySplat.addEventListener('click', () => playEvent('combat.enemySplat'));
+  perfectEnemyStomp.addEventListener('click', () => playEvent('combat.enemyStomp'));
 
   document.getElementById('tacoStreak').addEventListener('click', () => {
     scheduleSequence('Taco streak', Array.from({ length: 16 }, (_, index) => ({
@@ -142,6 +148,15 @@
     scheduleSequence('Magnet cascade', events);
   });
 
+  document.getElementById('splatStress').addEventListener('click', () => {
+    const types = ['tomato', 'onion', 'chili', 'jalapeno'];
+    scheduleSequence('Normal splat variants', Array.from({ length: 10 }, (_, index) => ({
+      at: index * 105,
+      eventId: 'combat.enemySplat',
+      options: { enemyType: types[index % types.length], position: (index % 5 - 2) / 2 },
+    })));
+  });
+
   document.getElementById('stompStress').addEventListener('click', () => {
     const types = ['tomato', 'onion', 'chili', 'jalapeno'];
     const events = [];
@@ -155,7 +170,7 @@
         events.push({ at: index * 85 + 36, eventId: 'combat.comboMilestone', options: { combo: index + 1 } });
       }
     }
-    scheduleSequence('Rapid stomp stress', events);
+    scheduleSequence('Perfect stomp stress', events);
   });
 
   document.getElementById('coreDemo').addEventListener('click', () => {
@@ -166,10 +181,11 @@
       { at: 860, eventId: 'collect.taco', options: { streak: 2, position: 0 } },
       { at: 1_000, eventId: 'collect.taco', options: { streak: 3, position: 0.25 } },
       { at: 1_280, eventId: 'hero.landSoft' },
-      { at: 1_720, eventId: 'combat.enemyStomp', options: { enemyType: enemyType.value, combo: 1 } },
-      { at: 2_180, eventId: 'combat.enemyStomp', options: { enemyType: 'onion', combo: 2 } },
-      { at: 2_640, eventId: 'combat.enemyStomp', options: { enemyType: 'chili', combo: 3 } },
-      { at: 2_720, eventId: 'combat.comboMilestone', options: { combo: 3 } },
+      { at: 1_720, eventId: 'combat.enemySplat', options: { enemyType: enemyType.value } },
+      { at: 2_180, eventId: 'combat.enemyStomp', options: { enemyType: enemyType.value, combo: 1 } },
+      { at: 2_640, eventId: 'combat.enemyStomp', options: { enemyType: 'onion', combo: 2 } },
+      { at: 3_100, eventId: 'combat.enemyStomp', options: { enemyType: 'chili', combo: 3 } },
+      { at: 3_180, eventId: 'combat.comboMilestone', options: { combo: 3 } },
       { at: 3_300, eventId: 'collect.goldenTaco' },
       { at: 4_000, eventId: 'checkpoint.activate' },
       { at: 4_850, eventId: 'hero.hurt' },

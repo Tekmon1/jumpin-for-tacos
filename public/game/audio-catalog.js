@@ -234,10 +234,10 @@
       priority: 5,
       cooldownMs: 32,
       maxPolyphony: 4,
-      gainVariationDb: 0.4,
-      pitchVariationCents: 12,
-      comboPitchCents: 48,
-      maxComboPitchCents: 336,
+      gainVariationDb: 0.25,
+      pitchVariationCents: 8,
+      comboPitchCents: 42,
+      maxComboPitchCents: 294,
       panRange: 0.3,
       duckDb: 5,
       duckReleaseSeconds: 0.48,
@@ -245,15 +245,24 @@
     },
     'combat.enemySplat': {
       bus: 'gameplay',
-      variants: [worldOneAsset('enemy-splat-01.wav'), worldOneAsset('enemy-splat-02.wav')],
-      priority: 4,
+      variantsByOption: {
+        option: 'enemyType',
+        defaultKey: 'tomato',
+        variants: {
+          tomato: [worldOneAsset('enemy-splat-tomato-01.wav'), worldOneAsset('enemy-splat-tomato-02.wav')],
+          onion: [worldOneAsset('enemy-splat-onion-01.wav'), worldOneAsset('enemy-splat-onion-02.wav')],
+          chili: [worldOneAsset('enemy-splat-chili-01.wav'), worldOneAsset('enemy-splat-chili-02.wav')],
+          jalapeno: [worldOneAsset('enemy-splat-jalapeno-01.wav'), worldOneAsset('enemy-splat-jalapeno-02.wav')],
+        },
+      },
+      priority: 5,
       cooldownMs: 35,
       maxPolyphony: 4,
-      gainVariationDb: 0.5,
-      pitchVariationCents: 18,
+      gainVariationDb: 0.3,
+      pitchVariationCents: 12,
       panRange: 0.3,
-      duckDb: 4,
-      duckReleaseSeconds: 0.4,
+      duckDb: 4.5,
+      duckReleaseSeconds: 0.42,
       fallback: { frequency: 210, endFrequency: 75, duration: 0.16, wave: 'sine' },
     },
     'combat.comboMilestone': {
@@ -473,7 +482,7 @@
   };
 
   window.JFT_AUDIO_CATALOG = Object.freeze({
-    version: 'phase1-catalog-v1',
+    version: 'phase1-catalog-v2-splat-clarification',
     requiredPhase1Events,
     mix: Object.freeze({
       musicCalibration: 0.75,

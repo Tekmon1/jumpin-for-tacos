@@ -1,7 +1,7 @@
 (() => {
   if (window.JFT_AUDIO?.engineVersion) return;
 
-  const ENGINE_VERSION = '1.0.0-phase1';
+  const ENGINE_VERSION = '1.1.0-phase1-splat-clarification';
   const catalog = window.JFT_AUDIO_CATALOG || { events: {}, mix: {} };
   const eventCatalog = catalog.events || {};
   const mix = {

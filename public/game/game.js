@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-1-v45-sfx-remaster';
+  const SOURCE_VERSION = 'w1-1-v46-splat-clarification';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -1652,7 +1652,7 @@
     playAudio('pinata.break', { position: audioPosition(pinata.x + pinata.w / 2) });
   }
 
-  function defeatEnemy(enemy, stomped = true, stompOptions = {}) {
+  function defeatEnemy(enemy, perfectBounce = true, stompOptions = {}) {
     if (enemy.defeated || !enemy.alive) return;
     enemy.defeated = true;
     enemy.defeatTimer = 0.34;
@@ -1662,7 +1662,7 @@
     const authoredScore = Math.max(0, Number(reward?.score) || 0);
     const authoredMeter = Math.max(0, Number(reward?.meter) || 0);
 
-    if (stomped) {
+    if (perfectBounce) {
       game.stompCombo = game.stompTimer > 0 ? game.stompCombo + 1 : 1;
       game.stompTimer = heroPhysics.stompComboWindow;
       game.bestStompCombo = Math.max(game.bestStompCombo, game.stompCombo);
@@ -1692,18 +1692,21 @@
     game.salsaMeter = Math.min(100, game.salsaMeter + authoredMeter);
 
     const combo = Math.max(1, game.stompCombo);
-    const feedback = heroCore.splatFeedback(combo, stomped);
-    spawnSplatParticles(enemy, stomped ? 24 + combo * 3 : 20);
+    const feedback = heroCore.splatFeedback(combo, perfectBounce);
+    spawnSplatParticles(enemy, perfectBounce ? 24 + combo * 3 : 20);
     spawnImpactText(enemy.x + enemy.w / 2, enemy.y - 8, feedback.text, feedback.color, feedback.size);
-    playAudio(stomped ? 'combat.enemyStomp' : 'combat.enemySplat', {
+    // Both outcomes physically flatten the enemy. A normal success gets the
+    // standalone juicy splat, while the earned downward stomp adds the shared
+    // splat family's elastic rebound layer and combo pitch language.
+    playAudio(perfectBounce ? 'combat.enemyStomp' : 'combat.enemySplat', {
       enemyType: enemy.type,
       combo,
       position: audioPosition(enemy.x + enemy.w / 2),
     });
-    game.hitStop = stomped ? 0.065 : 0.035;
-    game.cameraShake = Math.max(game.cameraShake, stomped ? 7 + combo * 1.7 : 5);
+    game.hitStop = perfectBounce ? 0.065 : 0.035;
+    game.cameraShake = Math.max(game.cameraShake, perfectBounce ? 7 + combo * 1.7 : 5);
 
-    if (stomped) {
+    if (perfectBounce) {
       heroCore.celebrateSplatCombo(combo, {
         reduced: game.reducedShake,
         onCelebrate: (reward) => {
@@ -1741,7 +1744,7 @@
       });
     }
 
-    const rewardCount = stomped
+    const rewardCount = perfectBounce
       ? Math.max(1, Math.min(6, Number(reward?.tacoCount) || 2))
       : 1;
     for (let i = 0; i < rewardCount; i++) {
@@ -1754,7 +1757,7 @@
       );
     }
 
-    if (stomped && reward?.bonusItem && reward.bonusItem !== 'taco') {
+    if (perfectBounce && reward?.bonusItem && reward.bonusItem !== 'taco') {
       spawnBonusItem(enemy.x + enemy.w / 2, enemy.y - 12, reward.bonusItem, 0, -350);
       if (reward.message && combo === 1) {
         game.message = reward.message;
@@ -1762,19 +1765,19 @@
       }
     }
 
-    if (stomped && combo === 3) {
+    if (perfectBounce && combo === 3) {
       spawnBonusItem(enemy.x + enemy.w / 2, enemy.y - 10, 'golden', 0, -370);
       game.message = 'TRIPLE SPLAT! BONUS GOLDEN TACO!';
       game.messageTimer = 1.6;
     }
-    if (stomped && combo === 5) {
+    if (perfectBounce && combo === 5) {
       spawnBonusItem(enemy.x + enemy.w / 2, enemy.y - 10, 'rainbow', 0, -390);
       game.magnetTimer = Math.max(game.magnetTimer, 5);
       game.message = 'RAINBOW RAMPAGE! TACO MAGNET!';
       game.messageTimer = 2;
       playAudio('ability.magnetStart');
     }
-    if (stomped && combo === 8) {
+    if (perfectBounce && combo === 8) {
       game.frenzyTimer = Math.max(game.frenzyTimer, 8);
       player.invulnerable = Math.max(player.invulnerable, 8);
       game.magnetTimer = Math.max(game.magnetTimer, 8);
@@ -1783,8 +1786,8 @@
       playAudio('ability.frenzyStart');
     }
     // Every splatted enemy in the dedicated three-enemy arena counts. Taco
-    // Frenzy defeats use stomped=false, but they should never strand the
-    // piñata at "3 STOMPS" after the whole arena has been cleared.
+    // Frenzy contact defeats are normal non-bounce splats, but they should
+    // never strand the piñata at "3 STOMPS" after the whole arena is cleared.
     if (enemy.pinataArena) hitPinata();
   }
 
