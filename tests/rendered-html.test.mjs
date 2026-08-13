@@ -749,7 +749,7 @@ test("authors the full World 1-1 pilot around purposeful upper routes and metada
   assert.match(runtime, /groupingAllowed = Boolean\(platform\.ground\) \|\| platform\.w >= 220/);
   assert.match(runtime, /function auditEnemyFormations/);
   assert.match(runtime, /id: 'opening-chili-pack', type: 'chili', startX: 760, y: 422,[\s\S]*?count: 2/);
-  assert.doesNotMatch(runtime, /id: 'opening-chili-pack', type: 'chili', startX: 760, y: 422,\n        count: 3/);
+  assert.doesNotMatch(runtime, /id: 'opening-chili-pack', type: 'chili', startX: 760, y: 422,\r?\n        count: 3/);
   assert.match(runtime, /openingLeadEnemyRemoved: game\.openingLeadEnemyRemoved \|\| 0/);
   assert.match(core, /const requestedStartOffset = Number\(anchor\.patrolStartOffset\)/);
   assert.match(runtime, /formationOverlapCount/);
@@ -758,7 +758,7 @@ test("authors the full World 1-1 pilot around purposeful upper routes and metada
   assert.match(core, /const requestedPlatformId = enemy\.supportPlatformId \|\| enemy\.platformId/);
   assert.match(core, /id === `\$\{requestedPlatformId\}-encore`/);
   assert.match(html, /game\.js\?v=48/);
-  assert.match(html, /explore layered desert\n\s+routes where risky jumps can lead to bonus powers/);
+  assert.match(html, /explore layered desert\r?\n\s+routes where risky jumps can lead to bonus powers/);
 });
 
 test("remasters the complete World 1-2 aviation enemy and NPC cast and restores Olivia's pink-and-blue bangs", async () => {
