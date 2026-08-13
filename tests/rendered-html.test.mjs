@@ -18,7 +18,7 @@ async function fetchApp(path = "/") {
   );
 }
 
-test("renders development preview metadata", async () => {
+test("omits development preview metadata from release builds", async () => {
   const response = await fetchApp();
 
   assert.equal(response.status, 200);
@@ -26,7 +26,7 @@ test("renders development preview metadata", async () => {
     response.headers.get("content-type") ?? "",
     /^text\/html\b/i,
   );
-  assert.match(await response.text(), developmentPreviewMeta);
+  assert.doesNotMatch(await response.text(), developmentPreviewMeta);
 });
 
 test("renders canonical SEO and social metadata", async () => {
@@ -1493,8 +1493,8 @@ test("loads the shared Phase 3 audio foundation before World 1-1 and resolves ev
   const labRuntime = await readFile(new URL("../public/game/audio-lab.js", import.meta.url), "utf8");
   const landingPage = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
 
-  const catalogPosition = html.indexOf('src="audio-catalog.js?v=6"');
-  const enginePosition = html.indexOf('src="audio-engine.js?v=6"');
+  const catalogPosition = html.indexOf('src="audio-catalog.js?v=7"');
+  const enginePosition = html.indexOf('src="audio-engine.js?v=7"');
   const runtimePosition = html.indexOf('src="game.js?v=48"');
   assert.ok(catalogPosition >= 0, "World 1-1 loads the semantic catalog");
   assert.ok(enginePosition > catalogPosition, "the engine loads after its catalog");
@@ -1538,7 +1538,7 @@ test("loads the shared Phase 3 audio foundation before World 1-1 and resolves ev
   engine.setEffectsVolume(0.89);
   engine.setMuted(true);
   const telemetry = engine.getTelemetry();
-  assert.equal(telemetry.engineVersion, "2.2.0-phase3-external-source-amendment");
+  assert.equal(telemetry.engineVersion, "2.2.1-release-preload");
   assert.equal(telemetry.assetCacheVersion, "sfx-phase3-v2-external-source-amendment");
   assert.equal(telemetry.audioContextState, "not-created");
   assert.equal(telemetry.audioContextLatencySeconds.base, null);
@@ -1645,6 +1645,9 @@ test("loads the shared Phase 3 audio foundation before World 1-1 and resolves ev
   assert.match(engineSource, /droppedEffectsByPriority/);
   assert.match(engineSource, /function resumePendingLoops/);
   assert.match(engineSource, /function updateLoop/);
+  assert.match(engineSource, /const PRELOAD_CONCURRENCY = 8/);
+  assert.match(engineSource, /function preloadAssetPaths/);
+  assert.match(engineSource, /assetPath\.includes\(`\/sfx\/\$\{group\}\/`\)/, "group preloads do not expand mixed-world semantic variants");
   assert.match(engineSource, /Math\.max\(requestedEndsAt, duckEnvelope\.endsAt/);
   assert.match(engineSource, /fetch\(assetRequestUrl\(assetPath\)\)/, "Phase 3 assets use a cache-busted request URL");
   assert.match(runtime, /jumpinForTacosProgressV2/);
@@ -1719,8 +1722,8 @@ test("keeps every remaining level runtime on the shared Phase 3 audio engine", a
     const catalogPosition = html.indexOf('src="audio-catalog.js');
     const enginePosition = html.indexOf('src="audio-engine.js');
     const runtimePosition = html.indexOf(`src="${runtimeName}`);
-    assert.match(html, /src="audio-catalog\.js\?v=6"/, `${pageName} uses the amended Phase 3 catalog cache key`);
-    assert.match(html, /src="audio-engine\.js\?v=6"/, `${pageName} uses the amended Phase 3 engine cache key`);
+    assert.match(html, /src="audio-catalog\.js\?v=7"/, `${pageName} uses the release catalog cache key`);
+    assert.match(html, /src="audio-engine\.js\?v=7"/, `${pageName} uses the release engine cache key`);
     assert.ok(catalogPosition >= 0, `${pageName} loads the audio catalog`);
     assert.ok(enginePosition > catalogPosition, `${pageName} loads the engine after its catalog`);
     assert.ok(runtimePosition > enginePosition, `${pageName} loads the engine before ${runtimeName}`);

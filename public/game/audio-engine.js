@@ -1,7 +1,8 @@
 (() => {
   if (window.JFT_AUDIO?.engineVersion) return;
 
-  const ENGINE_VERSION = '2.2.0-phase3-external-source-amendment';
+  const ENGINE_VERSION = '2.2.1-release-preload';
+  const PRELOAD_CONCURRENCY = 8;
   const catalog = window.JFT_AUDIO_CATALOG || { events: {}, mix: {} };
   const eventCatalog = catalog.events || {};
   const assetCacheVersion = catalog.assetCacheVersion || '';
@@ -237,6 +238,27 @@
     return promise;
   }
 
+  async function preloadAssetPaths(assetPaths) {
+    const paths = [...new Set(assetPaths)];
+    let nextIndex = 0;
+
+    async function worker() {
+      while (nextIndex < paths.length) {
+        const assetPath = paths[nextIndex];
+        nextIndex += 1;
+        try {
+          await loadAsset(assetPath);
+        } catch {
+          // Asset failures remain available through telemetry and use the centralized fallback.
+        }
+      }
+    }
+
+    const workerCount = Math.min(PRELOAD_CONCURRENCY, paths.length);
+    await Promise.all(Array.from({ length: workerCount }, () => worker()));
+    return getTelemetry();
+  }
+
   async function preload(eventIds = Object.keys(eventCatalog)) {
     ensureContext();
     const ids = Array.isArray(eventIds) ? eventIds : [eventIds];
@@ -246,22 +268,21 @@
       if (!definition) return;
       allVariantPaths(definition).forEach((assetPath) => assets.add(assetPath));
     });
-    await Promise.allSettled([...assets].map((assetPath) => loadAsset(assetPath)));
-    return getTelemetry();
+    return preloadAssetPaths(assets);
   }
 
   async function preloadGroups(groups = ['global']) {
+    ensureContext();
     const requested = new Set(Array.isArray(groups) ? groups : [groups]);
-    const ids = Object.keys(eventCatalog).filter((eventId) => {
-      const definition = eventCatalog[eventId];
-      const paths = allVariantPaths(definition);
-      if (requested.has('global') && paths.some((path) => path.includes('/global/'))) return true;
-      if (requested.has('world1') && paths.some((path) => path.includes('/world1/'))) return true;
-      if (requested.has('world2') && paths.some((path) => path.includes('/world2/'))) return true;
-      if (requested.has('world3') && paths.some((path) => path.includes('/world3/'))) return true;
-      return false;
+    const assets = new Set();
+    Object.values(eventCatalog).forEach((definition) => {
+      allVariantPaths(definition).forEach((assetPath) => {
+        const belongsToRequestedGroup = [...requested]
+          .some((group) => assetPath.includes(`/sfx/${group}/`));
+        if (belongsToRequestedGroup) assets.add(assetPath);
+      });
     });
-    return preload(ids);
+    return preloadAssetPaths(assets);
   }
 
   function chooseVariant(eventId, definition, options) {

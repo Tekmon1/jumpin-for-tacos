@@ -33,9 +33,6 @@ export const metadata: Metadata = {
     images: ["/assets/jumpin-for-tacos-social-v1.jpg"],
   },
   robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 } },
-  other: {
-    "codex-preview": "development",
-  },
   icons: {
     icon: "/game/assets/icon_512.png",
     shortcut: "/game/assets/icon_512.png",
