@@ -1,13 +1,117 @@
 #!/usr/bin/env node
 
 import { createHash } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import decodeAudio from "audio-decode";
 
 const SAMPLE_RATE = 44_100;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SFX_ROOT = path.join(ROOT, "public", "game", "assets", "sfx");
+const EXTERNAL_SOURCE_ROOT = path.join(ROOT, "scripts", "sfx-sources");
+
+const externalSourceManifest = Object.freeze([
+  Object.freeze({
+    id: "freesound-445118",
+    selected: true,
+    role: "enemy-squish-body",
+    sourceUrl: "https://freesound.org/people/Breviceps/sounds/445118/",
+    sourcePlatform: "Freesound",
+    originalFilename: "445118__breviceps__cartoon-splat.wav",
+    creator: "Breviceps",
+    license: "CC0 1.0",
+    licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
+    acquisitionDate: "2026-08-13",
+    attributionRequirement: "None required",
+    committedSourcePath: "scripts/sfx-sources/445118__breviceps__cartoon-splat-hq-preview.mp3",
+    committedPreviewSha256: "78800cb4fa3030457f7888041c2c11a89d7fab608952870e334d36a00a74c742",
+    modifications: "Public HQ preview decoded to mono, short splats isolated, high/low-pass filtered, subtly repitched by enemy family, layered with restrained generated contact and release, peak-normalized.",
+    disposition: "Selected; purpose-built cartoon character and multiple usable short variants.",
+  }),
+  Object.freeze({
+    id: "freesound-382637",
+    selected: false,
+    role: "enemy-squish-candidate",
+    sourceUrl: "https://freesound.org/people/kaydinhamby/sounds/382637/",
+    sourcePlatform: "Freesound",
+    originalFilename: "382637__kaydinhamby__tomato-squish.wav",
+    creator: "kaydinhamby",
+    license: "CC0 1.0",
+    licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
+    acquisitionDate: "2026-08-13",
+    attributionRequirement: "None required",
+    modifications: "Auditioned from the public HQ preview only; not included in final assets.",
+    disposition: "Not selected; realistic tomato texture and very low source level were less repeatable and playful.",
+  }),
+  Object.freeze({
+    id: "freesound-495118",
+    selected: false,
+    role: "enemy-squish-candidate",
+    sourceUrl: "https://freesound.org/people/nebulasnails/sounds/495118/",
+    sourcePlatform: "Freesound",
+    originalFilename: "495118__nebulasnails__wet-splat-1.mp3",
+    creator: "nebulasnails",
+    license: "CC0 1.0",
+    licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
+    acquisitionDate: "2026-08-13",
+    attributionRequirement: "None required",
+    modifications: "Auditioned from the public HQ preview only; not included in final assets.",
+    disposition: "Not selected; useful wet transient but read primarily as a single slap rather than a soft cartoon squash.",
+  }),
+  Object.freeze({
+    id: "freesound-789390",
+    selected: true,
+    role: "aircraft-propeller-loop",
+    sourceUrl: "https://freesound.org/people/modusmogulus/sounds/789390/",
+    sourcePlatform: "Freesound",
+    originalFilename: "789390__modusmogulus__airplane-propeller-loop.wav",
+    creator: "modusmogulus",
+    license: "CC0 1.0",
+    licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
+    acquisitionDate: "2026-08-13",
+    attributionRequirement: "None required",
+    committedSourcePath: "scripts/sfx-sources/789390__modusmogulus__airplane-propeller-loop-hq-preview.mp3",
+    committedPreviewSha256: "17876345d851cf3c939f2fd26834cd327181e59a01c1a89aaab88bdbc624a797",
+    modifications: "Public HQ preview decoded and downmixed, rumble/hiss filtered, wrap-crossfaded into a stable loop, peak-normalized, then spatialized and gain/pitch-ramped at runtime.",
+    disposition: "Selected; real field-recorded Cessna identity and the most stable repeatable propeller bed.",
+  }),
+  Object.freeze({
+    id: "freesound-251971",
+    selected: true,
+    role: "aircraft-approach-departure",
+    sourceUrl: "https://freesound.org/people/clif_creates/sounds/251971/",
+    sourcePlatform: "Freesound",
+    originalFilename: "251971__clif_creates__propeller-plane.wav",
+    creator: "clif_creates",
+    license: "CC0 1.0",
+    licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
+    acquisitionDate: "2026-08-13",
+    attributionRequirement: "None required",
+    committedSourcePath: "scripts/sfx-sources/251971__clif_creates__propeller-plane-hq-preview.mp3",
+    committedPreviewSha256: "2be11106d51275bd7d26cfad21946c1f19596076893c945367fd6fa7ccafdeca",
+    modifications: "Public HQ preview decoded to mono; distant approach and receding tail isolated, time-compressed, phone-focused, layered with restrained generated air punctuation, peak-normalized.",
+    disposition: "Selected; natural distance arc complements the close propeller loop.",
+  }),
+  Object.freeze({
+    id: "freesound-814318",
+    selected: false,
+    role: "aircraft-propeller-candidate",
+    sourceUrl: "https://freesound.org/people/gis_sweden/sounds/814318/",
+    sourcePlatform: "Freesound",
+    originalFilename: "814318__gis_sweden__distant-airplane-loop.wav",
+    creator: "gis_sweden",
+    license: "CC0 1.0",
+    licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
+    acquisitionDate: "2026-08-13",
+    attributionRequirement: "None required",
+    modifications: "Auditioned from the public HQ preview only; not included in final assets.",
+    disposition: "Not selected; useful distance but a pronounced whole-file swell was less controllable than runtime-authored distance gain.",
+  }),
+]);
+
+const externalAudio = new Map();
+const filteredExternalAudio = new Map();
 
 function seedFromName(name) {
   const digest = createHash("sha256").update(name).digest();
@@ -39,6 +143,131 @@ function createSound(duration, seed) {
     samples: new Float64Array(Math.ceil(duration * SAMPLE_RATE)),
     random: makeRandom(seed),
   };
+}
+
+function sampleLinear(samples, position) {
+  const index = Math.floor(position);
+  const fraction = position - index;
+  if (index < 0 || index >= samples.length) return 0;
+  const next = samples[Math.min(samples.length - 1, index + 1)];
+  return samples[index] + (next - samples[index]) * fraction;
+}
+
+function resample(samples, sourceRate) {
+  if (sourceRate === SAMPLE_RATE) return Float64Array.from(samples);
+  const outputLength = Math.max(1, Math.round(samples.length * SAMPLE_RATE / sourceRate));
+  const output = new Float64Array(outputLength);
+  const ratio = sourceRate / SAMPLE_RATE;
+  for (let index = 0; index < output.length; index += 1) {
+    output[index] = sampleLinear(samples, index * ratio);
+  }
+  return output;
+}
+
+async function loadExternalAudio() {
+  for (const source of externalSourceManifest.filter(({ selected }) => selected)) {
+    const absolutePath = path.join(EXTERNAL_SOURCE_ROOT, path.basename(source.committedSourcePath));
+    const encoded = await readFile(absolutePath);
+    const actualHash = createHash("sha256").update(encoded).digest("hex");
+    if (actualHash !== source.committedPreviewSha256) {
+      throw new Error(`External source hash mismatch for ${source.id}: ${actualHash}`);
+    }
+    const decoded = await decodeAudio(encoded);
+    const channels = decoded.channelData || [];
+    if (!channels.length) throw new Error(`External source did not decode: ${source.id}`);
+    const mono = new Float64Array(channels[0].length);
+    for (const channel of channels) {
+      for (let index = 0; index < mono.length; index += 1) mono[index] += channel[index] / channels.length;
+    }
+    const samples = resample(mono, decoded.sampleRate);
+    externalAudio.set(source.id, Object.freeze({
+      samples,
+      sampleRate: SAMPLE_RATE,
+      durationSeconds: samples.length / SAMPLE_RATE,
+      originalSampleRate: decoded.sampleRate,
+      originalChannels: channels.length,
+    }));
+  }
+}
+
+function filteredExternal(sourceId, highpassHz = 0, lowpassHz = SAMPLE_RATE / 2) {
+  const cacheKey = `${sourceId}:${highpassHz}:${lowpassHz}`;
+  if (filteredExternalAudio.has(cacheKey)) return filteredExternalAudio.get(cacheKey);
+  const source = externalAudio.get(sourceId);
+  if (!source) throw new Error(`External source not loaded: ${sourceId}`);
+  const filtered = new Float64Array(source.samples.length);
+  const lowAlpha = 1 - Math.exp((-Math.PI * 2 * Math.min(lowpassHz, SAMPLE_RATE * 0.48)) / SAMPLE_RATE);
+  const highAlpha = highpassHz > 0 ? Math.exp((-Math.PI * 2 * highpassHz) / SAMPLE_RATE) : 0;
+  let low = 0;
+  let previousLow = 0;
+  let high = 0;
+  for (let index = 0; index < source.samples.length; index += 1) {
+    low += (source.samples[index] - low) * lowAlpha;
+    if (highpassHz > 0) {
+      high = highAlpha * (high + low - previousLow);
+      previousLow = low;
+      filtered[index] = high;
+    } else {
+      filtered[index] = low;
+    }
+  }
+  filteredExternalAudio.set(cacheKey, filtered);
+  return filtered;
+}
+
+function addExternalClip(sound, {
+  sourceId,
+  sourceStart = 0,
+  start = 0,
+  duration,
+  gain = 1,
+  rate = 1,
+  fadeIn = 0.006,
+  fadeOut = 0.035,
+  highpassHz = 0,
+  lowpassHz = SAMPLE_RATE / 2,
+} = {}) {
+  const source = filteredExternal(sourceId, highpassHz, lowpassHz);
+  const startSample = Math.max(0, Math.floor(start * SAMPLE_RATE));
+  const endSample = Math.min(sound.samples.length, Math.ceil((start + duration) * SAMPLE_RATE));
+  for (let index = startSample; index < endSample; index += 1) {
+    const localTime = index / SAMPLE_RATE - start;
+    const sourcePosition = (sourceStart + localTime * rate) * SAMPLE_RATE;
+    if (sourcePosition < 0 || sourcePosition >= source.length - 1) break;
+    const attack = fadeIn > 0 ? Math.min(1, localTime / fadeIn) : 1;
+    const release = fadeOut > 0 ? Math.min(1, (duration - localTime) / fadeOut) : 1;
+    sound.samples[index] += sampleLinear(source, sourcePosition) * gain * Math.max(0, Math.min(attack, release));
+  }
+}
+
+function addExternalLoop(sound, {
+  sourceId,
+  sourceStart,
+  sourceEnd,
+  crossfade = 0.28,
+  gain = 1,
+  highpassHz = 0,
+  lowpassHz = SAMPLE_RATE / 2,
+} = {}) {
+  const source = filteredExternal(sourceId, highpassHz, lowpassHz);
+  const sourceLength = sourceEnd - sourceStart;
+  const expectedDuration = sourceLength - crossfade;
+  if (Math.abs(sound.samples.length / SAMPLE_RATE - expectedDuration) > 1 / SAMPLE_RATE) {
+    throw new Error(`External loop duration mismatch for ${sourceId}`);
+  }
+  for (let index = 0; index < sound.samples.length; index += 1) {
+    const localTime = index / SAMPLE_RATE;
+    let value;
+    if (localTime < crossfade) {
+      const progress = localTime / crossfade;
+      const tail = sampleLinear(source, (sourceEnd - crossfade + localTime) * SAMPLE_RATE);
+      const head = sampleLinear(source, (sourceStart + localTime) * SAMPLE_RATE);
+      value = tail * Math.cos(progress * Math.PI * 0.5) + head * Math.sin(progress * Math.PI * 0.5);
+    } else {
+      value = sampleLinear(source, (sourceStart + localTime) * SAMPLE_RATE);
+    }
+    sound.samples[index] += value * gain;
+  }
 }
 
 function envelope(time, duration, attack = 0.006, releasePower = 2) {
@@ -210,7 +439,7 @@ const cartoonSquishTraits = Object.freeze({
   corndog: Object.freeze({ body: 370, smear: 1_050, pop: 650, brightness: 1.16 }),
 });
 
-function addCartoonEnemySquish(sound, {
+function addProceduralEnemySquish(sound, {
   start = 0,
   gain = 0.8,
   type = "tomato",
@@ -315,6 +544,40 @@ function addCartoonEnemySquish(sound, {
     wave: "sine",
     attack: 0.002,
     releasePower: 2.8,
+  });
+}
+
+function addCartoonEnemySquish(sound, {
+  start = 0,
+  gain = 0.8,
+  type = "tomato",
+  variant = 0,
+} = {}) {
+  const traits = cartoonSquishTraits[type] || cartoonSquishTraits.tomato;
+  const alternate = variant % 2;
+  const sourceStart = alternate ? 0.188 : 0.008;
+  const sourceRate = 0.94 + traits.brightness * 0.045 + alternate * 0.035;
+
+  // The CC0 cartoon recording is the unmistakable physical body. A quieter
+  // deterministic contact/release layer retains enemy-family variation and
+  // phone-speaker definition without turning the result back into a synth cue.
+  addExternalClip(sound, {
+    sourceId: "freesound-445118",
+    sourceStart,
+    start,
+    duration: alternate ? 0.205 : 0.19,
+    gain: gain * (alternate ? 0.94 : 0.9),
+    rate: sourceRate,
+    fadeIn: 0.002,
+    fadeOut: 0.026,
+    highpassHz: 135,
+    lowpassHz: 5_400,
+  });
+  addProceduralEnemySquish(sound, {
+    start,
+    gain: gain * 0.31,
+    type,
+    variant,
   });
 }
 
@@ -742,8 +1005,60 @@ worldOneEnemyTypes.forEach((type) => {
   ["boss-guac-vulnerable", "gold", -5], ["boss-guac-clonk", "machine", -6],
   ["boss-guac-damage", "boss", -2], ["boss-guac-dodge", "air", -8],
   ["boss-guac-defeat", "carnival", -1.8], ["victory-dash-start", "gold", -4],
-].forEach(([name, style, peak], index) => addIdentityAsset(`world1/${name}-01.wav`, style, peak, name.includes("defeat") ? 0.9 : 0.58, index % 2));
-addLoopAsset("world1/aircraft-propeller-idle-01.wav", "machine", -18);
+].forEach(([name, style, peak], index) => {
+  if (["aircraft-approach", "aircraft-depart"].includes(name)) return;
+  addIdentityAsset(`world1/${name}-01.wav`, style, peak, name.includes("defeat") ? 0.9 : 0.58, index % 2);
+});
+
+// Private Audio Lab baseline renders retain the prior all-procedural character
+// for an honest before/final comparison without shipping rejected candidates.
+assets.push(["review/enemy-squish-procedural-01.wav", 0.22, -4.8, (sound) => {
+  addProceduralEnemySquish(sound, { gain: 0.94, type: "tomato", variant: 0 });
+}]);
+addLoopAsset("review/aircraft-propeller-procedural-01.wav", "machine", -6.5);
+
+// The final aircraft identity combines a real stable propeller bed with a
+// natural flyover's approach/receding perspectives. Runtime motion supplies
+// the continuously changing distance, pan, and restrained Doppler envelope.
+assets.push(["world1/aircraft-approach-01.wav", 2.35, -8, (sound) => {
+  addExternalClip(sound, {
+    sourceId: "freesound-251971",
+    sourceStart: 2.8,
+    duration: 2.3,
+    rate: 1.82,
+    gain: 1.35,
+    fadeIn: 0.035,
+    fadeOut: 0.12,
+    highpassHz: 105,
+    lowpassHz: 6_500,
+  });
+  addNoise(sound, { start: 0.72, duration: 1.55, gain: 0.055, attack: 0.18, releasePower: 1.15, lowpassHz: 2_900, highpassHz: 430 });
+}]);
+assets.push(["world1/aircraft-depart-01.wav", 2.55, -8.5, (sound) => {
+  addExternalClip(sound, {
+    sourceId: "freesound-251971",
+    sourceStart: 20.75,
+    duration: 2.5,
+    rate: 2.08,
+    gain: 1.4,
+    fadeIn: 0.025,
+    fadeOut: 0.18,
+    highpassHz: 105,
+    lowpassHz: 6_300,
+  });
+  addNoise(sound, { start: 0.08, duration: 2.25, gain: 0.045, attack: 0.1, releasePower: 1.55, lowpassHz: 2_600, highpassHz: 380 });
+}]);
+assets.push(["world1/aircraft-propeller-idle-01.wav", 4.45, -6.5, (sound) => {
+  addExternalLoop(sound, {
+    sourceId: "freesound-789390",
+    sourceStart: 0.55,
+    sourceEnd: 5.35,
+    crossfade: 0.35,
+    gain: 2.55,
+    highpassHz: 90,
+    lowpassHz: 6_800,
+  });
+}]);
 addLoopAsset("world1/aircraft-damaged-loop-01.wav", "air", -19, 1);
 addLoopAsset("world1/stampede-loop-01.wav", "machine", -19, 1);
 
@@ -811,7 +1126,21 @@ Object.entries(worldThreeVehicleTypes).forEach(([vehicle, style]) => {
 });
 addLoopAsset("world3/ambience-cosmic-carnival-01.wav", "cosmic", -21);
 
+function sourceMetadataForAsset(relativePath) {
+  if (/\/enemy-(?:splat|stomp)-/.test(relativePath) && !relativePath.includes("review-")) {
+    return { sourceType: "hybrid", sourceIds: ["freesound-445118"] };
+  }
+  if (relativePath === "world1/aircraft-propeller-idle-01.wav") {
+    return { sourceType: "sourced-recording", sourceIds: ["freesound-789390"] };
+  }
+  if (["world1/aircraft-approach-01.wav", "world1/aircraft-depart-01.wav"].includes(relativePath)) {
+    return { sourceType: "hybrid", sourceIds: ["freesound-251971"] };
+  }
+  return { sourceType: "procedural", sourceIds: [] };
+}
+
 async function main() {
+  await loadExternalAudio();
   const report = [];
   for (const [relativePath, duration, targetPeakDb, render] of assets) {
     const seed = seedFromName(relativePath);
@@ -831,16 +1160,18 @@ async function main() {
       ...measure(sound.samples),
       sha256: createHash("sha256").update(wav).digest("hex"),
       seed,
+      ...sourceMetadataForAsset(relativePath.replaceAll("\\", "/")),
     });
   }
 
   const manifest = {
-    generatorVersion: "jft-sfx-phase3-v1-final-polish",
+    generatorVersion: "jft-sfx-phase3-v2-external-source-amendment",
     generatedAt: "deterministic-build-no-timestamp",
-    source: "Original procedural synthesis; no third-party samples.",
+    source: "Deterministic hybrid library: original procedural layers plus the explicitly documented CC0 recordings below.",
     sampleRate: SAMPLE_RATE,
     assetCount: report.length,
     totalBytes: report.reduce((total, asset) => total + asset.bytes, 0),
+    externalSources: externalSourceManifest,
     assets: report,
   };
   await writeFile(

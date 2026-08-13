@@ -11,11 +11,11 @@
 <body>
   <main class="lab-shell">
     <header class="hero-panel">
-      <p class="eyebrow">Private review utility - Phase 3 final polish</p>
+      <p class="eyebrow">Private review utility - Phase 3 source amendment</p>
       <h1>Jumpin' For Tacos Audio Lab</h1>
       <p>
         Audition the complete nine-level semantic catalog, World palettes, power-up identities,
-        enemy outcomes, vehicles, bosses, stress limits, and centralized music ducking. This page
+        enemy outcomes, aircraft distance motion, vehicles, bosses, stress limits, and centralized music ducking. This page
         remains unlinked from the public site.
       </p>
       <button id="enableAudio" class="primary" type="button">Enable Audio</button>
@@ -103,11 +103,24 @@
           <p>The Enemy family selector applies each world's texture to both outcomes for direct comparison.</p>
         </div>
         <div class="comparison-buttons">
-          <button id="normalEnemySplat" type="button">Non-Perfect Enemy Squish</button>
-          <button id="perfectEnemyStomp" class="primary" type="button">Perfect Enemy Bounce</button>
-          <button id="enemyContactAB" type="button">Enemy Contact A/B Demo</button>
+          <button id="priorEnemySquish" type="button">Prior Procedural Squish</button>
+          <button id="normalEnemySplat" type="button">Final Hybrid Enemy Squish</button>
+          <button id="perfectEnemyStomp" class="primary" type="button">Final Perfect Squish + BOING</button>
+          <button id="enemyContactAB" type="button">Squish Candidate/Final A/B</button>
         </div>
         <p class="comparison-language"><strong>Non-perfect:</strong> SQUISH! <strong>Perfect:</strong> SQUISH! BOING!</p>
+      </div>
+      <div class="contact-comparison" aria-labelledby="aircraftComparisonHeading">
+        <div>
+          <h3 id="aircraftComparisonHeading">Olivia propeller aircraft source A/B</h3>
+          <p>The aircraft is authored in World 1-2. The final uses a CC0 field-recorded propeller bed and flyover, with runtime distance gain, pan, and restrained Doppler.</p>
+        </div>
+        <div class="comparison-buttons">
+          <button id="priorPropeller" type="button">Prior Procedural Propeller</button>
+          <button id="finalPropeller" type="button">Final Recorded Propeller</button>
+          <button id="aircraftFlybyDemo" class="primary" type="button">Approach / Pass / Depart Demo</button>
+        </div>
+        <p class="comparison-language">Selected CC0 sources: Breviceps cartoon splat, modusmogulus propeller loop, and clif_creates propeller flyover. Full provenance is in the SFX manifest.</p>
       </div>
       <div id="catalogSections" class="catalog-sections"></div>
     </section>
@@ -117,7 +130,7 @@
       <div class="stress-grid">
         <button id="powerDemo" type="button">Power-Up Demo</button>
         <button id="enemyComboDemo" type="button">Enemy Stomp Combo Demo</button>
-        <button id="oliviaDemo" type="button">Olivia Taco Drop Demo</button>
+        <button id="oliviaDemo" type="button">Olivia Vehicle Taco Drop Demo</button>
         <button id="bossDemo" type="button">Boss Combat Demo</button>
         <button id="pinataDemo" type="button">Piñata Celebration Demo</button>
         <button id="cosmicDemo" type="button">World 3 Cosmic Finale Demo</button>
@@ -139,8 +152,8 @@
   </main>
 
   <audio id="labMusic" preload="metadata" loop></audio>
-  <script src="audio-catalog.js?v=5"></script>
-  <script src="audio-engine.js?v=5"></script>
-  <script src="audio-lab.js?v=4"></script>
+  <script src="audio-catalog.js?v=6"></script>
+  <script src="audio-engine.js?v=6"></script>
+  <script src="audio-lab.js?v=5"></script>
 </body>
 </html>

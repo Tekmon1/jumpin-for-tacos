@@ -646,7 +646,7 @@ test("ships World 1 with authored seamless panorama progressions", async () => {
     assert.match(rescueForeground, new RegExp(filename.replace(".", "\\.")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(rescueForegroundHtml, /level1-2\.js\?v=28/);
+  assert.match(rescueForegroundHtml, /level1-2\.js\?v=29/);
   assert.match(rescueForeground, /function drawPaintedTerrainSlice/);
   assert.match(rescueForeground, /checkpointArtGroundedByVisibleBaseline: true/);
   assert.match(rescueForeground, /independentCheckpointShadows: true/);
@@ -780,8 +780,8 @@ test("remasters the complete World 1-2 aviation enemy and NPC cast and restores 
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /level1-2\.js\?v=28/);
-  assert.match(runtime, /SOURCE_VERSION = 'w1-2-v28-shared-audio'/);
+  assert.match(html, /level1-2\.js\?v=29/);
+  assert.match(runtime, /SOURCE_VERSION = 'w1-2-v29-aircraft-distance-audio'/);
   assert.match(runtime, /function remasteredEnemyFrame/);
   assert.match(runtime, /function drawCrewMember/);
   assert.match(runtime, /function drawAirfieldCrew/);
@@ -815,7 +815,7 @@ test("authors the World 1-2 rescue pilot across combat sections without crowding
   assert.match(runtime, /previousBottom: previousPlayerBottom/);
   assert.match(runtime, /previousTargetTop: previousEnemyTop/);
   assert.match(runtime, /player\.y = Math\.min\(player\.y, enemy\.y - player\.h - 1\)/);
-  assert.match(html, /level1-2\.js\?v=28/);
+  assert.match(html, /level1-2\.js\?v=29/);
 });
 
 test("remasters the complete World 1-3 showdown enemy, boss, stampede, and NPC cast", async () => {
@@ -1492,8 +1492,8 @@ test("loads the shared Phase 3 audio foundation before World 1-1 and resolves ev
   const labRuntime = await readFile(new URL("../public/game/audio-lab.js", import.meta.url), "utf8");
   const landingPage = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
 
-  const catalogPosition = html.indexOf('src="audio-catalog.js?v=5"');
-  const enginePosition = html.indexOf('src="audio-engine.js?v=5"');
+  const catalogPosition = html.indexOf('src="audio-catalog.js?v=6"');
+  const enginePosition = html.indexOf('src="audio-engine.js?v=6"');
   const runtimePosition = html.indexOf('src="game.js?v=48"');
   assert.ok(catalogPosition >= 0, "World 1-1 loads the semantic catalog");
   assert.ok(enginePosition > catalogPosition, "the engine loads after its catalog");
@@ -1504,8 +1504,8 @@ test("loads the shared Phase 3 audio foundation before World 1-1 and resolves ev
   vm.runInNewContext(engineSource, context, { filename: "audio-engine.js" });
   const catalog = context.window.JFT_AUDIO_CATALOG;
   const engine = context.window.JFT_AUDIO;
-  assert.equal(catalog.version, "phase3-catalog-v1-final-polish");
-  assert.equal(catalog.assetCacheVersion, "sfx-phase3-v1-final-polish");
+  assert.equal(catalog.version, "phase3-catalog-v2-external-source-amendment");
+  assert.equal(catalog.assetCacheVersion, "sfx-phase3-v2-external-source-amendment");
 
   const required = [
     "ui.start", "ui.confirm", "hero.jump", "hero.landSoft", "hero.landHard",
@@ -1528,7 +1528,7 @@ test("loads the shared Phase 3 audio foundation before World 1-1 and resolves ev
   }
 
   for (const api of [
-    "init", "preload", "preloadGroups", "registerMusicTracks", "play", "startLoop", "stopLoop",
+    "init", "preload", "preloadGroups", "registerMusicTracks", "play", "startLoop", "updateLoop", "stopLoop",
     "setMusicVolume", "setMusicDuck", "clearMusicDuck", "setEffectsVolume", "setMuted", "getTelemetry",
   ]) {
     assert.equal(typeof engine[api], "function", `${api} remains available`);
@@ -1537,8 +1537,8 @@ test("loads the shared Phase 3 audio foundation before World 1-1 and resolves ev
   engine.setEffectsVolume(0.89);
   engine.setMuted(true);
   const telemetry = engine.getTelemetry();
-  assert.equal(telemetry.engineVersion, "2.1.0-phase3-final-polish");
-  assert.equal(telemetry.assetCacheVersion, "sfx-phase3-v1-final-polish");
+  assert.equal(telemetry.engineVersion, "2.2.0-phase3-external-source-amendment");
+  assert.equal(telemetry.assetCacheVersion, "sfx-phase3-v2-external-source-amendment");
   assert.equal(telemetry.audioContextState, "not-created");
   assert.equal(telemetry.audioContextLatencySeconds.base, null);
   assert.equal(telemetry.audioContextLatencySeconds.output, null);
@@ -1570,6 +1570,7 @@ test("loads the shared Phase 3 audio foundation before World 1-1 and resolves ev
   const stompRecipe = generatorSource.match(/enemyStomp\(sound,[\s\S]*?\n  },/)?.[0] || "";
   const squishHelper = generatorSource.match(/function addCartoonEnemySquish[\s\S]*?\n}\n\nfunction addBoing/)?.[0] || "";
   assert.match(generatorSource, /function addCartoonEnemySquish/);
+  assert.match(generatorSource, /sourceId: "freesound-445118"/);
   assert.match(splatRecipe, /addCartoonEnemySquish/);
   assert.doesNotMatch(splatRecipe, /addBoing/, "normal splat has no full rebound layer");
   assert.match(stompRecipe, /addCartoonEnemySquish/);
@@ -1579,12 +1580,22 @@ test("loads the shared Phase 3 audio foundation before World 1-1 and resolves ev
   const sfxManifest = JSON.parse(
     await readFile(new URL("../public/game/assets/sfx/sfx-manifest.json", import.meta.url), "utf8"),
   );
-  assert.equal(sfxManifest.source, "Original procedural synthesis; no third-party samples.");
+  assert.match(sfxManifest.source, /procedural layers plus the explicitly documented CC0 recordings/);
   assert.equal(sfxManifest.assetCount, catalogAssets.size);
-  assert.equal(sfxManifest.generatorVersion, "jft-sfx-phase3-v1-final-polish");
-  assert.equal(sfxManifest.assetCount, 280, "full-game library includes every deterministic Phase 3 render");
+  assert.equal(sfxManifest.generatorVersion, "jft-sfx-phase3-v2-external-source-amendment");
+  assert.equal(sfxManifest.assetCount, 282, "full-game library includes every deterministic Phase 3 render and two private A/B baselines");
   assert.ok(sfxManifest.totalBytes < 14 * 1024 * 1024, "full-game SFX stay below 14 MiB");
-  assert.ok(sfxManifest.assets.every((asset) => asset.bytes < 200 * 1024), "each SFX stays below 200 KiB");
+  assert.ok(sfxManifest.assets.every((asset) => asset.bytes < 450 * 1024), "each SFX stays below 450 KiB, including the 4.45-second propeller loop");
+  assert.ok(sfxManifest.assets.every((asset) => ["procedural", "hybrid", "sourced-recording"].includes(asset.sourceType)), "every asset declares its provenance type");
+  assert.equal(sfxManifest.externalSources.length, 6, "the manifest records every selected and rejected source candidate");
+  const selectedSources = sfxManifest.externalSources.filter((source) => source.selected);
+  assert.deepEqual(selectedSources.map((source) => source.id).sort(), ["freesound-251971", "freesound-445118", "freesound-789390"]);
+  assert.ok(sfxManifest.externalSources.every((source) => source.license === "CC0 1.0"));
+  assert.ok(sfxManifest.externalSources.every((source) => source.sourceUrl && source.originalFilename && source.creator && source.acquisitionDate && source.attributionRequirement && source.modifications));
+  for (const source of selectedSources) {
+    const bytes = await readFile(new URL(`../${source.committedSourcePath}`, import.meta.url));
+    assert.equal(createHash("sha256").update(bytes).digest("hex"), source.committedPreviewSha256, `${source.id} source preview hash matches`);
+  }
   for (const asset of sfxManifest.assets) {
     const bytes = await readFile(new URL(`../public/game/${asset.path}`, import.meta.url));
     assert.equal(bytes.length, asset.bytes, `${asset.path} byte length matches its manifest`);
@@ -1603,6 +1614,7 @@ test("loads the shared Phase 3 audio foundation before World 1-1 and resolves ev
   };
   const normalSquishBytes = await readFile(new URL("../public/game/assets/sfx/world1/enemy-splat-tomato-01.wav", import.meta.url));
   const perfectBounceBytes = await readFile(new URL("../public/game/assets/sfx/world1/enemy-stomp-tomato-01.wav", import.meta.url));
+  const propellerLoopBytes = await readFile(new URL("../public/game/assets/sfx/world1/aircraft-propeller-idle-01.wav", import.meta.url));
   assert.ok(
     rmsWindowDb(normalSquishBytes, 0.02, 0.12) >= rmsWindowDb(normalSquishBytes, 0, 0.02) - 1,
     "the juicy squish body remains at least as present as its padded onset",
@@ -1611,6 +1623,15 @@ test("loads the shared Phase 3 audio foundation before World 1-1 and resolves ev
     rmsWindowDb(perfectBounceBytes, 0.12, 0.22) >= rmsWindowDb(normalSquishBytes, 0.12, 0.22) + 10,
     "the perfect bounce has a pronounced late boing that the non-perfect squish does not",
   );
+  const propellerLastSample = propellerLoopBytes.readInt16LE(propellerLoopBytes.length - 2) / 32_768;
+  const propellerFirstSample = propellerLoopBytes.readInt16LE(44) / 32_768;
+  assert.ok(Math.abs(propellerLastSample - propellerFirstSample) < 0.08, "the recorded propeller loop has a bounded wrap seam");
+  const propellerWindows = [
+    rmsWindowDb(propellerLoopBytes, 0.05, 0.35),
+    rmsWindowDb(propellerLoopBytes, 2.05, 2.35),
+    rmsWindowDb(propellerLoopBytes, 4.05, 4.35),
+  ];
+  assert.ok(Math.max(...propellerWindows) - Math.min(...propellerWindows) < 7, "the recorded propeller bed stays stable before runtime distance automation");
 
   assert.doesNotMatch(runtime, /createOscillator\s*\(/, "World 1-1 has no raw oscillator synthesis");
   assert.doesNotMatch(runtime, /function\s+sfx\s*\(/, "World 1-1 has no local sfx function");
@@ -1622,6 +1643,7 @@ test("loads the shared Phase 3 audio foundation before World 1-1 and resolves ev
   assert.match(engineSource, /maximumVoices/);
   assert.match(engineSource, /droppedEffectsByPriority/);
   assert.match(engineSource, /function resumePendingLoops/);
+  assert.match(engineSource, /function updateLoop/);
   assert.match(engineSource, /Math\.max\(requestedEndsAt, duckEnvelope\.endsAt/);
   assert.match(engineSource, /fetch\(assetRequestUrl\(assetPath\)\)/, "Phase 3 assets use a cache-busted request URL");
   assert.match(runtime, /jumpinForTacosProgressV2/);
@@ -1634,9 +1656,13 @@ test("loads the shared Phase 3 audio foundation before World 1-1 and resolves ev
 
   assert.match(lab, /jump_for_tacos_final_concert_master\.mp3/);
   assert.match(lab, /Magnet-cascade stress test/);
-  assert.match(lab, />Non-Perfect Enemy Squish</);
-  assert.match(lab, />Perfect Enemy Bounce</);
-  assert.match(lab, />Enemy Contact A\/B Demo</);
+  assert.match(lab, />Prior Procedural Squish</);
+  assert.match(lab, />Final Hybrid Enemy Squish</);
+  assert.match(lab, />Final Perfect Squish \+ BOING</);
+  assert.match(lab, />Squish Candidate\/Final A\/B</);
+  assert.match(lab, />Prior Procedural Propeller</);
+  assert.match(lab, />Final Recorded Propeller</);
+  assert.match(lab, />Approach \/ Pass \/ Depart Demo</);
   assert.match(lab, /Enemy Families and contact outcomes/);
   assert.match(lab, /SQUISH! BOING!/);
   assert.match(lab, /10 non-perfect squish variants/);
@@ -1645,7 +1671,8 @@ test("loads the shared Phase 3 audio foundation before World 1-1 and resolves ev
   assert.match(labRuntime, /playEvent\('combat\.enemySplat'\)/);
   assert.match(labRuntime, /playEvent\('combat\.enemyStomp'\)/);
   assert.match(labRuntime, /button\.dataset\.eventId = eventId/);
-  assert.match(labRuntime, /scheduleSequence\('Enemy Contact A\/B Demo'/);
+  assert.match(labRuntime, /scheduleSequence\('Squish Candidate\/Final A\/B'/);
+  assert.match(labRuntime, /audio\.updateLoop\(handle/);
   assert.match(labRuntime, /scheduleSequence\('Jump repetition test'/);
   for (const category of ["Hero", "Movement", "Ordinary Taco", "Premium Tacos", "Power-Ups", "Piñatas", "Celebrations", "Finale", "UI"]) {
     assert.match(labRuntime, new RegExp(`\\['${category}'`), `Audio Lab includes the ${category} review category`);
@@ -1678,15 +1705,15 @@ test("keeps every remaining level runtime on the shared Phase 3 audio engine", a
   vm.runInNewContext(catalogSource, context, { filename: "audio-catalog.js" });
   const catalog = context.window.JFT_AUDIO_CATALOG;
   const runtimeCache = new Map();
-  const semanticLiteral = /['"]((?:ui|hero|collect|combat|ability|checkpoint|pinata|goal|level|world1|vehicle|hazard|impact|movement|sequence|boss|surf|volcano|stage|concert|ride|cosmic|carnival|ambience)\.[A-Za-z][A-Za-z0-9.]*)['"]/g;
+  const semanticLiteral = /['"]((?:ui|hero|collect|combat|ability|checkpoint|pinata|goal|level|world1|vehicle|hazard|impact|movement|sequence|boss|surf|volcano|stage|concert|ride|cosmic|carnival|ambience|review)\.[A-Za-z][A-Za-z0-9.]*)['"]/g;
 
   for (const [pageName, runtimeName] of pages) {
     const html = await readFile(new URL(`../public/game/${pageName}`, import.meta.url), "utf8");
     const catalogPosition = html.indexOf('src="audio-catalog.js');
     const enginePosition = html.indexOf('src="audio-engine.js');
     const runtimePosition = html.indexOf(`src="${runtimeName}`);
-    assert.match(html, /src="audio-catalog\.js\?v=5"/, `${pageName} uses the Phase 3 catalog cache key`);
-    assert.match(html, /src="audio-engine\.js\?v=5"/, `${pageName} uses the Phase 3 engine cache key`);
+    assert.match(html, /src="audio-catalog\.js\?v=6"/, `${pageName} uses the amended Phase 3 catalog cache key`);
+    assert.match(html, /src="audio-engine\.js\?v=6"/, `${pageName} uses the amended Phase 3 engine cache key`);
     assert.ok(catalogPosition >= 0, `${pageName} loads the audio catalog`);
     assert.ok(enginePosition > catalogPosition, `${pageName} loads the engine after its catalog`);
     assert.ok(runtimePosition > enginePosition, `${pageName} loads the engine before ${runtimeName}`);
@@ -1714,9 +1741,17 @@ test("keeps every remaining level runtime on the shared Phase 3 audio engine", a
   assert.doesNotMatch(world3, /game\.musicVolume\s*\*\s*game\.musicDuck/);
   assert.match(world3, /perfectBounce \? 'combat\.enemyStomp' : 'combat\.enemySplat'/);
 
+  const worldOneTwo = runtimeCache.get("level1-2.js");
+  assert.match(worldOneTwo, /flybyAircraftLoop/);
+  assert.match(worldOneTwo, /updateLoop\?\.\(game\.flybyAircraftLoop/);
+  assert.match(worldOneTwo, /const dopplerPitch = lerp\(115, -135/);
+  const worldTwoTwo = runtimeCache.get("level2-2.js");
+  assert.match(worldTwoTwo, /vehicleType: 'trekker'/, "World 2-2 retains the Taco Trekker vehicle identity");
+  assert.doesNotMatch(worldTwoTwo, /vehicle\.aircraftPropellerIdle/, "the Olivia aircraft correction does not fabricate an aircraft in World 2-2");
+
   const lab = await readFile(new URL("../public/game/audio-lab.html", import.meta.url), "utf8");
   const labRuntime = await readFile(new URL("../public/game/audio-lab.js", import.meta.url), "utf8");
-  for (const label of ["Power-Up Demo", "Enemy Stomp Combo Demo", "Olivia Taco Drop Demo", "Boss Combat Demo", "Piñata Celebration Demo", "World 3 Cosmic Finale Demo"]) {
+  for (const label of ["Power-Up Demo", "Enemy Stomp Combo Demo", "Olivia Vehicle Taco Drop Demo", "Boss Combat Demo", "Piñata Celebration Demo", "World 3 Cosmic Finale Demo"]) {
     assert.match(lab, new RegExp(label));
   }
   assert.match(labRuntime, /audio\.listEvents\(\)/);

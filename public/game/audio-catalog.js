@@ -4,6 +4,7 @@
   const worldOneAsset = (filename) => `${root}/world1/${filename}`;
   const worldTwoAsset = (filename) => `${root}/world2/${filename}`;
   const worldThreeAsset = (filename) => `${root}/world3/${filename}`;
+  const reviewAsset = (filename) => `${root}/review/${filename}`;
 
   const requiredPhase1Events = Object.freeze([
     'ui.start',
@@ -544,14 +545,14 @@
   });
 
   Object.assign(events, {
-    'vehicle.aircraftApproach': event(worldOneAsset('aircraft-approach-01.wav'), { priority: 3, duckDb: 2.5 }),
+    'vehicle.aircraftApproach': event(worldOneAsset('aircraft-approach-01.wav'), { priority: 3, duckDb: 2.5, panRange: 0.78 }),
     'vehicle.aircraftGreeting': event(worldOneAsset('aircraft-ready-01.wav'), { priority: 2 }),
     'vehicle.aircraftReady': event(worldOneAsset('aircraft-ready-01.wav'), { priority: 3 }),
-    'vehicle.aircraftPropellerIdle': event(worldOneAsset('aircraft-propeller-idle-01.wav'), { bus: 'ambience', priority: 1, gain: 0.58, loop: true, cooldownMs: 0, maxPolyphony: 1, fallback: null }),
+    'vehicle.aircraftPropellerIdle': event(worldOneAsset('aircraft-propeller-idle-01.wav'), { bus: 'ambience', priority: 1, gain: 0.7, panRange: 0.9, loop: true, cooldownMs: 0, maxPolyphony: 1, fallback: null }),
     'vehicle.aircraftTaxi': event(worldOneAsset('aircraft-taxi-01.wav'), { priority: 3 }),
     'vehicle.aircraftTakeoff': event(worldOneAsset('aircraft-takeoff-01.wav'), { priority: 4, duckDb: 4 }),
     'vehicle.aircraftBoost': event(worldOneAsset('aircraft-boost-01.wav'), { priority: 4, duckDb: 4.5 }),
-    'vehicle.aircraftDepart': event(worldOneAsset('aircraft-depart-01.wav'), { priority: 3, duckDb: 2.5 }),
+    'vehicle.aircraftDepart': event(worldOneAsset('aircraft-depart-01.wav'), { priority: 3, duckDb: 2.5, panRange: 0.78 }),
     'vehicle.aircraftDropComplete': event(worldOneAsset('aircraft-drop-complete-01.wav'), { priority: 3 }),
     'vehicle.aircraftDamage': event(worldOneAsset('aircraft-damage-01.wav'), { priority: 5, duckDb: 6 }),
     'vehicle.aircraftRescueStart': event(worldOneAsset('aircraft-rescue-start-01.wav'), { priority: 5, duckDb: 5 }),
@@ -588,6 +589,8 @@
     'boss.elGuacodillo.defeat': event(worldOneAsset('boss-guac-defeat-01.wav'), { priority: 5, duckDb: 9, duckReleaseSeconds: 0.95 }),
     'level.victoryDashStart': event(worldOneAsset('victory-dash-start-01.wav'), { priority: 4, duckDb: 4.5 }),
     'ui.resultsReveal': event(globalAsset('ui-confirm-01.wav'), { bus: 'ui', priority: 3, cooldownMs: 120 }),
+    'review.enemySquishProcedural': event(reviewAsset('enemy-squish-procedural-01.wav'), { priority: 5, cooldownMs: 0, maxPolyphony: 1, duckDb: 4.5, panRange: 0.3 }),
+    'review.aircraftPropellerProcedural': event(reviewAsset('aircraft-propeller-procedural-01.wav'), { bus: 'ambience', priority: 1, gain: 0.7, panRange: 0.9, loop: true, cooldownMs: 0, maxPolyphony: 1, fallback: null }),
   });
 
   const worldTwoEnemyTypes = ['crab', 'coconut', 'seagull', 'puffer', 'tiki', 'marshmallow', 'pineapple', 'pepper', 'nacho', 'ash', 'berry', 'mango', 'spaghetti'];
@@ -683,8 +686,8 @@
   events['ambience.cosmicCarnival'] = event(worldThreeAsset('ambience-cosmic-carnival-01.wav'), { bus: 'ambience', priority: 1, gain: 0.48, loop: true, cooldownMs: 0, maxPolyphony: 1, fallback: null });
 
   window.JFT_AUDIO_CATALOG = Object.freeze({
-    version: 'phase3-catalog-v1-final-polish',
-    assetCacheVersion: 'sfx-phase3-v1-final-polish',
+    version: 'phase3-catalog-v2-external-source-amendment',
+    assetCacheVersion: 'sfx-phase3-v2-external-source-amendment',
     requiredPhase1Events,
     mix: Object.freeze({
       musicCalibration: 0.75,

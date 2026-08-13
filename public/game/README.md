@@ -41,11 +41,13 @@ Review the full-game Phase 3 mix locally at `/game/audio-lab.html`. The page is 
 in the sense that no public game or landing-page navigation links to it. Its
 representative music playback uses the existing music files unchanged.
 
-Regenerate the committed original WAV library from the repository root with
-`npm run generate:sfx`. The deterministic asset hashes and measurements are in
-`assets/sfx/sfx-manifest.json`. The non-perfect enemy contact is intentionally
-a soft, juicy squish; the perfect outcome layers the shared squish body with a
-pronounced rebound.
+Regenerate the committed WAV library from the repository root with
+`npm run generate:sfx`. It combines original procedural layers with three
+explicitly documented CC0 source recordings; sourced recordings are never
+described as original project recordings. Deterministic hashes, measurements,
+licenses, source URLs, and processing notes are in `assets/sfx/sfx-manifest.json`.
+The non-perfect enemy contact is intentionally a soft, juicy squish; the
+perfect outcome layers the shared squish body with a pronounced rebound.
 
 Controller support lives in `controller.js` and is loaded automatically by
 `levels.js`. New levels inherit controller support when they load the shared

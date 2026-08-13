@@ -67,9 +67,10 @@ npm run lint
 ## Shared full-game audio foundation
 
 All nine levels use the shared vanilla-JavaScript audio engine in
-`public/game/audio-engine.js` and the 153-event semantic catalog in
-`public/game/audio-catalog.js`. The committed effects are original,
-procedurally rendered WAV files. Rebuild the complete 280-asset library
+`public/game/audio-engine.js` and the 153-event gameplay catalog in
+`public/game/audio-catalog.js` (plus two private Audio Lab comparison IDs).
+The committed effects combine original procedural layers with three explicitly
+documented CC0 source recordings. Rebuild the complete 282-asset library
 deterministically with:
 
 ```bash

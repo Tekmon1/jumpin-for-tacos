@@ -1,10 +1,108 @@
 {
-  "generatorVersion": "jft-sfx-phase3-v1-final-polish",
+  "generatorVersion": "jft-sfx-phase3-v2-external-source-amendment",
   "generatedAt": "deterministic-build-no-timestamp",
-  "source": "Original procedural synthesis; no third-party samples.",
+  "source": "Deterministic hybrid library: original procedural layers plus the explicitly documented CC0 recordings below.",
   "sampleRate": 44100,
-  "assetCount": 280,
-  "totalBytes": 12408860,
+  "assetCount": 282,
+  "totalBytes": 13150710,
+  "externalSources": [
+    {
+      "id": "freesound-445118",
+      "selected": true,
+      "role": "enemy-squish-body",
+      "sourceUrl": "https://freesound.org/people/Breviceps/sounds/445118/",
+      "sourcePlatform": "Freesound",
+      "originalFilename": "445118__breviceps__cartoon-splat.wav",
+      "creator": "Breviceps",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "acquisitionDate": "2026-08-13",
+      "attributionRequirement": "None required",
+      "committedSourcePath": "scripts/sfx-sources/445118__breviceps__cartoon-splat-hq-preview.mp3",
+      "committedPreviewSha256": "78800cb4fa3030457f7888041c2c11a89d7fab608952870e334d36a00a74c742",
+      "modifications": "Public HQ preview decoded to mono, short splats isolated, high/low-pass filtered, subtly repitched by enemy family, layered with restrained generated contact and release, peak-normalized.",
+      "disposition": "Selected; purpose-built cartoon character and multiple usable short variants."
+    },
+    {
+      "id": "freesound-382637",
+      "selected": false,
+      "role": "enemy-squish-candidate",
+      "sourceUrl": "https://freesound.org/people/kaydinhamby/sounds/382637/",
+      "sourcePlatform": "Freesound",
+      "originalFilename": "382637__kaydinhamby__tomato-squish.wav",
+      "creator": "kaydinhamby",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "acquisitionDate": "2026-08-13",
+      "attributionRequirement": "None required",
+      "modifications": "Auditioned from the public HQ preview only; not included in final assets.",
+      "disposition": "Not selected; realistic tomato texture and very low source level were less repeatable and playful."
+    },
+    {
+      "id": "freesound-495118",
+      "selected": false,
+      "role": "enemy-squish-candidate",
+      "sourceUrl": "https://freesound.org/people/nebulasnails/sounds/495118/",
+      "sourcePlatform": "Freesound",
+      "originalFilename": "495118__nebulasnails__wet-splat-1.mp3",
+      "creator": "nebulasnails",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "acquisitionDate": "2026-08-13",
+      "attributionRequirement": "None required",
+      "modifications": "Auditioned from the public HQ preview only; not included in final assets.",
+      "disposition": "Not selected; useful wet transient but read primarily as a single slap rather than a soft cartoon squash."
+    },
+    {
+      "id": "freesound-789390",
+      "selected": true,
+      "role": "aircraft-propeller-loop",
+      "sourceUrl": "https://freesound.org/people/modusmogulus/sounds/789390/",
+      "sourcePlatform": "Freesound",
+      "originalFilename": "789390__modusmogulus__airplane-propeller-loop.wav",
+      "creator": "modusmogulus",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "acquisitionDate": "2026-08-13",
+      "attributionRequirement": "None required",
+      "committedSourcePath": "scripts/sfx-sources/789390__modusmogulus__airplane-propeller-loop-hq-preview.mp3",
+      "committedPreviewSha256": "17876345d851cf3c939f2fd26834cd327181e59a01c1a89aaab88bdbc624a797",
+      "modifications": "Public HQ preview decoded and downmixed, rumble/hiss filtered, wrap-crossfaded into a stable loop, peak-normalized, then spatialized and gain/pitch-ramped at runtime.",
+      "disposition": "Selected; real field-recorded Cessna identity and the most stable repeatable propeller bed."
+    },
+    {
+      "id": "freesound-251971",
+      "selected": true,
+      "role": "aircraft-approach-departure",
+      "sourceUrl": "https://freesound.org/people/clif_creates/sounds/251971/",
+      "sourcePlatform": "Freesound",
+      "originalFilename": "251971__clif_creates__propeller-plane.wav",
+      "creator": "clif_creates",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "acquisitionDate": "2026-08-13",
+      "attributionRequirement": "None required",
+      "committedSourcePath": "scripts/sfx-sources/251971__clif_creates__propeller-plane-hq-preview.mp3",
+      "committedPreviewSha256": "2be11106d51275bd7d26cfad21946c1f19596076893c945367fd6fa7ccafdeca",
+      "modifications": "Public HQ preview decoded to mono; distant approach and receding tail isolated, time-compressed, phone-focused, layered with restrained generated air punctuation, peak-normalized.",
+      "disposition": "Selected; natural distance arc complements the close propeller loop."
+    },
+    {
+      "id": "freesound-814318",
+      "selected": false,
+      "role": "aircraft-propeller-candidate",
+      "sourceUrl": "https://freesound.org/people/gis_sweden/sounds/814318/",
+      "sourcePlatform": "Freesound",
+      "originalFilename": "814318__gis_sweden__distant-airplane-loop.wav",
+      "creator": "gis_sweden",
+      "license": "CC0 1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "acquisitionDate": "2026-08-13",
+      "attributionRequirement": "None required",
+      "modifications": "Auditioned from the public HQ preview only; not included in final assets.",
+      "disposition": "Not selected; useful distance but a pronounced whole-file swell was less controllable than runtime-authored distance gain."
+    }
+  ],
   "assets": [
     {
       "path": "assets/sfx/global/ui-start-01.wav",
@@ -15,7 +113,9 @@
       "peakDbfs": -9,
       "rmsDbfs": -26.2,
       "sha256": "e2aeaacaed64b8b78c1e0372300ad078d3cdb4e07391fa89b3370619e9fccc67",
-      "seed": 2617345540
+      "seed": 2617345540,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/ui-confirm-01.wav",
@@ -26,7 +126,9 @@
       "peakDbfs": -12,
       "rmsDbfs": -28.35,
       "sha256": "2ccb4d75b51f58259e9423f0be6dc9bdc329f2d1a0545678046f8682553aac18",
-      "seed": 1731528866
+      "seed": 1731528866,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/ui-radio-01.wav",
@@ -37,7 +139,9 @@
       "peakDbfs": -13,
       "rmsDbfs": -22.96,
       "sha256": "35422fcf8772276e37a8a00e2558d14427839f2ac47b193e3fa2ff811649e7c2",
-      "seed": 122199951
+      "seed": 122199951,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/hero-jump-01.wav",
@@ -48,7 +152,9 @@
       "peakDbfs": -9.5,
       "rmsDbfs": -21.39,
       "sha256": "94573119c9fe4b7217bd529e13dc9137ab09aceaab990c90fc649ef236778683",
-      "seed": 3377516867
+      "seed": 3377516867,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/hero-jump-02.wav",
@@ -59,7 +165,9 @@
       "peakDbfs": -9.5,
       "rmsDbfs": -21.84,
       "sha256": "e428e0183f95e1023a218678968afc73ce0ab170db1b8bb50eadebae65f7dc83",
-      "seed": 838094295
+      "seed": 838094295,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/hero-land-soft-01.wav",
@@ -70,7 +178,9 @@
       "peakDbfs": -12,
       "rmsDbfs": -24.86,
       "sha256": "9939654b8a9f76c15a3865c68ade06bdd648fb6e89d322648d3862b191a5bb59",
-      "seed": 1843067936
+      "seed": 1843067936,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/hero-land-soft-02.wav",
@@ -81,7 +191,9 @@
       "peakDbfs": -12,
       "rmsDbfs": -26.81,
       "sha256": "b18b179e824ab3ae6150d77f2b82df2e5d0e04ff8f296f73e51ad3d475fe0b84",
-      "seed": 3344070666
+      "seed": 3344070666,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/hero-land-hard-01.wav",
@@ -92,7 +204,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -18.48,
       "sha256": "d1fa2dd52dfa016c6bb45dd90a0f5826ec679b45a745a00ada5ae4a97912a59e",
-      "seed": 3807869713
+      "seed": 3807869713,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/hero-land-hard-02.wav",
@@ -103,7 +217,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -18.94,
       "sha256": "02b59ca5fe2188f56dc0669dc67308e1e1b281b60d35ccab7f33b83a91bd7fd6",
-      "seed": 2946957021
+      "seed": 2946957021,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/hero-hurt-01.wav",
@@ -114,7 +230,9 @@
       "peakDbfs": -4.5,
       "rmsDbfs": -17.15,
       "sha256": "14f80a8707fa0674d3fce7fb59a555406ad002129f1f53e6c83e40441cdf45ec",
-      "seed": 1363242440
+      "seed": 1363242440,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/hero-hurt-02.wav",
@@ -125,7 +243,9 @@
       "peakDbfs": -4.5,
       "rmsDbfs": -16.55,
       "sha256": "62c45640ddb9aed8ea0d1e7cef68bdee8f3c8bc27b1a805402b11cdea1a29d29",
-      "seed": 114399461
+      "seed": 114399461,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/hero-fall-01.wav",
@@ -136,7 +256,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -17.63,
       "sha256": "89c347ae718a2b39d1bd423e95401dfff9ca6bec37dc067bff56acc963a38ba8",
-      "seed": 3327925790
+      "seed": 3327925790,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/hero-respawn-beam-01.wav",
@@ -147,7 +269,9 @@
       "peakDbfs": -5.5,
       "rmsDbfs": -16.34,
       "sha256": "8619e54de0dd403b25b75fef52de0666a3e058229bd11a3b9380a8570a3eccea",
-      "seed": 4068361360
+      "seed": 4068361360,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/hero-respawn-land-01.wav",
@@ -158,7 +282,9 @@
       "peakDbfs": -5.5,
       "rmsDbfs": -19.41,
       "sha256": "8bad6c53401f1047878666949a34ba80596bf2c2fdb8a6de8f8e89bc52dd5433",
-      "seed": 1903554936
+      "seed": 1903554936,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/collect-taco-01.wav",
@@ -169,7 +295,9 @@
       "peakDbfs": -11.5,
       "rmsDbfs": -25.89,
       "sha256": "f78b259a91ee396bbdeb5a8b128e4294f8a99d4472939ecca9d2f3ac80e483f4",
-      "seed": 3047949141
+      "seed": 3047949141,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/collect-taco-02.wav",
@@ -180,7 +308,9 @@
       "peakDbfs": -11.5,
       "rmsDbfs": -25.7,
       "sha256": "96085e9305743c0e9f25bbf230b8f5e02c7ed12b8eb9d131c8acab099a5d1e35",
-      "seed": 212338124
+      "seed": 212338124,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/collect-taco-03.wav",
@@ -191,7 +321,9 @@
       "peakDbfs": -11.5,
       "rmsDbfs": -26.29,
       "sha256": "5309220a0d9cd94547438d1e1d215a371a98ed199378cbe571b2c271276beda3",
-      "seed": 3287709045
+      "seed": 3287709045,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/collect-taco-04.wav",
@@ -202,7 +334,9 @@
       "peakDbfs": -11.5,
       "rmsDbfs": -25.58,
       "sha256": "f4df7ef4c97dfab4851f988623ac712ba34acd3c5411439e06ae8b6259e71ab7",
-      "seed": 3078239523
+      "seed": 3078239523,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/collect-taco-cluster-01.wav",
@@ -213,7 +347,9 @@
       "peakDbfs": -8.5,
       "rmsDbfs": -21.75,
       "sha256": "1a52cee6b06d393951154a949a9f181786b4b20c7c8113cee02d5cc41481c60c",
-      "seed": 2176624260
+      "seed": 2176624260,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/collect-taco-cluster-02.wav",
@@ -224,7 +360,9 @@
       "peakDbfs": -8.5,
       "rmsDbfs": -21.24,
       "sha256": "62384f88d8aff89c61e20cf57ce90970689c7c78e35bec2a452cd2696f42a8b3",
-      "seed": 2744642196
+      "seed": 2744642196,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/collect-golden-taco-01.wav",
@@ -235,7 +373,9 @@
       "peakDbfs": -5.5,
       "rmsDbfs": -18.8,
       "sha256": "5d0b35f78cbf50452e7cede564fdac773621e12e6c6143f0e2ba9bb919b185ba",
-      "seed": 2571879270
+      "seed": 2571879270,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/collect-rainbow-taco-01.wav",
@@ -246,7 +386,9 @@
       "peakDbfs": -3.5,
       "rmsDbfs": -17.24,
       "sha256": "c3b630d27ed59435b792aa5dfc175cbbb6635c360d50e46f4835748754eb0c2b",
-      "seed": 648329950
+      "seed": 648329950,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/combat-combo-milestone-01.wav",
@@ -257,7 +399,9 @@
       "peakDbfs": -6,
       "rmsDbfs": -20.53,
       "sha256": "9f18cec6d091b8b0aac49d0485a4c96185a767b375302b3414df0af1b3cf3029",
-      "seed": 616304937
+      "seed": 616304937,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/combat-combo-milestone-02.wav",
@@ -268,7 +412,9 @@
       "peakDbfs": -4.5,
       "rmsDbfs": -18.18,
       "sha256": "1e24170a15abadcb225651409dd9a2265616b11ce0593d279d93100e1f11f305",
-      "seed": 1795904043
+      "seed": 1795904043,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/ability-magnet-start-01.wav",
@@ -279,7 +425,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -14.82,
       "sha256": "8b75d4e8d2f6fae58a888fc75fa15c6b4ce66ad985d4655e9514f9998743f104",
-      "seed": 3159563242
+      "seed": 3159563242,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/ability-frenzy-start-01.wav",
@@ -290,7 +438,9 @@
       "peakDbfs": -3.5,
       "rmsDbfs": -15.73,
       "sha256": "9a2742fef0b21aab9d35d5eaaf60445e2d207108092572761c918db955a07e2e",
-      "seed": 2521256572
+      "seed": 2521256572,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/checkpoint-activate-01.wav",
@@ -301,7 +451,9 @@
       "peakDbfs": -4.5,
       "rmsDbfs": -16.84,
       "sha256": "72a679d443c848ca04e45058468987447854cb678e479d1224a565ad2f1af43f",
-      "seed": 1206719607
+      "seed": 1206719607,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/goal-enter-01.wav",
@@ -312,7 +464,9 @@
       "peakDbfs": -4,
       "rmsDbfs": -16.69,
       "sha256": "d94c1d54f5d2e4f80e8598192ceb38b9534de153d53a355da2dcd1dcd40ce40c",
-      "seed": 2227527991
+      "seed": 2227527991,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/level-complete-01.wav",
@@ -323,7 +477,9 @@
       "peakDbfs": -3,
       "rmsDbfs": -15.34,
       "sha256": "5226e8cb6b624883b485b8e9d42cc2ad84e8311cd06fa30ef579253eaabea798",
-      "seed": 643751059
+      "seed": 643751059,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/collect-powerup-01.wav",
@@ -334,7 +490,9 @@
       "peakDbfs": -8,
       "rmsDbfs": -21.42,
       "sha256": "aa6898caae90d15280d0c1d5d236f30a05fdc02ea4f5f7b4117d6201911773bd",
-      "seed": 3441125143
+      "seed": 3441125143,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/ambience-desert-breeze-01.wav",
@@ -345,7 +503,9 @@
       "peakDbfs": -20,
       "rmsDbfs": -28.24,
       "sha256": "90683582c1184da320273fb556ab5f1bcc5d72078ce84b2a1fed0ce66433d3dc",
-      "seed": 2404879802
+      "seed": 2404879802,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/enemy-stomp-tomato-01.wav",
@@ -354,9 +514,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -15.05,
-      "sha256": "a864d5f1fc8ee0cb1cec44ba2d89aa16acc25a9f39862842a8bdd694fc4fdba1",
-      "seed": 428592763
+      "rmsDbfs": -15.39,
+      "sha256": "85d711eb99152e1e87336845787807d103e1f47f6b4cd64e0d9dddf9cbc40234",
+      "seed": 428592763,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-stomp-onion-01.wav",
@@ -365,9 +529,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -14.82,
-      "sha256": "bb6e333f7b21797264ec34c7a03f9637a9579c7cab7309a2adadf3d7bc172197",
-      "seed": 3817333566
+      "rmsDbfs": -15.34,
+      "sha256": "a12f23e99b8c55f194783f3d217e42b1c86d4318fc1ce1be5af9b5c9c1964953",
+      "seed": 3817333566,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-stomp-chili-01.wav",
@@ -376,9 +544,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -14.37,
-      "sha256": "f7f51f4d4e5322d8cefd550e414a89b99c38ec4713f8f2d137038612b7a974af",
-      "seed": 745425198
+      "rmsDbfs": -15.9,
+      "sha256": "8960a82af299c650ab390728e9c08582be30458e1d5c6bd4c8c4db2af57aff14",
+      "seed": 745425198,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-stomp-jalapeno-01.wav",
@@ -387,9 +559,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -15.01,
-      "sha256": "a03f6e95090dc474dc798b1d24c09d939cff784a3aeb1eb94063691780b81523",
-      "seed": 151415417
+      "rmsDbfs": -16.07,
+      "sha256": "bcc4de3032853d7a5d8e9949183571a71b05226c06515b82b2ee1363d2d32adf",
+      "seed": 151415417,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-splat-tomato-01.wav",
@@ -398,9 +574,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -17.57,
-      "sha256": "afcab9f915cad1255044b141ef94428cf7ed301f12adeb9b47b2f88e47bf426e",
-      "seed": 944094039
+      "rmsDbfs": -17.42,
+      "sha256": "f1113fde17eea9f2eedece65202bde830c061e31288addac5937f3e62db67b59",
+      "seed": 944094039,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-splat-tomato-02.wav",
@@ -409,9 +589,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.66,
-      "sha256": "c824410fcc55320aebf740f6971315a977bc5498871e83935e91017dceed7493",
-      "seed": 3377302582
+      "rmsDbfs": -20.81,
+      "sha256": "f587a1c99b4554c3ec02c06ab92fdc221170f89c74969f2d3c7eddf7e5ba92a7",
+      "seed": 3377302582,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-splat-onion-01.wav",
@@ -420,9 +604,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.29,
-      "sha256": "dfe605f25a1da0395a39b6e29789bad4c653112355481b80ac5ec31532f52b1d",
-      "seed": 4026560141
+      "rmsDbfs": -17.82,
+      "sha256": "fcb6e7a1c605375fee5fe659f30c218948e31986a231884fd8a11d03014efece",
+      "seed": 4026560141,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-splat-onion-02.wav",
@@ -431,9 +619,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.71,
-      "sha256": "9abdb47bffb60a0d76cde0ec75b15f15a566e687eb435fb10dde30e508216aae",
-      "seed": 38052721
+      "rmsDbfs": -21.32,
+      "sha256": "42affff588e8bd6501526fa0d804bb2d85b68b3a1213ceb3c095cc684b391d29",
+      "seed": 38052721,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-splat-chili-01.wav",
@@ -442,9 +634,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -17.84,
-      "sha256": "431c0f96da8eebe09dd25df30b81e627f48e863cb5e01aae4410789390c6aadc",
-      "seed": 3630023234
+      "rmsDbfs": -17.73,
+      "sha256": "cdced93788e3ef5ca7ebbe060ed47fc7095cc3af116c0cd5e3f18bc3ec6c9322",
+      "seed": 3630023234,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-splat-chili-02.wav",
@@ -453,9 +649,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.07,
-      "sha256": "122d478b8189e96fdab9d86484cfdd4936fdd7f5bf96a43d2951f64f1ba3d9ee",
-      "seed": 3458281360
+      "rmsDbfs": -21.34,
+      "sha256": "463a211426b2bf62776ef865edaa10c4e129407ba37ec0000729085de965d837",
+      "seed": 3458281360,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-splat-jalapeno-01.wav",
@@ -464,9 +664,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.86,
-      "sha256": "b8277da1b6c400519e095eacdeddabfafb0af57cd858ceba79131832b3b55871",
-      "seed": 495926195
+      "rmsDbfs": -17.34,
+      "sha256": "17dcb99bfe15498bd11d36b709d6024d2c9df4b66babad3ab389a2c5e246e06f",
+      "seed": 495926195,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-splat-jalapeno-02.wav",
@@ -475,9 +679,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.14,
-      "sha256": "c6598c0227141e0b001dafce9df3ba89fcada3995112bbf68cf4267fc7ae0876",
-      "seed": 1739822110
+      "rmsDbfs": -21.43,
+      "sha256": "ea48b8a7137cbdbd40359b5ef0797308ebf187c499660e800be947de2ba1b6f4",
+      "seed": 1739822110,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/pinata-hit-01.wav",
@@ -488,7 +696,9 @@
       "peakDbfs": -6,
       "rmsDbfs": -23.99,
       "sha256": "4f2a0668139f615f4d3a463a3e3705dc395931769393a091fdd26b50febcb97b",
-      "seed": 264336416
+      "seed": 264336416,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/pinata-hit-02.wav",
@@ -499,7 +709,9 @@
       "peakDbfs": -6,
       "rmsDbfs": -23.4,
       "sha256": "99cc689b527ceeae69a8c630645fd8f69ffc3795c4906afbb4016f6f37af774a",
-      "seed": 4118220949
+      "seed": 4118220949,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/pinata-break-01.wav",
@@ -510,7 +722,9 @@
       "peakDbfs": -2.5,
       "rmsDbfs": -15.38,
       "sha256": "8ec7cb2582c16b91b08080f208e40a6c068507461bb0bcc3e968c527e9a9f844",
-      "seed": 3725432989
+      "seed": 3725432989,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/showdown-enter-01.wav",
@@ -521,7 +735,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -18.06,
       "sha256": "69e05d5ff26a15cfb321ddd85a94ca9d2eb7e0a5b2c29d9a7a0ee6536d8416fe",
-      "seed": 2034629947
+      "seed": 2034629947,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/vehicle-arrive-01.wav",
@@ -532,7 +748,9 @@
       "peakDbfs": -8,
       "rmsDbfs": -20.18,
       "sha256": "b819d18f817667a7fdb722c5b874810f8b836f61a78ef2a1f1913598d6d467e6",
-      "seed": 1983914509
+      "seed": 1983914509,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/vehicle-ready-01.wav",
@@ -543,7 +761,9 @@
       "peakDbfs": -8,
       "rmsDbfs": -19.77,
       "sha256": "063c6ce51795790eb0a1f719da203a387661533e4642c89c7ec4acc87c834b10",
-      "seed": 809389267
+      "seed": 809389267,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/vehicle-depart-01.wav",
@@ -554,7 +774,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -18.5,
       "sha256": "3651fd982a119d8203b295158380d75d74dbd59199f9327167f7e8175aaec064",
-      "seed": 4174993713
+      "seed": 4174993713,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/vehicle-drop-01.wav",
@@ -565,7 +787,9 @@
       "peakDbfs": -13,
       "rmsDbfs": -30.09,
       "sha256": "09c13862f9c0cae21f00487f7f8926b0102e15ae105619aab84ad38b789f2947",
-      "seed": 4174673773
+      "seed": 4174673773,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/chase-complete-01.wav",
@@ -576,7 +800,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -17.34,
       "sha256": "517311780b7df3c4a3c43ff6dc8882a311b61d2352c02553bd6a8123200a5b04",
-      "seed": 2662317383
+      "seed": 2662317383,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/goal-warning-01.wav",
@@ -587,7 +813,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -19.13,
       "sha256": "92330d23cd4ed16b027c98de4da7096ccc2bd3d0b83a988925fa5c30d5e311c0",
-      "seed": 2986004977
+      "seed": 2986004977,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/celebration-pulse-01.wav",
@@ -598,7 +826,9 @@
       "peakDbfs": -12,
       "rmsDbfs": -24.99,
       "sha256": "c8d1ee04037a43037a219f601802ac2df448a540b3c84bdd829ec44eb2c94c29",
-      "seed": 1286165926
+      "seed": 1286165926,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/celebration-pulse-02.wav",
@@ -609,7 +839,9 @@
       "peakDbfs": -12,
       "rmsDbfs": -25.94,
       "sha256": "3324a697e2904afc928fca51193a50c741f445dd220df28709b14f2a919ac815",
-      "seed": 3760804515
+      "seed": 3760804515,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/celebration-pulse-03.wav",
@@ -620,7 +852,9 @@
       "peakDbfs": -12,
       "rmsDbfs": -24.69,
       "sha256": "feb229b3bb0b147522ecaf287f1f3529f194904e1c006f14772c791ac431e359",
-      "seed": 1246777851
+      "seed": 1246777851,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/celebration-pulse-04.wav",
@@ -631,7 +865,9 @@
       "peakDbfs": -12,
       "rmsDbfs": -26.02,
       "sha256": "b69fec4f7cdcfd96705f7314d2c65e7d38789fe09c00e123a8c637bc5e6c5747",
-      "seed": 3041850606
+      "seed": 3041850606,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/ability-lime-start-01.wav",
@@ -642,7 +878,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -20.82,
       "sha256": "ad67ea5c88f3da2a991128225c9b25c3b8461aacca4d057e6303f8859495aad0",
-      "seed": 3411344783
+      "seed": 3411344783,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/ability-lime-break-01.wav",
@@ -653,7 +891,9 @@
       "peakDbfs": -6,
       "rmsDbfs": -23.4,
       "sha256": "abc252fa4fe96fe1fe0a3112da46f0a0b0fd8987dbb7bda79a4a6f2a4c79052e",
-      "seed": 3233763968
+      "seed": 3233763968,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/ability-pepper-start-01.wav",
@@ -664,7 +904,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -21.94,
       "sha256": "c54055fb1e0fcaa24d03c7985b88faf13f4b41877246aafacc77374b2574da9f",
-      "seed": 1731673757
+      "seed": 1731673757,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/ability-pepper-end-01.wav",
@@ -675,7 +917,9 @@
       "peakDbfs": -11,
       "rmsDbfs": -28.38,
       "sha256": "9c4ec9a636c919ff63ebb9a873874cb1d90555e7ab0e255ae23b8849768e5253",
-      "seed": 505995976
+      "seed": 505995976,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/ability-coconut-start-01.wav",
@@ -686,7 +930,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -22.42,
       "sha256": "678468e51fbe47db75a9be739776779d7d691deadcf364585f312dde8ec9a2b1",
-      "seed": 3089089492
+      "seed": 3089089492,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/ability-coconut-bounce-01.wav",
@@ -697,7 +943,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -20.9,
       "sha256": "679d8cda7660278ed1141cb989f2cd6fc88dbad091a4993e2ec9183c56aa11ab",
-      "seed": 87778552
+      "seed": 87778552,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/ability-magnet-end-01.wav",
@@ -708,7 +956,9 @@
       "peakDbfs": -11,
       "rmsDbfs": -29.25,
       "sha256": "23e16a7d10b715ac1370b3e3141759d1d02672fb4b98f5126c490f36069bac77",
-      "seed": 1226694410
+      "seed": 1226694410,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/ability-frenzy-end-01.wav",
@@ -719,7 +969,9 @@
       "peakDbfs": -9,
       "rmsDbfs": -26.95,
       "sha256": "386169c8dc6a2c372f590639958d277102624914f25bcd8d4ab7f38763f30fa9",
-      "seed": 586687548
+      "seed": 586687548,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/ability-taco-nova-milestone-01.wav",
@@ -730,7 +982,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -24.17,
       "sha256": "c82174e6f9b851e38dc67a179af9090dd067b2f7baba1527f3fd236e91b39c52",
-      "seed": 2375769578
+      "seed": 2375769578,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/ability-taco-nova-start-01.wav",
@@ -741,7 +995,9 @@
       "peakDbfs": -3.5,
       "rmsDbfs": -19.58,
       "sha256": "e99d433ee85102afae3e7113dc38ba0fde54955670f7670123adb036df402a52",
-      "seed": 1893799583
+      "seed": 1893799583,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/ability-low-gravity-start-01.wav",
@@ -752,7 +1008,9 @@
       "peakDbfs": -6,
       "rmsDbfs": -23.38,
       "sha256": "88cd7ac26cca56648305532ec863d780f3285a4da41646b4e011e400062a5e64",
-      "seed": 3991615425
+      "seed": 3991615425,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/collect-air-mail-01.wav",
@@ -763,7 +1021,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -23.66,
       "sha256": "b1871cda933be4dbbcea4b3b72d3b490f6349fbd2ded5cbccec9957e939deb1d",
-      "seed": 1230439613
+      "seed": 1230439613,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/collect-air-mail-complete-01.wav",
@@ -774,7 +1034,9 @@
       "peakDbfs": -4,
       "rmsDbfs": -20.38,
       "sha256": "d5b3f32a5fe82c829859834649df82d5f374dfae7a8859cbb0965fff49b0e992",
-      "seed": 386765987
+      "seed": 386765987,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/collect-golden-sombrero-01.wav",
@@ -785,7 +1047,9 @@
       "peakDbfs": -4,
       "rmsDbfs": -20.83,
       "sha256": "f86b6ce0032579ddf1fba936ccc978894fe8a284aa332dcdc6f3044390cd1ec8",
-      "seed": 40480277
+      "seed": 40480277,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/collect-golden-hot-sauce-01.wav",
@@ -796,7 +1060,9 @@
       "peakDbfs": -6,
       "rmsDbfs": -23.67,
       "sha256": "70e4f198aaa921a80c6a6e02996184584c68fab57bffb7de9850c632a06b1d00",
-      "seed": 3950490120
+      "seed": 3950490120,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/collect-backstage-pass-01.wav",
@@ -807,7 +1073,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -20.87,
       "sha256": "0ec13439e234c78d865ecefced0a991a61244529de9982eca8bab9597a686f03",
-      "seed": 759077764
+      "seed": 759077764,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/collect-hot-sauce-01.wav",
@@ -818,7 +1086,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -24.32,
       "sha256": "5c74925ee59a25c4b7b65e81cd2e3e5affd05edcfe6029062bc4d861ef84fd6a",
-      "seed": 944671687
+      "seed": 944671687,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/collect-jalapeno-01.wav",
@@ -829,7 +1099,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -24.4,
       "sha256": "ff70b52b8f5a4148c91c086a2b444bd0a56d3284c2ade740b4d4aa1d9eadce44",
-      "seed": 4002041983
+      "seed": 4002041983,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/collect-guac-bowl-01.wav",
@@ -840,7 +1112,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -24.03,
       "sha256": "f01dd6181f626057706540d8256709962914a64f4b61502f91f6978256c474cb",
-      "seed": 2897998999
+      "seed": 2897998999,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/collect-cosmic-golden-taco-01.wav",
@@ -851,7 +1125,9 @@
       "peakDbfs": -3.5,
       "rmsDbfs": -19.7,
       "sha256": "0bb476552f53515386445b15380ace39d7b222f18be6d9617475e57de2c46ac1",
-      "seed": 662677516
+      "seed": 662677516,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/global/ability-low-gravity-end-01.wav",
@@ -862,7 +1138,9 @@
       "peakDbfs": -9,
       "rmsDbfs": -25.74,
       "sha256": "80f8b9da305b7ebade24e76b8a839ce522bedcab66ed6290a7ce0bb4543c5f46",
-      "seed": 1686235570
+      "seed": 1686235570,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/enemy-stomp-lime-01.wav",
@@ -871,9 +1149,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -14.79,
-      "sha256": "9e44517c35252ec140b139409523e19f9e1fabb1157817c0b40ff4ba6830924d",
-      "seed": 3224114945
+      "rmsDbfs": -15.51,
+      "sha256": "19b91d80d3b4cf81b98da5fa51afa1d3dce76e6fecad970b40a94bc19b7c605a",
+      "seed": 3224114945,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-splat-lime-01.wav",
@@ -882,9 +1164,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.98,
-      "sha256": "57164321eeac126cce5eb8c7a02372345945704866ec48dfd7275e9797bf7c08",
-      "seed": 2282518167
+      "rmsDbfs": -18.43,
+      "sha256": "9a848aef39d3b45385ca74a3753abb611452759bbf93ec03f8d1e9a2ce0c227c",
+      "seed": 2282518167,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-splat-lime-02.wav",
@@ -893,9 +1179,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -16.47,
-      "sha256": "1cbd33b741530e2ddfd6bf150f865800a7a555090723907e3f082b5fa2a18526",
-      "seed": 813229633
+      "rmsDbfs": -22.04,
+      "sha256": "598028e0f512ecac8ea7f1e1ff666171da7ca734daebc93a83ac0a69bbe3041d",
+      "seed": 813229633,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-stomp-queso-01.wav",
@@ -904,9 +1194,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -14.98,
-      "sha256": "74b513d6aa31ac4f4f1aac2b833864e5cfc59d01dfb42b0bf8d87e7348281fff",
-      "seed": 183507557
+      "rmsDbfs": -15.7,
+      "sha256": "c8156e8c281c3c4e7ea3877112fef11670b978d7ef4dae9800b377c02aa86142",
+      "seed": 183507557,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-splat-queso-01.wav",
@@ -915,9 +1209,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -17.96,
-      "sha256": "e207f24fec201a204bc7b9c8ee5a963aaf7abf05093623611f15a6bca7e96881",
-      "seed": 1890938545
+      "rmsDbfs": -17.71,
+      "sha256": "734e1e1d9f58bd9c79f342b92bf5a38a20e7e9bd9934586a32be08bfc125fa98",
+      "seed": 1890938545,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-splat-queso-02.wav",
@@ -926,9 +1224,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.09,
-      "sha256": "9ad588a6fe8323afe5228c8b3768252a442bba70f948e68261a14b5a717b4d92",
-      "seed": 4231417688
+      "rmsDbfs": -20.96,
+      "sha256": "a0d91794efb36713b9f8f5cd90b02467fd651ec1b3b153b8752677615e3a4d25",
+      "seed": 4231417688,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-stomp-slime-01.wav",
@@ -937,9 +1239,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -15.27,
-      "sha256": "419b179726845f310ff643dda1e4afa2af3473fe546dbf2c712160063fb0b480",
-      "seed": 4024014133
+      "rmsDbfs": -14.59,
+      "sha256": "156137ffcd1d2380e98f28cb6c891226f7519173c36ef02601b9f78d0890ecfb",
+      "seed": 4024014133,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-splat-slime-01.wav",
@@ -948,9 +1254,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.61,
-      "sha256": "4f774d55311248fefc6be191383cc001f8208defbc4c98c5b43d758656ef40af",
-      "seed": 2846409509
+      "rmsDbfs": -17.04,
+      "sha256": "74c3c9575203afb9831d55e0b7b87ff16ffbc5ecfc61a88013f837c0696f090e",
+      "seed": 2846409509,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-splat-slime-02.wav",
@@ -959,9 +1269,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -17.11,
-      "sha256": "e7a0925f3def1dc3409cef36a67c13aa03c08a4dc64a32e462ff511fe01483e3",
-      "seed": 3313036503
+      "rmsDbfs": -21.81,
+      "sha256": "5c1e9296f2c9da010884419ba0041be4ac47aa88dd566e92f6bc7aae2401a165",
+      "seed": 3313036503,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-stomp-knight-01.wav",
@@ -970,9 +1284,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -14.79,
-      "sha256": "b4be51d261fa9cc6235ec6c3f56fbc9d8a9e8c2ee02b83bfb6a2795c902b5a9d",
-      "seed": 2287982152
+      "rmsDbfs": -15.84,
+      "sha256": "02cd2db32af418aa2297e6ad868375875cfcb90823202063c4347dd2029ea255",
+      "seed": 2287982152,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-splat-knight-01.wav",
@@ -981,9 +1299,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.34,
-      "sha256": "966f98421264a238d284a1cac7dd92789fe563452b8b7428ca361bfaecd3d61f",
-      "seed": 774827892
+      "rmsDbfs": -18.37,
+      "sha256": "4cfa9594c3d6eba58734b56079035dfa617fc8ef64abfb3550e4e8803699936a",
+      "seed": 774827892,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-splat-knight-02.wav",
@@ -992,9 +1314,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.31,
-      "sha256": "611537b74420862c25dde72a0a4683e6b80100af065a7e3d4ee938bc5f4364df",
-      "seed": 2865417544
+      "rmsDbfs": -21.26,
+      "sha256": "67f387fee4981fd50d5a1e408e1c9860f1ad27f14d3772deec261f5bea52c4fe",
+      "seed": 2865417544,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-stomp-guac-01.wav",
@@ -1003,9 +1329,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -14.37,
-      "sha256": "f3e5463011efb64b9cc049bf4b9e0c9ec6178061faef2c48e00cdb116e39b053",
-      "seed": 250385280
+      "rmsDbfs": -15.29,
+      "sha256": "180c6b38b4c01bf4d45e6e6f2085a72aeff850e65e75aef9fce44257523cb898",
+      "seed": 250385280,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-splat-guac-01.wav",
@@ -1014,9 +1344,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -17.94,
-      "sha256": "0c9ddfcaacbf18684b2458741e6799051db60de063a6ade82253b3cd4611ec2e",
-      "seed": 1507533483
+      "rmsDbfs": -18.03,
+      "sha256": "aeed01fbc5f21df5f8c93b8275cf66b58a17fd7577ca2841025f17b3135acc36",
+      "seed": 1507533483,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-splat-guac-02.wav",
@@ -1025,9 +1359,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -17.66,
-      "sha256": "e829229608c31f2d70773503be31a009f17dcbede75b3780e6d9ac233c3cd8d6",
-      "seed": 1275495252
+      "rmsDbfs": -21.99,
+      "sha256": "242e3dd1c5fbe821da0af862f44a500ddc42ef587a1b3eb7dc20bb5b7a92fa07",
+      "seed": 1275495252,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-stomp-churro-01.wav",
@@ -1036,9 +1374,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -14.7,
-      "sha256": "e4abced501ae92cea7f2995ed56ffb8e0b113e6eb391781bc723d8fd4907a1d2",
-      "seed": 1689619907
+      "rmsDbfs": -15.78,
+      "sha256": "0361b463d3ea9de86c8434df1482a8a88057b3a1104bab50fdbba639a564a979",
+      "seed": 1689619907,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-splat-churro-01.wav",
@@ -1047,9 +1389,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.04,
-      "sha256": "98c6beb1a3afc9f0867440de6c4a30051f522245c46013a74a418ba11cf17711",
-      "seed": 3794148177
+      "rmsDbfs": -18.01,
+      "sha256": "c526390809e9a8a93a6452131ca68aea903109dc3ebbdbf765aa979b96aa112c",
+      "seed": 3794148177,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-splat-churro-02.wav",
@@ -1058,9 +1404,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.24,
-      "sha256": "057d2e4c6f635b2c90fbae61f4f4a7e151211762835a00b18ac1c571821df293",
-      "seed": 512737684
+      "rmsDbfs": -21.54,
+      "sha256": "e746fe1819d787dc4748c10f553bd21480a2297b394f178b22de6d6cf637df4c",
+      "seed": 512737684,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-stomp-mole-01.wav",
@@ -1069,9 +1419,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -14.74,
-      "sha256": "2c7f8335381f70f66cbec7a2c73704402446b5369b6fbe089ec2d69b8717b8d1",
-      "seed": 2295905658
+      "rmsDbfs": -16.23,
+      "sha256": "26607280a0fd7c066b13e564b9bc22fdb832b49d333731b60e9fe3f4462fa9e0",
+      "seed": 2295905658,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-splat-mole-01.wav",
@@ -1080,9 +1434,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.95,
-      "sha256": "546adcb1656aef260ff4583b07298d695c79dbc239b8e889628fc1a1eac5963b",
-      "seed": 3611242917
+      "rmsDbfs": -17.2,
+      "sha256": "ccec41ee38ac083d0682c974c2027afacf1b26f8cc3bd5c7f346e8b69b7ca96c",
+      "seed": 3611242917,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/enemy-splat-mole-02.wav",
@@ -1091,20 +1449,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -17.43,
-      "sha256": "71ee45694f96c029cd74771f430b020a9d8b6d86e18c4a294ec88937700265ae",
-      "seed": 3837410601
-    },
-    {
-      "path": "assets/sfx/world1/aircraft-approach-01.wav",
-      "bytes": 51200,
-      "durationSeconds": 0.58,
-      "sampleRate": 44100,
-      "channels": 1,
-      "peakDbfs": -8,
-      "rmsDbfs": -25.32,
-      "sha256": "b0fffa6bc572eb469f436fbc7bb34ce8ed65df4468a3fa2f17ce857b79760ae5",
-      "seed": 3839506760
+      "rmsDbfs": -20.9,
+      "sha256": "44c6999f06837f29580b5e0a62f9c7e7dd1bf33b63301771ec43b1f46220cc28",
+      "seed": 3837410601,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world1/aircraft-ready-01.wav",
@@ -1115,7 +1466,9 @@
       "peakDbfs": -9,
       "rmsDbfs": -25.14,
       "sha256": "abd188e948c54a7a088db7ede82fea54b3eaa561ad4be770eb66d5b34fdd5988",
-      "seed": 861291023
+      "seed": 861291023,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/aircraft-taxi-01.wav",
@@ -1126,7 +1479,9 @@
       "peakDbfs": -8,
       "rmsDbfs": -23.66,
       "sha256": "2684fe132313eb824ac20a4a64c56419a19916f8529387a20b6e2e0374619cd1",
-      "seed": 3744782467
+      "seed": 3744782467,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/aircraft-takeoff-01.wav",
@@ -1137,7 +1492,9 @@
       "peakDbfs": -6,
       "rmsDbfs": -24.13,
       "sha256": "741cd2ef46a7cc251a58461e6dd8f72cb68c22f575c0754f634778b314bbf333",
-      "seed": 2226908330
+      "seed": 2226908330,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/aircraft-boost-01.wav",
@@ -1148,18 +1505,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -21.31,
       "sha256": "86f6bc81cb9829012b5dfa1ef1ca7d32198283ccc39f3ea0b7154bb4539cd246",
-      "seed": 2294223749
-    },
-    {
-      "path": "assets/sfx/world1/aircraft-depart-01.wav",
-      "bytes": 51200,
-      "durationSeconds": 0.58,
-      "sampleRate": 44100,
-      "channels": 1,
-      "peakDbfs": -8,
-      "rmsDbfs": -25.81,
-      "sha256": "01817c40e88e48adb21b0445d04752fd9be2c215e88e4e994d83265704054de1",
-      "seed": 4167860400
+      "seed": 2294223749,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/aircraft-drop-complete-01.wav",
@@ -1170,7 +1518,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -23.85,
       "sha256": "d3025514a1ae8a600564957e39bb9cbf31689ca636bef3d066acb746b937f3da",
-      "seed": 1664307268
+      "seed": 1664307268,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/aircraft-damage-01.wav",
@@ -1181,7 +1531,9 @@
       "peakDbfs": -4,
       "rmsDbfs": -19.62,
       "sha256": "70d7640e09743c7d44f22894eefe6a7c00374fb0bb7f5ad68d3f1f4f87533f19",
-      "seed": 2468792320
+      "seed": 2468792320,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/aircraft-rescue-start-01.wav",
@@ -1192,7 +1544,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -22.98,
       "sha256": "b137b5ca2b0fc3de4561a3598f53a9cd4a4339f581957da9198b27ecb094a873",
-      "seed": 1324239033
+      "seed": 1324239033,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/aircraft-crash-01.wav",
@@ -1203,7 +1557,9 @@
       "peakDbfs": -3,
       "rmsDbfs": -19.63,
       "sha256": "d14386b87e9180ef7abd441892b758732e4dcf84a9b07cfb74260839fd0a3820",
-      "seed": 1083542734
+      "seed": 1083542734,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/aircraft-settled-01.wav",
@@ -1214,7 +1570,9 @@
       "peakDbfs": -8,
       "rmsDbfs": -24.56,
       "sha256": "3ed35207f86685624b50ddca17f66e50beb218b98a6e7604ffb795744eafc569",
-      "seed": 623294600
+      "seed": 623294600,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/guac-warning-01.wav",
@@ -1225,7 +1583,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -23.26,
       "sha256": "06ec044cd31345df8f649432511b4c7b8be92919261e2e9f8399fd239e091040",
-      "seed": 3840948258
+      "seed": 3840948258,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/guac-throw-01.wav",
@@ -1236,7 +1596,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -22.93,
       "sha256": "806c9c4b142ddc392bb47e93ce803741700d61b5d9a02fd721eab3bd18ba24e5",
-      "seed": 2670407791
+      "seed": 2670407791,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/guac-krak-01.wav",
@@ -1247,7 +1609,9 @@
       "peakDbfs": -2.5,
       "rmsDbfs": -18.23,
       "sha256": "947aec930b5c1995b6f739aa949539cc66e4499edff09c3bd5302b960830c6b2",
-      "seed": 2268149565
+      "seed": 2268149565,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/pinata-aftershock-01.wav",
@@ -1258,7 +1622,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -22.11,
       "sha256": "17a53a0bb2901799c26295255689c7b146f28640ecd8d83423ab0336c679dd3e",
-      "seed": 3613897657
+      "seed": 3613897657,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/pinata-jackpot-01.wav",
@@ -1269,7 +1635,9 @@
       "peakDbfs": -3,
       "rmsDbfs": -19.72,
       "sha256": "bd166e262ac020712e3edf20a65291fa719c09fc7f1fd41b418840e7a3554454",
-      "seed": 2085967769
+      "seed": 2085967769,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/stampede-start-01.wav",
@@ -1280,7 +1648,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -21.69,
       "sha256": "9dfc8691ec9d9cde1165e24421a6acc4b12069e45a0175be864aaef0a5b4244e",
-      "seed": 2301154764
+      "seed": 2301154764,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/stampede-near-miss-01.wav",
@@ -1291,7 +1661,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -24.25,
       "sha256": "81b9593ec4166e3d7358e7d2182282bebb6cda1c0f24decba4db366916d2a765",
-      "seed": 3482977932
+      "seed": 3482977932,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/stampede-escape-01.wav",
@@ -1302,7 +1674,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -22.63,
       "sha256": "5acf6c2311c7dd752845efd85fb5bab147cfc2cebd065a3861ffca9abc9eaf44",
-      "seed": 3161804459
+      "seed": 3161804459,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/salsa-slide-01.wav",
@@ -1313,7 +1687,9 @@
       "peakDbfs": -8,
       "rmsDbfs": -25.66,
       "sha256": "052533cd180fafc3f4808335d1062080c10a8367c82c7fed196d4784b5dcd3b1",
-      "seed": 1999729710
+      "seed": 1999729710,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/churro-spring-01.wav",
@@ -1324,7 +1700,9 @@
       "peakDbfs": -8,
       "rmsDbfs": -23.96,
       "sha256": "f75076cb993d271c0b02ad45541829a3c2770c882d097046a9ea9af4a4779813",
-      "seed": 1403888927
+      "seed": 1403888927,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/boss-guac-enter-01.wav",
@@ -1335,7 +1713,9 @@
       "peakDbfs": -3,
       "rmsDbfs": -19.32,
       "sha256": "310c36bb1812c411384ed7e23f38eb5dca6de2def9745cd60efb93d18f82e02b",
-      "seed": 342589636
+      "seed": 342589636,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/boss-guac-phase-01.wav",
@@ -1346,7 +1726,9 @@
       "peakDbfs": -3,
       "rmsDbfs": -19.4,
       "sha256": "c29aeb166c9d68ed08b7a3c0cb0de4c7656800acb0f3dfcc7a21cfd5a97bfad5",
-      "seed": 1589621944
+      "seed": 1589621944,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/boss-guac-windup-01.wav",
@@ -1357,7 +1739,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -21.72,
       "sha256": "4e3ff7ebaea238970e0a5348079826ad35019beb83a99572cf081be456240041",
-      "seed": 1734561787
+      "seed": 1734561787,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/boss-guac-charge-01.wav",
@@ -1368,7 +1752,9 @@
       "peakDbfs": -4,
       "rmsDbfs": -19.83,
       "sha256": "5c55c059716275b9c02801ba03401f28237159d4f5192ade2503963264a94178",
-      "seed": 2714111712
+      "seed": 2714111712,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/boss-guac-crash-01.wav",
@@ -1379,7 +1765,9 @@
       "peakDbfs": -2.5,
       "rmsDbfs": -18.44,
       "sha256": "41319045eaaab790a9fdac3e382147e1456a7182cc9944862c17c1a33ae90284",
-      "seed": 3607643956
+      "seed": 3607643956,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/boss-guac-airstrike-01.wav",
@@ -1390,7 +1778,9 @@
       "peakDbfs": -4,
       "rmsDbfs": -22.03,
       "sha256": "b1da2e832af0a48d5e350165acef68a8032e0707c8afcc2c64b8f863b89bceaf",
-      "seed": 4172095406
+      "seed": 4172095406,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/boss-guac-shot-01.wav",
@@ -1401,7 +1791,9 @@
       "peakDbfs": -9,
       "rmsDbfs": -25.44,
       "sha256": "b6946f728f340139742e22a0e9ddbf5735ae7e79be9fdefa5caa5ac5410621f1",
-      "seed": 3515794172
+      "seed": 3515794172,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/boss-guac-land-01.wav",
@@ -1412,7 +1804,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -23.02,
       "sha256": "078e3ab5c8f70999267a13d39ec2d29d2838de70a21c9c76d14059b85b4b14c9",
-      "seed": 316898729
+      "seed": 316898729,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/boss-guac-spring-01.wav",
@@ -1423,7 +1817,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -23.82,
       "sha256": "ac0a141adf0368ad383a6a17543b444aa6461e1b834055300e729e58a8532cff",
-      "seed": 4171823967
+      "seed": 4171823967,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/boss-guac-vulnerable-01.wav",
@@ -1434,7 +1830,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -22.43,
       "sha256": "9e744cd1b837a157966ffe60e1a52c9bf58847068d5f8c2d25ec22ed95faf573",
-      "seed": 212685260
+      "seed": 212685260,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/boss-guac-clonk-01.wav",
@@ -1445,7 +1843,9 @@
       "peakDbfs": -6,
       "rmsDbfs": -23.36,
       "sha256": "61dba5c28a1636c4fdc3190741b5367a27fdb178fce72e0c44bd3ebae99f8441",
-      "seed": 3844728340
+      "seed": 3844728340,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/boss-guac-damage-01.wav",
@@ -1456,7 +1856,9 @@
       "peakDbfs": -2,
       "rmsDbfs": -18,
       "sha256": "ee70c30ff989db0c0d18cfe43f215c7c55b32f1d4afd30f6cc5e5cd6530ccfbb",
-      "seed": 886016295
+      "seed": 886016295,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/boss-guac-dodge-01.wav",
@@ -1467,7 +1869,9 @@
       "peakDbfs": -8,
       "rmsDbfs": -25.45,
       "sha256": "b07f2ac949fee36b52c27a41cd4eae057bbbfc91143beba3776b02862f411157",
-      "seed": 1195854473
+      "seed": 1195854473,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/boss-guac-defeat-01.wav",
@@ -1478,7 +1882,9 @@
       "peakDbfs": -1.8,
       "rmsDbfs": -20.91,
       "sha256": "7b7bce5b243021de7b76ca22114991a485738190e7634448858f628ae1ce73cc",
-      "seed": 2073820007
+      "seed": 2073820007,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/victory-dash-start-01.wav",
@@ -1489,18 +1895,80 @@
       "peakDbfs": -4,
       "rmsDbfs": -20.96,
       "sha256": "7303fab005576a63cc10f68a7b9ab4bd7d7e64f7c3356817169b0966b88bc2ab",
-      "seed": 1050327796
+      "seed": 1050327796,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
-      "path": "assets/sfx/world1/aircraft-propeller-idle-01.wav",
+      "path": "assets/sfx/review/enemy-squish-procedural-01.wav",
+      "bytes": 19448,
+      "durationSeconds": 0.22,
+      "sampleRate": 44100,
+      "channels": 1,
+      "peakDbfs": -4.8,
+      "rmsDbfs": -17.98,
+      "sha256": "c95d22dbc623f3834825d71a2c6f9c61ea4ea7431c281f712957cf68db4dc68d",
+      "seed": 1314129229,
+      "sourceType": "procedural",
+      "sourceIds": []
+    },
+    {
+      "path": "assets/sfx/review/aircraft-propeller-procedural-01.wav",
       "bytes": 158804,
       "durationSeconds": 1.8,
       "sampleRate": 44100,
       "channels": 1,
-      "peakDbfs": -18,
-      "rmsDbfs": -26.31,
-      "sha256": "8824ef94e7ffa799de370c283b7118dd2083b0cb2086d6e43f3bc3ba68b0ccfc",
-      "seed": 1012343710
+      "peakDbfs": -6.5,
+      "rmsDbfs": -15.04,
+      "sha256": "0f5c2d1b11b186408b29c3ee229d17ed75ab3c32016f816398688410fb79f504",
+      "seed": 1661089236,
+      "sourceType": "procedural",
+      "sourceIds": []
+    },
+    {
+      "path": "assets/sfx/world1/aircraft-approach-01.wav",
+      "bytes": 207314,
+      "durationSeconds": 2.35,
+      "sampleRate": 44100,
+      "channels": 1,
+      "peakDbfs": -8,
+      "rmsDbfs": -21,
+      "sha256": "7eb3c85490907e324a361a5a07d545d9e2d21ab8a7582cad15ecdeb04ca2fa62",
+      "seed": 3839506760,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-251971"
+      ]
+    },
+    {
+      "path": "assets/sfx/world1/aircraft-depart-01.wav",
+      "bytes": 224954,
+      "durationSeconds": 2.55,
+      "sampleRate": 44100,
+      "channels": 1,
+      "peakDbfs": -8.5,
+      "rmsDbfs": -22.34,
+      "sha256": "c23eaf6d1e57fac2cd20d759b206ee63eddbad0583146a02a9c87b01f1480221",
+      "seed": 4167860400,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-251971"
+      ]
+    },
+    {
+      "path": "assets/sfx/world1/aircraft-propeller-idle-01.wav",
+      "bytes": 392534,
+      "durationSeconds": 4.45,
+      "sampleRate": 44100,
+      "channels": 1,
+      "peakDbfs": -6.5,
+      "rmsDbfs": -16.73,
+      "sha256": "27771a387f44ea2a8ba97cf6d6e237e5a30b3f3fb7ba770b36575cc16031fe65",
+      "seed": 1012343710,
+      "sourceType": "sourced-recording",
+      "sourceIds": [
+        "freesound-789390"
+      ]
     },
     {
       "path": "assets/sfx/world1/aircraft-damaged-loop-01.wav",
@@ -1511,7 +1979,9 @@
       "peakDbfs": -19,
       "rmsDbfs": -27.32,
       "sha256": "3505a56b1314eb11f1331ea1456572aaa64bd2ebc2fe945525c43649b53ee147",
-      "seed": 2333420066
+      "seed": 2333420066,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world1/stampede-loop-01.wav",
@@ -1522,7 +1992,9 @@
       "peakDbfs": -19,
       "rmsDbfs": -27.33,
       "sha256": "dc81e7e1a06fe8a9cf2a447c897fd116f4d3b87345ef0b732ad9bcc4363ccfc6",
-      "seed": 3300602078
+      "seed": 3300602078,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/enemy-stomp-crab-01.wav",
@@ -1531,9 +2003,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -14.84,
-      "sha256": "529c7f4d873f4269eefba0b14d5355ec6754050c8e038d0e7f673972f4c7d9eb",
-      "seed": 2387938898
+      "rmsDbfs": -16,
+      "sha256": "f72296feac874b61c3ac887f5134d6d1e6d56a0bb37866a41cdcafded005d860",
+      "seed": 2387938898,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-splat-crab-01.wav",
@@ -1542,9 +2018,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.17,
-      "sha256": "529dc67e890e3a6ae8ff86d48e6c7751e3af4e51a45f3bf72d506547d4daf1bf",
-      "seed": 668961585
+      "rmsDbfs": -17.26,
+      "sha256": "5375e7f7fcd6a31b9d71cd5cf384ba0c01da069c400e1fd65c26094cc80760b9",
+      "seed": 668961585,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-splat-crab-02.wav",
@@ -1553,9 +2033,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -17.56,
-      "sha256": "afb0a242d01caea1f265eb2026f11d0a11716acb71a1a3f6b1d5681b25d23f5c",
-      "seed": 3826100516
+      "rmsDbfs": -21.86,
+      "sha256": "b5e1a3bc5489dffff8cd0c43c06249a4a0a1f1fd022a0f1cae961215212f11cd",
+      "seed": 3826100516,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-stomp-coconut-01.wav",
@@ -1564,9 +2048,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -14.9,
-      "sha256": "8fa8a4dd9f8ef3814a78919ca46619e94f8e464cc182356c277be7d9d996ed4b",
-      "seed": 3577514959
+      "rmsDbfs": -15.92,
+      "sha256": "2010d2cd81457275b519537802774edfc24551ac5691bf5db5e50ea5aa6ab15f",
+      "seed": 3577514959,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-splat-coconut-01.wav",
@@ -1575,9 +2063,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.23,
-      "sha256": "76bcef902e1ffa05016745a43f5ab30e6e32650df20b2d0a733579e1946e7c75",
-      "seed": 3103600096
+      "rmsDbfs": -16.71,
+      "sha256": "0b292bbc8b8f7fc16de7a24ce81400122a7186cfebc02a16f0f1e9237388e0c0",
+      "seed": 3103600096,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-splat-coconut-02.wav",
@@ -1586,9 +2078,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -17.92,
-      "sha256": "a3e3694cc01d03349a5863d4e92e3c4725dcd30007df36172b15202d995d70d9",
-      "seed": 2703368810
+      "rmsDbfs": -21.4,
+      "sha256": "a5637439bc6a6c82fff08866e944233548ec9f82fadb4754321eace063eda14a",
+      "seed": 2703368810,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-stomp-seagull-01.wav",
@@ -1597,9 +2093,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -14.43,
-      "sha256": "946a209c72d8051f26c1a0d50b59c6d6dc52647f0e3414af914a911b24bccc16",
-      "seed": 3807188917
+      "rmsDbfs": -15.93,
+      "sha256": "3c0f71bc4cff557fa5c38409f196e95aad2ff6e6b33d6f6ead72c3fe32d6ad27",
+      "seed": 3807188917,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-splat-seagull-01.wav",
@@ -1608,9 +2108,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -19.23,
-      "sha256": "40bd5fd0d5ae5c69d9357758147215a7df5fe1b23589e5c45e28ded30cc7b1f4",
-      "seed": 1290687835
+      "rmsDbfs": -17.65,
+      "sha256": "ca0fe404707764e963c64ec361ed71e6efedd19959251cb50dd86727cfdf37a2",
+      "seed": 1290687835,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-splat-seagull-02.wav",
@@ -1619,9 +2123,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -17.71,
-      "sha256": "09f4f97d3002a6c754992edd467ac29a893dbf443054aa0cd768eac8c586eb57",
-      "seed": 1282517586
+      "rmsDbfs": -21.19,
+      "sha256": "37f63ab84eb54d874e77a5246ffb8f65c299cbef049b02cada6d02d4afe3a163",
+      "seed": 1282517586,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-stomp-puffer-01.wav",
@@ -1630,9 +2138,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -15.13,
-      "sha256": "7ac349846bf12a7ec67d8428b9c5b0c5c0d9eb2fed943ef11fb919a8bc2f42b5",
-      "seed": 1482610958
+      "rmsDbfs": -14.97,
+      "sha256": "63767f3c625dd340407b3ca99a3723aa70d08c37e6f065a3e180dafb64bc59a0",
+      "seed": 1482610958,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-splat-puffer-01.wav",
@@ -1641,9 +2153,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.57,
-      "sha256": "e64e9de3a3c100286c2e96221e3f55820c3b8ef39bd8ca9c283d4cb03c5ad8c8",
-      "seed": 3399028574
+      "rmsDbfs": -18.12,
+      "sha256": "c80e1992d34c8a79d71ed9fb816f597370e82e6de894cd13f50026d8abf171f8",
+      "seed": 3399028574,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-splat-puffer-02.wav",
@@ -1652,9 +2168,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -17.75,
-      "sha256": "47c3a81ed0d87cb255d5146644a8344a66187ed8d1809a9e7dadb1b7d6e6fd40",
-      "seed": 3471812788
+      "rmsDbfs": -21.88,
+      "sha256": "e8d79770fff56c44d8658f1f41a0dab7919bbceddbeaefae8d775181b7b3b934",
+      "seed": 3471812788,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-stomp-tiki-01.wav",
@@ -1663,9 +2183,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -14.77,
-      "sha256": "ee00b9c7864727623492e57e17ee9f6d11ddf8ab4c119ffd773a8acb53124cc0",
-      "seed": 2000101262
+      "rmsDbfs": -15.63,
+      "sha256": "c9cbcf738f660bdf0922041d9d38ff9a403cd06e5abbb3c5dc26f0af19a99c7d",
+      "seed": 2000101262,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-splat-tiki-01.wav",
@@ -1674,9 +2198,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.78,
-      "sha256": "671cc86db5222ee31ee1f13c3b1f024e3fd8268621f13658cb336429a6f16ca0",
-      "seed": 1027488203
+      "rmsDbfs": -17.56,
+      "sha256": "9f687c4cd50ee3a9c93691d2f33ee6fb30ffbb898fd338a2131978b39e1aed42",
+      "seed": 1027488203,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-splat-tiki-02.wav",
@@ -1685,9 +2213,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -17.32,
-      "sha256": "f93dbdcd18cae6489f5cd311d17997b1281515fa64968f9bc952ac5479b6371b",
-      "seed": 4112844704
+      "rmsDbfs": -21.9,
+      "sha256": "e8ec3e5c748ac600d1493dfd125c3b245c9882d43044bd9fb3ebb33f3c498d66",
+      "seed": 4112844704,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-stomp-marshmallow-01.wav",
@@ -1696,9 +2228,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -14.54,
-      "sha256": "9c5a2debf1d84b8659403ad81acfd79124f89be3b13f57acf826261cc20f6e7c",
-      "seed": 481293675
+      "rmsDbfs": -15.1,
+      "sha256": "840ad4a7e3d2e470b5732b6a1f96f3a324c21a75ddbe71bd13de449561922b34",
+      "seed": 481293675,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-splat-marshmallow-01.wav",
@@ -1707,9 +2243,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.42,
-      "sha256": "9ec937a49eb64124530cf933f3fb2cf5f89a0a12176311cbfbcd26d973f71f15",
-      "seed": 2268463565
+      "rmsDbfs": -17.41,
+      "sha256": "66c3cc37ad724175a59f8ba788c9918b2538b93ecbee188061ada999a3715b66",
+      "seed": 2268463565,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-splat-marshmallow-02.wav",
@@ -1718,9 +2258,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.94,
-      "sha256": "986b6baa08d1cffd2d006ca2206e1a6072308ac9013b39ecf290d6ca968b8c8e",
-      "seed": 625608038
+      "rmsDbfs": -21.43,
+      "sha256": "be89ca4d89aecdc08671c86100769f2df450d7b0212e7322e84516330011ac1f",
+      "seed": 625608038,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-stomp-pineapple-01.wav",
@@ -1729,9 +2273,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -14.69,
-      "sha256": "0504ec122725ed1eabd6c3c4c87406f1fb330f913682a63e39c741b7d5777571",
-      "seed": 3354306030
+      "rmsDbfs": -15.55,
+      "sha256": "95fb47a8c75fe5ef05b5b89cd43583e9975c7babbec8e9b5d84e657d12a2f70e",
+      "seed": 3354306030,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-splat-pineapple-01.wav",
@@ -1740,9 +2288,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.93,
-      "sha256": "4a16904a40817c77dafd9efca0b8bf121244cac4bf2b559dc0bc55eab808470c",
-      "seed": 2579909441
+      "rmsDbfs": -18.1,
+      "sha256": "5f066771fb1d6efbb76b6f38af601263b6125f0ccb54c1c3275f390471d1cdc8",
+      "seed": 2579909441,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-splat-pineapple-02.wav",
@@ -1751,9 +2303,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -17.02,
-      "sha256": "f396c1410f7231096fa916f3edba88815e13e1cddf56b7e8e16ca0393b454a7f",
-      "seed": 520049544
+      "rmsDbfs": -20.86,
+      "sha256": "229bb5aa39dd93b97058b1b97684c4476d9ccb2e36d19004eae6e565774b01ed",
+      "seed": 520049544,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-stomp-pepper-01.wav",
@@ -1762,9 +2318,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -14.86,
-      "sha256": "f7d06c202a67d45c8048ffa5e2d637c87a6021e002f1b77f1a0191bc72f93299",
-      "seed": 3830671376
+      "rmsDbfs": -15.92,
+      "sha256": "32e42bd2a7163bc052a56050456e1bf7d0c0d17b7692cecd3f66f514e16dee4d",
+      "seed": 3830671376,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-splat-pepper-01.wav",
@@ -1773,9 +2333,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.09,
-      "sha256": "d6ee1c2301c9f2ba038eb35f4e923f4a48facea86984cb8ca056bfac58ab24b8",
-      "seed": 1329473559
+      "rmsDbfs": -17.63,
+      "sha256": "5fa788abc2746bf44de50db36ad4eb91af539c27387403c8ea569b7b6b417933",
+      "seed": 1329473559,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-splat-pepper-02.wav",
@@ -1784,9 +2348,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -17.54,
-      "sha256": "526286b1eb0db64d92218427439083286a43654ea3a8b022cb67267be3f0a3a1",
-      "seed": 4166898526
+      "rmsDbfs": -21.48,
+      "sha256": "73cede77f2996ecaca17c3e5e9db71e9a38518502ff3b928a887926ec62e6bd7",
+      "seed": 4166898526,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-stomp-nacho-01.wav",
@@ -1795,9 +2363,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -14.8,
-      "sha256": "1e5b3be33c2e018806ecc7753c704cf581138033eb2ab4a8f984cbec16c5ccc7",
-      "seed": 1624671405
+      "rmsDbfs": -15.37,
+      "sha256": "638e919a223d0205e6213deef2f8609c79bbd5eb3bcece307b8c244d1c5e07cc",
+      "seed": 1624671405,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-splat-nacho-01.wav",
@@ -1806,9 +2378,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -17.68,
-      "sha256": "ffe1d61eca7faae07b7e9d7b82e2b27a9bdfe7f6266e0ec3df93622274d8560b",
-      "seed": 1477875514
+      "rmsDbfs": -18.03,
+      "sha256": "300e497ea4f788749dea9bc024fc33d9fe469d7bdd92f3d49e255a2ad749639b",
+      "seed": 1477875514,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-splat-nacho-02.wav",
@@ -1817,9 +2393,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.1,
-      "sha256": "1db7f2ddf2b5ea030447c18a7ecac5531ac83cb234cad3c6ccad2a1dfe7ece4c",
-      "seed": 4239439716
+      "rmsDbfs": -21.69,
+      "sha256": "11eba73853bbdb6e16b0a6802f2e9f4a14f5ceb1d1a18e437cd06715818bb731",
+      "seed": 4239439716,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-stomp-ash-01.wav",
@@ -1828,9 +2408,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -14.71,
-      "sha256": "c0678e599bc0eb6804826c95116d7a44f49b7b86d06cc716ff168e24280886d0",
-      "seed": 765973287
+      "rmsDbfs": -15.93,
+      "sha256": "8f105e0cc23f00fe43a07ac636092b6668a60bafe33b4a1abcbc3cf593e954f6",
+      "seed": 765973287,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-splat-ash-01.wav",
@@ -1839,9 +2423,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.52,
-      "sha256": "f551843d1f13b975e61353bcc3a59131ab60dd6f8e6760c0b25d8b48160ddf96",
-      "seed": 1312267086
+      "rmsDbfs": -18.01,
+      "sha256": "d7db3511464a7f3d6e3344ab88fb4799adad00a1c69fdd4e0a3072728fef924c",
+      "seed": 1312267086,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-splat-ash-02.wav",
@@ -1850,9 +2438,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -17.64,
-      "sha256": "8e93fc29fdb6499fa9805c986766d1b6a946beca9248efa9013b650b170de095",
-      "seed": 951264907
+      "rmsDbfs": -21.18,
+      "sha256": "881e2f945368b47c8dea677f005b0f3ce0fc8e7644e98d848bd7b49f29f32b79",
+      "seed": 951264907,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-stomp-berry-01.wav",
@@ -1861,9 +2453,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -14.21,
-      "sha256": "bea2726bd36647250160c4109c09aa78e25dc024c2bddfd85f670d85bbf6e769",
-      "seed": 1059943370
+      "rmsDbfs": -15.03,
+      "sha256": "9f957e78bcf610e4c8414c22f647f8246fc42a5e50ecd2358b75c2209e6f3697",
+      "seed": 1059943370,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-splat-berry-01.wav",
@@ -1872,9 +2468,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -17.85,
-      "sha256": "aa14c5802ff1267c265f1c9aeeeff0f342324a13980fa11e01de4836e113a26b",
-      "seed": 2587373850
+      "rmsDbfs": -17.37,
+      "sha256": "fca4f9e75b742662e3782db049546311aecc091448b871aa46c937e49811e1ce",
+      "seed": 2587373850,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-splat-berry-02.wav",
@@ -1883,9 +2483,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.35,
-      "sha256": "44222eedd498e38bca726064fccbc7addbe3e8366a4dee4e7fcf2c194e14ee13",
-      "seed": 1096526547
+      "rmsDbfs": -21.85,
+      "sha256": "250b375b37a56fc15bba718e59fb43d2521b0781a740969f3507ea0198f2e17b",
+      "seed": 1096526547,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-stomp-mango-01.wav",
@@ -1894,9 +2498,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -15.38,
-      "sha256": "fa66cd532b5dcdb3ac9dfd8cf1bcff5f0998d7320657cddf1db8dca11bcfca02",
-      "seed": 2551649017
+      "rmsDbfs": -15.88,
+      "sha256": "20f0ac678ff2c66e19ad5473564bb3acfb7a53e781beb84754d6529d5fddf304",
+      "seed": 2551649017,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-splat-mango-01.wav",
@@ -1905,9 +2513,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.35,
-      "sha256": "a30554dccf7d9744431eb314569d87ec0a00e03393cf4d5801f24885d722858f",
-      "seed": 2046173387
+      "rmsDbfs": -18.11,
+      "sha256": "920161490861b15d14d045600e45c027b9e18af07373fdbe5d2cbe1d4bd03358",
+      "seed": 2046173387,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-splat-mango-02.wav",
@@ -1916,9 +2528,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -17.29,
-      "sha256": "71a3bc840247a045fb298a0c800ed91f856bd1361324c87679f3c0fab225c583",
-      "seed": 3785748907
+      "rmsDbfs": -21.13,
+      "sha256": "4f13b268fa69415234de31d0a71a5709e0e899b186af4f4bc85fadc3a54052dd",
+      "seed": 3785748907,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-stomp-spaghetti-01.wav",
@@ -1927,9 +2543,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -15.05,
-      "sha256": "ceb0431a560c4301dcaca6a9a945cc02b755ad9a8659765ff88d6b28cb364b91",
-      "seed": 2713912818
+      "rmsDbfs": -15,
+      "sha256": "b8acecacb136d214b4ad6b72347b672469f2cd5c9bc8c579f5e31a70aefaa9cf",
+      "seed": 2713912818,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-splat-spaghetti-01.wav",
@@ -1938,9 +2558,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.12,
-      "sha256": "9fc1d1b822de9287cf73633a8c99a1a5ffad253093a22fde49f8d4e4559df5bc",
-      "seed": 1359465974
+      "rmsDbfs": -17.63,
+      "sha256": "4f05f4cee4a05dc37beb22aa379cc5e9ea98d24dc6e0d2486fc19a1384ec2c6f",
+      "seed": 1359465974,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/enemy-splat-spaghetti-02.wav",
@@ -1949,9 +2573,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -17.96,
-      "sha256": "1b52046ba669669493d5b3cbdb4e689f5d72c025d73c2a73245d88798b64bc1a",
-      "seed": 478649151
+      "rmsDbfs": -21.88,
+      "sha256": "6a7fa286e6b3360bfa1529fe50695e9af70a84556dc1340cc2c58bbb96a14dbf",
+      "seed": 478649151,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world2/vehicle-catamaran-approach-01.wav",
@@ -1962,7 +2590,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -23.05,
       "sha256": "ac0467d703d70123f3edadd27c38e7c668e196c9b100c72b04ee8d6602e580a6",
-      "seed": 747500718
+      "seed": 747500718,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/vehicle-catamaran-accelerate-01.wav",
@@ -1973,7 +2603,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -24.55,
       "sha256": "6dec6a74dca9f911db2c460e479e44c70f6c7da72efe47d8aac02f0a2711b0bd",
-      "seed": 2891092767
+      "seed": 2891092767,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/vehicle-catamaran-depart-01.wav",
@@ -1984,7 +2616,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -22.92,
       "sha256": "989a08ea5c6df3836b34b9d04a06df1dead3ad6196fc1dcc5d33c00a7554b7c1",
-      "seed": 3352026341
+      "seed": 3352026341,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/vehicle-catamaran-taco-drop-01.wav",
@@ -1995,7 +2629,9 @@
       "peakDbfs": -11,
       "rmsDbfs": -26.79,
       "sha256": "7436f86d1c30e9f3e7c6703ac9c5c7f67100de1bece88d1a0574d57c1b8f0476",
-      "seed": 4089244783
+      "seed": 4089244783,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/vehicle-catamaran-idle-01.wav",
@@ -2006,7 +2642,9 @@
       "peakDbfs": -19,
       "rmsDbfs": -26.54,
       "sha256": "dd4a44bee40498605f58fdb7dbb4ae82f93a2378b8b3f1da9d6f2429498012a6",
-      "seed": 3573051069
+      "seed": 3573051069,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/vehicle-trekker-approach-01.wav",
@@ -2017,7 +2655,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -22.82,
       "sha256": "f1c2a089d1155b0491e50ec8652559c08085fbbc3eaee24653ec76034dfe1cbf",
-      "seed": 994493025
+      "seed": 994493025,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/vehicle-trekker-accelerate-01.wav",
@@ -2028,7 +2668,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -23.26,
       "sha256": "c4a72fee90630b6a547b8153d96dcb632f5fde05ba243215494895bfa41c0fd7",
-      "seed": 3277473280
+      "seed": 3277473280,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/vehicle-trekker-depart-01.wav",
@@ -2039,7 +2681,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -22.99,
       "sha256": "6879663e4bfdf8d2f933a423a77794877d4455d6ee2fa95107ec2a99ba1b1738",
-      "seed": 1217439507
+      "seed": 1217439507,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/vehicle-trekker-taco-drop-01.wav",
@@ -2050,7 +2694,9 @@
       "peakDbfs": -11,
       "rmsDbfs": -26.64,
       "sha256": "87268ea5a789b37415c928a1c3fa179bf8ee8b991b13837dd2e7f8d8ea244554",
-      "seed": 2804987478
+      "seed": 2804987478,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/vehicle-trekker-idle-01.wav",
@@ -2061,7 +2707,9 @@
       "peakDbfs": -19,
       "rmsDbfs": -27.56,
       "sha256": "61e38b3caa327e0c44fcd7dee7ad6e2e523fe3fc94580f53705520c6ca03f664",
-      "seed": 4010589551
+      "seed": 4010589551,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/vehicle-roadster-approach-01.wav",
@@ -2072,7 +2720,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -23.66,
       "sha256": "7a15c65d30c8d103a320cfe666a151631ebd5c46ff80ef79769fc10b0a4a98f0",
-      "seed": 1996041536
+      "seed": 1996041536,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/vehicle-roadster-accelerate-01.wav",
@@ -2083,7 +2733,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -24.94,
       "sha256": "5184bd64f38722d973c25ecaebdc6221930b087ccb2bcb1f83d49fe492999fac",
-      "seed": 2567576563
+      "seed": 2567576563,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/vehicle-roadster-depart-01.wav",
@@ -2094,7 +2746,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -24.83,
       "sha256": "916d649475bfbac0eaec3385752f4d412fcfb50eb329b68b334b7ab0dc4d8283",
-      "seed": 1927639826
+      "seed": 1927639826,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/vehicle-roadster-taco-drop-01.wav",
@@ -2105,7 +2759,9 @@
       "peakDbfs": -11,
       "rmsDbfs": -28.42,
       "sha256": "ff0c8e1ea3a2d919da7012931d5e6c2a78c97e00bebe2babb1059fcc88f6569e",
-      "seed": 3529878320
+      "seed": 3529878320,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/vehicle-roadster-idle-01.wav",
@@ -2116,7 +2772,9 @@
       "peakDbfs": -19,
       "rmsDbfs": -26.22,
       "sha256": "e9da45ef5c0846c10f9e5673e60bcbd9ca092eb622ab0aef71622ec67879dcca",
-      "seed": 370911757
+      "seed": 370911757,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/surf-olivia-pass-01.wav",
@@ -2127,7 +2785,9 @@
       "peakDbfs": -8,
       "rmsDbfs": -25.46,
       "sha256": "9fc51cf8564062ba87aede5172c498e06caa218cedf07c0da9ca2d386c2f6a14",
-      "seed": 141575963
+      "seed": 141575963,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/surf-mount-01.wav",
@@ -2138,7 +2798,9 @@
       "peakDbfs": -6,
       "rmsDbfs": -22.37,
       "sha256": "b114571f301629004e4d87a9c48ca2010658f6c28c88c59e8d4e3fedf13fc712",
-      "seed": 1974876494
+      "seed": 1974876494,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/surf-obstacle-clear-01.wav",
@@ -2149,7 +2811,9 @@
       "peakDbfs": -9,
       "rmsDbfs": -25.57,
       "sha256": "a1e8e84a29ed86530f411e2105f064a1c3bbfaaa6076cf77ea364fd68179ac92",
-      "seed": 4105127956
+      "seed": 4105127956,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/surf-obstacle-hit-01.wav",
@@ -2160,7 +2824,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -22.1,
       "sha256": "a75d3385ad7e4beeb3fb9f00229cd58714f3b1342dc8819cd73c03d502194b92",
-      "seed": 2383279319
+      "seed": 2383279319,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/surf-wave-hit-01.wav",
@@ -2171,7 +2837,9 @@
       "peakDbfs": -4,
       "rmsDbfs": -20.3,
       "sha256": "5f40d973d32531b76cc3778cea006779de99d98cf1b8cbbb017fe3955f626490",
-      "seed": 2077190556
+      "seed": 2077190556,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/surf-wave-crash-launch-01.wav",
@@ -2182,7 +2850,9 @@
       "peakDbfs": -3,
       "rmsDbfs": -19.51,
       "sha256": "048517aa44a88eb1a1fbc12b03c7396fb1d69786610cc246c2f91420341dc138",
-      "seed": 999826752
+      "seed": 999826752,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/surf-land-01.wav",
@@ -2193,7 +2863,9 @@
       "peakDbfs": -6,
       "rmsDbfs": -22.99,
       "sha256": "911bb4196d31dee68b6914a782755a496713c37213aba1d6f184d4615a4e454b",
-      "seed": 3631516920
+      "seed": 3631516920,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/hazard-coconut-cannon-fire-01.wav",
@@ -2204,7 +2876,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -23.54,
       "sha256": "1f64982d034d00b6d0858f230d3747db0b2d86b9e0669b6bbbb8be0dc4c34cc4",
-      "seed": 3458941598
+      "seed": 3458941598,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/hazard-coconut-deflect-01.wav",
@@ -2215,7 +2889,9 @@
       "peakDbfs": -6,
       "rmsDbfs": -21.48,
       "sha256": "18c4c6faf7378f1daf3b383e2954faecfdf7a46f1167a084c59c496ba393e69e",
-      "seed": 2707332564
+      "seed": 2707332564,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/hazard-geyser-warn-01.wav",
@@ -2226,7 +2902,9 @@
       "peakDbfs": -9,
       "rmsDbfs": -25.48,
       "sha256": "144b31cc278ced2975b47ce1542fc756797821e4a3857490a2e7d76251625d29",
-      "seed": 139743830
+      "seed": 139743830,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/hazard-geyser-launch-01.wav",
@@ -2237,7 +2915,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -20.83,
       "sha256": "4efd755760ffbd87955b6f2db759d5ce784d1c9980763540c36bbdf6fafa99d1",
-      "seed": 2006952733
+      "seed": 2006952733,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/volcano-warmup-01.wav",
@@ -2248,7 +2928,9 @@
       "peakDbfs": -6,
       "rmsDbfs": -22.22,
       "sha256": "e45b7ce41f27b8c04d500e61aea3592975efad3a3dbe4379ffe2e40aecb976a0",
-      "seed": 824003338
+      "seed": 824003338,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/volcano-erupt-01.wav",
@@ -2259,7 +2941,9 @@
       "peakDbfs": -2,
       "rmsDbfs": -18.16,
       "sha256": "2308b24f9506d1cf7d595c603c2e9a4fb77039c72a781671975986407a0d7c02",
-      "seed": 1187276663
+      "seed": 1187276663,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/stage-generator-activate-01.wav",
@@ -2270,7 +2954,9 @@
       "peakDbfs": -4,
       "rmsDbfs": -19.96,
       "sha256": "1e39a7463e40b0843c53a08c694a40698e0ffed821058e344690a09da20f55fd",
-      "seed": 2899888015
+      "seed": 2899888015,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/concert-start-01.wav",
@@ -2281,7 +2967,9 @@
       "peakDbfs": -3,
       "rmsDbfs": -20.27,
       "sha256": "05ac635ed324c1c0b29a2830e928fa3b51d4b84f5774319785e5bdbfd3b37301",
-      "seed": 813204824
+      "seed": 813204824,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/concert-chorus-cannon-01.wav",
@@ -2292,7 +2980,9 @@
       "peakDbfs": -6,
       "rmsDbfs": -23.48,
       "sha256": "d5a9a5c044aeab771105d0fb29ab0cbb51e71d990a2dd9a2d8f309406e919132",
-      "seed": 3008535810
+      "seed": 3008535810,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/concert-crowd-cheer-01.wav",
@@ -2303,7 +2993,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -21.39,
       "sha256": "2e86f56c0d2d75fc37bd68abb59149826e71d034b33c69185bc6d655b7a6b5fe",
-      "seed": 663214792
+      "seed": 663214792,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/concert-crowd-surf-start-01.wav",
@@ -2314,7 +3006,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -24.09,
       "sha256": "83cc3745ac3932dbd42ef8c4ab03a7e83aa9e61bb7cf7605929fded766149a5e",
-      "seed": 1854026791
+      "seed": 1854026791,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/concert-crowd-surf-land-01.wav",
@@ -2325,7 +3019,9 @@
       "peakDbfs": -6,
       "rmsDbfs": -21.76,
       "sha256": "1824e59f0677bff9d5c54ac2f65b07c69473c28baee20eef0782851b290d5f27",
-      "seed": 3007748891
+      "seed": 3007748891,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/concert-tambourine-accent-01.wav",
@@ -2336,7 +3032,9 @@
       "peakDbfs": -9,
       "rmsDbfs": -26.57,
       "sha256": "eb5b85f3e69cde4c959c64d6950abcf76c0cd848f068f524177a387e695d4685",
-      "seed": 54219775
+      "seed": 54219775,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/concert-finale-lift-01.wav",
@@ -2347,7 +3045,9 @@
       "peakDbfs": -2.5,
       "rmsDbfs": -19.73,
       "sha256": "d7c295bf683513a5d66d1bcc1dd8094d768f10eabfb8d670ba42b8a34218ab00",
-      "seed": 2944264718
+      "seed": 2944264718,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/concert-bow-01.wav",
@@ -2358,7 +3058,9 @@
       "peakDbfs": -3,
       "rmsDbfs": -20.6,
       "sha256": "89686e47f19dd1b1468fbba0f6c760260d62ac446d678c264b4384bccc4503fa",
-      "seed": 2133293576
+      "seed": 2133293576,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world2/volcano-active-01.wav",
@@ -2369,7 +3071,9 @@
       "peakDbfs": -20,
       "rmsDbfs": -27.97,
       "sha256": "3fc5395a6a778411ae4c170e9d732b164736605de7ebda42d3f8a63d9b6c2321",
-      "seed": 735044398
+      "seed": 735044398,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/enemy-stomp-popcorn-01.wav",
@@ -2378,9 +3082,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -14.64,
-      "sha256": "d29deea80de1c1e64c8dcee5d3fbe131336794c7a390352dcb00fdcc73c64a97",
-      "seed": 2000861722
+      "rmsDbfs": -15.44,
+      "sha256": "cc52b5f0e8ec60ac0cd4db107e9f7e18386d8c7ef11d08f133c0d4e84786e250",
+      "seed": 2000861722,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world3/enemy-splat-popcorn-01.wav",
@@ -2389,9 +3097,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.52,
-      "sha256": "272f6dc9a2e0c05ce34b9ffceccb1f24a5e626fd0d3c3a78e50aca4223f7b16a",
-      "seed": 1080951228
+      "rmsDbfs": -17.98,
+      "sha256": "91dd9229e0415aa06533da3076b92a92ac1f6f129cc16143e539e2635a153190",
+      "seed": 1080951228,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world3/enemy-splat-popcorn-02.wav",
@@ -2400,9 +3112,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -17.2,
-      "sha256": "3121a18f1866f1bf1a183c2f0c5264c4192765d1e769f277eb3b5cf04bbecd4c",
-      "seed": 623701421
+      "rmsDbfs": -21.31,
+      "sha256": "e199cd0bf7feab54c9ef9c15c8efb7ca658753cc0ca2e43e389db8d31d2d5c53",
+      "seed": 623701421,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world3/enemy-stomp-cotton-01.wav",
@@ -2411,9 +3127,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -14.52,
-      "sha256": "6bc3b2b4952ddc8c8879aa98f110b4f83a495aa8e7696365a5c05581a3db18c2",
-      "seed": 84995939
+      "rmsDbfs": -15.37,
+      "sha256": "33b4fc6b9f271293d958b2eaa59136b89fdd3bb22a9f84278f7867ad0c0a6816",
+      "seed": 84995939,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world3/enemy-splat-cotton-01.wav",
@@ -2422,9 +3142,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -17.65,
-      "sha256": "a7f5baeed8f68620eb536a53e2bab6fc403b7ffa10af75deccb4c8ee7f97709a",
-      "seed": 3550626981
+      "rmsDbfs": -17.64,
+      "sha256": "8acbac9fce1a153df7dcd5a89a039857a228ee9b9ec9de4dd0146a6246245ad1",
+      "seed": 3550626981,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world3/enemy-splat-cotton-02.wav",
@@ -2433,9 +3157,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -17.89,
-      "sha256": "bc3b1b324b47a3a0f5bcc836ef97ad839d55c1935385e92ff8d97ad643d14386",
-      "seed": 3572410449
+      "rmsDbfs": -21.38,
+      "sha256": "ab1ee63033429498bab3650f10c429a3c1745c95f92e3051bb6b9aa698fa0a05",
+      "seed": 3572410449,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world3/enemy-stomp-pretzel-01.wav",
@@ -2444,9 +3172,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -14.72,
-      "sha256": "d7d377c07945fdeb64bc89cc4fe262cacdaa253b645ab8b28ff633ad6a2f1e78",
-      "seed": 1132978189
+      "rmsDbfs": -15.73,
+      "sha256": "9bd71134a6435e33368490d405f184456f15a23080d0b1bd3f3ed5bf9b4752b3",
+      "seed": 1132978189,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world3/enemy-splat-pretzel-01.wav",
@@ -2455,9 +3187,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.27,
-      "sha256": "5d35a6519a7b5eb9c85a0f292769c5396979d2f58109d5b920d543c6ba79e3f0",
-      "seed": 2950413166
+      "rmsDbfs": -17.39,
+      "sha256": "9a9bc772f9d3f1dac6d581c9be8186c6032ffbc8307f0f212c04ee7fe2240d00",
+      "seed": 2950413166,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world3/enemy-splat-pretzel-02.wav",
@@ -2466,9 +3202,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -17.54,
-      "sha256": "89e4bbc2342f2b37fee625597ad8c901c475be54b5079e09be2affccd5885641",
-      "seed": 1846113034
+      "rmsDbfs": -21.5,
+      "sha256": "d169576b8094ad2fbf95dfc8458c90746bfdae83f55b7121886c2c8c23ac0f86",
+      "seed": 1846113034,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world3/enemy-stomp-lemon-01.wav",
@@ -2477,9 +3217,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -14.85,
-      "sha256": "1c481d82244082187e39eafc2a84034b46d4f068b8983e6c292ed4f476cc0162",
-      "seed": 3324914200
+      "rmsDbfs": -15.53,
+      "sha256": "2867fd36eb65d8a231bfb702a5ec2893d25eea8596334bfdbe14da2bd8577936",
+      "seed": 3324914200,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world3/enemy-splat-lemon-01.wav",
@@ -2488,9 +3232,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.42,
-      "sha256": "cef2cca8dfbf161007b61ab61760b3bc66ab875bd99aad231d4628e6eb355a44",
-      "seed": 3386530031
+      "rmsDbfs": -18.1,
+      "sha256": "0588f200a48352a98213c126a9a50846af058ac4115391590f20735bcacaf824",
+      "seed": 3386530031,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world3/enemy-splat-lemon-02.wav",
@@ -2499,9 +3247,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -17.97,
-      "sha256": "c6ce0e85cee01ee4f8c811be6939570f9b6497867b6610fa6da2df73085dfa60",
-      "seed": 2672906005
+      "rmsDbfs": -21.28,
+      "sha256": "3f7d77dff3cb87b2538eeab4878dcc9efadb06d1cb04bf99d0c4b2be1a44478a",
+      "seed": 2672906005,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world3/enemy-stomp-bumper-01.wav",
@@ -2510,9 +3262,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -15,
-      "sha256": "45e49e6a0d4e5418d92010f701de70a6c938be5fb645fd82871209c1188bf245",
-      "seed": 1183440405
+      "rmsDbfs": -14.9,
+      "sha256": "489da3369268cd2c90a4780618331b12122ea214e1ea678cb09809212a172236",
+      "seed": 1183440405,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world3/enemy-splat-bumper-01.wav",
@@ -2521,9 +3277,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -19.86,
-      "sha256": "b933530a1a9fd880a08396a2faa01b5f55692f26b4e62cd5d3c36e60ad5852d7",
-      "seed": 509345028
+      "rmsDbfs": -17.7,
+      "sha256": "e9c004881e43a247565ec0f0dc6bb0b4a4c0be6c704fa21f1f1f6293cf4af78e",
+      "seed": 509345028,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world3/enemy-splat-bumper-02.wav",
@@ -2532,9 +3292,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.29,
-      "sha256": "df8b7604def87915baf0d6cd96c5017cc2281945b054762d46cfe95597c8c34c",
-      "seed": 3530217516
+      "rmsDbfs": -21.4,
+      "sha256": "2828f830a88b7eb42b6f49a7343c25294bd5e4dc36d641566e32a3a247da15a6",
+      "seed": 3530217516,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world3/enemy-stomp-corndog-01.wav",
@@ -2543,9 +3307,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -3.8,
-      "rmsDbfs": -14.61,
-      "sha256": "c40abed7452112a8fde3e0b3ce63a9f9550b545cd2763dadebf034222b7b5c98",
-      "seed": 356312424
+      "rmsDbfs": -15.82,
+      "sha256": "f98236672df842873a578aedf7877e4d8fef846468b5aad81110c04a62338074",
+      "seed": 356312424,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world3/enemy-splat-corndog-01.wav",
@@ -2554,9 +3322,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -18.6,
-      "sha256": "dac23ebeccc488c128509c7fe0aec54dabe19f5dd4f0fbb77e19b69b599d1d29",
-      "seed": 1109805731
+      "rmsDbfs": -17.75,
+      "sha256": "ee7b3ddc257d6ff0ba639704c00da777a125b82ac549361498cf8614c90430db",
+      "seed": 1109805731,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world3/enemy-splat-corndog-02.wav",
@@ -2565,9 +3337,13 @@
       "sampleRate": 44100,
       "channels": 1,
       "peakDbfs": -4.8,
-      "rmsDbfs": -17.66,
-      "sha256": "48644b0aad19170fffed13884997a87e956ef5f885478062202a0dd5c94fb4dc",
-      "seed": 3924499826
+      "rmsDbfs": -21.17,
+      "sha256": "b2731f5f9703aabf461e4c520cc3b7f257c7c422313faf2eb84f4994478895be",
+      "seed": 3924499826,
+      "sourceType": "hybrid",
+      "sourceIds": [
+        "freesound-445118"
+      ]
     },
     {
       "path": "assets/sfx/world3/vehicle-balloon-approach-01.wav",
@@ -2578,7 +3354,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -23.58,
       "sha256": "1177e98175544a962a34516a33d1cb10eaf89f9d01b9c9a49d62f27d39195ab6",
-      "seed": 1380475289
+      "seed": 1380475289,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/vehicle-balloon-accelerate-01.wav",
@@ -2589,7 +3367,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -22.95,
       "sha256": "e8b6b415f1e39cb2f73289a4c7cae72771fc31f074429382ae545ff33db95413",
-      "seed": 2557732244
+      "seed": 2557732244,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/vehicle-balloon-boost-01.wav",
@@ -2600,7 +3380,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -23.7,
       "sha256": "a2624f4ae2e3eb731a37bd9a7e8c2de9164db31cbc6b0d7245ca83288d4e0fea",
-      "seed": 666817676
+      "seed": 666817676,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/vehicle-balloon-depart-01.wav",
@@ -2611,7 +3393,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -23.92,
       "sha256": "ad6d7ab235ec965c6d93f376022302f20b27c577645e65ed75007867731b2faf",
-      "seed": 442273973
+      "seed": 442273973,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/vehicle-balloon-taco-drop-01.wav",
@@ -2622,7 +3406,9 @@
       "peakDbfs": -11,
       "rmsDbfs": -28.59,
       "sha256": "c552077ed0b0f248040f13b453827cec0db2a2aef944dad9e3bdcabd9d9d418f",
-      "seed": 992242923
+      "seed": 992242923,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/vehicle-balloon-idle-01.wav",
@@ -2633,7 +3419,9 @@
       "peakDbfs": -19,
       "rmsDbfs": -27.54,
       "sha256": "75b4adca920421977a7a7323c0212386b0e77407699538c4f66ea4eb82bba947",
-      "seed": 535362090
+      "seed": 535362090,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/vehicle-coaster-approach-01.wav",
@@ -2644,7 +3432,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -24.14,
       "sha256": "0ee75229492a30684483a51779c15abeabe518978191f09861ceb24501779124",
-      "seed": 798318599
+      "seed": 798318599,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/vehicle-coaster-accelerate-01.wav",
@@ -2655,7 +3445,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -23.4,
       "sha256": "30633e97115422d04180c20b96dd9ba34bf8e959a9dfc88ad2aa52e52f35421d",
-      "seed": 3352460486
+      "seed": 3352460486,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/vehicle-coaster-boost-01.wav",
@@ -2666,7 +3458,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -23.82,
       "sha256": "5e31fb9a562f30f0aea533c017461b7ae3c6090ec33cb902b0fa2cc7d1fcddda",
-      "seed": 1919240517
+      "seed": 1919240517,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/vehicle-coaster-depart-01.wav",
@@ -2677,7 +3471,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -24.8,
       "sha256": "ddfc38787e4aed82c78e22e14bbc1a05aaab813d87039f2207311994935b899b",
-      "seed": 2091155348
+      "seed": 2091155348,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/vehicle-coaster-taco-drop-01.wav",
@@ -2688,7 +3484,9 @@
       "peakDbfs": -11,
       "rmsDbfs": -27.25,
       "sha256": "865e50bb16b1a78b650952b96b78023f675f4162ffb77ef40a9e460367d1deaa",
-      "seed": 3990247508
+      "seed": 3990247508,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/vehicle-coaster-idle-01.wav",
@@ -2699,7 +3497,9 @@
       "peakDbfs": -19,
       "rmsDbfs": -26.41,
       "sha256": "7d69301fb2ebdef65f6527a8efed41554f7ec3f15f6be748ad95476d4a3828f3",
-      "seed": 161531891
+      "seed": 161531891,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/vehicle-zeppelin-approach-01.wav",
@@ -2710,7 +3510,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -23.48,
       "sha256": "a0324601cf171eb488e6deb0e08bc2981627dab623148be7394ca21ed0344525",
-      "seed": 4185810192
+      "seed": 4185810192,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/vehicle-zeppelin-accelerate-01.wav",
@@ -2721,7 +3523,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -23.41,
       "sha256": "d8b9d8267590bdf31fd9ea6884d3a416caa28406311f8710b35b9771872e67ab",
-      "seed": 26635086
+      "seed": 26635086,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/vehicle-zeppelin-boost-01.wav",
@@ -2732,7 +3536,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -24.12,
       "sha256": "23a65692f516c575e8ffd38efb84a41c428dca259dcde75a776ef965813678d6",
-      "seed": 2447429048
+      "seed": 2447429048,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/vehicle-zeppelin-depart-01.wav",
@@ -2743,7 +3549,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -25.14,
       "sha256": "0ccce838934061a32e248114b1c5a3237dadc08b869cc6190f7c6a99de9f8e5e",
-      "seed": 1353744195
+      "seed": 1353744195,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/vehicle-zeppelin-taco-drop-01.wav",
@@ -2754,7 +3562,9 @@
       "peakDbfs": -11,
       "rmsDbfs": -28.16,
       "sha256": "88f2547622a0f915bd0fcde40243fc934529db2caa6e09583b59fd7d95be671e",
-      "seed": 4224917961
+      "seed": 4224917961,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/vehicle-zeppelin-idle-01.wav",
@@ -2765,7 +3575,9 @@
       "peakDbfs": -19,
       "rmsDbfs": -25.96,
       "sha256": "9e171b7ba77508f825bd278e78359e7ca14804f58430d93bbad8c2a48ec39d33",
-      "seed": 2562979573
+      "seed": 2562979573,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/ride-machine-start-01.wav",
@@ -2776,7 +3588,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -24.28,
       "sha256": "391ae98ea721f90696ffe6119333386788390226bcc2e99fef95ed202b63ce9f",
-      "seed": 3393839242
+      "seed": 3393839242,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/ride-coaster-clack-01.wav",
@@ -2787,7 +3601,9 @@
       "peakDbfs": -10,
       "rmsDbfs": -25.35,
       "sha256": "92272f22e2c0ca8bba29e20111d3c2a3d29c5e74b7f2a3eec6afbf3262399c5c",
-      "seed": 3695337290
+      "seed": 3695337290,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/ride-coaster-drop-01.wav",
@@ -2798,7 +3614,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -21.76,
       "sha256": "078f12a73d0976b7795a8b30518f471595f384ac22ae863bc7253c3d099a2c29",
-      "seed": 2803311174
+      "seed": 2803311174,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/hazard-comet-pass-01.wav",
@@ -2809,7 +3627,9 @@
       "peakDbfs": -7,
       "rmsDbfs": -24.08,
       "sha256": "9a69b7b006fab8abee003fba9f850b81cf1f3ad34c450619c2853a4e7e1a4535",
-      "seed": 2980012849
+      "seed": 2980012849,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/cosmic-star-relight-01.wav",
@@ -2820,7 +3640,9 @@
       "peakDbfs": -3,
       "rmsDbfs": -20.01,
       "sha256": "5e9cce51e0e8a86ad326844c22c01b3c1ed500354febbb203c2bfd1e46c640d5",
-      "seed": 1387021483
+      "seed": 1387021483,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/cosmic-finale-01.wav",
@@ -2831,7 +3653,9 @@
       "peakDbfs": -1.8,
       "rmsDbfs": -20.58,
       "sha256": "008a83697cbcbee78a07c61d7061ab6824fe1ab4d2508921f973002b7f3e3be6",
-      "seed": 1347322443
+      "seed": 1347322443,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/cosmic-landing-01.wav",
@@ -2842,7 +3666,9 @@
       "peakDbfs": -4,
       "rmsDbfs": -21.24,
       "sha256": "7073f431e2baf8541509bf04073d6eb98aee2febf9268527ea3da6c8eae5b443",
-      "seed": 3470902162
+      "seed": 3470902162,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/carnival-machine-01.wav",
@@ -2853,7 +3679,9 @@
       "peakDbfs": -8,
       "rmsDbfs": -25.48,
       "sha256": "faf3b2c35db900e48bfd3603e3d815662bf8b3a15b5de2fbdfdacbf130f21589",
-      "seed": 3580785206
+      "seed": 3580785206,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/boss-cornelius-enter-01.wav",
@@ -2864,7 +3692,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -20.8,
       "sha256": "d340d4a814004c8e04da48b61dbfbb8877300b3360016b1d7c61894b779008d7",
-      "seed": 179080592
+      "seed": 179080592,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/boss-ringmaster-enter-01.wav",
@@ -2875,7 +3705,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -21.22,
       "sha256": "7178df120276e86b9c07f893dfc07d44d65ed0035c8e0fcf14d8bdfc3be09936",
-      "seed": 3098905290
+      "seed": 3098905290,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/boss-cornelius-move-01.wav",
@@ -2886,7 +3718,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -20.47,
       "sha256": "26efb9e5a173bf47174b231897ce1a14e29c18e3d0c030e38ce6e26bdc1acf37",
-      "seed": 128312594
+      "seed": 128312594,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/boss-ringmaster-move-01.wav",
@@ -2897,7 +3731,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -22.16,
       "sha256": "069103bb7d59124c8294809447a736dabc7d358028fedeee1fdcc88dcdfb5e6e",
-      "seed": 4278471058
+      "seed": 4278471058,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/boss-cornelius-windup-01.wav",
@@ -2908,7 +3744,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -21.16,
       "sha256": "e9bfee222caad71f7e9c41af99aa6ae3a251ac4201b688cc2598b47e54362692",
-      "seed": 3582934814
+      "seed": 3582934814,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/boss-ringmaster-windup-01.wav",
@@ -2919,7 +3757,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -22.43,
       "sha256": "b911d319cefffb921ca61a6187ae2e0a202ab813d50f8752e8af157c08e971b7",
-      "seed": 951099817
+      "seed": 951099817,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/boss-cornelius-attack-01.wav",
@@ -2930,7 +3770,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -21.33,
       "sha256": "04a5c235596e34eb5b7c373874e404a542c8674aae5ad372aa0a79b8f096e113",
-      "seed": 2712779488
+      "seed": 2712779488,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/boss-ringmaster-attack-01.wav",
@@ -2941,7 +3783,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -22.59,
       "sha256": "32d939c215e47ad245e5e61c67c4976f5438356d089da47c383fc6b35f430dd7",
-      "seed": 163764208
+      "seed": 163764208,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/boss-cornelius-damage-01.wav",
@@ -2952,7 +3796,9 @@
       "peakDbfs": -2,
       "rmsDbfs": -18.8,
       "sha256": "52758e6e8c59d8043314c13f129ece65cd6e97adba62af5bff8a0affdb2246d5",
-      "seed": 2791352191
+      "seed": 2791352191,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/boss-ringmaster-damage-01.wav",
@@ -2963,7 +3809,9 @@
       "peakDbfs": -2,
       "rmsDbfs": -18.06,
       "sha256": "c3578d4c8621efafc5a025713a3d32e46a1b3fbced8ace33d22de3c38ef8ddc5",
-      "seed": 3304450457
+      "seed": 3304450457,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/boss-cornelius-phase-01.wav",
@@ -2974,7 +3822,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -21.48,
       "sha256": "5bbf025b8b4cb551ec76dcb14ca9917757059b3ae5f5391d150f6249e179b549",
-      "seed": 3664815974
+      "seed": 3664815974,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/boss-ringmaster-phase-01.wav",
@@ -2985,7 +3835,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -23.46,
       "sha256": "7cf5857f081067a37f73a09982152c6fcbbdfa1a557127e214e3b425ab01f316",
-      "seed": 1961822007
+      "seed": 1961822007,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/boss-cornelius-special-01.wav",
@@ -2996,7 +3848,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -20.91,
       "sha256": "730215d4c6f34195efda9bb7b4e613692abf891721a9567ceac65e1c5e9e00a2",
-      "seed": 2451854454
+      "seed": 2451854454,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/boss-ringmaster-special-01.wav",
@@ -3007,7 +3861,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -22.37,
       "sha256": "912dbf40857853c96f90101ca1c67f2b28f3c845f8c133416642e1ae2d9caaea",
-      "seed": 1604899943
+      "seed": 1604899943,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/boss-cornelius-vulnerable-01.wav",
@@ -3018,7 +3874,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -21.58,
       "sha256": "029a1ffbb5937aba68aaeb10bcdd62ae245a3bef704b66aaa6ce360973221518",
-      "seed": 1142065550
+      "seed": 1142065550,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/boss-ringmaster-vulnerable-01.wav",
@@ -3029,7 +3887,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -23.03,
       "sha256": "a295195eb3b3396136264c9b1721ac1ff9db2e202de52459df1941d3b49ee22c",
-      "seed": 2747557106
+      "seed": 2747557106,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/boss-cornelius-defeat-01.wav",
@@ -3040,7 +3900,9 @@
       "peakDbfs": -1.8,
       "rmsDbfs": -21.08,
       "sha256": "4573454b989bbb4ccab6712afd3cf1fcdf2c21539787c20177a82dd519201f3f",
-      "seed": 723684140
+      "seed": 723684140,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/boss-ringmaster-defeat-01.wav",
@@ -3051,7 +3913,9 @@
       "peakDbfs": -1.8,
       "rmsDbfs": -20.84,
       "sha256": "4fabf6d473577cd12f9d5c87047ddc32f8916d90fa777ba4d15245099c0a68f5",
-      "seed": 1489806656
+      "seed": 1489806656,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/boss-cornelius-celebrate-01.wav",
@@ -3062,7 +3926,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -21.05,
       "sha256": "bd1d099ebd301bb5038bb6219f92f8e0b21ec5c40e826368c42530e6d58cdbe5",
-      "seed": 2783634300
+      "seed": 2783634300,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/boss-ringmaster-celebrate-01.wav",
@@ -3073,7 +3939,9 @@
       "peakDbfs": -5,
       "rmsDbfs": -22.15,
       "sha256": "04a19e396aec4eaacc82c417d0ebbf4f54985d61eac1dad2c9f5ed4e756c91b3",
-      "seed": 3248050234
+      "seed": 3248050234,
+      "sourceType": "procedural",
+      "sourceIds": []
     },
     {
       "path": "assets/sfx/world3/ambience-cosmic-carnival-01.wav",
@@ -3084,7 +3952,9 @@
       "peakDbfs": -21,
       "rmsDbfs": -27.65,
       "sha256": "0a5f0ada18a62385d4d78944e6172e5f3b70db28e3415a0cf582948ef64b25f0",
-      "seed": 722991966
+      "seed": 722991966,
+      "sourceType": "procedural",
+      "sourceIds": []
     }
   ]
 }

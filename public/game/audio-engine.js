@@ -1,7 +1,7 @@
 (() => {
   if (window.JFT_AUDIO?.engineVersion) return;
 
-  const ENGINE_VERSION = '2.1.0-phase3-final-polish';
+  const ENGINE_VERSION = '2.2.0-phase3-external-source-amendment';
   const catalog = window.JFT_AUDIO_CATALOG || { events: {}, mix: {} };
   const eventCatalog = catalog.events || {};
   const assetCacheVersion = catalog.assetCacheVersion || '';
@@ -339,7 +339,7 @@
       ? options.pan
       : Number.isFinite(options.position) ? options.position : 0;
     panner.pan.value = clamp(
-      requestedPan * definition.panRange + randomSigned() * 0.025,
+      requestedPan * definition.panRange + (definition.loop ? 0 : randomSigned() * 0.025),
       -Math.min(1, definition.panRange),
       Math.min(1, definition.panRange),
     );
@@ -584,8 +584,9 @@
     const gainNode = context.createGain();
     source.buffer = buffer;
     source.loop = true;
-    source.playbackRate.value = 2 ** (computedPitchCents(definition, options) / 1_200);
-    gainNode.gain.value = computedGain(definition, options);
+    source.playbackRate.value = 2 ** ((Number(options.pitchCents) || 0) / 1_200);
+    const requestedGain = Number.isFinite(options.gain) ? Math.max(0, options.gain) : 1;
+    gainNode.gain.value = Math.max(0, (definition.gain ?? 1) * requestedGain);
     const panner = connectWithPan(source, gainNode, busFor(definition), definition, options);
     const voice = trackVoice(handle.eventId, definition, source, gainNode, panner, true);
     handle.pending = false;
@@ -617,9 +618,9 @@
     const assetPath = chooseVariant(eventId, definition, options);
     if (!assetPath) return handle;
     handle.assetPath = assetPath;
-    if (buffers.has(assetPath)) beginLoop(handle, definition, options, assetPath);
+    if (buffers.has(assetPath)) beginLoop(handle, definition, handle.options, assetPath);
     else loadAsset(assetPath)
-      .then(() => beginLoop(handle, definition, options, assetPath))
+      .then(() => beginLoop(handle, definition, handle.options, assetPath))
       .catch(() => {
         handle.pending = false;
       });
@@ -633,6 +634,41 @@
     handle.stopped = true;
     if (handle.voiceId) stopVoice(voices.get(handle.voiceId));
     loops.delete(id);
+    return true;
+  }
+
+  function updateLoop(handleOrId, options = {}) {
+    const id = typeof handleOrId === 'object' ? handleOrId?.id : handleOrId;
+    const handle = loops.get(id);
+    if (!handle || handle.stopped) return false;
+    handle.options = { ...handle.options, ...options };
+    const voice = handle.voiceId ? voices.get(handle.voiceId) : null;
+    if (!voice || !context) return true;
+
+    const definition = handle.definition;
+    const now = context.currentTime;
+    const smoothingSeconds = Math.max(0.008, Math.min(0.5, Number(options.smoothingSeconds) || 0.07));
+    const requestedGain = Number.isFinite(handle.options.gain) ? Math.max(0, handle.options.gain) : 1;
+    const targetGain = Math.max(0, (definition.gain ?? 1) * requestedGain);
+    holdAudioParam(voice.gainNode.gain, now);
+    voice.gainNode.gain.setTargetAtTime(Math.max(0.0001, targetGain), now, smoothingSeconds);
+
+    const requestedPan = Number.isFinite(handle.options.pan)
+      ? handle.options.pan
+      : Number.isFinite(handle.options.position) ? handle.options.position : 0;
+    if (voice.panner) {
+      const targetPan = clamp(
+        requestedPan * definition.panRange,
+        -Math.min(1, definition.panRange),
+        Math.min(1, definition.panRange),
+      );
+      holdAudioParam(voice.panner.pan, now);
+      voice.panner.pan.setTargetAtTime(targetPan, now, smoothingSeconds);
+    }
+
+    const targetPitch = 2 ** ((Number(handle.options.pitchCents) || 0) / 1_200);
+    holdAudioParam(voice.source.playbackRate, now);
+    voice.source.playbackRate.setTargetAtTime(targetPitch, now, smoothingSeconds);
     return true;
   }
 
@@ -753,7 +789,14 @@
       currentEffectVoices: currentVoices.length,
       peakSimultaneousVoices,
       activeVoiceEvents: currentVoices.map((voice) => voice.eventId),
-      activeLoops: [...loops.values()].map((loop) => ({ id: loop.id, eventId: loop.eventId, pending: loop.pending })),
+      activeLoops: [...loops.values()].map((loop) => ({
+        id: loop.id,
+        eventId: loop.eventId,
+        pending: loop.pending,
+        gain: Number.isFinite(loop.options?.gain) ? Number(loop.options.gain.toFixed(3)) : 1,
+        position: Number.isFinite(loop.options?.position) ? Number(loop.options.position.toFixed(3)) : 0,
+        pitchCents: Number.isFinite(loop.options?.pitchCents) ? Math.round(loop.options.pitchCents) : 0,
+      })),
       droppedEffectsByPriority: { ...droppedByPriority },
       droppedEffectsByReason: { ...droppedByReason },
       droppedEffectsByEvent: { ...droppedByEvent },
@@ -807,6 +850,7 @@
     registerMusicTracks,
     play,
     startLoop,
+    updateLoop,
     stopLoop,
     setMusicVolume,
     setMusicDuck,

@@ -1,427 +1,328 @@
 # Jumpin' For Tacos Sound-Effects Remaster
 
-## Phase 3 Final Polish, Mix, and QA Report
+## Phase 3 Final Polish and External-Source Amendment
 
-Phase 3 is implemented on `feature/sfx-remaster-final-polish`, based directly
-on the approved Phase 2 checkpoint
-`e6f3ea991246b9bbd0f28e369feb81c260d57ec0`.
+Phase 3 is implemented on `feature/sfx-remaster-final-polish`. This amendment
+addresses the two remaining creative-review items: the ordinary enemy squish
+and Olivia's propeller aircraft. It keeps the semantic audio architecture,
+music, gameplay, and global mix calibration intact.
 
-This phase is deliberately narrow. It revises the one creative issue identified
-in the Phase 2 review, completes the final review tooling and automated coverage,
-and leaves the approved full-game catalog, buses, gameplay, visuals, and music
-architecture intact.
+Status at handoff:
 
-No branch has been merged. No build has been published to the production
-Jumpin' For Tacos project or domain.
+- branch: `feature/sfx-remaster-final-polish`
+- draft PR: <https://github.com/Tekmon1/jumpin-for-tacos/pull/5>
+- merge: not performed
+- production deployment: not performed
+- remote preview deployment: not updated by this amendment
+- final physical-iPhone and owner creative approval: pending
 
-## Final non-perfect enemy squish
+## Source-of-truth correction: aircraft level
 
-The non-perfect outcome still uses the frozen semantic ID
-`combat.enemySplat` and the existing asset paths for runtime compatibility, but
-its rendered sound is now intentionally designed as:
+The amendment request refers to Olivia's propeller aircraft as World 2-2. The
+current branch establishes that World 2-2, `level2-2.html`, contains the ground
+vehicle Taco Trekker. Olivia's propeller aircraft, runway takeoff, flybys, taco
+drop, and receding departure are authored in World 1-2,
+`level1-2.html` / `level1-2.js`.
 
-**padded contact -> juicy SQUISH / SQUASH / SCHLUP -> tiny wet cartoon release**
+The aircraft work was therefore integrated into the actual World 1-2 runtime.
+No aircraft was fabricated in World 2-2, and no World 2-2 vehicle behavior was
+changed. Both routes remain available for review so the correction can be
+verified directly.
 
-The Phase 2 recipe led with three dry shell clicks plus bright, high-passed
-crackle. That transient could dominate the following splat and make the result
-read as a crunch or impact. Phase 3 removes that shell-crunch layer from the
-ordinary contact recipe and replaces it with:
+## Licensing and source policy
 
-- a low-passed, padded compression onset;
-- a longer midrange wet-noise smear;
-- a descending, low-vibrato sine body that suggests compression rather than a
-  chirp;
-- a quieter secondary smear that retains each enemy family's texture; and
-- a short downward residual pop that never rises like a bounce.
+Every external recording considered for this amendment is CC0 1.0. No
+NonCommercial, editorial-only, ripped, or unclear-license material was used.
+CC0 requires no attribution, but creator and source credit are retained in the
+repository for provenance.
 
-Two deterministic variants remain available for every enemy family. Variant 1
-is a shorter squash; variant 2 is a slightly longer, lower `schlup`. Both retain
-the same semantic meaning and the same bounded runtime gain variation.
+The exact selected public HQ preview files used by the deterministic generator
+are committed under `scripts/sfx-sources/`. They are source inputs, not runtime
+assets and not original Jumpin For Tacos recordings. The source pages' original
+download filenames are recorded separately from the committed preview names.
 
-The assets remain mono 44.1 kHz, 16-bit PCM, 0.22 seconds, and -4.8 dBFS sample
-peak. Representative whole-file RMS measurements are:
+The machine-readable source and asset record is
+`public/game/assets/sfx/sfx-manifest.json`. For every considered source it
+records the URL, original filename, creator, platform, exact license, license
+URL, acquisition date, attribution requirement, modifications, selection
+status, and disposition. Selected source-input SHA-256 hashes are also frozen.
 
-| Asset | Peak | RMS |
+Acquisition date for all candidates: `2026-08-13`.
+
+### Enemy-squish candidates
+
+| Status | Recording | Creator / platform | Original filename | License | Decision |
+| --- | --- | --- | --- | --- | --- |
+| Selected | [Cartoon - Splat!](https://freesound.org/people/Breviceps/sounds/445118/) | Breviceps / Freesound | `445118__breviceps__cartoon-splat.wav` | CC0 1.0; no attribution required | Purpose-built cartoon character, several short usable splats, and strong phone-readable midrange. |
+| Considered | [Tomato Squish.wav](https://freesound.org/people/kaydinhamby/sounds/382637/) | kaydinhamby / Freesound | `382637__kaydinhamby__tomato-squish.wav` | CC0 1.0; no attribution required | Not selected; more realistic texture and very low source level were less playful and repeatable. |
+| Considered | [Wet Splat 1.mp3](https://freesound.org/people/nebulasnails/sounds/495118/) | nebulasnails / Freesound | `495118__nebulasnails__wet-splat-1.mp3` | CC0 1.0; no attribution required | Not selected; read mainly as one wet slap rather than a soft cartoon squash. |
+
+Selected source input:
+`scripts/sfx-sources/445118__breviceps__cartoon-splat-hq-preview.mp3`.
+
+Processing: decoded and downmixed to mono, two short body regions isolated,
+135 Hz high-pass and 5.4 kHz low-pass filtering, subtle deterministic
+enemy-family repitching, short fades, restrained generated contact and residual
+release layers, soft clipping, and peak normalization.
+
+### Propeller-aircraft candidates
+
+| Status | Recording | Creator / platform | Original filename | License | Decision |
+| --- | --- | --- | --- | --- | --- |
+| Selected | [Airplane Propeller Loop](https://freesound.org/people/modusmogulus/sounds/789390/) | modusmogulus / Freesound | `789390__modusmogulus__airplane-propeller-loop.wav` | CC0 1.0; no attribution required | Most stable real propeller bed and best input for runtime-authored distance motion. |
+| Selected | [Propeller Plane](https://freesound.org/people/clif_creates/sounds/251971/) | clif_creates / Freesound | `251971__clif_creates__propeller-plane.wav` | CC0 1.0; no attribution required | Natural distant approach and receding tail complement the close loop. |
+| Considered | [Distant Airplane - Loop](https://freesound.org/people/gis_sweden/sounds/814318/) | gis_sweden / Freesound | `814318__gis_sweden__distant-airplane-loop.wav` | CC0 1.0; no attribution required | Not selected; pronounced whole-file swell was less controllable than runtime distance gain. |
+
+Selected source inputs:
+
+- `scripts/sfx-sources/789390__modusmogulus__airplane-propeller-loop-hq-preview.mp3`
+- `scripts/sfx-sources/251971__clif_creates__propeller-plane-hq-preview.mp3`
+
+Loop processing: decoded/downmixed, 90 Hz high-pass and 6.8 kHz low-pass,
+stable 0.55–5.35 second region isolated, 350 ms equal-power wrap crossfade,
+controlled saturation, and peak normalization. Approach/departure processing:
+natural early and late flyover regions isolated, time-compressed, phone-focused
+with approximately 105 Hz high-pass and 6.3–6.5 kHz low-pass, short fades,
+restrained generated air punctuation, and peak normalization.
+
+## Final ordinary enemy squish
+
+The frozen semantic ID remains `combat.enemySplat`. Its result is now:
+
+**soft impact -> recorded juicy SQUISH / SPLAT -> tiny cartoon release**
+
+The selected Breviceps recording supplies the dominant physical body. The
+deterministic procedural layer is deliberately quieter and supplies family
+identity, a padded contact, and a short downward release. It does not add the
+full upward rebound. Two source-region variants plus the existing enemy-family
+filter/pitch traits keep repeated defeats varied across all 30 enemy families.
+
+All 60 non-perfect assets remain mono 44.1 kHz, 16-bit PCM, 0.22 seconds, and
+-4.8 dBFS sample peak. Representative results:
+
+| Asset | Peak | whole-file RMS |
 | --- | ---: | ---: |
-| Tomato squish 01 | -4.8 dBFS | -17.57 dBFS |
-| Tomato squish 02 | -4.8 dBFS | -18.66 dBFS |
-| Crab squish 01 | -4.8 dBFS | -18.17 dBFS |
-| Cotton-candy squish 01 | -4.8 dBFS | -17.65 dBFS |
+| Tomato squish 01 | -4.8 dBFS | -17.42 dBFS |
+| Tomato squish 02 | -4.8 dBFS | -20.81 dBFS |
 
-For the representative tomato render, the first 20 ms measure -15.74 dBFS RMS
-and the 20-120 ms squish body measures -14.93 dBFS RMS. The sound therefore
-does not depend on a louder click to communicate through a phone speaker; its
-midrange compression body is the dominant gesture.
+For tomato variant 01, the first 20 ms measure -20.11 dBFS RMS and the 20–120
+ms body measures -14.49 dBFS RMS. The squish body is therefore about 5.62 dB
+stronger than the onset instead of depending on a dry click.
 
-## Comparison with the perfect bounce
+Runtime policy is unchanged: priority 5, maximum polyphony 4, 35 ms cooldown,
+4.5 dB centralized music duck, and 0.42 second release.
 
-The perfect outcome continues to use `combat.enemyStomp`. It now begins with
-the exact revised squish family and adds its pronounced upward `BOING` at 94 ms,
-slightly later than Phase 2 so the two components read in sequence:
+## Perfect squish plus bounce
 
-**SQUISH / SPLAT -> BOING -> bounded combo punctuation**
+The perfect semantic ID remains `combat.enemyStomp`. It begins with the same
+hybrid squish family, then adds the existing pronounced upward rebound at 94 ms:
 
-Perfect assets remain 0.38 seconds and -3.8 dBFS sample peak. Representative
-RMS measurements range from approximately -15.1 to -14.5 dBFS. For the tomato
-comparison, the 120-220 ms region is -29.91 dBFS in the non-perfect squish and
--13.03 dBFS in the perfect bounce: about 16.9 dB more late rebound energy.
+**recorded SQUISH / SPLAT -> BOING -> optional bounded combo punctuation**
 
-The distinction is therefore based on timing, texture, and late upward motion,
-not an uncontrolled loudness jump. Existing catalog policy remains:
+Perfect assets remain 0.38 seconds and -3.8 dBFS sample peak. In the
+representative tomato comparison, 120–220 ms measures -26.35 dBFS in the
+ordinary squish and -13.36 dBFS in the perfect bounce: about 12.99 dB more late
+rebound energy. The distinction comes from sequence and pitch motion, not an
+excessive global gain increase.
 
-| Outcome | Priority | Polyphony | Duck | Release |
+Runtime policy remains priority 5, maximum polyphony 4, 32 ms cooldown, 5 dB
+duck, and 0.48 second release. Combo pitch and milestone limits are unchanged.
+
+## Propeller approach, pass, and departure
+
+The shared engine now exposes `JFT_AUDIO.updateLoop(handle, options)`. It
+smoothly updates a live loop's gain, pan, and playback rate without restarting
+the buffer. Pending handles keep the newest options, mute/effects-zero resume
+behavior remains intact, and loop telemetry reports current gain, position,
+and pitch.
+
+World 1-2 uses that API for both authored aircraft sequences:
+
+- opening runway: quiet propeller start, increasing taxi presence and pitch,
+  strongest takeoff presence, then a smooth receding climb;
+- each flyby: gain follows actual screen distance, stereo position follows the
+  rendered plane, pitch moves from +115 cents on approach to -135 cents after
+  the pass, taco-drop proximity adds only a small bounded lift, and the loop is
+  stopped on exit/reset;
+- natural recorded approach and departure one-shots bookend the continuous bed.
+
+The flyby loop's event gain is 0.70 on the Ambience bus. Runtime event-relative
+gain ranges from 0.12 at distance to at most 1.14 near the closest pass. Stereo
+pan range is 0.90. The approach/departure cues use the Gameplay bus, pan range
+0.78, and a restrained 2.5 dB centralized duck. No global bus, compressor, or
+master-ceiling setting was changed.
+
+Rendered aircraft measurements:
+
+| Asset | Duration | Peak | RMS | Bytes |
 | --- | ---: | ---: | ---: | ---: |
-| Non-perfect squish | 5 | 4 | 4.5 dB | 0.42 s |
-| Perfect bounce | 5 | 4 | 5.0 dB | 0.48 s |
+| `aircraft-propeller-idle-01.wav` | 4.45 s | -6.5 dBFS | -16.73 dBFS | 392,534 |
+| `aircraft-approach-01.wav` | 2.35 s | -8.0 dBFS | -21.00 dBFS | 207,314 |
+| `aircraft-depart-01.wav` | 2.55 s | -8.5 dBFS | -22.34 dBFS | 224,954 |
 
-Perfect combo escalation remains bounded to 42 cents per step and 294 cents
-maximum, with the separate `combat.comboMilestone` punctuation for authored
-tiers.
+The loop's beginning, middle, and end review windows measure -16.47, -17.81,
+and -16.45 dBFS RMS, a 1.36 dB range. Its final-to-first sample discontinuity
+is 0.0143 full scale. Automated regressions bound both stability and wrap seam.
 
-## Assets revised
+## Assets created or revised
 
-No new audio asset paths were added. Ninety deterministic WAVs were revised:
-60 two-variant non-perfect squishes and 30 one-variant perfect bounces.
+Runtime assets revised:
 
-For every enemy type below, the revised paths are:
+- 60 `enemy-splat-{type}-01/02.wav` files across World 1, World 2, and World 3;
+- 30 `enemy-stomp-{type}-01.wav` files using the same squish plus BOING;
+- `public/game/assets/sfx/world1/aircraft-propeller-idle-01.wav`;
+- `public/game/assets/sfx/world1/aircraft-approach-01.wav`;
+- `public/game/assets/sfx/world1/aircraft-depart-01.wav`.
 
-- `enemy-splat-{type}-01.wav`
-- `enemy-splat-{type}-02.wav`
-- `enemy-stomp-{type}-01.wav`
+Private Audio Lab baselines created:
 
-### World 1: 33 revised WAVs
+- `public/game/assets/sfx/review/enemy-squish-procedural-01.wav`;
+- `public/game/assets/sfx/review/aircraft-propeller-procedural-01.wav`.
 
-Directory: `public/game/assets/sfx/world1/`
+Source inputs created:
 
-- tomato
-- onion
-- chili
-- jalapeno
-- lime
-- queso
-- slime
-- knight
-- guac
-- churro
-- mole
+- `scripts/sfx-sources/445118__breviceps__cartoon-splat-hq-preview.mp3`;
+- `scripts/sfx-sources/789390__modusmogulus__airplane-propeller-loop-hq-preview.mp3`;
+- `scripts/sfx-sources/251971__clif_creates__propeller-plane-hq-preview.mp3`;
+- `scripts/sfx-sources/README.md`.
 
-### World 2: 39 revised WAVs
+The complete runtime/review catalog is now 282 WAVs and 13,150,710 bytes
+(12.54 MiB). Every manifest asset declares `procedural`, `hybrid`, or
+`sourced-recording` provenance and its applicable source IDs. The two private
+baseline WAVs are not requested by per-world gameplay preload groups.
 
-Directory: `public/game/assets/sfx/world2/`
+`scripts/generate-sfx.mjs` remains deterministic and verifies each selected
+source-input hash before decoding. `audio-decode` 3.11.4 is a pinned
+development dependency used only by the generator.
 
-- crab
-- coconut
-- seagull
-- puffer
-- tiki
-- marshmallow
-- pineapple
-- pepper
-- nacho
-- ash
-- berry
-- mango
-- spaghetti
+## Audio Lab A/B review
 
-### World 3: 18 revised WAVs
+Private path: `/game/audio-lab.html`
 
-Directory: `public/game/assets/sfx/world3/`
+The page remains `noindex,nofollow` and unlinked from the public landing page.
+It now exposes:
 
-- popcorn
-- cotton
-- pretzel
-- lemon
-- bumper
-- corndog
+- Prior Procedural Squish
+- Final Hybrid Enemy Squish
+- Final Perfect Squish + BOING
+- Squish Candidate/Final A/B
+- Prior Procedural Propeller
+- Final Recorded Propeller
+- Approach / Pass / Depart Demo
 
-The complete library remains 280 WAVs and 12,408,860 bytes (11.83 MiB). The
-manifest generator version is `jft-sfx-phase3-v1-final-polish`. A fresh
-in-place deterministic rerender checked all 281 generated files, including the
-manifest, with zero byte mismatches.
+The flyby demo uses the same shared `updateLoop` behavior as World 1-2 and adds
+three bounded taco-drop taps around the closest pass. Telemetry makes the live
+loop gain, position, pitch, voice/drop counts, duck amount, and bus levels
+visible during review. Rejected external recordings are documented in the
+manifest but are not shipped as runtime or Audio Lab assets.
 
-## Gain and ducking decisions
+## Mix decisions
 
-No catalog event gain, bus calibration, compressor setting, master ceiling,
-priority, cooldown, polyphony limit, or duck depth was changed in Phase 3.
+Unchanged global settings:
 
-That restraint is intentional. Instrumented stress tests showed adequate
-headroom and bounded event behavior, and the approved Phase 2 hierarchy did
-not reveal a clear technical reason for broad retuning. The creative correction
-is made inside the enemy-contact envelope and spectral balance.
+- Music calibration 0.75
+- Gameplay SFX calibration 0.95
+- UI calibration 0.82
+- Ambience calibration 0.42
+- maximum voices 18
+- compressor threshold -8 dB, ratio 10:1
+- master ceiling -1 dB
+- existing Music 70 / Effects 80 defaults and saved custom settings
 
-The existing mix remains:
+Only the aircraft event-local gain/pan and source assets changed. Enemy duck,
+priority, cooldown, polyphony, combo limits, and all other game events retain
+their approved settings. There is no global rebalance.
 
-- Music calibration: 0.75
-- Gameplay SFX calibration: 0.95
-- UI calibration: 0.82
-- Ambience calibration: 0.42
-- maximum effect voices: 18
-- compressor threshold: -8 dB, 10:1 ratio
-- master ceiling gain: -1 dB
-- saved Music/Effects/Mute behavior: unchanged
-- existing new-install settings: unchanged at Music 70 / Effects 80
+## Preview paths
 
-The central duck envelope still preserves the stronger and longer active duck,
-so a minor taco cue cannot shorten a boss or exceptional-event envelope.
+No preview was deployed or updated for this amendment. With the local Vite
+preview running at `http://127.0.0.1:5173`:
 
-Phase 3 adds an asset cache version to fetch URLs. This is not a mix change; it
-ensures a browser cannot keep serving the approved Phase 2 WAV bytes after the
-catalog and engine update.
+- Audio Lab A/B: `http://127.0.0.1:5173/game/audio-lab.html`
+- actual Olivia aircraft, World 1-2: `http://127.0.0.1:5173/game/level1-2.html`
+- requested World 2-2 verification, Taco Trekker: `http://127.0.0.1:5173/game/level2-2.html`
 
-## Power-up consistency
+Useful existing World 1-2 QA routes include `?openingAt=4.5` for the runway
+propeller sequence and `?event=banner2&startX=13200` for the taco-drop flyby
+when served through the project's QA host behavior.
 
-The approved Phase 2 identities for Lime, Pepper Dash, Coconut Bounce, Taco
-Magnet, Taco Frenzy, premium tacos, Taco Nova, and Low Gravity remain unchanged.
-No continuous loop was added to an ability.
+## Automated and manual validation
 
-One consistency gap from the Phase 2 report was closed: World 1-1 now emits the
-existing restrained `ability.magnetEnd` and `ability.frenzyEnd` events on the
-actual positive-to-zero timer edge. This changes no duration, state, collision,
-or reward behavior. The other eight levels already emitted the appropriate
-expiration events where those timed stages exist.
+- JavaScript syntax: PASS for generator, catalog, engine, Audio Lab, and World
+  1-2 runtime.
+- `npm test`: PASS, including the verified build and 33/33 rendered integration
+  tests.
+- deterministic second render: PASS; all 283 generated files (282 WAVs plus
+  manifest) reproduced with zero SHA-256 mismatches.
+- `npm run lint`: PASS with 0 errors and 27 existing/style warnings. The lint
+  command now excludes the ignored generated `.sites-runtime` workspace.
+- music SHA-256 integrity: PASS for every tracked pre-Phase-1 music file.
+- catalog/manifest: PASS; 155 total IDs (153 gameplay plus two review-only),
+  282 referenced assets, zero missing files, byte/hash parity for every asset,
+  and all three selected source-input hashes verified.
+- waveform regression: PASS; dominant squish body, greater than 10 dB perfect
+  late-rebound separation, bounded propeller wrap seam, and less than 7 dB loop
+  window variation.
+- local desktop Audio Lab: PASS; all 282 assets loaded, squish A/B completed,
+  both propeller comparisons completed, dynamic flyby reached gain 1.14 at
+  centered position and then stopped, with zero failed assets, fallbacks,
+  unknown events, effect drops, leaked loops, or console warnings/errors.
+- browser-observed amendment-demo output sample peak: -8.64 dBFS after the
+  configured ceiling. This is analyser sample peak, not integrated LUFS or
+  inter-sample true peak.
+- local World 1-2 start flow: PASS; start overlay dismissed, touch controls
+  remained available, and no console warnings/errors were captured.
+- local World 2-2 source-of-truth check: PASS; page and start copy identify the
+  Taco Trekker, with no aircraft event introduced.
+- physical iPhone Safari speaker review: pending owner review.
+- physical controller unlock: pending owner review.
 
-## Enemy-family consistency
+## Music and gameplay integrity
 
-All 30 enemy types now share the same softer compression grammar. The existing
-type traits still vary body, smear, pop, and brightness, preserving crunchy,
-hollow, rubbery, leafy, carnival, and cosmic personalities without changing
-the registered outcome:
+No `.ogg`, `.mp3`, or `.m4a` music asset is modified by this amendment. The
+three newly committed MP3s are clearly separated source inputs under
+`scripts/sfx-sources/`, not music and not runtime playback files.
 
-- non-perfect: immediate short squish, two rotating variants;
-- perfect: the related squish plus a clearly later elastic rebound; and
-- combo tier: separate bounded punctuation rather than raw loudness growth.
+No music composition, encoding, duration, cue, normalized playhead, crossfade,
+concert clock, or choreography changed. No collision, movement, animation,
+difficulty, reward, item, enemy, vehicle path, level progression, or timing
+logic changed. The World 1-2 changes are audio-loop lifecycle and parameter
+automation only.
 
-No enemy collision condition, bounce criterion, reward, animation, placement,
-or difficulty value changed.
+## Non-asset changed files
 
-## Boss, Olivia vehicle, and celebration review
-
-The Phase 2 boss, vehicle, hazard, piñata, celebration, concert, and finale
-assets and catalog policy were retained. The instrumented Audio Lab review did
-not expose clipping, runaway ducking, unknown events, failed assets, fallbacks,
-or accumulating loops that justified redesigning approved cues.
-
-- El Guacodillo, Sir Cornelius Pop, and Ringmaster Radish retain distinct
-  entrance, anticipation, attack, damage, phase, vulnerable, defeat, and
-  celebration families.
-- Taco truck, aircraft, catamaran, Taco Trekker, roadster, balloon, coaster,
-  and zeppelin identities remain option-selected and spatial where authored.
-- Piñatas retain hit -> break -> aftershock -> jackpot sparkle structure.
-- Neon concert and World 3 finale events retain authored timing and scene-gain
-  behavior.
-
-In the intentionally dense eight-drop Olivia demo, four low-priority
-`vehicle.tacoDrop` launcher taps were bounded by that event's polyphony limit.
-No routine, important, high, or critical event was dropped. This is the desired
-voice-stealing behavior: taco collection and major gameplay feedback remain
-available while redundant launcher taps are suppressed.
-
-## Level-by-level Phase 3 findings
-
-The browser pass loaded and started each level in sequence, confirmed that the
-Phase 3 catalog and engine precede the runtime, confirmed the intended opening
-music is playing, and captured no console errors. The semantic/runtime audit
-also reconfirmed the Phase 2 mappings. Because this environment cannot replace
-human ears on physical speakers, long-form creative listening remains an owner
-review gate rather than being represented as completed.
-
-| Level | Phase 3 finding and action |
-| --- | --- |
-| World 1-1 | New tomato/onion/chili/jalapeno squish family; added real timer-edge Magnet/Frenzy expiration cues. All other approved truck, piñata, movement, taco, and fiesta choices retained. |
-| World 1-2 | New lime/queso and shared-family squish bodies flow through the existing aircraft, ambush, rescue, airdrop, and piñata mix. No additional change was justified. |
-| World 1-3 | Six ordinary enemy families inherit the squish revision; perfect-center bounces retain BOING. El Guacodillo, stampede, pads, and fiesta mix remain unchanged. |
-| World 2-1 | Five tropical enemy families inherit the revision. Catamaran, surf, coconut-cannon, powers, and fiesta policy remain unchanged. |
-| World 2-2 | Caldera enemy families inherit the revision. Trekker, geyser, volcano, power-up, and luau policy remain unchanged. |
-| World 2-3 | Concert enemies inherit the revision. Roadster/catamaran, generators, piñata, chorus, crowd, and 3:07 concert choreography remain unchanged. The final master remained the loudest lab stress source. |
-| World 3-1 | Cloudtop enemy families inherit the revision. Balloon, ride, Taco Nova, taco rain, and carnival ambience remain unchanged. |
-| World 3-2 | Bumper/corndog and shared carnival families inherit the revision. Coaster, machinery, relight, and Sir Cornelius Pop mix remain unchanged. |
-| World 3-3 | Shared carnival families inherit the revision. Zeppelin, Low Gravity, Taco Nova, Ringmaster Radish, cosmic finale, and landing mix remain unchanged. |
-
-## Audio Lab finalization
-
-Private review path: `/game/audio-lab.html`
-
-The page remains `noindex,nofollow` and is not linked from the public landing
-page. It now provides explicit organized sections for:
-
-- Hero
-- Movement
-- Ordinary Taco
-- Premium Tacos
-- Power-Ups
-- Non-Perfect Enemy Squishes
-- Perfect Enemy Bounces
-- Enemy Families through the shared selector
-- Olivia Vehicles
-- Bosses
-- Hazards
-- Piñatas
-- Celebrations
-- Finale
-- World 1, World 2, and World 3
-- UI and Ambience
-
-The two direct comparison buttons are labeled exactly:
-
-- `Non-Perfect Enemy Squish`
-- `Perfect Enemy Bounce`
-
-The new `Enemy Contact A/B Demo` plays three alternating pairs with bounded
-combo escalation. The lab also retains taco, magnet, power-up, Olivia, boss,
-piñata, core-gameplay, concert, and cosmic-finale tests and adds a 12-jump
-repetition test.
-
-Telemetry now includes the engine, catalog, and asset-cache versions plus
-AudioContext sample rate, base latency, and output latency when the browser
-exposes them.
-
-## Stress-test results
-
-Tests used saved/default-compatible Music 70 and Effects 80 settings. The Neon
-Neckties final concert master's existing 142-168 second section was used as the
-loudest music stress source without editing the file.
-
-### Enemy outcomes
-
-- Enemy Contact A/B Demo: completed; one simultaneous voice peak; no drops.
-- Ten non-perfect squishes at 105 ms spacing: three simultaneous voices peak;
-  no drops.
-- Ten perfect bounces at 85 ms spacing: four simultaneous voices peak; no
-  drops; post-ceiling browser sample peak -4.23 dBFS.
-- Waveform regression: non-perfect mid-body is no weaker than its onset by
-  more than 1 dB; representative perfect late rebound exceeds the non-perfect
-  late region by more than 10 dB.
-
-### Dense collection and full-sequence review
-
-- Forty-eight source taco pickups in the magnet test: 40 source events
-  suppressed into eight cluster voices; peak five simultaneous voices; no
-  machine-gun playback path.
-- Repeated jump, power-up, Olivia, boss, piñata, cosmic-finale, and core-gameplay
-  demos all completed while the Neon master played.
-- Final combined lab run: post-ceiling browser sample peak -4.04 dBFS.
-- Failed assets: 0.
-- Fallback plays: 0.
-- Unknown events: 0.
-- Music routing failures: 0.
-- Global-polyphony drops: 0.
-- Unavailable drops: 0.
-- Active loops after the sequence suite: 0.
-- Captured Audio Lab console errors/warnings: 0.
-
-The desktop browser exposed a 48 kHz AudioContext. Reported base latency was
-0.010 seconds. Reported output latency varied between 0.040 and 0.240 seconds
-across sessions; this is browser/device scheduling telemetry, not an authored
-delay. User-interaction unlock and immediate semantic playback succeeded.
-
-## Automated and browser validation
-
-- `npm test`: PASS.
-- verified Sites production build: PASS.
-- rendered integration tests: 33/33 PASS.
-- `npm run lint`: PASS with 0 errors and 27 pre-existing/style warnings.
-- JavaScript syntax: PASS for generator, catalog, engine, Audio Lab, World 1-1,
-  and the regression suite.
-- deterministic generation: 281/281 generated files byte-identical on rerun.
-- catalog events: 153.
-- catalog assets: 280, all present.
-- manifest byte and SHA-256 checks: PASS.
-- total SFX size: 12,408,860 bytes, below the 14 MiB regression ceiling.
-- music integrity: every tracked pre-Phase-1 music master byte-identical.
-- legacy runtime synthesis: absent from all level runtimes; centralized fallback
-  remains in the shared engine.
-- all nine desktop start flows: PASS, intended opening music running, zero
-  captured console errors.
-- keyboard Space input after start: PASS.
-- on-screen touch Jump control after start: PASS in desktop browser emulation.
-
-## Music integrity and timing
-
-No `.ogg`, `.mp3`, `.m4a`, music-generation source, concert cue file, or music
-timeline is in the Phase 3 diff. The existing integrity fixture verifies the
-complete tracked set by SHA-256.
-
-No music composition, master, compression, encoding, duration, cue time,
-crossfade duration, normalized-playhead behavior, concert clock, or final-song
-choreography changed.
-
-## Complete non-asset changed-file list
-
-- `README.md`
-- `public/game/README.md`
+- `package.json`
+- `package-lock.json`
 - `docs/sfx-remaster-phase3.md`
 - `scripts/generate-sfx.mjs`
+- `scripts/sfx-sources/README.md`
 - `tests/rendered-html.test.mjs`
 - `public/game/assets/sfx/sfx-manifest.json`
 - `public/game/audio-catalog.js`
 - `public/game/audio-engine.js`
 - `public/game/audio-lab.html`
 - `public/game/audio-lab.js`
-- `public/game/game.js`
-- `public/game/index.html`
-- `public/game/level1-2.html`
-- `public/game/level1-3.html`
-- `public/game/level2.html`
-- `public/game/level2-2.html`
-- `public/game/level2-3.html`
-- `public/game/level3.html`
-- `public/game/level3-2.html`
-- `public/game/level3-3.html`
+- `public/game/level1-2.js`
+- all ten audio-enabled game HTML pages, for the shared catalog/engine cache key
+- `public/game/level1-2.html`, additionally for its runtime cache key
 
-The 90 revised WAV paths are fully specified in "Assets revised" above and
-individually recorded by `public/game/assets/sfx/sfx-manifest.json`.
+The manifest is the complete per-file binary asset list and provenance record.
 
-## Preview routes
+## Remaining limitations and review gate
 
-Append these unchanged routes to the isolated Phase 3 preview origin:
+This environment cannot reproduce a physical iPhone speaker, iPhone Safari's
+hardware output path, or a real controller. Automated waveform and browser
+checks can bound clipping, loop seams, event routing, and lifecycle behavior,
+but they cannot make the final creative judgment.
 
-- Audio Lab: `/game/audio-lab.html`
-- World 1-1: `/game/`
-- World 1-2: `/game/level1-2.html`
-- World 1-3: `/game/level1-3.html`
-- World 2-1: `/game/level2.html`
-- World 2-2: `/game/level2-2.html`
-- World 2-3: `/game/level2-3.html`
-- World 3-1: `/game/level3.html`
-- World 3-2: `/game/level3-2.html`
-- World 3-3: `/game/level3-3.html`
+Before merge, review in this order:
 
-## Remaining physical-device gates and limitations
+1. In Audio Lab, compare prior procedural squish, final hybrid squish, and final
+   perfect squish + BOING under Exploration and the Neon concert stress track.
+2. Compare prior and final propeller, then run Approach / Pass / Depart Demo.
+3. Play the actual World 1-2 runway opening and banner-two taco-drop flyby.
+4. Verify World 2-2 still presents the Taco Trekker rather than an aircraft.
+5. Repeat the decisive comparisons on a physical iPhone speaker.
 
-The following require the project owner's real hardware and ears:
-
-- physical iPhone Safari speaker listening at normal saved settings;
-- iPhone earbuds/headphones comparison;
-- desktop/laptop speaker and headphone listening;
-- physical standard-controller start and AudioContext unlock;
-- background/foreground suspension and resume on iPhone Safari;
-- long-form sequential creative listening through all nine levels; and
-- final judgment that the non-perfect cue reads as `SQUISH` and the perfect cue
-  reads as `SQUISH + BOING` on the target speakers.
-
-The in-app browser does not provide a true physical iPhone speaker, real Safari,
-or a physical controller. Those gates are therefore explicitly pending rather
-than inferred from desktop automation.
-
-The browser analyser reports sample peak, not inter-sample true peak or
-integrated LUFS. Phase 3 made no new LUFS claim. The configured -1 dB ceiling,
-asset peak/RMS data, music integrity, and stress telemetry provide the technical
-baseline for the remaining listening review.
-
-## Review recommendation
-
-Use the Audio Lab in this order:
-
-1. Select several soft and hard enemy families and run the direct squish and
-   perfect buttons.
-2. Run Enemy Contact A/B Demo under Exploration, Fiesta, and the Neon final
-   concert master.
-3. Run ten squishes, ten perfect bounces, repeated jumps, the magnet cascade,
-   Power-Up Demo, Olivia Demo, Boss Demo, Piñata Demo, Core Gameplay Demo, and
-   World 3 Cosmic Finale Demo.
-4. Play all nine levels sequentially on an iPhone speaker, then repeat key
-   comparisons on earbuds.
-5. Approve, request one narrowly described creative adjustment, or defer merge.
-
-Do not merge or deploy to the production Jumpin' For Tacos project until the
-remaining physical-device and owner-listening gates receive explicit approval.
+Stop at this owner creative-review gate. Do not merge or deploy until explicit
+approval.

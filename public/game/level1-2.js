@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-2-v28-shared-audio';
+  const SOURCE_VERSION = 'w1-2-v29-aircraft-distance-audio';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = true;
@@ -182,7 +182,7 @@
     flybyCorridorMaxGap: 0, flybyCorridorEnemies: 0, effectsTrimmed: 0, lastCollectSfxAt: -1,
     checkpointsGrounded: 0, airDrop: { spawned: 0, caught: 0 },
     respawnCount: 0, respawnFallbacks: 0, lastRespawnLanding: null, fallSoundPlayed: false,
-    aircraftLoop: null, rescueLoop: null,
+    aircraftLoop: null, flybyAircraftLoop: null, rescueLoop: null,
   };
   const world1Background = window.JFT_WORLD1_BACKGROUNDS.create({
     levelId: '1-2', canvas, ctx, worldWidth: WORLD_WIDTH, groundY: GROUND_Y,
@@ -845,8 +845,10 @@
 
   function stopLevelAudioLoops() {
     if (game.aircraftLoop) audio?.stopLoop(game.aircraftLoop);
+    if (game.flybyAircraftLoop) audio?.stopLoop(game.flybyAircraftLoop);
     if (game.rescueLoop) audio?.stopLoop(game.rescueLoop);
     game.aircraftLoop = null;
+    game.flybyAircraftLoop = null;
     game.rescueLoop = null;
   }
 
@@ -889,7 +891,7 @@
       inputResetCount: 0, lastInputResetReason: 'none', landingRecoveries: 0, controlStallTimer: 0, controllerStateSyncs: 0, controllerStateSequence: 0, controllerQaResetDone: false, effectsTrimmed: 0, lastCollectSfxAt: -1,
       airDrop: { spawned: 0, caught: 0 },
       respawnCount: 0, respawnFallbacks: 0, lastRespawnLanding: null, fallSoundPlayed: false,
-      aircraftLoop: null, rescueLoop: null,
+      aircraftLoop: null, flybyAircraftLoop: null, rescueLoop: null,
     });
     const startX = clamp(previewStart || 140, 0, WORLD_WIDTH - 250);
     Object.assign(player, { x: startX, y: 360, previousY: 360, vx: 0, vy: 0, dir: 1, grounded: false, platform: null, anim: 0, coyote: 0, jumpBuffer: 0, invulnerable: 0, rotation: 0, scale: 1 });
@@ -1051,7 +1053,27 @@
     if (game.openingTimer > 2.65 && game.openingTimer - dt <= 2.65) { showMessage('OLIVIA: “TIME TO CLIMB ABOARD. PROBABLY.”', 2.25); playAudio('vehicle.aircraftReady', { position: .25 }); }
     if (game.openingTimer > 4.65 && game.openingTimer - dt <= 4.65) {
       showMessage('PROPELLER: BRRRRRT. TACOS: SECURED.', 2.2);
-      game.aircraftLoop = audio?.startLoop('vehicle.aircraftPropellerIdle', { position: .25 }) || null;
+      game.aircraftLoop = audio?.startLoop('vehicle.aircraftPropellerIdle', { gain: .2, position: .25, pitchCents: -95 }) || null;
+    }
+    if (game.aircraftLoop) {
+      const pose = openingPlanePose(game.openingTimer);
+      const screenPosition = clamp(((pose.x - game.cameraX) / canvas.width) * 2 - 1, -1, 1);
+      let propellerGain = .28;
+      let propellerPitch = -85;
+      if (pose.phase === 'ground-taxi') {
+        const acceleration = smoothstep(pose.progress || 0);
+        propellerGain = .28 + acceleration * .78;
+        propellerPitch = -85 + acceleration * 155;
+      } else if (pose.phase === 'takeoff-climb') {
+        const recede = smoothstep(pose.progress || 0);
+        propellerGain = .98 - recede * .48;
+        propellerPitch = 65 - recede * 145;
+      } else if (pose.phase === 'airborne-exit' || pose.phase === 'returning-to-hero') {
+        const recede = smoothstep(pose.progress || 0);
+        propellerGain = .48 - recede * .35;
+        propellerPitch = -70 - recede * 70;
+      }
+      audio?.updateLoop?.(game.aircraftLoop, { gain: propellerGain, position: screenPosition, pitchCents: propellerPitch, smoothingSeconds: .09 });
     }
     if (game.openingTimer > 7.15 && game.openingTimer - dt <= 7.15) { showMessage('OLIVIA: “FASTER... FASTER... TACO LIFTOFF!”', 2.55); playAudio('vehicle.aircraftTaxi', { position: .35 }); }
     if (game.openingTimer > 8.4 && game.openingTimer < OPENING_TIMING.taxiEnd) game.cameraShake = Math.max(game.cameraShake, (game.openingTimer - 8.4) / (OPENING_TIMING.taxiEnd - 8.4) * (game.reducedShake ? 1.2 : 3.5));
@@ -1397,10 +1419,35 @@
         nextFlyby.started = true; nextFlyby.timer = 0; activeFlyby = nextFlyby;
         showMessage(nextFlyby.intro, 2.1); setMusic('banner');
         playAudio('vehicle.aircraftApproach', { variant: nextFlyby.inverted ? 'inverted' : 'standard', position: nextFlyby.direction < 0 ? 1 : -1 });
+        game.flybyAircraftLoop = audio?.startLoop('vehicle.aircraftPropellerIdle', {
+          gain: .12,
+          position: nextFlyby.direction < 0 ? 1 : -1,
+          pitchCents: 105,
+        }) || null;
       }
     }
     if (activeFlyby) {
       activeFlyby.timer += dt;
+      if (!game.flybyAircraftLoop) {
+        game.flybyAircraftLoop = audio?.startLoop('vehicle.aircraftPropellerIdle', {
+          gain: .12,
+          position: activeFlyby.direction < 0 ? 1 : -1,
+          pitchCents: 105,
+        }) || null;
+      }
+      const plane = flybyPlanePosition(activeFlyby);
+      const position = clamp((plane.x / canvas.width) * 2 - 1, -1, 1);
+      const distance = Math.abs(plane.x - canvas.width * .5) / (canvas.width * .78);
+      const closeness = 1 - smoothstep(distance);
+      const passProgress = clamp(activeFlyby.timer / 7.4, 0, 1);
+      const dopplerPitch = lerp(115, -135, smoothstep(passProgress));
+      const dropLift = activeFlyby.tacoDrop && activeFlyby.timer >= activeFlyby.dropStart && activeFlyby.timer <= activeFlyby.dropEnd ? .08 : 0;
+      audio?.updateLoop?.(game.flybyAircraftLoop, {
+        gain: clamp(.12 + closeness * .94 + dropLift, .12, 1.14),
+        position,
+        pitchCents: dopplerPitch,
+        smoothingSeconds: .065,
+      });
       if (activeFlyby.timer > 1.75 && activeFlyby.timer - dt <= 1.75) showMessage(activeFlyby.text.join(' — '), 3.1);
       if (activeFlyby.tacoDrop) {
         while (activeFlyby.timer >= activeFlyby.nextDropAt && activeFlyby.nextDropAt <= activeFlyby.dropEnd) {
@@ -1413,6 +1460,7 @@
       }
       if (activeFlyby.timer > 7.4) {
         activeFlyby.finished = true;
+        if (game.flybyAircraftLoop) audio?.stopLoop(game.flybyAircraftLoop); game.flybyAircraftLoop = null;
         if (activeFlyby.inverted) { showMessage('OLIVIA: “THE CLOUDS LOOK GREAT FROM DOWN HERE!”', 2.6); spawnConfetti(160, 120, 34); }
         playAudio('vehicle.aircraftDepart', { position: activeFlyby.direction < 0 ? -1 : 1 });
         setMusic(currentSection(player.x).music);

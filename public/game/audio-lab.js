@@ -13,6 +13,7 @@
   const sequenceStatus = byId('sequenceStatus');
   let muted = false;
   let ambienceHandle = null;
+  let reviewLoopHandle = null;
   let musicSegment = { start: 0, end: 0 };
   const sequenceTimers = new Set();
 
@@ -106,8 +107,64 @@
     sequenceTimers.add(timer);
   }
 
+  function stopReviewLoop() {
+    if (!reviewLoopHandle) return;
+    audio.stopLoop(reviewLoopHandle);
+    reviewLoopHandle = null;
+  }
+
+  async function playTimedReviewLoop(eventId, label) {
+    await unlock();
+    stopReviewLoop();
+    const handle = audio.startLoop(eventId, { gain: 0.82, position: 0, pitchCents: 0 });
+    reviewLoopHandle = handle;
+    sequenceStatus.textContent = `${label} playing for 3.2 seconds...`;
+    queueSequenceCallback(() => {
+      if (reviewLoopHandle !== handle) return;
+      audio.stopLoop(handle);
+      reviewLoopHandle = null;
+      sequenceStatus.textContent = `${label} complete.`;
+    }, 3_200);
+  }
+
+  async function runAircraftFlybyDemo() {
+    await unlock();
+    stopReviewLoop();
+    sequenceStatus.textContent = 'Aircraft approach / closest pass / departure running...';
+    audio.play('vehicle.aircraftApproach', { position: -1 });
+    const handle = audio.startLoop('vehicle.aircraftPropellerIdle', { gain: 0.12, position: -1, pitchCents: 115 });
+    reviewLoopHandle = handle;
+    const duration = 6_400;
+    for (let step = 0; step <= 64; step += 1) {
+      const progress = step / 64;
+      const position = -1 + progress * 2;
+      const proximity = 1 - Math.abs(position);
+      const closeness = proximity * proximity * (3 - 2 * proximity);
+      queueSequenceCallback(() => {
+        if (reviewLoopHandle !== handle) return;
+        audio.updateLoop(handle, {
+          gain: 0.12 + closeness * 1.02,
+          position,
+          pitchCents: 115 - progress * 250,
+          smoothingSeconds: 0.065,
+        });
+      }, progress * duration);
+    }
+    [2_850, 3_080, 3_310].forEach((at, index) => queueSequenceCallback(() => {
+      audio.play('vehicle.drop', { position: -0.12 + index * 0.12, combo: index + 1 });
+    }, at));
+    queueSequenceCallback(() => audio.play('vehicle.aircraftDepart', { position: 1 }), 5_150);
+    queueSequenceCallback(() => {
+      if (reviewLoopHandle !== handle) return;
+      audio.stopLoop(handle);
+      reviewLoopHandle = null;
+      sequenceStatus.textContent = 'Aircraft approach / closest pass / departure complete.';
+    }, duration + 150);
+  }
+
   async function scheduleSequence(label, scheduledEvents) {
     await unlock();
+    stopReviewLoop();
     sequenceStatus.textContent = `${label} running...`;
     scheduledEvents.forEach(({ at, eventId, options = {} }) => {
       queueSequenceCallback(() => audio.play(eventId, { ...eventOptions(eventId), ...options }), at);
@@ -117,6 +174,7 @@
   }
 
   const categoryRules = [
+    ['Review Candidates', /^review\./],
     ['Hero', /^(hero\.(hurt|fall|respawn)|checkpoint\.)/],
     ['Movement', /^(hero\.(jump|land)|movement\.|ride\.)/],
     ['Ordinary Taco', /^collect\.(taco|tacoCluster)$/],
@@ -152,7 +210,7 @@
     if (!eventIds.length) return;
     const details = document.createElement('details');
     details.className = 'catalog-category';
-    if (['Hero', 'Movement', 'Power-Ups', 'Non-Perfect Enemy Squishes', 'Perfect Enemy Bounces'].includes(category)) details.open = true;
+    if (['Review Candidates', 'Hero', 'Movement', 'Power-Ups', 'Non-Perfect Enemy Squishes', 'Perfect Enemy Bounces'].includes(category)) details.open = true;
     const summary = document.createElement('summary');
     summary.textContent = `${category} (${eventIds.length})`;
     const grid = document.createElement('div');
@@ -169,16 +227,20 @@
     catalogSections.appendChild(details);
   });
 
+  byId('priorEnemySquish').addEventListener('click', () => playEvent('review.enemySquishProcedural'));
   byId('normalEnemySplat').addEventListener('click', () => playEvent('combat.enemySplat'));
   byId('perfectEnemyStomp').addEventListener('click', () => playEvent('combat.enemyStomp'));
-  byId('enemyContactAB').addEventListener('click', () => scheduleSequence('Enemy Contact A/B Demo', [
-    { at: 0, eventId: 'combat.enemySplat' },
-    { at: 650, eventId: 'combat.enemyStomp', options: { combo: 1 } },
-    { at: 1_450, eventId: 'combat.enemySplat' },
-    { at: 2_100, eventId: 'combat.enemyStomp', options: { combo: 2 } },
-    { at: 2_900, eventId: 'combat.enemySplat' },
-    { at: 3_550, eventId: 'combat.enemyStomp', options: { combo: 3 } },
+  byId('enemyContactAB').addEventListener('click', () => scheduleSequence('Squish Candidate/Final A/B', [
+    { at: 0, eventId: 'review.enemySquishProcedural' },
+    { at: 800, eventId: 'combat.enemySplat' },
+    { at: 1_600, eventId: 'combat.enemyStomp', options: { combo: 1 } },
+    { at: 2_500, eventId: 'review.enemySquishProcedural' },
+    { at: 3_300, eventId: 'combat.enemySplat' },
+    { at: 4_100, eventId: 'combat.enemyStomp', options: { combo: 2 } },
   ]));
+  byId('priorPropeller').addEventListener('click', () => playTimedReviewLoop('review.aircraftPropellerProcedural', 'Prior procedural propeller'));
+  byId('finalPropeller').addEventListener('click', () => playTimedReviewLoop('vehicle.aircraftPropellerIdle', 'Final recorded propeller'));
+  byId('aircraftFlybyDemo').addEventListener('click', runAircraftFlybyDemo);
 
   byId('powerDemo').addEventListener('click', () => scheduleSequence('Power-Up Demo', [
     { at: 0, eventId: 'ability.limeStart' }, { at: 650, eventId: 'ability.limeBreak' },
@@ -202,7 +264,7 @@
     const events = [{ at: 0, eventId: id('approach') }, { at: 600, eventId: id('accelerate') }];
     for (let index = 0; index < 8; index += 1) events.push({ at: 1_000 + index * 115, eventId: id('tacoDrop') });
     events.push({ at: 2_150, eventId: id('depart') });
-    scheduleSequence('Olivia Taco Drop Demo', events);
+    scheduleSequence('Olivia Vehicle Taco Drop Demo', events);
   });
 
   byId('bossDemo').addEventListener('click', () => {
@@ -309,6 +371,7 @@
       sequenceTimers.clear();
       if (ambienceHandle) audio.stopLoop(ambienceHandle);
       ambienceHandle = null;
+      stopReviewLoop();
       labMusic.pause();
       sequenceStatus.textContent = 'Sequence stopped while the page was hidden.';
       byId('ambienceToggle').textContent = 'Start selected ambience';

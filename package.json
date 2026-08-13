@@ -12,7 +12,7 @@
     "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
     "test": "npm run build && node --test tests/rendered-html.test.mjs",
     "validate:artifact": "bash scripts/validate-artifact.sh",
-    "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next",
+    "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern .sites-runtime",
     "generate:sfx": "node scripts/generate-sfx.mjs",
     "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate"
   },
@@ -23,6 +23,7 @@
     "react-dom": "19.2.6"
   },
   "devDependencies": {
+    "audio-decode": "3.11.4",
     "@cloudflare/vite-plugin": "1.37.1",
     "@tailwindcss/postcss": "4.2.1",
     "@types/node": "22.19.19",
