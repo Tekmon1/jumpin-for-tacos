@@ -646,7 +646,7 @@ test("ships World 1 with authored seamless panorama progressions", async () => {
     assert.match(rescueForeground, new RegExp(filename.replace(".", "\\.")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(rescueForegroundHtml, /level1-2\.js\?v=29/);
+  assert.match(rescueForegroundHtml, /level1-2\.js\?v=30/);
   assert.match(rescueForeground, /function drawPaintedTerrainSlice/);
   assert.match(rescueForeground, /checkpointArtGroundedByVisibleBaseline: true/);
   assert.match(rescueForeground, /independentCheckpointShadows: true/);
@@ -780,8 +780,9 @@ test("remasters the complete World 1-2 aviation enemy and NPC cast and restores 
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /level1-2\.js\?v=29/);
-  assert.match(runtime, /SOURCE_VERSION = 'w1-2-v29-aircraft-distance-audio'/);
+  assert.match(html, /level1-2\.js\?v=30/);
+  assert.match(runtime, /SOURCE_VERSION = 'w1-2-v30-olivia-propeller-state-sync'/);
+  assert.match(runtime, /\['terminal\.local', '127\.0\.0\.1', 'localhost'\]\.includes\(location\.hostname\)/);
   assert.match(runtime, /function remasteredEnemyFrame/);
   assert.match(runtime, /function drawCrewMember/);
   assert.match(runtime, /function drawAirfieldCrew/);
@@ -815,7 +816,7 @@ test("authors the World 1-2 rescue pilot across combat sections without crowding
   assert.match(runtime, /previousBottom: previousPlayerBottom/);
   assert.match(runtime, /previousTargetTop: previousEnemyTop/);
   assert.match(runtime, /player\.y = Math\.min\(player\.y, enemy\.y - player\.h - 1\)/);
-  assert.match(html, /level1-2\.js\?v=29/);
+  assert.match(html, /level1-2\.js\?v=30/);
 });
 
 test("remasters the complete World 1-3 showdown enemy, boss, stampede, and NPC cast", async () => {
@@ -1662,7 +1663,9 @@ test("loads the shared Phase 3 audio foundation before World 1-1 and resolves ev
   assert.match(lab, />Squish Candidate\/Final A\/B</);
   assert.match(lab, />Prior Procedural Propeller</);
   assert.match(lab, />Final Recorded Propeller</);
-  assert.match(lab, />Approach \/ Pass \/ Depart Demo</);
+  assert.match(lab, />Normal Olivia Propeller Flyby</);
+  assert.match(lab, />Guacamole-Hit Flyby</);
+  assert.match(lab, />Damaged \/ Crashing Propeller</);
   assert.match(lab, /Enemy Families and contact outcomes/);
   assert.match(lab, /SQUISH! BOING!/);
   assert.match(lab, /10 non-perfect squish variants/);
@@ -1673,6 +1676,10 @@ test("loads the shared Phase 3 audio foundation before World 1-1 and resolves ev
   assert.match(labRuntime, /button\.dataset\.eventId = eventId/);
   assert.match(labRuntime, /scheduleSequence\('Squish Candidate\/Final A\/B'/);
   assert.match(labRuntime, /audio\.updateLoop\(handle/);
+  assert.match(labRuntime, /function runAircraftGuacHitDemo/);
+  assert.match(labRuntime, /function runAircraftDamagedDemo/);
+  assert.match(labRuntime, /reviewLoopHandles\.has\(propellerHandle\)/);
+  assert.match(labRuntime, /stopReviewLoop\(strainHandle\)/);
   assert.match(labRuntime, /scheduleSequence\('Jump repetition test'/);
   for (const category of ["Hero", "Movement", "Ordinary Taco", "Premium Tacos", "Power-Ups", "Piñatas", "Celebrations", "Finale", "UI"]) {
     assert.match(labRuntime, new RegExp(`\\['${category}'`), `Audio Lab includes the ${category} review category`);
@@ -1745,6 +1752,14 @@ test("keeps every remaining level runtime on the shared Phase 3 audio engine", a
   assert.match(worldOneTwo, /flybyAircraftLoop/);
   assert.match(worldOneTwo, /updateLoop\?\.\(game\.flybyAircraftLoop/);
   assert.match(worldOneTwo, /const dopplerPitch = lerp\(115, -135/);
+  assert.match(worldOneTwo, /function syncOliviaSetPieceAircraftAudio/);
+  assert.match(worldOneTwo, /ensureTrackedLoop\('ambushAircraftLoop', 'vehicle\.aircraftPropellerIdle'/);
+  assert.match(worldOneTwo, /ensureTrackedLoop\('rescuePropellerLoop', 'vehicle\.aircraftPropellerIdle'/);
+  assert.match(worldOneTwo, /ensureTrackedLoop\('rescueLoop', 'vehicle\.aircraftDamagedLoop'/);
+  assert.match(worldOneTwo, /playAudio\('vehicle\.aircraftApproach', \{ position: -1, variant: 'guac-ambush' \}\)/);
+  assert.match(worldOneTwo, /stopTrackedLoop\('rescuePropellerLoop'\); stopTrackedLoop\('rescueLoop'\)/);
+  assert.match(worldOneTwo, /guacAmbush: Boolean\(game\.ambushAircraftLoop\)/);
+  assert.match(worldOneTwo, /rescuePropeller: Boolean\(game\.rescuePropellerLoop\)/);
   const worldTwoTwo = runtimeCache.get("level2-2.js");
   assert.match(worldTwoTwo, /vehicleType: 'trekker'/, "World 2-2 retains the Taco Trekker vehicle identity");
   assert.doesNotMatch(worldTwoTwo, /vehicle\.aircraftPropellerIdle/, "the Olivia aircraft correction does not fabricate an aircraft in World 2-2");

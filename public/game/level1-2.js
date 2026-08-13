@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-2-v29-aircraft-distance-audio';
+  const SOURCE_VERSION = 'w1-2-v30-olivia-propeller-state-sync';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = true;
@@ -182,7 +182,7 @@
     flybyCorridorMaxGap: 0, flybyCorridorEnemies: 0, effectsTrimmed: 0, lastCollectSfxAt: -1,
     checkpointsGrounded: 0, airDrop: { spawned: 0, caught: 0 },
     respawnCount: 0, respawnFallbacks: 0, lastRespawnLanding: null, fallSoundPlayed: false,
-    aircraftLoop: null, flybyAircraftLoop: null, rescueLoop: null,
+    aircraftLoop: null, flybyAircraftLoop: null, ambushAircraftLoop: null, rescuePropellerLoop: null, rescueLoop: null,
   };
   const world1Background = window.JFT_WORLD1_BACKGROUNDS.create({
     levelId: '1-2', canvas, ctx, worldWidth: WORLD_WIDTH, groundY: GROUND_Y,
@@ -190,7 +190,7 @@
   let lastFrame = 0;
   let seed = 0x51A2BEEF;
   const params = new URLSearchParams(location.search);
-  const qa = location.hostname === 'terminal.local';
+  const qa = ['terminal.local', '127.0.0.1', 'localhost'].includes(location.hostname);
   const previewStart = qa ? Number(params.get('startX') || 0) : 0;
   const previewAutoRun = qa && params.get('autoRun') === '1';
   const previewEvent = qa ? params.get('event') || '' : '';
@@ -846,9 +846,13 @@
   function stopLevelAudioLoops() {
     if (game.aircraftLoop) audio?.stopLoop(game.aircraftLoop);
     if (game.flybyAircraftLoop) audio?.stopLoop(game.flybyAircraftLoop);
+    if (game.ambushAircraftLoop) audio?.stopLoop(game.ambushAircraftLoop);
+    if (game.rescuePropellerLoop) audio?.stopLoop(game.rescuePropellerLoop);
     if (game.rescueLoop) audio?.stopLoop(game.rescueLoop);
     game.aircraftLoop = null;
     game.flybyAircraftLoop = null;
+    game.ambushAircraftLoop = null;
+    game.rescuePropellerLoop = null;
     game.rescueLoop = null;
   }
 
@@ -891,7 +895,7 @@
       inputResetCount: 0, lastInputResetReason: 'none', landingRecoveries: 0, controlStallTimer: 0, controllerStateSyncs: 0, controllerStateSequence: 0, controllerQaResetDone: false, effectsTrimmed: 0, lastCollectSfxAt: -1,
       airDrop: { spawned: 0, caught: 0 },
       respawnCount: 0, respawnFallbacks: 0, lastRespawnLanding: null, fallSoundPlayed: false,
-      aircraftLoop: null, flybyAircraftLoop: null, rescueLoop: null,
+      aircraftLoop: null, flybyAircraftLoop: null, ambushAircraftLoop: null, rescuePropellerLoop: null, rescueLoop: null,
     });
     const startX = clamp(previewStart || 140, 0, WORLD_WIDTH - 250);
     Object.assign(player, { x: startX, y: 360, previousY: 360, vx: 0, vy: 0, dir: 1, grounded: false, platform: null, anim: 0, coyote: 0, jumpBuffer: 0, invulnerable: 0, rotation: 0, scale: 1 });
@@ -1399,6 +1403,117 @@
     };
   }
 
+  function stopTrackedLoop(handleKey) {
+    const handle = game[handleKey];
+    if (!handle) return false;
+    audio?.stopLoop(handle);
+    game[handleKey] = null;
+    return true;
+  }
+
+  function ensureTrackedLoop(handleKey, eventId, options) {
+    if (!game[handleKey]) game[handleKey] = audio?.startLoop(eventId, options) || null;
+    return game[handleKey];
+  }
+
+  function syncAmbushAircraftAudio() {
+    const plane = planeDuringAmbush();
+    if (!plane) {
+      const stopped = stopTrackedLoop('ambushAircraftLoop');
+      if (stopped && game.ambush.stage >= 3 && !game.rescueActive) {
+        playAudio('vehicle.aircraftDepart', { position: 1 });
+      }
+      return;
+    }
+
+    const position = clamp((plane.screenX / canvas.width) * 2 - 1, -1, 1);
+    const distance = Math.abs(plane.screenX - canvas.width * .5) / (canvas.width * .78);
+    const closeness = 1 - smoothstep(distance);
+    const passProgress = clamp((plane.screenX + 220) / (canvas.width + 440), 0, 1);
+    const damaged = game.ambush.stage >= 3;
+    const recede = damaged ? smoothstep(clamp(game.ambush.timer / 3.4, 0, 1)) : 0;
+    const pitchInstability = damaged
+      ? Math.sin(game.levelTime * 19.7) * 32 + Math.sin(game.levelTime * 7.1) * 17
+      : 0;
+    const stereoWobble = damaged ? Math.sin(game.levelTime * 5.2) * .035 : 0;
+    const gain = clamp(.12 + closeness * (damaged ? .86 : .96), .12, damaged ? 1.02 : 1.08);
+    const pitchCents = damaged
+      ? -45 - recede * 95 + pitchInstability
+      : lerp(110, -25, smoothstep(passProgress));
+    const handle = ensureTrackedLoop('ambushAircraftLoop', 'vehicle.aircraftPropellerIdle', {
+      gain: .12,
+      position: -1,
+      pitchCents: 110,
+    });
+    if (!handle) return;
+    audio?.updateLoop?.(handle, {
+      gain,
+      position: clamp(position + stereoWobble, -1, 1),
+      pitchCents,
+      smoothingSeconds: .06,
+    });
+  }
+
+  function syncRescueAircraftAudio() {
+    if (!game.rescueActive || game.crashLanded) {
+      stopTrackedLoop('rescuePropellerLoop');
+      stopTrackedLoop('rescueLoop');
+      return;
+    }
+
+    const plane = rescuePlanePosition();
+    const screenX = plane.x - game.cameraX;
+    const distance = Math.abs(screenX - canvas.width * .52) / (canvas.width * .9);
+    const closeness = 1 - smoothstep(distance);
+    const phase = Math.max(0, game.rescuePhase);
+    const strain = .45 + plane.progress * .55 + phase * .08;
+    const pitchInstability = Math.sin(game.levelTime * 19.3) * (11 + strain * 25)
+      + Math.sin(game.levelTime * 6.4) * (6 + strain * 13);
+    const sputterPulse = Math.pow(Math.max(0, Math.sin(game.levelTime * (12.4 + phase * 2.6) + plane.progress * 4)), 8);
+    const sputterDepth = .04 + plane.progress * .15;
+    const stereoWobble = Math.sin(game.levelTime * 4.6) * (.012 + plane.progress * .042);
+    const position = clamp((screenX / canvas.width) * 2 - 1 + stereoWobble, -1, 1);
+    const propellerGain = clamp((.23 + closeness * .76) * (1 - sputterPulse * sputterDepth), .18, 1);
+    const propellerPitch = -40 - plane.progress * 112 + pitchInstability;
+
+    const propellerHandle = ensureTrackedLoop('rescuePropellerLoop', 'vehicle.aircraftPropellerIdle', {
+      gain: propellerGain,
+      position,
+      pitchCents: propellerPitch,
+    });
+    if (propellerHandle) {
+      audio?.updateLoop?.(propellerHandle, {
+        gain: propellerGain,
+        position,
+        pitchCents: propellerPitch,
+        smoothingSeconds: .045,
+      });
+    }
+
+    const strainHandle = ensureTrackedLoop('rescueLoop', 'vehicle.aircraftDamagedLoop', {
+      gain: .16,
+      position,
+      pitchCents: -20,
+    });
+    if (strainHandle) {
+      audio?.updateLoop?.(strainHandle, {
+        gain: clamp(.14 + plane.progress * .17 + phase * .035, .14, .38),
+        position,
+        pitchCents: pitchInstability * .32 - plane.progress * 28,
+        smoothingSeconds: .08,
+      });
+    }
+  }
+
+  function syncOliviaSetPieceAircraftAudio() {
+    if (game.rescueActive && !game.crashLanded && game.ambushAircraftLoop && !game.rescuePropellerLoop) {
+      game.rescuePropellerLoop = game.ambushAircraftLoop;
+      game.ambushAircraftLoop = null;
+    }
+    syncAmbushAircraftAudio();
+    syncRescueAircraftAudio();
+  }
+
   function releasePlaneDropTaco(flyby) {
     const plane = flybyPlanePosition(flyby); const dropIndex = flyby.dropsReleased;
     addItem(game.cameraX + plane.x - 12 - flyby.direction * 28, plane.y + 27 + (dropIndex % 3 - 1) * 5, 'taco', {
@@ -1467,7 +1582,11 @@
       }
     }
 
-    if (game.ambush.stage === 0 && player.x > 22900 && game.flybys.every((flyby) => flyby.finished)) { game.ambush.stage = 1; game.ambush.timer = 0; showMessage('UNIDENTIFIED GUAC ACTIVITY AHEAD!', 2.4); setMusic('ambush'); playAudio('hazard.guacWarning', { position: 1 }); }
+    if (game.ambush.stage === 0 && player.x > 22900 && game.flybys.every((flyby) => flyby.finished)) {
+      game.ambush.stage = 1; game.ambush.timer = 0; showMessage('UNIDENTIFIED GUAC ACTIVITY AHEAD!', 2.4); setMusic('ambush');
+      playAudio('hazard.guacWarning', { position: 1 });
+      playAudio('vehicle.aircraftApproach', { position: -1, variant: 'guac-ambush' });
+    }
     if (game.ambush.stage === 1) {
       game.ambush.timer += dt;
       if (game.ambush.timer > 3.45) { game.ambush.stage = 2; game.ambush.projectile = 0; showMessage('INCOMING GUACAMOLE!', 2.3); playAudio('hazard.guacThrow', { position: 1 }); }
@@ -1481,15 +1600,16 @@
       game.ambush.timer += dt; if (game.ambush.musicDrop > 0) { game.ambush.musicDrop = Math.max(0, game.ambush.musicDrop - dt); if (game.ambush.musicDrop === 0) setMusic('ambush', true); }
     }
     game.ambush.hitFlash = Math.max(0, game.ambush.hitFlash - dt);
-    if (!game.rescueActive && player.x >= 27000 && game.ambush.stage >= 3) { game.rescueActive = true; game.rescuePhase = 0; showMessage('PHASE 1 — CATCH THE SMOKE TRAIL!', 3); setMusic('rescue'); spawnConfetti(canvas.width * .55, 180, 90); playAudio('vehicle.aircraftRescueStart', { position: .35 }); game.rescueLoop = audio?.startLoop('vehicle.aircraftDamagedLoop', { position: .45 }) || null; }
+    if (!game.rescueActive && player.x >= 27000 && game.ambush.stage >= 3) { game.rescueActive = true; game.rescuePhase = 0; showMessage('PHASE 1 — CATCH THE SMOKE TRAIL!', 3); setMusic('rescue'); spawnConfetti(canvas.width * .55, 180, 90); playAudio('vehicle.aircraftRescueStart', { position: .35 }); }
     if (game.rescueActive && !game.crashLanded) {
       const progress = clamp((player.x - 27000) / 5200, 0, 1); const phase = progress >= .68 ? 2 : progress >= .34 ? 1 : 0;
       if (phase > game.rescuePhase) { game.rescuePhase = phase; showMessage(phase === 1 ? 'PHASE 2 — KEEP UP WITH OLIVIA!' : 'PHASE 3 — EMERGENCY LANDING AHEAD!', 2.8); spawnConfetti(canvas.width * .58, 175, 55 + phase * 20); playAudio('sequence.rescuePhase', { combo: phase + 1, position: .25 }); }
     }
     if (game.rescueActive && !game.crashLanded && player.x > 32020) {
-      game.crashLanded = true; game.crashTimer = 0; game.cameraShake = 20; showMessage('EMERGENCY TACO LANDING!', 2.8); spawnBurst(820, 360, '#ff8d57', game.reducedShake ? 45 : 100); if (game.rescueLoop) audio?.stopLoop(game.rescueLoop); game.rescueLoop = null; playAudio('vehicle.aircraftCrash', { position: .75 });
+      game.crashLanded = true; game.crashTimer = 0; game.cameraShake = 20; showMessage('EMERGENCY TACO LANDING!', 2.8); spawnBurst(820, 360, '#ff8d57', game.reducedShake ? 45 : 100); stopTrackedLoop('rescuePropellerLoop'); stopTrackedLoop('rescueLoop'); playAudio('vehicle.aircraftCrash', { position: .75 });
     }
     if (game.crashLanded) { game.crashTimer += dt; if (player.x > 32620 && game.sectionIndex < 6) { game.sectionIndex = 6; setMusic('fiesta'); showMessage(game.landingQuip, 3.7); playAudio('vehicle.chaseComplete', { position: .55 }); } }
+    syncOliviaSetPieceAircraftAudio();
   }
 
   function maybeFinish() {
@@ -2325,7 +2445,7 @@
         rainbowTacos: world.collectibles.filter((item) => item.pinataReward && item.rainbowReward && !item.collected).length,
         burst: game.pinataBurst ? { remaining: Number(game.pinataBurst.timer.toFixed(2)), aftershock: game.pinataBurst.aftershockTriggered, finale: game.pinataBurst.finaleTriggered, rewardWaves: game.pinataBurst.rewardWaves } : null,
       } : null,
-      plane: { openingComplete: game.openingComplete, openingTimer: Number(game.openingTimer.toFixed(2)), openingStage: game.openingComplete ? 'complete' : openingPlanePose(game.openingTimer).phase, wheelsGroundedDuringTaxi: game.openingTimer >= OPENING_TIMING.boardEnd && game.openingTimer < OPENING_TIMING.taxiEnd, openingCamera: { phase: openingCameraPhase(game.openingTimer), cameraX: Math.round(game.cameraX), planeScreenX: game.openingComplete ? null : Math.round(openingPlanePose(game.openingTimer).x - game.cameraX), heroScreenX: Math.round(player.x - game.cameraX), controlsLocked: !game.openingComplete }, flybys: game.flybys.map((flyby) => ({ id: flyby.id, started: flyby.started, finished: flyby.finished, timer: Number(flyby.timer.toFixed(2)), direction: flyby.direction < 0 ? 'right-to-left' : 'left-to-right', inverted: flyby.inverted, text: flyby.text, tacoDrop: Boolean(flyby.tacoDrop), dropsReleased: flyby.dropsReleased })), airDrop: { ...game.airDrop, activeTacos: world.collectibles.filter((item) => item.planeDrop && !item.collected).length }, ambushStage: game.ambush.stage, returnDirection: 'left-to-right', attackerVisible: false, projectileVisible: game.ambush.stage === 2, rescueActive: game.rescueActive, rescuePhase: game.rescuePhase, turboFx: game.rescueActive && !game.crashLanded, crashLanded: game.crashLanded, crashTimer: Number(game.crashTimer.toFixed(2)), crashSiteX: CRASH_SITE_X, aheadBy: game.rescueActive && !game.crashLanded ? Math.round(rescuePlanePosition().x - player.x) : null },
+      plane: { openingComplete: game.openingComplete, openingTimer: Number(game.openingTimer.toFixed(2)), openingStage: game.openingComplete ? 'complete' : openingPlanePose(game.openingTimer).phase, wheelsGroundedDuringTaxi: game.openingTimer >= OPENING_TIMING.boardEnd && game.openingTimer < OPENING_TIMING.taxiEnd, openingCamera: { phase: openingCameraPhase(game.openingTimer), cameraX: Math.round(game.cameraX), planeScreenX: game.openingComplete ? null : Math.round(openingPlanePose(game.openingTimer).x - game.cameraX), heroScreenX: Math.round(player.x - game.cameraX), controlsLocked: !game.openingComplete }, flybys: game.flybys.map((flyby) => ({ id: flyby.id, started: flyby.started, finished: flyby.finished, timer: Number(flyby.timer.toFixed(2)), direction: flyby.direction < 0 ? 'right-to-left' : 'left-to-right', inverted: flyby.inverted, text: flyby.text, tacoDrop: Boolean(flyby.tacoDrop), dropsReleased: flyby.dropsReleased })), airDrop: { ...game.airDrop, activeTacos: world.collectibles.filter((item) => item.planeDrop && !item.collected).length }, ambushStage: game.ambush.stage, returnDirection: 'left-to-right', attackerVisible: false, projectileVisible: game.ambush.stage === 2, rescueActive: game.rescueActive, rescuePhase: game.rescuePhase, turboFx: game.rescueActive && !game.crashLanded, crashLanded: game.crashLanded, crashTimer: Number(game.crashTimer.toFixed(2)), crashSiteX: CRASH_SITE_X, aheadBy: game.rescueActive && !game.crashLanded ? Math.round(rescuePlanePosition().x - player.x) : null, audioLoops: { opening: Boolean(game.aircraftLoop), flyby: Boolean(game.flybyAircraftLoop), guacAmbush: Boolean(game.ambushAircraftLoop), rescuePropeller: Boolean(game.rescuePropellerLoop), rescueStrain: Boolean(game.rescueLoop) } },
       music: {
         active: game.activeMusic,
         transition: game.musicTransition ? {

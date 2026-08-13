@@ -29,6 +29,55 @@ No aircraft was fabricated in World 2-2, and no World 2-2 vehicle behavior was
 changed. Both routes remain available for review so the correction can be
 verified directly.
 
+## World 1-2 Olivia propeller integration repair
+
+The approved recorded propeller, ordinary enemy squish, perfect bounce, music,
+global audio architecture, bus calibration, and ducking policy are unchanged by
+this repair.
+
+The two silent aircraft appearances had separate state-level causes:
+
+- The guacamole-hit pass is not one of the three `flybyDefs` flybys. It is a
+  separate `game.ambush` sequence rendered through `planeDuringAmbush()` and
+  previously requested only the guacamole warning, throw, and impact events.
+  It never entered the shared propeller-loop path.
+- The final chase is a separate `game.rescueActive` sequence. It previously
+  requested only `vehicle.aircraftDamagedLoop`, a restrained procedural strain
+  texture, and never requested the approved recorded
+  `vehicle.aircraftPropellerIdle` identity.
+
+World 1-2 now synchronizes both sequences from their actual plane state and
+screen position on every update. The ambush starts the approved propeller while
+the plane is still approaching offscreen, increases presence through the pass,
+keeps that identity through `impact.guacKrak`, then adds deterministic pitch
+instability and stereo wobble as the damaged plane recedes. When the sequence
+flows directly into the rescue chase, the live propeller handle is transferred
+rather than restarted.
+
+The rescue chase keeps the same approved propeller as its audible foundation
+and layers the existing strain texture below it. Distance, deterministic RPM
+instability, narrow sputter dips, and restrained stereo wobble follow the
+authored rescue-plane position. Both handles stop at the existing crash state,
+on reset, or when the aircraft leaves. Per-sequence handle ownership prevents
+duplicate loops and lets preview/direct state entry recover the proper audio
+without depending on one transition frame.
+
+No new recording, rendered sound asset, catalog event, or manifest entry was
+needed. The damaged result is runtime processing of the already approved
+propeller plus the existing strain layer. The repair reuses:
+
+- `vehicle.aircraftApproach`
+- `vehicle.aircraftPropellerIdle`
+- `vehicle.aircraftDepart`
+- `impact.guacKrak`
+- `vehicle.aircraftRescueStart`
+- `vehicle.aircraftDamagedLoop`
+- `sequence.rescuePhase`
+- `vehicle.aircraftCrash`
+
+The ordinary opening and `flybyDefs` approach/pass/depart formulas were not
+changed.
+
 ## Licensing and source policy
 
 Every external recording considered for this amendment is CC0 1.0. No
@@ -208,13 +257,16 @@ It now exposes:
 - Squish Candidate/Final A/B
 - Prior Procedural Propeller
 - Final Recorded Propeller
-- Approach / Pass / Depart Demo
+- Normal Olivia Propeller Flyby
+- Guacamole-Hit Flyby
+- Damaged / Crashing Propeller
 
-The flyby demo uses the same shared `updateLoop` behavior as World 1-2 and adds
-three bounded taco-drop taps around the closest pass. Telemetry makes the live
-loop gain, position, pitch, voice/drop counts, duck amount, and bus levels
-visible during review. Rejected external recordings are documented in the
-manifest but are not shipped as runtime or Audio Lab assets.
+The normal flyby demo uses the same shared `updateLoop` behavior as World 1-2
+and adds three bounded taco-drop taps around the closest pass. The two added
+demos expose the guacamole-hit and damaged-chase state treatments directly.
+Telemetry makes live loop gain, position, pitch, voice/drop counts, duck
+amount, and bus levels visible during review. Rejected external recordings are
+documented in the manifest but are not shipped as runtime or Audio Lab assets.
 
 ## Mix decisions
 
@@ -244,7 +296,12 @@ preview running at `http://127.0.0.1:5173`:
 
 Useful existing World 1-2 QA routes include `?openingAt=4.5` for the runway
 propeller sequence and `?event=banner2&startX=13200` for the taco-drop flyby
-when served through the project's QA host behavior.
+when served through the project's QA host behavior. Focused repair routes are:
+
+- guacamole-hit pass:
+  `http://127.0.0.1:5173/game/level1-2.html?startX=22880&skipOpening=1&autoRun=1`
+- damaged rescue chase:
+  `http://127.0.0.1:5173/game/level1-2.html?event=rescue&startX=30300&autoRun=1`
 
 ## Automated and manual validation
 
@@ -272,8 +329,27 @@ when served through the project's QA host behavior.
   inter-sample true peak.
 - local World 1-2 start flow: PASS; start overlay dismissed, touch controls
   remained available, and no console warnings/errors were captured.
+- all three earlier World 1-2 flybys: PASS; banner one, banner two/taco drop,
+  and the inverted pass each started one approved propeller loop, updated it
+  through the pass, and stopped it at the existing 7.4 second exit without a
+  duplicate or leak.
+- guacamole-hit pass: PASS; the propeller was active during offscreen approach,
+  close pass, projectile travel, and guacamole impact, then stopped after the
+  damaged plane receded. The authored 0.62 second music drop and restart were
+  preserved.
+- damaged rescue chase: PASS; the approved propeller and quieter strain layer
+  were both active during the chase and both stopped at the existing crash
+  state before fiesta. No duplicate or leaked loop was observed.
+- Audio Lab aircraft demos: PASS; normal and guacamole-hit demos each peaked at
+  one loop, the damaged demo at two intentional layers, and all returned to
+  zero active loops. All 282 assets loaded with zero failures, fallbacks,
+  unknown events, effect drops, or console warnings/errors.
 - local World 2-2 source-of-truth check: PASS; page and start copy identify the
   Taco Trekker, with no aircraft event introduced.
+- mobile-sized browser review: PARTIAL; touch controls remained available and
+  the damaged loops were active, but the browser backend did not report the
+  requested 390 by 844 CSS viewport. This is not a substitute for physical
+  iPhone Safari/speaker review.
 - physical iPhone Safari speaker review: pending owner review.
 - physical controller unlock: pending owner review.
 
@@ -286,8 +362,8 @@ three newly committed MP3s are clearly separated source inputs under
 No music composition, encoding, duration, cue, normalized playhead, crossfade,
 concert clock, or choreography changed. No collision, movement, animation,
 difficulty, reward, item, enemy, vehicle path, level progression, or timing
-logic changed. The World 1-2 changes are audio-loop lifecycle and parameter
-automation only.
+logic changed. The World 1-2 repair changes only semantic audio-loop lifecycle
+and parameter automation.
 
 ## Non-asset changed files
 
@@ -320,9 +396,12 @@ Before merge, review in this order:
 1. In Audio Lab, compare prior procedural squish, final hybrid squish, and final
    perfect squish + BOING under Exploration and the Neon concert stress track.
 2. Compare prior and final propeller, then run Approach / Pass / Depart Demo.
-3. Play the actual World 1-2 runway opening and banner-two taco-drop flyby.
-4. Verify World 2-2 still presents the Taco Trekker rather than an aircraft.
-5. Repeat the decisive comparisons on a physical iPhone speaker.
+3. Run Normal Olivia Propeller Flyby, Guacamole-Hit Flyby, and Damaged /
+   Crashing Propeller in Audio Lab.
+4. Play the actual World 1-2 runway opening, all three ordinary flybys, the
+   guacamole-hit pass, and the damaged rescue chase.
+5. Verify World 2-2 still presents the Taco Trekker rather than an aircraft.
+6. Repeat the decisive comparisons on a physical iPhone speaker.
 
 Stop at this owner creative-review gate. Do not merge or deploy until explicit
 approval.

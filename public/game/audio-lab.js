@@ -13,7 +13,7 @@
   const sequenceStatus = byId('sequenceStatus');
   let muted = false;
   let ambienceHandle = null;
-  let reviewLoopHandle = null;
+  const reviewLoopHandles = new Set();
   let musicSegment = { start: 0, end: 0 };
   const sequenceTimers = new Set();
 
@@ -107,33 +107,49 @@
     sequenceTimers.add(timer);
   }
 
-  function stopReviewLoop() {
-    if (!reviewLoopHandle) return;
-    audio.stopLoop(reviewLoopHandle);
-    reviewLoopHandle = null;
+  function clearSequenceCallbacks() {
+    sequenceTimers.forEach((timer) => window.clearTimeout(timer));
+    sequenceTimers.clear();
+  }
+
+  function trackReviewLoop(handle) {
+    if (handle) reviewLoopHandles.add(handle);
+    return handle;
+  }
+
+  function stopReviewLoop(handle) {
+    if (!handle) return;
+    audio.stopLoop(handle);
+    reviewLoopHandles.delete(handle);
+  }
+
+  function stopReviewLoops() {
+    [...reviewLoopHandles].forEach(stopReviewLoop);
+  }
+
+  function beginReviewSequence() {
+    clearSequenceCallbacks();
+    stopReviewLoops();
   }
 
   async function playTimedReviewLoop(eventId, label) {
     await unlock();
-    stopReviewLoop();
-    const handle = audio.startLoop(eventId, { gain: 0.82, position: 0, pitchCents: 0 });
-    reviewLoopHandle = handle;
+    beginReviewSequence();
+    const handle = trackReviewLoop(audio.startLoop(eventId, { gain: 0.82, position: 0, pitchCents: 0 }));
     sequenceStatus.textContent = `${label} playing for 3.2 seconds...`;
     queueSequenceCallback(() => {
-      if (reviewLoopHandle !== handle) return;
-      audio.stopLoop(handle);
-      reviewLoopHandle = null;
+      if (!reviewLoopHandles.has(handle)) return;
+      stopReviewLoop(handle);
       sequenceStatus.textContent = `${label} complete.`;
     }, 3_200);
   }
 
   async function runAircraftFlybyDemo() {
     await unlock();
-    stopReviewLoop();
+    beginReviewSequence();
     sequenceStatus.textContent = 'Aircraft approach / closest pass / departure running...';
     audio.play('vehicle.aircraftApproach', { position: -1 });
-    const handle = audio.startLoop('vehicle.aircraftPropellerIdle', { gain: 0.12, position: -1, pitchCents: 115 });
-    reviewLoopHandle = handle;
+    const handle = trackReviewLoop(audio.startLoop('vehicle.aircraftPropellerIdle', { gain: 0.12, position: -1, pitchCents: 115 }));
     const duration = 6_400;
     for (let step = 0; step <= 64; step += 1) {
       const progress = step / 64;
@@ -141,7 +157,7 @@
       const proximity = 1 - Math.abs(position);
       const closeness = proximity * proximity * (3 - 2 * proximity);
       queueSequenceCallback(() => {
-        if (reviewLoopHandle !== handle) return;
+        if (!reviewLoopHandles.has(handle)) return;
         audio.updateLoop(handle, {
           gain: 0.12 + closeness * 1.02,
           position,
@@ -155,16 +171,99 @@
     }, at));
     queueSequenceCallback(() => audio.play('vehicle.aircraftDepart', { position: 1 }), 5_150);
     queueSequenceCallback(() => {
-      if (reviewLoopHandle !== handle) return;
-      audio.stopLoop(handle);
-      reviewLoopHandle = null;
+      if (!reviewLoopHandles.has(handle)) return;
+      stopReviewLoop(handle);
       sequenceStatus.textContent = 'Aircraft approach / closest pass / departure complete.';
     }, duration + 150);
   }
 
+  async function runAircraftGuacHitDemo() {
+    await unlock();
+    beginReviewSequence();
+    sequenceStatus.textContent = 'Guacamole-hit flyby: distant approach / close pass / impact / damaged departure...';
+    audio.play('vehicle.aircraftApproach', { position: -1, variant: 'guac-ambush' });
+    const handle = trackReviewLoop(audio.startLoop('vehicle.aircraftPropellerIdle', { gain: 0.12, position: -1, pitchCents: 110 }));
+    const duration = 6_600;
+    const impactProgress = 0.56;
+    for (let step = 0; step <= 66; step += 1) {
+      const progress = step / 66;
+      const rawPosition = -1.08 + progress * 2.16;
+      const damaged = progress >= impactProgress;
+      const damagedProgress = Math.max(0, (progress - impactProgress) / (1 - impactProgress));
+      const proximity = Math.max(0, 1 - Math.abs(rawPosition));
+      const closeness = proximity * proximity * (3 - 2 * proximity);
+      const pitchInstability = damaged ? Math.sin(step * 1.93) * 32 + Math.sin(step * 0.71) * 17 : 0;
+      const stereoWobble = damaged ? Math.sin(step * 0.52) * 0.035 : 0;
+      queueSequenceCallback(() => {
+        if (!reviewLoopHandles.has(handle)) return;
+        audio.updateLoop(handle, {
+          gain: Math.min(damaged ? 1.02 : 1.08, 0.12 + closeness * (damaged ? 0.86 : 0.96)),
+          position: Math.max(-1, Math.min(1, rawPosition + stereoWobble)),
+          pitchCents: damaged ? -45 - damagedProgress * 95 + pitchInstability : 110 - progress * 135,
+          smoothingSeconds: 0.06,
+        });
+      }, progress * duration);
+    }
+    queueSequenceCallback(() => {
+      audio.play('impact.guacKrak', { position: 0.05 });
+      sequenceStatus.textContent = 'Guacamole impact — approved propeller identity continues in distress.';
+    }, impactProgress * duration);
+    queueSequenceCallback(() => audio.play('vehicle.aircraftDepart', { position: 1 }), 5_450);
+    queueSequenceCallback(() => {
+      if (!reviewLoopHandles.has(handle)) return;
+      stopReviewLoop(handle);
+      sequenceStatus.textContent = 'Guacamole-hit flyby complete; propeller loop stopped.';
+    }, duration + 150);
+  }
+
+  async function runAircraftDamagedDemo() {
+    await unlock();
+    beginReviewSequence();
+    sequenceStatus.textContent = 'Damaged chase: approved propeller plus restrained strain / sputter / wobble...';
+    audio.play('vehicle.aircraftRescueStart', { position: 0.55 });
+    const propellerHandle = trackReviewLoop(audio.startLoop('vehicle.aircraftPropellerIdle', { gain: 0.42, position: 0.78, pitchCents: -40 }));
+    const strainHandle = trackReviewLoop(audio.startLoop('vehicle.aircraftDamagedLoop', { gain: 0.16, position: 0.78, pitchCents: -20 }));
+    const duration = 6_800;
+    for (let step = 0; step <= 68; step += 1) {
+      const progress = step / 68;
+      const phase = progress >= 0.68 ? 2 : progress >= 0.34 ? 1 : 0;
+      const strain = 0.45 + progress * 0.55 + phase * 0.08;
+      const pitchInstability = Math.sin(step * 1.93) * (11 + strain * 25) + Math.sin(step * 0.64) * (6 + strain * 13);
+      const sputterPulse = Math.pow(Math.max(0, Math.sin(step * (1.24 + phase * 0.26) + progress * 4)), 8);
+      const stereoWobble = Math.sin(step * 0.46) * (0.012 + progress * 0.042);
+      const position = Math.max(-1, Math.min(1, 0.76 - progress * 0.28 + stereoWobble));
+      queueSequenceCallback(() => {
+        if (reviewLoopHandles.has(propellerHandle)) {
+          audio.updateLoop(propellerHandle, {
+            gain: Math.max(0.18, (0.58 + progress * 0.22) * (1 - sputterPulse * (0.04 + progress * 0.15))),
+            position,
+            pitchCents: -40 - progress * 112 + pitchInstability,
+            smoothingSeconds: 0.045,
+          });
+        }
+        if (reviewLoopHandles.has(strainHandle)) {
+          audio.updateLoop(strainHandle, {
+            gain: Math.min(0.38, 0.14 + progress * 0.17 + phase * 0.035),
+            position,
+            pitchCents: pitchInstability * 0.32 - progress * 28,
+            smoothingSeconds: 0.08,
+          });
+        }
+      }, progress * duration);
+    }
+    queueSequenceCallback(() => audio.play('sequence.rescuePhase', { combo: 2, position: 0.48 }), 2_450);
+    queueSequenceCallback(() => audio.play('sequence.rescuePhase', { combo: 3, position: 0.4 }), 4_700);
+    queueSequenceCallback(() => {
+      stopReviewLoop(propellerHandle);
+      stopReviewLoop(strainHandle);
+      audio.play('vehicle.aircraftCrash', { position: 0.75 });
+      sequenceStatus.textContent = 'Damaged chase complete; both aircraft loops stopped before the crash impact.';
+    }, duration);
+  }
+
   async function scheduleSequence(label, scheduledEvents) {
     await unlock();
-    stopReviewLoop();
+    beginReviewSequence();
     sequenceStatus.textContent = `${label} running...`;
     scheduledEvents.forEach(({ at, eventId, options = {} }) => {
       queueSequenceCallback(() => audio.play(eventId, { ...eventOptions(eventId), ...options }), at);
@@ -241,6 +340,8 @@
   byId('priorPropeller').addEventListener('click', () => playTimedReviewLoop('review.aircraftPropellerProcedural', 'Prior procedural propeller'));
   byId('finalPropeller').addEventListener('click', () => playTimedReviewLoop('vehicle.aircraftPropellerIdle', 'Final recorded propeller'));
   byId('aircraftFlybyDemo').addEventListener('click', runAircraftFlybyDemo);
+  byId('aircraftGuacHitDemo').addEventListener('click', runAircraftGuacHitDemo);
+  byId('aircraftDamagedDemo').addEventListener('click', runAircraftDamagedDemo);
 
   byId('powerDemo').addEventListener('click', () => scheduleSequence('Power-Up Demo', [
     { at: 0, eventId: 'ability.limeStart' }, { at: 650, eventId: 'ability.limeBreak' },
@@ -367,11 +468,10 @@
   });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-      sequenceTimers.forEach((timer) => window.clearTimeout(timer));
-      sequenceTimers.clear();
+      clearSequenceCallbacks();
       if (ambienceHandle) audio.stopLoop(ambienceHandle);
       ambienceHandle = null;
-      stopReviewLoop();
+      stopReviewLoops();
       labMusic.pause();
       sequenceStatus.textContent = 'Sequence stopped while the page was hidden.';
       byId('ambienceToggle').textContent = 'Start selected ambience';
