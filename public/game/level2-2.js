@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w2-2-v4-geyser-ash-encounters';
+  const SOURCE_VERSION = 'w2-2-v5-shared-audio';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -60,6 +60,7 @@
     luau: document.getElementById('musicLuau'),
   };
   const sharedAbilities = window.JFT_SHARED_ABILITIES;
+  const audio = window.JFT_AUDIO;
   const allTracks = Object.values(tracks);
   const images = {};
   const environmentImageKeys = {
@@ -134,7 +135,8 @@
     world2EncounterAudit: null, geyserLaunchTimer: 0,
   };
 
-  let audioContext = null;
+  let vehicleLoopHandle = null;
+  let volcanoLoopHandle = null;
   let lastFrame = 0;
   let randomSeed = 0xC0C0A;
   const params = new URLSearchParams(location.search);
@@ -151,6 +153,41 @@
     const t = clamp(value, 0, 1);
     return t * t * (3 - 2 * t);
   };
+
+  audio?.registerMusicTracks(tracks);
+  audio?.preloadGroups(['global', 'world2']).catch(() => {
+    // Missing assets use the engine's centralized emergency fallback.
+  });
+
+  function playAudio(eventId, options = {}) {
+    return audio?.play(eventId, options) || null;
+  }
+
+  function audioPosition(worldX) {
+    return clamp(((worldX - game.cameraX) / canvas.width) * 2 - 1, -1, 1);
+  }
+
+  function startVehicleLoop(position = 0) {
+    if (vehicleLoopHandle) return;
+    vehicleLoopHandle = audio?.startLoop('vehicle.idle', { vehicleType: 'trekker', position }) || null;
+  }
+
+  function stopVehicleLoop() {
+    if (!vehicleLoopHandle) return;
+    audio?.stopLoop(vehicleLoopHandle);
+    vehicleLoopHandle = null;
+  }
+
+  function startVolcanoLoop() {
+    if (volcanoLoopHandle) return;
+    volcanoLoopHandle = audio?.startLoop('volcano.active') || null;
+  }
+
+  function stopVolcanoLoop() {
+    if (!volcanoLoopHandle) return;
+    audio?.stopLoop(volcanoLoopHandle);
+    volcanoLoopHandle = null;
+  }
   function blendHex(from, to, amount) {
     const read = (hex) => [1, 3, 5].map((offset) => parseInt(hex.slice(offset, offset + 2), 16));
     const a = read(from); const b = read(to);
@@ -915,9 +952,14 @@
     ui.reducedShake.checked = game.reducedShake;
     ui.muteBtn.textContent = game.muted ? '🔇 Sound Off' : '🔊 Sound On';
     allTracks.forEach((track) => { track.muted = game.muted; });
+    audio?.setMusicVolume(game.musicVolume);
+    audio?.setEffectsVolume(game.effectsVolume);
+    audio?.setMuted(game.muted);
   }
 
   function resetGame() {
+    stopVehicleLoop();
+    stopVolcanoLoop();
     buildCalderaWorld();
     Object.assign(game, {
       state: 'title', score: 0, collected: 0, goldenCollected: 0, rainbowCollected: 0,
@@ -953,42 +995,11 @@
   }
 
   function unlockAudio() {
-    if (!audioContext) {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (AudioCtx) audioContext = new AudioCtx();
-    }
-    audioContext?.resume?.();
-  }
-
-  function sfx(freq = 440, duration = 0.08, type = 'triangle', volume = 0.04, slide = 0) {
-    if (game.muted || !audioContext) return;
-    const oscillator = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    const now = audioContext.currentTime;
-    oscillator.type = type;
-    oscillator.frequency.setValueAtTime(freq, now);
-    oscillator.frequency.linearRampToValueAtTime(Math.max(45, freq + slide), now + duration);
-    gain.gain.setValueAtTime(Math.max(0.0001, volume * game.effectsVolume), now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-    oscillator.connect(gain);
-    gain.connect(audioContext.destination);
-    oscillator.start(now);
-    oscillator.stop(now + duration + 0.02);
-  }
-
-  function splatSfx(type) {
-    const sounds = {
-      marshmallow: [230, 'sine', 420],
-      pineapple: [165, 'square', -70],
-      queso: [145, 'sine', -40],
-      pepper: [520, 'triangle', 380],
-      crab: [180, 'square', -80],
-      nacho: [310, 'sawtooth', -120],
-      ash: [90, 'sine', 180],
-    };
-    const [freq, wave, slide] = sounds[type] || sounds.marshmallow;
-    sfx(freq, 0.16, wave, 0.065, slide);
-    window.setTimeout(() => sfx(freq * 1.65, 0.07, 'triangle', 0.032, -90), 45);
+    audio?.init({
+      musicVolume: game.musicVolume,
+      effectsVolume: game.effectsVolume,
+      muted: game.muted,
+    });
   }
 
   function setMusic(name, immediate = false) {
@@ -1014,7 +1025,8 @@
       next.currentTime = ((from.currentTime % from.duration) / from.duration) * next.duration;
     } else next.currentTime = 0;
     next.playbackRate = 1;
-    next.volume = immediate || !from ? game.musicVolume : 0;
+    const base = game.settingsOpen ? 0.45 : 1;
+    next.volume = immediate || !from ? base : 0;
     next.play().catch(() => {});
     game.activeMusic = name;
     if (immediate || !from) {
@@ -1022,13 +1034,13 @@
         if (track !== next) { track.pause(); track.volume = 0; }
       });
     } else {
-      game.musicTransition = { fromName, toName: name, from, to: next, elapsed: 0, duration: 3.2, fromGain: from.volume / Math.max(0.001, game.musicVolume) };
+      game.musicTransition = { fromName, toName: name, from, to: next, elapsed: 0, duration: 3.2, fromGain: from.volume / Math.max(0.001, base) };
       game.musicTransitionCount += 1;
     }
   }
 
   function updateMusic(dt) {
-    const base = game.musicVolume * (game.settingsOpen ? 0.45 : 1);
+    const base = game.settingsOpen ? 0.45 : 1;
     const transition = game.musicTransition;
     game.maxMusicPlaying = Math.max(game.maxMusicPlaying, allTracks.filter((track) => !track.paused).length);
     if (transition) {
@@ -1071,6 +1083,7 @@
     }
     if (previewAutoRun) keys.right = true;
     unlockAudio();
+    playAudio('ui.start');
     setMusic(currentSection().music, true);
     showMessage('COCONUT CAMPGROUNDS — OLIVIA PACKED 47 “ESSENTIAL” TACOS!', 2.8);
     if (previewRespawn) {
@@ -1130,8 +1143,8 @@
       button.addEventListener('pointerleave', release);
     });
     window.JFT_LEVEL_START.bind(startGame);
-    ui.restartBtn.addEventListener('click', () => { resetGame(); startGame(); });
-    ui.playAgainBtn.addEventListener('click', () => { resetGame(); startGame(); });
+    ui.restartBtn.addEventListener('click', () => { playAudio('ui.confirm'); resetGame(); startGame(); });
+    ui.playAgainBtn.addEventListener('click', () => { playAudio('ui.confirm'); resetGame(); startGame(); });
     ui.muteBtn.addEventListener('click', () => {
       game.muted = !game.muted;
       if (game.muted) stopMusic(); else { unlockAudio(); setMusic(currentSection().music, true); }
@@ -1142,11 +1155,13 @@
     ui.musicVolume.addEventListener('input', () => {
       game.musicVolume = Number(ui.musicVolume.value) / 100;
       ui.musicVolumeValue.textContent = `${ui.musicVolume.value}%`;
+      audio?.setMusicVolume(game.musicVolume);
       updateMusic(0); saveProgress();
     });
     ui.effectsVolume.addEventListener('input', () => {
       game.effectsVolume = Number(ui.effectsVolume.value) / 100;
       ui.effectsVolumeValue.textContent = `${ui.effectsVolume.value}%`;
+      audio?.setEffectsVolume(game.effectsVolume);
       saveProgress();
     });
     ui.reducedShake.addEventListener('change', () => { game.reducedShake = ui.reducedShake.checked; saveProgress(); });
@@ -1231,7 +1246,7 @@
     game.respawnCount += 1;
     player.x = sourceX; player.y = sourceY; player.vx = 0; player.vy = 0; player.grounded = false; player.platform = null; player.coyote = 0; player.jumpBuffer = 0; player.invulnerable = 0; player.rotation = 0; player.scale = 1;
     spawnBurst(player.x - game.cameraX + player.w / 2, player.y + player.h / 2, '#63e7ff', 20);
-    sfx(190, 0.2, 'sawtooth', 0.05, -120);
+    playAudio('hero.respawnBeam', { position: audioPosition(player.x + player.w / 2) });
   }
 
   function updateRespawn(dt) {
@@ -1241,7 +1256,7 @@
       if (game.respawn.sparkTimer >= .08) { game.respawn.sparkTimer = 0; spawnConfetti(player.x - game.cameraX + player.w / 2, player.y + player.h / 2, 4); }
       return;
     }
-    if (respawnStep.shouldPlace) { heroCore.placeRespawn(game.respawn, player); spawnBurst(player.x - game.cameraX + player.w / 2, 100, '#ffe17f', 24); sfx(620, .12, 'triangle', .04, 220); }
+    if (respawnStep.shouldPlace) { heroCore.placeRespawn(game.respawn, player); spawnBurst(player.x - game.cameraX + player.w / 2, 100, '#ffe17f', 24); }
     if (!game.respawn.spawnPlaced) return;
     const previousY = player.y; player.vy = Math.min(heroPhysics.maxFallVelocity, player.vy + heroPhysics.gravity * dt); player.y += player.vy * dt; resolvePlatforms(previousY); player.anim += dt * 8;
     if (!player.grounded && game.respawn.timer > 3) {
@@ -1251,6 +1266,7 @@
     }
     if (player.grounded && game.respawn.timer > .8) {
       game.lastRespawnLanding = { x: Math.round(player.x), y: Math.round(player.y), grounded: true, fallback: game.respawn.timer > 3 };
+      playAudio('hero.respawnLand', { position: audioPosition(player.x + player.w / 2) });
       heroCore.finishRespawn(game.respawn, player, 1.6); game.state = 'playing';
       keys.left = false; keys.right = false; keys.jump = false;
     }
@@ -1264,7 +1280,7 @@
       player.invulnerable = 1.1;
       showMessage('LIME SHIELD POP! STILL ZESTY!', 1.5);
       spawnBurst(player.x - game.cameraX + player.w / 2, player.y + player.h / 2, '#7cff68', 34);
-      sfx(260, 0.2, 'sine', 0.06, 520);
+      playAudio('ability.limeBreak', { position: audioPosition(player.x + player.w / 2) });
       return;
     }
     game.hearts -= 1;
@@ -1272,7 +1288,7 @@
     player.vx = fromX < player.x ? 270 : -270;
     player.vy = -270;
     game.cameraShake = 10;
-    sfx(160, 0.16, 'sawtooth', 0.055, -90);
+    playAudio('hero.hurt', { position: audioPosition(player.x + player.w / 2) });
     if (game.hearts <= 0) {
       game.hearts = 3;
       game.score = Math.max(0, game.score - 100);
@@ -1288,11 +1304,18 @@
     if (type === 'shell') { game.magnetTimer = 10; sharedAbilities.activateMagnet(game.abilities, 10); showMessage('GOLDEN SHELL MAGNET! TACO TIDE INCOMING!', 2); }
     if (type === 'coconut') { game.coconutCharges = 1; showMessage('COCONUT BOUNCE! ONE MID-AIR SUPER JUMP!', 2); }
     spawnBurst(player.x - game.cameraX + player.w / 2, player.y + player.h / 2, '#fff08a', 60);
-    sfx(340, 0.3, 'triangle', 0.055, 620);
+    const eventId = {
+      lime: 'ability.limeStart', pepper: 'ability.pepperStart',
+      shell: 'ability.magnetStart', coconut: 'ability.coconutStart',
+    }[type];
+    if (eventId) playAudio(eventId, { position: audioPosition(player.x + player.w / 2) });
   }
 
   function collectItem(item) {
     item.collected = true;
+    const collectionEventId = item.type === 'taco' ? 'collect.taco'
+      : item.type === 'golden' ? 'collect.goldenTaco'
+        : item.type === 'rainbow' ? 'collect.rainbowTaco' : 'collect.powerup';
     if (!item.bonusReward) game.collected += 1;
     game.streak += 1;
     game.streakTimer = 2.5;
@@ -1306,7 +1329,7 @@
         showMessage('CALDERA TACO FRENZY! CRUNCH THROUGH EVERYTHING!', 2.2);
         spawnConfetti(canvas.width / 2, 205, game.reducedShake ? 45 : 110);
         game.cameraShake = Math.max(game.cameraShake, 10);
-        sfx(390, 0.3, 'triangle', 0.055, 720);
+        playAudio('ability.frenzyStart');
       }
     }
     if (item.type === 'golden') {
@@ -1326,7 +1349,11 @@
       if (game.boat.catches % 6 === 0) showMessage(`TACO TREKKER CATCH ×${game.boat.catches}!`, 1);
     }
     spawnBurst(item.x - game.cameraX + item.w / 2, item.y + item.h / 2, item.type === 'rainbow' ? '#c69cff' : '#ffe17f', item.type === 'taco' ? 10 : 40);
-    sfx(610 + Math.min(420, game.streak * 12), 0.07, 'triangle', 0.035, 90);
+    playAudio(collectionEventId, {
+      streak: game.streak,
+      position: audioPosition(item.x + item.w / 2),
+      premiumType: item.type === 'golden' ? 'goldenCoconut' : item.type === 'rainbow' ? 'rainbowShell' : undefined,
+    });
   }
 
   function defeatEnemy(enemy, stomped = true) {
@@ -1342,11 +1369,16 @@
     const frenzyStarted = sharedAbilities.splatEnemy(game.abilities);
     if (frenzyStarted) {
       showMessage('CALDERA TACO FRENZY! MAXIMUM CRUNCH!', 2.2);
+      playAudio('ability.frenzyStart');
     }
     if (stomped) player.vy = -heroPhysics.enemyBounceVelocity;
     game.hitStop = 0.045;
     game.cameraShake = Math.max(game.cameraShake, 7 + game.splatCombo);
-    splatSfx(enemy.type);
+    playAudio(stomped ? 'combat.enemyStomp' : 'combat.enemySplat', {
+      enemyType: enemy.type,
+      combo: Math.max(1, game.splatCombo),
+      position: audioPosition(enemy.x + enemy.w / 2),
+    });
     const enemyBurst = {
       marshmallow: '#fff0c9', pineapple: '#ffd65a', queso: '#ffbe32',
       pepper: '#ff5c5c', crab: '#ff7b4f', nacho: '#ff8b42', ash: '#dce7ee',
@@ -1364,7 +1396,10 @@
           showMessage(reward.label, reward.duration);
           game.hitStop = Math.max(game.hitStop, reward.hitStop);
           game.cameraShake = Math.max(game.cameraShake, reward.shake);
-          sfx(reward.tier === 'supremacy' ? 500 : 680, reward.tier === 'supremacy' ? .28 : .14, 'triangle', reward.tier === 'supremacy' ? .065 : .045, reward.tier === 'supremacy' ? 660 : 260);
+          playAudio('combat.comboMilestone', {
+            combo: game.splatCombo,
+            gain: reward.tier === 'supremacy' ? 1.08 : 1,
+          });
         },
       });
     }
@@ -1374,6 +1409,10 @@
     addItem(game.boat.x + 28, 314, 'taco', {
       bonusReward: true, dynamic: true, boatDrop: true,
       vx: -150 - seeded() * 90, vy: -270 - seeded() * 140, angle: 0,
+    });
+    playAudio('vehicle.tacoDrop', {
+      vehicleType: 'trekker',
+      position: audioPosition(game.boat.x),
     });
   }
 
@@ -1388,7 +1427,8 @@
       boat.x = game.cameraX - 420;
       boat.speed = 460;
       showMessage('OLIVIA’S TACO TREKKER: PICNIC DROP INCOMING!', 2.3);
-      sfx(260, 0.25, 'sawtooth', 0.04, 420);
+      playAudio('vehicle.approach', { vehicleType: 'trekker', position: -0.8 });
+      startVehicleLoop(-0.8);
     }
 
     if (boat.state === 'entering-geyser') {
@@ -1411,8 +1451,9 @@
       if (!geyserDrop || player.x >= 11800) {
         boat.state = 'escaping-geyser';
         boat.speed = 720;
+        stopVehicleLoop();
         showMessage('OLIVIA: SAVING THE REST FOR A COMPLETELY SAFE CAMPFIRE!', 2.1);
-        sfx(300, 0.32, 'sawtooth', 0.045, 620);
+        playAudio('vehicle.depart', { vehicleType: 'trekker', position: audioPosition(boat.x) });
       }
     } else if (boat.state === 'escaping-geyser') {
       boat.speed = Math.min(1650, boat.speed + 1450 * dt);
@@ -1426,7 +1467,9 @@
       boat.x = game.cameraX - 450;
       boat.speed = 520;
       showMessage('LAVA SAFARI MODE! OLIVIA HAS ABSOLUTELY READ THE MANUAL!', 2.6);
-      sfx(180, .3, 'sawtooth', .055, 560);
+      playAudio('vehicle.approach', { vehicleType: 'trekker', position: -0.8 });
+      playAudio('vehicle.accelerate', { vehicleType: 'trekker', position: -0.65 });
+      startVehicleLoop(-0.8);
     }
     if (boat.state === 'entering-lava') {
       const target = player.x + 250;
@@ -1447,6 +1490,8 @@
         boat.state = 'fiesta-bound';
         boat.speed = 820;
         showMessage('OLIVIA: CAMPSITE RULE #1 — OUTRUN THE CAMPSITE!', 2.4);
+        stopVehicleLoop();
+        playAudio('vehicle.depart', { vehicleType: 'trekker', position: audioPosition(boat.x) });
       }
     } else if (boat.state === 'fiesta-bound') {
       boat.speed = Math.min(1800, boat.speed + 1600 * dt);
@@ -1468,7 +1513,7 @@
       eruption.state = 'warming';
       eruption.timer = 0;
       showMessage('OLIVIA RADIO: REHEATING ONE TACO. WHAT COULD GO WRONG?', 3);
-      sfx(92, .6, 'sine', .04, 45);
+      playAudio('volcano.warmup');
     }
     if (eruption.state === 'warming') {
       eruption.timer += dt;
@@ -1496,8 +1541,7 @@
             angle: index * .4,
           });
         }
-        sfx(72, .7, 'sine', .075, 240);
-        window.setTimeout(() => sfx(520, .34, 'triangle', .06, 620), 110);
+        playAudio('volcano.erupt');
       }
     } else if (eruption.state === 'kaboom') {
       eruption.timer += dt;
@@ -1507,6 +1551,7 @@
         eruption.state = 'active';
         eruption.timer = 0;
         eruption.tremor = 3;
+        startVolcanoLoop();
       }
     } else if (eruption.state === 'active') {
       eruption.timer += dt;
@@ -1519,7 +1564,11 @@
     for (const geyser of world.geysers) {
       geyser.cooldown = Math.max(0, (geyser.cooldown || 0) - dt);
       const phase = (game.levelTime + geyser.phase) % geyser.cycle;
+      const wasActive = Boolean(geyser.active);
       geyser.active = phase > geyser.cycle * .56 && phase < geyser.cycle * .9;
+      if (geyser.active && !wasActive) {
+        playAudio('hazard.geyserWarn', { position: audioPosition(geyser.x) });
+      }
       if (!geyser.active || geyser.cooldown > 0) continue;
       const overVent = player.x + player.w > geyser.x - 34 && player.x < geyser.x + 34;
       const closeToGround = player.y + player.h > GROUND_Y - 72;
@@ -1531,7 +1580,7 @@
       game.geyserLaunchTimer = 1.15;
       showMessage('GEYSER EXPRESS! FIRST CLASS: SLIGHTLY DAMP!', 1.25);
       spawnBurst(geyser.x - game.cameraX, GROUND_Y - 20, '#65e7ff', 36);
-      sfx(210, .3, 'sine', .055, 620);
+      playAudio('hazard.geyserLaunch', { position: audioPosition(geyser.x) });
     }
   }
 
@@ -1554,7 +1603,7 @@
         surf.oliviaY = 345;
         surf.oliviaTimer = 0;
         showMessage('OLIVIA: CATCH THE BIG ONE, TACO HERO!', 2.6);
-        sfx(330, 0.22, 'triangle', 0.045, 420);
+        playAudio('surf.oliviaPass', { position: -0.65 });
       }
     }
 
@@ -1581,8 +1630,7 @@
       wave.speed = 318;
       showMessage('BIG WAVE SURF! JUMP THE OBSTACLES!', 2.5);
       spawnConfetti(canvas.width * 0.4, 250, game.reducedShake ? 24 : 66);
-      sfx(150, 0.4, 'sine', 0.055, 380);
-      window.setTimeout(() => sfx(520, 0.18, 'triangle', 0.04, 280), 110);
+      playAudio('surf.mount', { position: audioPosition(surf.mountX) });
     }
 
     if (wave.crashing) {
@@ -1595,6 +1643,7 @@
       player.vx = Math.max(player.vx, 280);
       showMessage(`PERFECT BEACH LANDING! ${surf.clearedObstacles}/5 SURF CLEARS!`, 2.4);
       spawnBurst(player.x - game.cameraX, GROUND_Y - 8, '#ffe17f', 72);
+      playAudio('surf.land', { position: audioPosition(player.x + player.w / 2) });
     }
     if (!wave.active) return;
 
@@ -1625,7 +1674,8 @@
         wave.x = player.x - 250;
         showMessage('WAVE BOOP! BOARD STILL TACO-UGH!', 1.4);
         game.cameraShake = 12;
-        sfx(120, 0.22, 'sine', 0.06, 260);
+        playAudio('surf.waveHit', { position: audioPosition(player.x + player.w / 2) });
+        playAudio('hero.hurt', { position: audioPosition(player.x + player.w / 2) });
       }
     }
 
@@ -1636,7 +1686,7 @@
         surf.clearedObstacles += 1;
         game.score += 250;
         impactText(obstacle.x + obstacle.w / 2, obstacle.y - 18, 'SURF CLEAR! +250', '#ffe17f', 21);
-        sfx(720, .09, 'triangle', .035, 180);
+        playAudio('surf.obstacleClear', { position: audioPosition(obstacle.x + obstacle.w / 2) });
         continue;
       }
       if (player.x + player.w < obstacle.x || !intersects(player, obstacle)) continue;
@@ -1647,7 +1697,8 @@
       player.invulnerable = 1.3;
       showMessage('BOARD BONK! KEEP THE WAVE!', 1.2);
       spawnBurst(obstacle.x - game.cameraX + obstacle.w / 2, obstacle.y, '#ff718f', 30);
-      sfx(165, .18, 'square', .05, -85);
+      playAudio('surf.obstacleHit', { position: audioPosition(obstacle.x + obstacle.w / 2) });
+      playAudio('hero.hurt', { position: audioPosition(player.x + player.w / 2) });
     }
 
     if (player.x > 33120 && !surf.landingLaunched) {
@@ -1668,8 +1719,7 @@
       showMessage('BEACH LAUNCH! THE BIG ONE CRASHES BEHIND YOU!', 2.6);
       spawnConfetti(canvas.width * 0.34, 210, game.reducedShake ? 55 : 150);
       game.cameraShake = 15;
-      sfx(92, .5, 'sine', .065, 240);
-      window.setTimeout(() => sfx(660, .22, 'triangle', .05, 480), 120);
+      playAudio('surf.waveCrashLaunch', { position: audioPosition(player.x + player.w / 2) });
     }
   }
 
@@ -1691,7 +1741,7 @@
           vx: direction * (180 + seeded() * 70), vy: -410 - seeded() * 100,
           rotation: 0, life: 4, sourceCannon: cannon.id,
         });
-        sfx(95, 0.22, 'sine', 0.06, 90);
+        playAudio('hazard.coconutCannonFire', { position: audioPosition(cannon.x) });
         spawnBurst(cannon.x - game.cameraX, cannon.y - 5, '#fff08a', 14);
       }
     }
@@ -1705,6 +1755,7 @@
         if (game.pepperTimer > 0) {
           game.score += 180;
           spawnBurst(ball.x - game.cameraX, ball.y, '#ff674d', 24);
+          playAudio('hazard.coconutDeflect', { position: audioPosition(ball.x) });
           return false;
         }
         hurtPlayer(ball.x);
@@ -1747,7 +1798,7 @@
       game.hearts = 3;
       showMessage(`${checkpoint.name.toUpperCase()} — ${checkpoint.sign}`, 2.4);
       spawnConfetti(checkpoint.x - game.cameraX + 90, 250, 80);
-      sfx(520, 0.18, 'triangle', 0.05, 420);
+      playAudio('checkpoint.activate', { position: audioPosition(checkpoint.x + checkpoint.w / 2) });
     }
   }
 
@@ -1763,6 +1814,7 @@
   }
 
   function updatePlayer(dt) {
+    const wasGrounded = player.grounded;
     if (player.grounded && player.platform) {
       player.x += player.platform.dx || 0;
       player.y += player.platform.dy || 0;
@@ -1796,7 +1848,7 @@
     if (player.jumpBuffer > 0 && player.coyote > 0) {
       player.vy = -heroPhysics.jumpVelocity;
       player.grounded = false; player.coyote = 0; player.jumpBuffer = 0;
-      sfx(420, 0.1, 'square', 0.04, 130);
+      playAudio('hero.jump', { position: audioPosition(player.x + player.w / 2) });
     } else if (player.jumpBuffer > 0 && !player.grounded && game.coconutCharges > 0) {
       game.coconutCharges -= 1;
       if (game.coconutCharges <= 0) game.activePower = null;
@@ -1804,18 +1856,25 @@
       player.jumpBuffer = 0;
       showMessage('COCONUT SUPER BOUNCE!', 1);
       spawnBurst(player.x - game.cameraX + player.w / 2, player.y + player.h, '#c98b54', 26);
-      sfx(250, 0.18, 'sine', 0.06, 620);
+      playAudio('ability.coconutBounce', { position: audioPosition(player.x + player.w / 2) });
     }
 
     const previousY = player.y;
     player.vy = Math.min(heroPhysics.maxFallVelocity, player.vy + heroPhysics.gravity * dt);
     player.x += player.vx * dt;
     player.y += player.vy * dt;
+    const landingVelocity = player.vy;
     player.x = clamp(player.x, 0, WORLD_WIDTH - player.w);
     resolvePlatforms(previousY);
+    if (!wasGrounded && player.grounded && landingVelocity > 90) {
+      playAudio(landingVelocity >= 830 ? 'hero.landHard' : 'hero.landSoft', {
+        position: audioPosition(player.x + player.w / 2),
+      });
+    }
     player.anim += dt * (Math.abs(player.vx) > 20 ? 11 : 4);
 
     if (player.y > canvas.height + 70) {
+      playAudio('hero.fall', { position: audioPosition(player.x + player.w / 2) });
       game.hearts -= 1;
       if (game.hearts <= 0) game.hearts = 3;
       beginRespawn();
@@ -1835,7 +1894,7 @@
     showMessage('RAINBOW LAVA LUAU — MAXIMUM CAMPFIRE CRUNCH!', 4);
     spawnConfetti(canvas.width / 2, 150, game.reducedShake ? 90 : 240);
     for (let i = 0; i < (game.reducedShake ? 5 : 14); i += 1) spawnFirework();
-    sfx(520, 0.25, 'triangle', 0.055, 620);
+    playAudio('goal.enter');
   }
 
   function presentResults() {
@@ -1878,9 +1937,15 @@
       game.partyBeat = beat;
       spawnConfetti(beat % 2 ? 120 : canvas.width - 120, 230, game.reducedShake ? 12 : 34);
       if (!game.reducedShake || beat % 2 === 0) spawnFirework();
-      sfx([523, 659, 784, 1047][beat % 4], 0.12, 'triangle', 0.03, 80);
+      playAudio('level.celebrationPulse', {
+        pitchCents: (beat % 4) * 18,
+        position: beat % 2 ? -0.35 : 0.35,
+      });
     }
-    if (game.celebrationTime > (previewFastCelebrate ? 0.7 : 7.4)) presentResults();
+    if (game.celebrationTime > (previewFastCelebrate ? 0.7 : 7.4)) {
+      playAudio('level.complete');
+      presentResults();
+    }
   }
 
   function update(dt) {
@@ -1893,9 +1958,15 @@
     game.splatTimer = Math.max(0, game.splatTimer - dt);
     if (game.streakTimer <= 0) game.streak = 0;
     if (game.splatTimer <= 0) game.splatCombo = 0;
+    const frenzyWasActive = sharedAbilities.isFrenzy(game.abilities);
+    const magnetWasActive = game.magnetTimer > 0 || sharedAbilities.hasMagnet(game.abilities);
+    const pepperWasActive = game.pepperTimer > 0;
     sharedAbilities.update(game.abilities, dt);
     if (game.pepperTimer > 0) { game.pepperTimer = Math.max(0, game.pepperTimer - dt); if (!game.pepperTimer) game.activePower = null; }
     if (game.magnetTimer > 0) { game.magnetTimer = Math.max(0, game.magnetTimer - dt); if (!game.magnetTimer) game.activePower = null; }
+    if (frenzyWasActive && !sharedAbilities.isFrenzy(game.abilities)) playAudio('ability.frenzyEnd');
+    if (magnetWasActive && !(game.magnetTimer > 0 || sharedAbilities.hasMagnet(game.abilities))) playAudio('ability.magnetEnd');
+    if (pepperWasActive && game.pepperTimer <= 0) playAudio('ability.pepperEnd');
     if (game.state === 'playing' || game.state === 'respawning') {
       game.levelTime += dt;
       game.tideY = 470 + Math.sin(game.levelTime * 0.62) * 20;
