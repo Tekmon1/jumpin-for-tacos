@@ -1,10 +1,11 @@
 (() => {
-  const SOURCE_VERSION = 'w1-3-v21';
+  const SOURCE_VERSION = 'w1-3-v22-shared-audio';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
   const heroCore = window.JFT_HERO_CORE;
   const heroPhysics = heroCore.physics;
+  const audio = window.JFT_AUDIO;
 
   const ui = {
     startOverlay: document.getElementById('startOverlay'),
@@ -108,6 +109,10 @@
   };
   const sharedAbilities = window.JFT_SHARED_ABILITIES;
   const allTracks = Object.values(tracks);
+  audio?.registerMusicTracks(tracks);
+  audio?.preloadGroups(['global', 'world1']).catch(() => {
+    // Missing assets use the shared engine's centralized fallback.
+  });
   const images = {};
   const keys = { left: false, right: false, jump: false };
   const world = {
@@ -144,7 +149,8 @@
     settingsOpen: false, respawn: heroCore.createRespawnState(),
     activeMusic: null, musicTransition: null,
     musicTransitionCount: 0, musicOverlapRecoveries: 0, maxMusicPlaying: 0,
-    respawnCount: 0, respawnFallbacks: 0, lastRespawnLanding: null,
+    respawnCount: 0, respawnFallbacks: 0, lastRespawnLanding: null, fallSoundPlayed: false,
+    stampedeLoop: null,
     personalBest: { score: 0, time: 0, runs: 0, medal: '' },
   };
   const world1Background = window.JFT_WORLD1_BACKGROUNDS.create({
@@ -177,7 +183,6 @@
     mole: [11, 17, 13, 11, 40, 39, 41, 37],
   });
 
-  let audioContext = null;
   let lastFrame = 0;
   let randomSeed = 0x5A15A12;
   const params = new URLSearchParams(location.search);
@@ -869,6 +874,33 @@
     }
   }
 
+  function syncAudioSettings() {
+    audio?.setMusicVolume(game.musicVolume);
+    audio?.setEffectsVolume(game.effectsVolume);
+    audio?.setMuted(game.muted);
+  }
+
+  function unlockAudio() {
+    audio?.init({
+      musicVolume: game.musicVolume,
+      effectsVolume: game.effectsVolume,
+      muted: game.muted,
+    });
+  }
+
+  function playAudio(eventId, options = {}) {
+    return audio?.play(eventId, options) || null;
+  }
+
+  function audioPosition(worldX) {
+    return clamp(((worldX - game.cameraX) / canvas.width) * 2 - 1, -1, 1);
+  }
+
+  function stopLevelAudioLoops() {
+    if (game.stampedeLoop) audio?.stopLoop(game.stampedeLoop);
+    game.stampedeLoop = null;
+  }
+
   function updatePersonalBest() {
     const best = game.personalBest;
     ui.personalBestText.textContent = best.runs
@@ -884,9 +916,11 @@
     ui.reducedShake.checked = game.reducedShake;
     ui.muteBtn.textContent = game.muted ? '🔇 Sound Off' : '🔊 Sound On';
     allTracks.forEach((track) => { track.muted = game.muted; });
+    syncAudioSettings();
   }
 
   function resetGame() {
+    stopLevelAudioLoops();
     buildWorld();
     Object.assign(game, {
       state: 'title', score: 0, collected: 0, hotSauce: 0, hearts: 3,
@@ -908,7 +942,8 @@
       settingsOpen: false, respawn: heroCore.createRespawnState(),
       activeMusic: null, musicTransition: null,
       musicTransitionCount: 0, musicOverlapRecoveries: 0, maxMusicPlaying: 0,
-      respawnCount: 0, respawnFallbacks: 0, lastRespawnLanding: null,
+      respawnCount: 0, respawnFallbacks: 0, lastRespawnLanding: null, fallSoundPlayed: false,
+      stampedeLoop: null,
     });
     const startX = clamp(previewStart || 140, 0, WORLD_WIDTH - 200);
     Object.assign(player, { x: startX, y: 330, previousY: 330, previousBottom: 372, vx: 0, vy: 0, dir: 1, grounded: false, platform: null, anim: 0, invulnerable: 0, coyote: 0, jumpBuffer: 0, rotation: 0, scale: 1 });
@@ -924,35 +959,6 @@
     ui.startOverlay.classList.add('visible');
     ui.winOverlay.classList.add('hidden');
     ui.winOverlay.classList.remove('visible');
-  }
-
-  function unlockAudio() {
-    if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioContext.state === 'suspended') audioContext.resume();
-  }
-
-  function sfx(freq = 440, duration = 0.08, type = 'triangle', volume = 0.04, slide = 0) {
-    if (game.muted || game.effectsVolume <= 0) return;
-    unlockAudio();
-    const oscillator = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    oscillator.type = type;
-    oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
-    oscillator.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), audioContext.currentTime + duration);
-    gain.gain.setValueAtTime(volume * game.effectsVolume, audioContext.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + duration);
-    oscillator.connect(gain); gain.connect(audioContext.destination);
-    oscillator.start(); oscillator.stop(audioContext.currentTime + duration);
-  }
-
-  function splatSfx(type, combo) {
-    const notes = { slime: 150, knight: 260, jalapeno: 520, guac: 110, churro: 390, mole: 220, boss: 85 };
-    const note = (notes[type] || 180) + Math.min(combo, 8) * 28;
-    // A soft low thump, wet pop, and bright combo tick make the bounce read
-    // clearly without becoming harsh through a long enemy chain.
-    sfx(Math.max(70, note * 0.58), type === 'boss' ? 0.28 : 0.16, 'sine', type === 'boss' ? 0.082 : 0.048, -35);
-    window.setTimeout(() => sfx(note, type === 'boss' ? 0.24 : 0.13, type === 'guac' ? 'sine' : 'triangle', type === 'boss' ? 0.068 : 0.046, type === 'slime' ? -60 : 135), 22);
-    if (combo >= 2) window.setTimeout(() => sfx(note * (1.28 + Math.min(combo, 7) * 0.035), 0.1, 'triangle', 0.032, 140), 58);
   }
 
   function silenceTrack(track, reset = true) {
@@ -984,7 +990,7 @@
   function setMusic(name, immediate = false) {
     if (!tracks[name]) return;
     if (immediate || !game.activeMusic) {
-      startTrack(name, game.musicVolume);
+      startTrack(name, 1);
       game.musicTransition = null;
       return;
     }
@@ -1015,7 +1021,7 @@
     game.musicTransition = {
       fromName, toName: name, from, to: next,
       elapsed: 0, duration: name === 'fiesta' ? 3.6 : 3.2,
-      startVolume: Math.max(0.001, from?.volume || game.musicVolume),
+      startVolume: Math.max(0.001, from?.volume || 1),
     };
     game.activeMusic = name;
     game.musicTransitionCount += 1;
@@ -1025,7 +1031,7 @@
     const transition = game.musicTransition;
     if (!transition) {
       Object.entries(tracks).forEach(([name, track]) => {
-        if (name === game.activeMusic) track.volume = game.musicVolume;
+        if (name === game.activeMusic) track.volume = 1;
         else if (!track.paused) {
           silenceTrack(track);
           game.musicOverlapRecoveries += 1;
@@ -1037,8 +1043,8 @@
     transition.elapsed += dt;
     const t = clamp(transition.elapsed / transition.duration, 0, 1);
     const angle = t * Math.PI * 0.5;
-    transition.from.volume = Math.min(game.musicVolume, transition.startVolume) * Math.cos(angle);
-    transition.to.volume = game.musicVolume * Math.sin(angle);
+    transition.from.volume = Math.min(1, transition.startVolume) * Math.cos(angle);
+    transition.to.volume = Math.sin(angle);
     allTracks.forEach((track) => {
       if (track !== transition.from && track !== transition.to && !track.paused) {
         silenceTrack(track);
@@ -1048,7 +1054,7 @@
     game.maxMusicPlaying = Math.max(game.maxMusicPlaying, allTracks.filter((track) => !track.paused).length);
     if (t >= 1) {
       silenceTrack(transition.from);
-      transition.to.volume = game.musicVolume;
+      transition.to.volume = 1;
       game.musicTransition = null;
     }
   }
@@ -1066,6 +1072,7 @@
 
   function startGame() {
     unlockAudio();
+    playAudio('ui.start');
     ui.startOverlay.classList.add('hidden');
     ui.startOverlay.classList.remove('visible');
     game.state = 'playing';
@@ -1207,7 +1214,6 @@
     game.respawnCount += 1;
     player.x = sourceX; player.y = sourceY; player.vx = 0; player.vy = 0; player.grounded = false; player.platform = null; player.coyote = 0; player.jumpBuffer = 0; player.invulnerable = 0; player.rotation = 0; player.scale = 1;
     spawnBurst(player.x - game.cameraX + player.w / 2, player.y + player.h / 2, '#65d8ff', 24);
-    sfx(180, 0.2, 'sawtooth', 0.05, -110);
   }
 
   function updateRespawn(dt) {
@@ -1217,7 +1223,7 @@
       if (game.respawn.sparkTimer >= .08) { game.respawn.sparkTimer = 0; spawnConfetti(player.x - game.cameraX + player.w / 2, player.y + player.h / 2, 4); }
       return;
     }
-    if (respawnStep.shouldPlace) { heroCore.placeRespawn(game.respawn, player); spawnConfetti(player.x - game.cameraX + player.w / 2, 84, 18); sfx(620, .12, 'triangle', .04, 220); }
+    if (respawnStep.shouldPlace) { heroCore.placeRespawn(game.respawn, player); spawnConfetti(player.x - game.cameraX + player.w / 2, 84, 18); playAudio('hero.respawnBeam', { position: audioPosition(player.x + player.w / 2) }); }
     if (!game.respawn.spawnPlaced) return;
     const previousY = player.y; player.vy = Math.min(heroPhysics.maxFallVelocity, player.vy + heroPhysics.gravity * dt); player.y += player.vy * dt; resolvePlatforms(previousY); player.anim += dt * 8;
     if (!player.grounded && game.respawn.timer > 3) {
@@ -1227,6 +1233,8 @@
     }
     if (player.grounded && game.respawn.timer > .8) {
       game.lastRespawnLanding = { x: Math.round(player.x), y: Math.round(player.y), grounded: true, fallback: game.respawn.timer > 3 };
+      playAudio('hero.respawnLand', { position: audioPosition(player.x + player.w / 2) });
+      game.fallSoundPlayed = false;
       heroCore.finishRespawn(game.respawn, player); game.state = 'playing';
       keys.left = false; keys.right = false; keys.jump = false;
     }
@@ -1240,7 +1248,7 @@
     player.vy = -300;
     game.chainCount = 0; game.chainTimer = 0;
     game.cameraShake = 11;
-    sfx(145, 0.16, 'sawtooth', 0.06, -80);
+    playAudio('hero.hurt', { position: audioPosition(player.x + player.w / 2) });
     if (game.hearts <= 0) {
       game.hearts = 3;
       game.score = Math.max(0, game.score - 150);
@@ -1252,26 +1260,28 @@
     item.collected = true;
     if (!item.bonusReward && item.type === 'taco') game.collected += 1;
     if (item.type === 'sombrero') {
+      const magnetWasActive = sharedAbilities.hasMagnet(game.abilities);
       game.goldenSombrero = true;
       game.score += 2500;
       sharedAbilities.activateMagnet(game.abilities);
       showMessage('GOLDEN SOMBRERO! CERTIFIED SALSA LEGEND!', 2.8);
       spawnConfetti(item.x - game.cameraX, item.y, game.reducedShake ? 70 : 170);
       game.cameraShake = Math.max(game.cameraShake, 10);
-      sfx(392, 0.22, 'triangle', 0.055, 390);
-      window.setTimeout(() => sfx(659, 0.28, 'sine', 0.05, 390), 90);
+      playAudio('collect.goldenSombrero', { position: audioPosition(item.x + item.w / 2) });
+      if (!magnetWasActive) playAudio('ability.magnetStart', { position: audioPosition(item.x + item.w / 2) });
     } else if (item.type === 'magnet') {
+      const magnetWasActive = sharedAbilities.hasMagnet(game.abilities);
       sharedAbilities.activateMagnet(game.abilities);
       game.score += 450;
       showMessage('TACO MAGNET! LET THE CRUNCH COME TO YOU!', 2);
       spawnConfetti(item.x - game.cameraX, item.y, 48);
-      sfx(330, 0.22, 'sine', 0.055, 620);
+      if (!magnetWasActive) playAudio('ability.magnetStart', { position: audioPosition(item.x + item.w / 2) });
     } else if (item.type === 'hotSauce') {
       game.hotSauce += 1;
       game.score += 700;
       showMessage(`GOLDEN HOT SAUCE ${game.hotSauce}/${game.totalHotSauce}!`, 1.8);
       spawnConfetti(item.x - game.cameraX, item.y, 60);
-      sfx(360, 0.25, 'triangle', 0.055, 680);
+      playAudio('collect.goldenHotSauce', { combo: game.hotSauce, position: audioPosition(item.x + item.w / 2) });
     } else {
       const multiplier = 1 + Math.min(5, Math.floor(game.chainCount / 2));
       game.score += (item.bonusReward ? 35 : 10) * multiplier;
@@ -1282,9 +1292,9 @@
           spawnConfetti(canvas.width / 2, 210, game.reducedShake ? 45 : 105);
           game.cameraShake = Math.max(game.cameraShake, 10);
         }
-        sfx(390, 0.28, 'triangle', 0.055, 720);
+        playAudio('ability.frenzyStart');
       }
-      sfx(610 + Math.min(460, game.chainCount * 24), 0.065, 'triangle', 0.03, 100);
+      playAudio('collect.taco', { streak: game.chainCount, position: audioPosition(item.x + item.w / 2) });
     }
     const color = item.type === 'hotSauce' ? '#ff6f55' : item.type === 'magnet' ? '#65d8ff' : '#ffd65a';
     const burst = item.type === 'sombrero' ? 70 : item.type === 'hotSauce' ? 38 : item.type === 'magnet' ? 32 : 9;
@@ -1314,8 +1324,7 @@
     game.bossPhaseBanner = 4.8;
     if (message) showMessage(message, 2.35);
     if (music) setMusic(music);
-    sfx(92, 0.42, 'sawtooth', 0.055, 190);
-    window.setTimeout(() => sfx(370, 0.24, 'triangle', 0.05, 520), 90);
+    playAudio('boss.elGuacodillo.phaseTransition', { combo: game.bossHits + 1 });
   }
 
   function rewardBossDodge(x) {
@@ -1323,12 +1332,14 @@
     game.score += 250;
     spawnChainTacos({ x, y: 350, w: 20, h: 20 }, 2);
     if (game.bossDodges % 3 === 0) {
+      const magnetWasActive = sharedAbilities.hasMagnet(game.abilities);
       sharedAbilities.activateMagnet(game.abilities);
       showMessage(`OLIVIA: GUAC DODGE ×${game.bossDodges}! MAGNET BONUS!`, 1.7);
-      sfx(740, 0.2, 'triangle', 0.045, 410);
+      playAudio('boss.elGuacodillo.dodge', { combo: game.bossDodges, position: audioPosition(x) });
+      if (!magnetWasActive) playAudio('ability.magnetStart');
     } else {
       showMessage(`GUAC DODGE ×${game.bossDodges}! +250`, 1.15);
-      sfx(620, 0.11, 'triangle', 0.035, 170);
+      playAudio('boss.elGuacodillo.dodge', { combo: game.bossDodges, position: audioPosition(x) });
     }
   }
 
@@ -1341,7 +1352,7 @@
     boss.intangible = false;
     showMessage(finalRage ? 'MAXIMUM GUAC! BAIT THE CRASH!' : 'GUAC CHARGE! BAIT THE BARREL!', 1.55);
     impactText(boss.x + boss.w / 2, boss.y - 34, finalRage ? 'RAGE CHARGE!' : 'GUAC CHARGE!', finalRage ? '#ff6fae' : '#ffd65a');
-    sfx(128, 0.42, 'sawtooth', 0.045, finalRage ? 360 : 210);
+    playAudio('boss.elGuacodillo.chargeWindup', { variant: finalRage ? 'rage' : 'standard', position: audioPosition(boss.x + boss.w / 2) });
   }
 
   function startBossAirStrike(boss, finalRage = false) {
@@ -1354,7 +1365,7 @@
     boss.chargeTimer = 0;
     showMessage(finalRage ? 'RAGE MODE! WATCH THE SHADOWS!' : 'AIR STRIKE! DODGE THE GUAC!', 1.75);
     impactText(boss.x + boss.w / 2, boss.y - 42, 'AIRBORNE GUAC!', '#8dff9c');
-    sfx(205, 0.28, 'sine', 0.055, 250);
+    playAudio('boss.elGuacodillo.airstrikeStart', { variant: finalRage ? 'rage' : 'standard', position: audioPosition(boss.x + boss.w / 2) });
   }
 
   function stunBossAfterCrash(boss) {
@@ -1374,8 +1385,7 @@
     showMessage(game.bossHits >= 2 ? 'FINAL OPENING! SLOW-MO STOMP THE SOMBRERO!' : 'SALSA BARREL BONK! EL GUACODILLO IS DIZZY—STOMP NOW!', 2.25);
     impactText(boss.x + boss.w / 2, boss.y - 38, game.bossHits >= 2 ? 'FINAL OPENING!' : 'BARREL BONK!', '#ffd65a', 36);
     if (game.bossHits >= 2) game.bossFinalFocus = 1.4;
-    sfx(92, 0.35, 'square', 0.065, -40);
-    window.setTimeout(() => sfx(520, 0.2, 'triangle', 0.045, 620), 70);
+    playAudio('boss.elGuacodillo.crashStun', { combo: game.bossHits + 1, position: audioPosition(boss.x + boss.w / 2) });
   }
 
   function stompBoss(enemy) {
@@ -1385,7 +1395,7 @@
       player.invulnerable = Math.max(player.invulnerable, 0.45);
       showMessage('ARMORED GUAC! WAIT FOR THE FLASHING STOMP OPENING!', 1.25);
       impactText(enemy.x + enemy.w / 2, enemy.y - 22, 'CLONK!', '#65d8ff', 28);
-      sfx(125, 0.14, 'square', 0.04, -55);
+      playAudio('boss.elGuacodillo.armorClonk', { position: audioPosition(enemy.x + enemy.w / 2) });
       return;
     }
     game.bossHits += 1;
@@ -1400,7 +1410,7 @@
     enemy.dir *= -1;
     game.cameraShake = 16 + game.bossHits * 3;
     game.hitStop = game.bossHits >= 3 ? 0.2 : 0.09 + game.bossHits * 0.025;
-    splatSfx('boss', game.bossHits);
+    playAudio('boss.elGuacodillo.damage', { combo: game.bossHits, position: audioPosition(enemy.x + enemy.w / 2) });
     const bossFeedback = heroCore.splatFeedback(game.bossHits, true);
     impactText(enemy.x + enemy.w / 2, enemy.y - 28, bossFeedback.text, bossFeedback.color, bossFeedback.size);
     spawnBossShockwave(enemy, game.bossHits);
@@ -1410,7 +1420,6 @@
     if (game.bossHits < 3) {
       const excuses = ['“THAT WAS PROBABLY LAG.”', '“MY SOMBRERO BLOCKED THE SUN.”'];
       showMessage(`EL GUACODILLO: ${excuses[game.bossHits - 1]} ${game.bossHits}/3`, 2.2);
-      sfx(610 + game.bossHits * 120, 0.22, 'triangle', 0.045, 420);
       if (game.bossHits === 1) {
         enemy.state = 'phase-break';
         game.bossAttackCooldown = 1.55;
@@ -1436,7 +1445,9 @@
     showMessage('GUAC-KRAK! THE GUAC HAS BEEN OFFICIALLY ROCKED! 🌈🌮', 3.8);
     setMusic('victory');
     spawnChainTacos(enemy, 64);
+    const magnetWasActive = sharedAbilities.hasMagnet(game.abilities);
     sharedAbilities.activateMagnet(game.abilities);
+    if (!magnetWasActive) playAudio('ability.magnetStart');
     spawnConfetti(canvas.width * 0.55, 150, game.reducedShake ? 110 : 310);
     spawnConfetti(28720 - game.cameraX, 250, game.reducedShake ? 35 : 90);
     for (let index = 0; index < 24; index += 1) {
@@ -1446,10 +1457,7 @@
       });
     }
     for (let index = 0; index < (game.reducedShake ? 7 : 14); index += 1) spawnFirework();
-    sfx(76, 0.72, 'sine', 0.1, -28);
-    window.setTimeout(() => sfx(165, 0.42, 'sawtooth', 0.065, -70), 35);
-    window.setTimeout(() => sfx(520, 0.48, 'triangle', 0.07, 920), 120);
-    window.setTimeout(() => sfx(784, 0.34, 'sine', 0.05, 520), 230);
+    playAudio('boss.elGuacodillo.defeat', { position: audioPosition(enemy.x + enemy.w / 2) });
   }
 
   function defeatEnemy(enemy, stomped = true) {
@@ -1473,15 +1481,14 @@
     const authoredReward = enemy.rewardProfile || heroCore.getEnemyRewardProfile(enemy);
     game.score += 170 * Math.max(1, game.chainCount) + Math.round(Math.max(0, Number(authoredReward?.score) || 0) * 0.12);
 
-    if (enemy.perfectStomp) {
+    const perfectStomp = Boolean(enemy.perfectStomp);
+    if (perfectStomp) {
       game.perfectStomps += 1;
       game.score += 200;
       game.hitStop = Math.max(game.hitStop, 0.085);
       game.cameraShake = Math.max(game.cameraShake, 8);
       impactText(enemy.x + enemy.w / 2, enemy.y - 30, 'PERFECT!', '#ffd65a');
       spawnBossShockwave(enemy, 1);
-      sfx(245, 0.11, 'square', 0.04, -80);
-      window.setTimeout(() => sfx(740, 0.12, 'triangle', 0.038, 220), 35);
     }
     delete enemy.perfectStomp;
 
@@ -1496,6 +1503,7 @@
     const frenzyStarted = sharedAbilities.splatEnemy(game.abilities);
     if (frenzyStarted) {
       showMessage('TACO FRENZY! THE SHOWDOWN JUST GOT CRUNCHIER!', 2.2);
+      playAudio('ability.frenzyStart');
     }
 
     const nextTarget = stomped && world.enemies
@@ -1505,7 +1513,11 @@
 
     game.hitStop = game.chainCount >= 5 ? 0.075 : 0.045;
     game.cameraShake = Math.max(game.cameraShake, 6 + Math.min(12, game.chainCount));
-    splatSfx(enemy.type, game.chainCount);
+    playAudio(perfectStomp ? 'combat.enemyStomp' : 'combat.enemySplat', {
+      enemyType: enemy.type,
+      combo: stomped ? game.chainCount : 1,
+      position: audioPosition(enemy.x + enemy.w / 2),
+    });
     const colors = { slime: '#7ee46b', knight: '#ffd65a', jalapeno: '#ff6a54', guac: '#9bef70', churro: '#eeb66e', mole: '#65d8ff' };
     const feedback = heroCore.splatFeedback(Math.max(1, game.chainCount), stomped);
     spawnBurst(enemy.x - game.cameraX + enemy.w / 2, enemy.y + enemy.h / 2, colors[enemy.type], 30);
@@ -1521,7 +1533,7 @@
           showMessage(reward.label, reward.duration);
           game.hitStop = Math.max(game.hitStop, reward.hitStop);
           game.cameraShake = Math.max(game.cameraShake, reward.shake);
-          sfx(reward.tier === 'supremacy' ? 520 : 700, reward.tier === 'supremacy' ? .28 : .14, 'triangle', reward.tier === 'supremacy' ? .06 : .04, reward.tier === 'supremacy' ? 640 : 260);
+          if (perfectStomp) playAudio('combat.comboMilestone', { combo: game.chainCount, position: audioPosition(enemy.x + enemy.w / 2) });
         },
       });
     }
@@ -1532,20 +1544,18 @@
     if (stomped && game.chainCount === 3) {
       showMessage('TRIPLE SPLAT! KEEP IT CRUNCHY!', 1.4);
       spawnChainTacos(enemy, 6);
-      sfx(440, 0.15, 'triangle', 0.04, 250);
     } else if (stomped && game.chainCount === 5) {
       showMessage('MEGA TACO SPLAT ×5! RAINBOW RAMPAGE! 🌈', 2.35);
       spawnChainTacos(enemy, 12);
       game.chainTrailTimer = 3.5;
-      sfx(520, 0.28, 'triangle', 0.05, 620);
     } else if (stomped && game.chainCount === 8) {
       showMessage('SALSA SUPREMACY ×8! TACO MAGNET!', 2.5);
       spawnChainTacos(enemy, 20);
       game.chainTrailTimer = 5;
+      const magnetWasActive = sharedAbilities.hasMagnet(game.abilities);
       sharedAbilities.activateMagnet(game.abilities);
+      if (!magnetWasActive) playAudio('ability.magnetStart');
       spawnConfetti(enemy.x - game.cameraX, enemy.y, game.reducedShake ? 60 : 135);
-      sfx(392, 0.25, 'triangle', 0.055, 520);
-      window.setTimeout(() => sfx(784, 0.34, 'sine', 0.05, 420), 100);
     } else if (stomped && game.chainCount > 8 && game.chainCount % 3 === 0) {
       showMessage(`ABSURD SPLAT CHAIN ×${game.chainCount}!`, 1.2);
       spawnChainTacos(enemy, 8);
@@ -1672,7 +1682,7 @@
         });
         boss.shotsRemaining -= 1;
         boss.airStrikeShotTimer = game.bossHits >= 2 ? 0.34 : 0.46;
-        sfx(235 + boss.shotsRemaining * 18, 0.1, 'sine', 0.035, -80);
+        playAudio('boss.elGuacodillo.guacShot', { combo: boss.shotsRemaining + 1, position: audioPosition(originX) });
       }
       if (boss.airStrikeTimer <= 0 && boss.shotsRemaining <= 0) {
         boss.state = game.bossHits >= 2 ? 'final-opening' : 'vulnerable-air';
@@ -1684,7 +1694,7 @@
         if (game.bossHits >= 2) game.bossFinalFocus = 1.25;
         showMessage(game.bossHits >= 2 ? 'FINAL OPENING! BOUNCE HIGH AND GUAC-KRAK!' : 'SPRING GUAC READY! BOUNCE UP FOR STOMP TWO!', 2.15);
         impactText(boss.x + boss.w / 2, 220, 'STOMP OPEN!', '#ffd65a', 36);
-        sfx(620, 0.2, 'triangle', 0.045, 470);
+        playAudio('boss.elGuacodillo.vulnerable', { combo: game.bossHits + 1, position: audioPosition(boss.x + boss.w / 2) });
       }
     }
 
@@ -1695,7 +1705,7 @@
         boss.chargeTimer = game.bossHits >= 2 ? 1.85 : 2.1;
         boss.state = 'charge';
         game.cameraShake = Math.max(game.cameraShake, 9);
-        sfx(175, 0.34, 'sawtooth', 0.055, 360);
+        playAudio('boss.elGuacodillo.charge', { combo: game.bossHits + 1, position: audioPosition(boss.x + boss.w / 2) });
       }
     } else if (boss.state === 'charge') {
       boss.chargeTimer = Math.max(0, (boss.chargeTimer || 0) - dt);
@@ -1723,7 +1733,7 @@
           const closeDodge = !hazard.hitPlayer && Math.abs(hazard.x - (player.x + player.w / 2)) < 105;
           hazard.type = hazard.spring ? 'spring' : 'puddle'; hazard.y = 404; hazard.w = hazard.spring ? 104 : 86; hazard.h = 14; hazard.life = 3.6;
           spawnBurst(hazard.x - game.cameraX, hazard.y, '#8dff9c', 16);
-          sfx(118, 0.13, 'sine', 0.035, -45);
+          playAudio('hazard.guacLand', { position: audioPosition(hazard.x) });
           if (closeDodge) rewardBossDodge(hazard.x);
         }
       }
@@ -1737,7 +1747,7 @@
           hazard.bounceCooldown = 0.45;
           game.score += 100;
           impactText(hazard.x, hazard.y - 10, 'GUAC BOUNCE!', '#8dff9c', 24);
-          sfx(420, 0.12, 'triangle', 0.04, 380);
+          playAudio('hazard.guacSpring', { position: audioPosition(hazard.x) });
         } else if (hazard.type === 'blob') {
           hazard.hitPlayer = true;
           hurtPlayer(hazard.x);
@@ -1756,7 +1766,8 @@
       stampede.x = player.x - 430;
       stampede.speed = 176;
       showMessage('SALSA CANYON STAMPEDE! RUN OR BOUNCE!', 2.3);
-      sfx(105, 0.42, 'sawtooth', 0.055, 80);
+      playAudio('hazard.stampedeStart', { position: -1 });
+      game.stampedeLoop = audio?.startLoop('hazard.stampedeLoop', { position: -0.8 }) || null;
     }
     if (!stampede.active) return;
     stampede.speed = Math.min(232, stampede.speed + dt * 16);
@@ -1772,7 +1783,7 @@
       game.score += 350;
       showMessage(['TOO CLOSE! GUAC PACK PANIC!', 'NEAR MISS! HAT EMERGENCY!', 'GUAC PACK: “WAIT, COME BACK!”'][stampede.nearMisses % 3], 1.3);
       spawnChainTacos({ x: player.x, y: player.y, w: player.w, h: player.h }, 4);
-      sfx(310, 0.13, 'square', 0.04, 300);
+      playAudio('hazard.nearMiss', { combo: stampede.nearMisses, position: -0.65 });
     }
     if (distance < 86) {
       hurtPlayer(stampede.x);
@@ -1783,9 +1794,11 @@
     if (player.x >= 10820) {
       stampede.active = false;
       stampede.done = true;
+      if (game.stampedeLoop) audio?.stopLoop(game.stampedeLoop); game.stampedeLoop = null;
       game.score += 900;
       showMessage('STAMPede SERVED! +900', 1.8);
       spawnConfetti(canvas.width * 0.3, 210, 80);
+      playAudio('hazard.stampedeEscape', { position: -0.5 });
     }
   }
 
@@ -1804,7 +1817,7 @@
       game.radioQueue = checkpoint.radio;
       game.radioDelay = 2.25;
       spawnConfetti(checkpoint.x - game.cameraX + 90, 245, 72);
-      sfx(520, 0.18, 'triangle', 0.05, 430);
+      playAudio('checkpoint.activate', { position: audioPosition(checkpoint.x) });
     }
   }
 
@@ -1834,7 +1847,7 @@
       pad.life -= dt;
       if (player.grounded && player.x + player.w > pad.x && player.x < pad.x + pad.w) {
         player.vx = Math.max(player.vx, 390);
-        if (!pad.used) { pad.used = true; showMessage('SALSA SLIDE! WHEEE!', 1); sfx(280, 0.16, 'sine', 0.04, 420); }
+        if (!pad.used) { pad.used = true; showMessage('SALSA SLIDE! WHEEE!', 1); playAudio('movement.salsaSlide', { position: audioPosition(pad.x + pad.w / 2) }); }
       }
       return pad.life > 0;
     });
@@ -1845,13 +1858,14 @@
         player.vy = -760;
         player.grounded = false;
         showMessage('CHURRO SPRING!', 0.8);
-        sfx(330, 0.12, 'triangle', 0.045, 500);
+        playAudio('movement.churroSpring', { position: audioPosition(pad.x + pad.w / 2) });
       }
       return pad.life > 0;
     });
   }
 
   function updatePlayer(dt) {
+    const wasGrounded = player.grounded;
     if (player.grounded && player.platform) {
       player.x += player.platform.dx || 0;
       player.y += player.platform.dy || 0;
@@ -1877,7 +1891,7 @@
     if (player.jumpBuffer > 0 && player.coyote > 0) {
       player.vy = -heroPhysics.jumpVelocity;
       player.grounded = false; player.coyote = 0; player.jumpBuffer = 0;
-      sfx(420, 0.1, 'square', 0.04, 130);
+      playAudio('hero.jump', { position: audioPosition(player.x + player.w / 2) });
     }
     const previousY = player.y;
     player.previousY = previousY;
@@ -1885,6 +1899,7 @@
     player.vy = Math.min(heroPhysics.maxFallVelocity, player.vy + heroPhysics.gravity * dt);
     player.x += player.vx * dt;
     player.y += player.vy * dt;
+    const landingVelocity = player.vy;
     player.x = clamp(player.x, 0, WORLD_WIDTH - player.w);
     if (game.bossActive && !game.bossDefeated) {
       if (player.x < BOSS_ARENA_LEFT) {
@@ -1898,7 +1913,15 @@
       }
     }
     resolvePlatforms(previousY);
+    if (!wasGrounded && player.grounded && landingVelocity > 90) {
+      playAudio(landingVelocity >= 830 ? 'hero.landHard' : 'hero.landSoft', { position: audioPosition(player.x + player.w / 2) });
+      game.fallSoundPlayed = false;
+    }
     player.anim += dt * (Math.abs(player.vx) > 20 ? 11 : 4);
+    if (player.y > canvas.height + 20 && !game.fallSoundPlayed) {
+      game.fallSoundPlayed = true;
+      playAudio('hero.fall', { position: audioPosition(player.x + player.w / 2) });
+    }
     if (player.y > canvas.height + 70) {
       game.hearts -= 1;
       if (game.hearts <= 0) game.hearts = 3;
@@ -1913,16 +1936,17 @@
     game.celebrationTime = 0;
     player.vx = 0; player.vy = 0;
     setMusic('fiesta');
+    playAudio('goal.enter', { position: audioPosition(world.goal.x + world.goal.w / 2) });
     const completion = game.totalCollectibles ? game.collected / game.totalCollectibles : 0;
     game.fiestaPower = clamp(game.hotSauce / game.totalHotSauce * 0.42 + Math.min(game.bestChain, 8) / 8 * 0.43 + (game.goldenSombrero ? 0.15 : 0), 0.2, 1);
     game.score += Math.round(3000 + completion * 2600 + game.hotSauce * 700 + game.bestChain * 160 + (game.bossDefeated ? 1800 : 0));
     showMessage(game.goldenSombrero ? 'CERTIFIED SALSA LEGEND!' : 'LOCAL TACO REFUSES TO TOUCH GRASS!', 4);
     spawnConfetti(canvas.width / 2, 150, game.reducedShake ? 80 : Math.round(120 + game.fiestaPower * 170));
     for (let index = 0; index < (game.reducedShake ? 4 : Math.round(6 + game.fiestaPower * 11)); index += 1) spawnFirework();
-    sfx(520, 0.25, 'triangle', 0.055, 640);
   }
 
   function presentResults() {
+    playAudio('level.complete');
     const seconds = (game.finishTime - game.startTime) / 1000;
     const completion = game.totalCollectibles ? game.collected / game.totalCollectibles : 0;
     const medal = game.goldenSombrero ? 'GOLDEN SALSA LEGEND'
@@ -1964,8 +1988,7 @@
       if (progress < 1) requestAnimationFrame(tally);
       else {
         ui.medalBadge.textContent = medal;
-        sfx(523, 0.22, 'triangle', 0.04, 260);
-        window.setTimeout(() => sfx(784, 0.3, 'sine', 0.045, 260), 80);
+        playAudio('ui.resultsReveal');
       }
     };
     requestAnimationFrame(tally);
@@ -1981,8 +2004,7 @@
       game.partyBeat = beat;
       spawnConfetti(beat % 2 ? 110 : canvas.width - 110, 225, game.reducedShake ? 14 : 38);
       if ((!game.reducedShake || beat % 2 === 0) && seeded() < 0.35 + game.fiestaPower * 0.65) spawnFirework();
-      sfx([523, 659, 784, 1047][beat % 4], 0.11, 'triangle', 0.03, 90);
-      if (game.fiestaPower > 0.68 && beat % 2 === 0) sfx([262, 330, 392, 523][beat % 4], 0.14, 'sine', 0.024, 70);
+      playAudio('level.celebrationPulse', { combo: beat + 1, intensity: game.fiestaPower, position: beat % 2 ? -0.35 : 0.35 });
     }
     if (game.celebrationTime > (previewFastCelebrate ? 0.7 : 7.2)) presentResults();
   }
@@ -2002,9 +2024,14 @@
       if (game.radioDelay === 0) {
         showMessage(`📻 OLIVIA: ${game.radioQueue}`, 3.2);
         game.radioQueue = '';
+        playAudio('ui.radio');
       }
     }
+    const magnetWasActive = sharedAbilities.hasMagnet(game.abilities);
+    const frenzyWasActive = sharedAbilities.isFrenzy(game.abilities);
     sharedAbilities.update(game.abilities, dt);
+    if (magnetWasActive && !sharedAbilities.hasMagnet(game.abilities)) playAudio('ability.magnetEnd');
+    if (frenzyWasActive && !sharedAbilities.isFrenzy(game.abilities)) playAudio('ability.frenzyEnd');
     if (game.chainTimer <= 0) game.chainCount = 0;
 
     if (game.state === 'playing' || game.state === 'respawning') {
@@ -2034,7 +2061,7 @@
           game.bossPhaseBanner = 4.8;
           setMusic(game.bossHits >= 2 ? 'bossRage' : game.bossHits === 1 ? 'bossAir' : 'boss');
           showMessage('EL GUACODILLO — THREE OPENINGS. THREE STOMPS. ONE HUGE EGO.', 2.5);
-          sfx(110, 0.45, 'sawtooth', 0.06, 120);
+          playAudio('boss.elGuacodillo.enter', { combo: game.bossHits + 1, position: audioPosition(boss?.x || BOSS_ARENA_RIGHT) });
         }
       }
 
@@ -2051,8 +2078,7 @@
         showMessage(`${section.name.toUpperCase()} — ${calls[nextSection]}`, 2.4);
         spawnConfetti(canvas.width * 0.6, 180, 56);
         if (section.id === 'victory') {
-          sfx(392, 0.2, 'triangle', 0.045, 300);
-          window.setTimeout(() => sfx(659, 0.25, 'sine', 0.04, 300), 80);
+          playAudio('level.victoryDashStart');
         }
       }
 

@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const SOURCE_VERSION = 'w2-3-v13-authored-combat-chat-bubbles';
+  const SOURCE_VERSION = 'w2-3-v15-phase2-premium-audio';
 
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
@@ -8,6 +8,7 @@
   const heroCore = window.JFT_HERO_CORE;
   const heroPhysics = heroCore.physics;
   const abilities = window.JFT_SHARED_ABILITIES;
+  const audio = window.JFT_AUDIO;
 
   const ui = {
     startOverlay: document.getElementById('startOverlay'),
@@ -294,7 +295,7 @@
     pinata: { x: 31620, y: 338, hits: 0, exploded: false, wobble: 0, explosionTimer: 0 },
     boat: {
       active: false, x: 22600, timer: 0, dropTimer: 0, catches: 0,
-      throwTimer: 0, throwCount: 0, pendingVolley: false, launchFlash: 0,
+      throwTimer: 0, throwCount: 0, pendingVolley: false, launchFlash: 0, departedAudio: false,
     },
     concert: {
       started: false, timer: 0, duration: 186.72, cueIndex: 0, items: [], collected: 0,
@@ -309,7 +310,8 @@
     generatorDefenseAudit: null,
   };
 
-  let audioContext = null;
+  let roadsterLoopHandle = null;
+  let catamaranLoopHandle = null;
   let lastFrame = 0;
   let seed = 0x23C0FFEE;
   const params = new URLSearchParams(location.search);
@@ -347,6 +349,45 @@
     const progress = clamp(value, 0, 1);
     return progress * progress * (3 - 2 * progress);
   };
+
+  audio?.registerMusicTracks(tracks);
+  audio?.preloadGroups(['global', 'world2']).catch(() => {
+    // Missing assets use the engine's centralized emergency fallback.
+  });
+
+  function playAudio(eventId, options = {}) {
+    return audio?.play(eventId, options) || null;
+  }
+
+  function audioPosition(worldX) {
+    return clamp(((worldX - game.cameraX) / canvas.width) * 2 - 1, -1, 1);
+  }
+
+  function screenAudioPosition(screenX) {
+    return clamp((screenX / canvas.width) * 2 - 1, -1, 1);
+  }
+
+  function startRoadsterLoop(position = 0) {
+    if (roadsterLoopHandle) return;
+    roadsterLoopHandle = audio?.startLoop('vehicle.idle', { vehicleType: 'roadster', position }) || null;
+  }
+
+  function stopRoadsterLoop() {
+    if (!roadsterLoopHandle) return;
+    audio?.stopLoop(roadsterLoopHandle);
+    roadsterLoopHandle = null;
+  }
+
+  function startCatamaranLoop(position = 0) {
+    if (catamaranLoopHandle) return;
+    catamaranLoopHandle = audio?.startLoop('vehicle.idle', { vehicleType: 'catamaran', position }) || null;
+  }
+
+  function stopCatamaranLoop() {
+    if (!catamaranLoopHandle) return;
+    audio?.stopLoop(catamaranLoopHandle);
+    catamaranLoopHandle = null;
+  }
 
   function getConcertReadiness() {
     const circuitsReady = game.generators === world.generators.length;
@@ -1043,6 +1084,9 @@
     ui.reducedShake.checked = game.reducedShake;
     ui.muteBtn.textContent = game.muted ? '🔇 Sound Off' : '🔊 Sound On';
     allTracks.forEach((track) => { track.muted = game.muted; });
+    audio?.setMusicVolume(game.musicVolume);
+    audio?.setEffectsVolume(game.effectsVolume);
+    audio?.setMuted(game.muted);
   }
 
   function updatePersonalBest() {
@@ -1053,6 +1097,8 @@
   }
 
   function resetGame() {
+    stopRoadsterLoop();
+    stopCatamaranLoop();
     buildWorld();
     Object.assign(game, {
       state: 'title', score: 0, collected: 0, golden: 0, hearts: 3, energy: 0,
@@ -1070,7 +1116,7 @@
       pinata: { x: 31620, y: 338, hits: 0, exploded: false, wobble: 0, explosionTimer: 0 },
       boat: {
         active: false, x: 22600, timer: 0, dropTimer: 0, catches: 0,
-        throwTimer: 0, throwCount: 0, pendingVolley: false, launchFlash: 0,
+        throwTimer: 0, throwCount: 0, pendingVolley: false, launchFlash: 0, departedAudio: false,
       },
       concert: {
         started: false, timer: 0, duration: 186.72, cueIndex: 0, items: [], collected: 0,
@@ -1095,33 +1141,11 @@
   }
 
   function unlockAudio() {
-    if (!audioContext) {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (AudioCtx) audioContext = new AudioCtx();
-    }
-    audioContext?.resume?.();
-  }
-
-  function sfx(freq = 440, duration = .08, wave = 'triangle', volume = .04, slide = 0) {
-    if (game.muted || !audioContext) return;
-    const oscillator = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    const now = audioContext.currentTime;
-    oscillator.type = wave;
-    oscillator.frequency.setValueAtTime(freq, now);
-    oscillator.frequency.linearRampToValueAtTime(Math.max(45, freq + slide), now + duration);
-    gain.gain.setValueAtTime(Math.max(.0001, volume * game.effectsVolume), now);
-    gain.gain.exponentialRampToValueAtTime(.0001, now + duration);
-    oscillator.connect(gain);
-    gain.connect(audioContext.destination);
-    oscillator.start(now);
-    oscillator.stop(now + duration + .03);
-  }
-
-  function layeredSplat(type) {
-    const base = { berry: 250, mango: 330, spaghetti: 180, pepper: 520, pineapple: 210 }[type] || 260;
-    sfx(base, .13, type === 'pepper' ? 'sawtooth' : 'triangle', .065, -90);
-    window.setTimeout(() => sfx(base * 1.55, .07, 'sine', .032, 120), 35);
+    audio?.init({
+      musicVolume: game.musicVolume,
+      effectsVolume: game.effectsVolume,
+      muted: game.muted,
+    });
   }
 
   function showMessage(text, duration = 2.2) {
@@ -1160,15 +1184,15 @@
 
     if (opening.phase !== previousPhase) {
       if (opening.phase === 'boarding') {
-        sfx(420, .1, 'triangle', .035, 150);
+        playAudio('vehicle.approach', { vehicleType: 'roadster', position: audioPosition(opening.carX) });
         showMessage('TACOS LOADED. OLIVIA IS HOPPING IN!', 1.25);
       } else if (opening.phase === 'revving') {
-        sfx(82, .48, 'sawtooth', .04, 75);
-        window.setTimeout(() => sfx(118, .34, 'sawtooth', .032, 110), 115);
+        startRoadsterLoop(audioPosition(opening.carX));
+        playAudio('vehicle.accelerate', { vehicleType: 'roadster', position: audioPosition(opening.carX) });
         showMessage('TACO ROADSTER: READY TO ROLL!', 1.15);
       } else if (opening.phase === 'departing') {
-        sfx(118, .55, 'sawtooth', .052, 315);
-        window.setTimeout(() => sfx(330, .16, 'triangle', .036, 210), 90);
+        stopRoadsterLoop();
+        playAudio('vehicle.depart', { vehicleType: 'roadster', position: audioPosition(opening.carX) });
         showMessage('SHOWTIME! OLIVIA IS TAKING THE SCENIC ROUTE!', 2.05);
         spawnConfetti(opening.carX - game.cameraX + 80, GROUND_Y - 42, game.reducedShake ? 14 : 26);
       } else if (opening.phase === 'finished') {
@@ -1213,7 +1237,8 @@
         next.currentTime = ((from.currentTime % from.duration) / from.duration) * next.duration;
       } else next.currentTime = 0;
     }
-    next.volume = immediate || !from ? game.musicVolume : 0;
+    const base = game.settingsOpen ? .42 : 1;
+    next.volume = immediate || !from ? base : 0;
     next.play().catch(() => {});
     game.activeMusic = name;
     if (immediate || !from) {
@@ -1225,7 +1250,7 @@
   }
 
   function updateMusic(dt) {
-    const base = game.musicVolume * (game.settingsOpen ? .42 : 1);
+    const base = game.settingsOpen ? .42 : 1;
     game.maxMusicPlaying = Math.max(game.maxMusicPlaying, allTracks.filter((track) => !track.paused).length);
     if (!game.musicTransition) {
       if (game.activeMusic) tracks[game.activeMusic].volume = base;
@@ -1258,6 +1283,7 @@
     game.state = 'playing';
     game.startTime = performance.now();
     unlockAudio();
+    playAudio('ui.start');
     if (previewConcert) {
       player.x = 34420;
       player.y = 350;
@@ -1362,8 +1388,8 @@
       syncInputs();
     });
     ui.startBtn.addEventListener('click', startGame);
-    ui.restartBtn.addEventListener('click', () => { resetGame(); startGame(); });
-    ui.playAgainBtn.addEventListener('click', () => { resetGame(); startGame(); });
+    ui.restartBtn.addEventListener('click', () => { resetGame(); playAudio('ui.confirm'); startGame(); });
+    ui.playAgainBtn.addEventListener('click', () => { resetGame(); playAudio('ui.confirm'); startGame(); });
     ui.skipConcertBtn.addEventListener('click', skipConcert);
     ui.muteBtn.addEventListener('click', () => {
       game.muted = !game.muted;
@@ -1377,12 +1403,14 @@
     ui.musicVolume.addEventListener('input', () => {
       game.musicVolume = Number(ui.musicVolume.value) / 100;
       ui.musicVolumeValue.textContent = `${ui.musicVolume.value}%`;
+      audio?.setMusicVolume(game.musicVolume);
       updateMusic(0);
       saveProgress();
     });
     ui.effectsVolume.addEventListener('input', () => {
       game.effectsVolume = Number(ui.effectsVolume.value) / 100;
       ui.effectsVolumeValue.textContent = `${ui.effectsVolume.value}%`;
+      audio?.setEffectsVolume(game.effectsVolume);
       saveProgress();
     });
     ui.reducedShake.addEventListener('change', () => {
@@ -1420,6 +1448,7 @@
   }
 
   function updatePlayer(dt, concertMode = false) {
+    const wasGrounded = player.grounded;
     player.jumpBuffer = Math.max(0, player.jumpBuffer - dt);
     player.coyote = player.grounded ? heroPhysics.coyoteTime : Math.max(0, player.coyote - dt);
     player.invulnerable = Math.max(0, player.invulnerable - dt);
@@ -1435,7 +1464,7 @@
       player.platform = null;
       player.coyote = 0;
       player.jumpBuffer = 0;
-      sfx(360, .09, 'square', .034, 180);
+      playAudio('hero.jump', { position: audioPosition(player.x + player.w / 2) });
     }
 
     const previousY = player.y;
@@ -1446,6 +1475,7 @@
     player.vy = Math.min(heroPhysics.maxFallVelocity, player.vy + heroPhysics.gravity * dt);
     player.x += player.vx * dt;
     player.y += player.vy * dt;
+    const landingVelocity = player.vy;
     player.grounded = false;
     player.platform = null;
 
@@ -1461,9 +1491,15 @@
         player.platform = platform;
       }
     }
+    if (!wasGrounded && player.grounded && landingVelocity > 90) {
+      playAudio(landingVelocity >= 830 ? 'hero.landHard' : 'hero.landSoft', {
+        position: audioPosition(player.x + player.w / 2),
+      });
+    }
     const maxX = concertMode ? 920 - player.w : WORLD_WIDTH - player.w;
     player.x = clamp(player.x, concertMode ? 20 : 0, maxX);
     if (player.y > 590) {
+      playAudio('hero.fall', { position: audioPosition(player.x + player.w / 2) });
       if (concertMode) {
         player.x = 120;
         player.y = 360;
@@ -1513,6 +1549,7 @@
     player.platform = null;
     player.coyote = 0;
     player.jumpBuffer = 0;
+    playAudio('hero.respawnBeam', { position: audioPosition(player.x + player.w / 2) });
     showMessage('TACO HERO IS RETURNING WITH EXTRA CRUNCH!', 1.8);
   }
 
@@ -1553,6 +1590,7 @@
     }
     if (player.grounded && game.respawn.timer > .8) {
       game.lastRespawnLanding = { x: Math.round(player.x), y: Math.round(player.y), grounded: true, fallback: game.respawn.timer > 3 };
+      playAudio('hero.respawnLand', { position: audioPosition(player.x + player.w / 2) });
       heroCore.finishRespawn(game.respawn, player, 1.6);
       game.state = 'playing';
       clearInputs();
@@ -1582,7 +1620,7 @@
         player.vy = -320;
         game.hearts -= 1;
         game.cameraShake = game.reducedShake ? 3 : 9;
-        sfx(110, .2, 'sawtooth', .05, -50);
+        playAudio('hero.hurt', { position: audioPosition(player.x + player.w / 2) });
         if (game.hearts <= 0) beginRespawn();
       }
     }
@@ -1602,7 +1640,11 @@
     const feedback = heroCore.splatFeedback(game.splatCombo, stomped);
     game.impactTexts.push({ x: enemy.x - game.cameraX + 24, y: enemy.y - 16, text: feedback.text, color: feedback.color, life: 1.1 });
     spawnBurst(enemy.x - game.cameraX + 24, enemy.y + 20, feedback.color, 14);
-    layeredSplat(enemy.type);
+    playAudio(stomped ? 'combat.enemyStomp' : 'combat.enemySplat', {
+      enemyType: enemy.type,
+      combo: Math.max(1, game.splatCombo),
+      position: audioPosition(enemy.x + enemy.w / 2),
+    });
     const celebration = heroCore.celebrateSplatCombo(game.splatCombo, {
       reduced: game.reducedShake,
       onCelebrate: (reward) => {
@@ -1610,6 +1652,10 @@
         game.cameraShake = reward.shake;
         game.hitStop = reward.hitStop;
         showMessage(reward.label, reward.duration);
+        playAudio('combat.comboMilestone', {
+          combo: game.splatCombo,
+          gain: reward.tier === 'supremacy' ? 1.08 : 1,
+        });
         if (reward.tier === 'supremacy') {
           for (let i = 0; i < 15; i += 1) addTaco(enemy.x + (i - 7) * 24, enemy.y - 60 - Math.sin(i / 14 * Math.PI) * 100, 'taco', { bonus: true });
         }
@@ -1618,36 +1664,47 @@
     if (frenzyStarted) {
       showMessage('TACO FRENZY! THE BAND JUST TURNED EVERYTHING UP!', 2);
       spawnConfetti(enemy.x - game.cameraX, enemy.y, 75);
+      playAudio('ability.frenzyStart');
     } else if (!celebration && game.splatCombo > 1) showMessage(`${feedback.text} — CONCERT ENERGY UP!`, 1.1);
   }
 
   function collectTaco(item) {
     item.collected = true;
+    let collectionEventId = 'collect.taco';
+    let premiumType;
     if (item.type === 'golden') {
       game.golden += 1;
       game.score += 2500;
       game.energy = clamp(game.energy + 4, 0, 100);
       showMessage('GOLDEN BACKSTAGE PASS!', 1.25);
-      sfx(720, .14, 'triangle', .055, 320);
+      collectionEventId = 'collect.backstagePass';
+      premiumType = 'backstagePass';
       spawnConfetti(item.x - game.cameraX, item.y, 28);
       abilities.activateMagnet(game.abilities);
+      playAudio('ability.magnetStart', { position: audioPosition(item.x + item.w / 2) });
     } else if (item.type === 'rainbow') {
       game.collected += 1;
       game.score += 1000;
       game.energy = clamp(game.energy + 1.5, 0, 100);
-      sfx(860 + (game.collected % 4) * 75, .12, 'triangle', .045, 420);
+      collectionEventId = 'collect.rainbowTaco';
+      premiumType = 'concertRainbow';
       spawnConfetti(item.x - game.cameraX, item.y, game.reducedShake ? 12 : 24);
     } else {
       game.collected += 1;
       if (item.airborneDrop) game.boat.catches += 1;
       game.score += 100;
       game.energy = clamp(game.energy + .08, 0, 100);
-      sfx(520 + (game.collected % 5) * 45, .045, 'triangle', .023, 100);
     }
     if (abilities.collectTaco(game.abilities, item.type === 'golden')) {
       showMessage('TACO FRENZY! MAXIMUM CONCERT CRUNCH!', 1.8);
       spawnConfetti(item.x - game.cameraX, item.y, 75);
+      playAudio('ability.frenzyStart');
     }
+    playAudio(collectionEventId, {
+      streak: game.collected + game.golden,
+      position: audioPosition(item.x + item.w / 2),
+      premiumType,
+    });
   }
 
   function updateCollectibles(dt) {
@@ -1685,7 +1742,7 @@
       game.energy = clamp(game.energy + 3, 0, 100);
       showMessage(`${checkpoint.name.toUpperCase()} — ${checkpoint.sign}`, 3.1);
       spawnConfetti(checkpoint.x - game.cameraX + 70, 270, 44);
-      sfx(440, .12, 'triangle', .05, 330);
+      playAudio('checkpoint.activate', { position: audioPosition(checkpoint.x) });
     }
   }
 
@@ -1699,7 +1756,11 @@
     showMessage(`${generator.name} ONLINE — ${game.generators}/3 STAGE CIRCUITS POWERED!`, 2.2);
     spawnConfetti(generator.x - game.cameraX, 230, game.reducedShake ? 45 : 90);
     game.cameraShake = game.reducedShake ? 4 : 12;
-    sfx(220 + game.generators * 110, .35, 'sawtooth', .06, 460);
+    playAudio('stage.generatorActivate', {
+      index: game.generators,
+      generatorType: generator.id,
+      position: audioPosition(generator.x),
+    });
   }
 
   function updateGenerators() {
@@ -1738,8 +1799,10 @@
     player.vy = -heroPhysics.enemyBounceVelocity;
     pinata.hits += 1;
     pinata.wobble = 1;
-    sfx(190 + pinata.hits * 95, .17, 'square', .065, 220);
-    sfx(520 + pinata.hits * 85, .12, 'triangle', .04, 160);
+    playAudio('pinata.hit', {
+      combo: pinata.hits,
+      position: audioPosition(pinata.x),
+    });
     showMessage(
       pinata.hits === 1 ? 'NEON PIÑATA CRACK! TWO MORE!'
         : pinata.hits === 2 ? 'NEON PIÑATA OVERLOADING! ONE MORE!'
@@ -1772,14 +1835,7 @@
         { bonus: true },
       );
     }
-    sfx(92, .52, 'sine', .11, -45);
-    sfx(185, .22, 'square', .075, 260);
-    window.setTimeout(() => sfx(540, .34, 'triangle', .075, 760), 70);
-    window.setTimeout(() => {
-      [760, 940, 1140, 1360].forEach((frequency, index) => {
-        window.setTimeout(() => sfx(frequency, .18, 'triangle', .048, 180), index * 42);
-      });
-    }, 145);
+    playAudio('pinata.break', { position: audioPosition(pinata.x) });
   }
 
   function releaseBoatVolley() {
@@ -1798,16 +1854,28 @@
         settled: false,
       });
     }
-    sfx(430 + (boat.throwCount % 3) * 65, .08, 'triangle', .03, 210);
+    playAudio('vehicle.tacoDrop', {
+      vehicleType: 'catamaran',
+      position: audioPosition(boat.x),
+    });
   }
 
   function updateBoat(dt) {
-    if (player.x < 22800 || player.x > 26800) return;
+    if (player.x < 22800 || player.x > 26800) {
+      if (game.boat.active && player.x > 26800 && !game.boat.departedAudio) {
+        game.boat.departedAudio = true;
+        stopCatamaranLoop();
+        playAudio('vehicle.depart', { vehicleType: 'catamaran', position: audioPosition(game.boat.x) });
+      } else if (player.x < 22800) stopCatamaranLoop();
+      return;
+    }
     if (!game.boat.active) {
       game.boat.active = true;
       game.boat.x = player.x + BOAT_LEAD_DISTANCE;
       showMessage('OLIVIA IS AHEAD — CATCH THE TACOS COMING BACK!', 2.4);
+      playAudio('vehicle.approach', { vehicleType: 'catamaran', position: audioPosition(game.boat.x) });
     }
+    startCatamaranLoop(audioPosition(game.boat.x));
     game.boat.timer += dt;
     game.boat.launchFlash = Math.max(0, game.boat.launchFlash - dt);
     const targetX = player.x + BOAT_LEAD_DISTANCE;
@@ -1919,8 +1987,7 @@
       showMessage('JUMP FOR TACOS! — CHORUS CANNONS!', 1.5);
       spawnConfetti(canvas.width / 2, 315, game.reducedShake ? 10 : 22);
     }
-    sfx(165, .16, 'square', .06, 320);
-    window.setTimeout(() => sfx(620, .12, 'triangle', .045, 440), 55);
+    playAudio('concert.chorusCannon', { volley: slot + 1, chorus: windowId });
   }
 
   function updateChorusTacos(dt) {
@@ -1956,7 +2023,14 @@
         game.score += item.type === 'golden' ? 700 : item.type === 'rainbow' ? 450 : 220;
         game.energy = clamp(game.energy + (item.type === 'taco' ? .35 : 1.1), 0, 100);
         spawnBurst(item.x + item.w / 2, item.y + item.h / 2, item.type === 'rainbow' ? '#ff4fac' : '#ffd65a', 8);
-        sfx(670 + (concert.collected % 5) * 54, .06, 'triangle', .03, 170);
+        const collectionEventId = item.type === 'golden' ? 'collect.goldenTaco'
+          : item.type === 'rainbow' ? 'collect.rainbowTaco' : 'collect.taco';
+        playAudio(collectionEventId, {
+          streak: concert.collected,
+          position: screenAudioPosition(item.x + item.w / 2),
+          premiumType: item.type === 'golden' ? 'concertGolden'
+            : item.type === 'rainbow' ? 'concertRainbow' : undefined,
+        });
       }
     }
     concert.chorusTacos = concert.chorusTacos.filter((item) => !item.collected && item.age < 13);
@@ -1977,6 +2051,8 @@
   function startConcert(startAt = 0) {
     if (game.concert.started) return;
     const readiness = getConcertReadiness();
+    stopRoadsterLoop();
+    stopCatamaranLoop();
     game.state = 'concert';
     game.concert.started = true;
     game.concert.entryReason = readiness.reason;
@@ -2001,6 +2077,8 @@
     setMusic('concert');
     showMessage('THE NEON NECKTIES — JUMP FOR TACOS!', 3.4);
     spawnConfetti(canvas.width / 2, 170, 140);
+    playAudio('concert.start');
+    playAudio('concert.crowdCheer');
   }
 
   function updateConcert(dt) {
@@ -2032,7 +2110,10 @@
         concert.collected += 1;
         game.score += 150;
         game.energy = clamp(game.energy + .12, 0, 100);
-        sfx(600 + (concert.collected % 5) * 55, .05, 'triangle', .025, 100);
+        playAudio('collect.taco', {
+          streak: concert.collected,
+          position: screenAudioPosition(item.x + item.w / 2),
+        });
       }
     }
     ui.skipConcertBtn.hidden = concert.timer < 60;
@@ -2047,6 +2128,20 @@
         'FINALE LIFT — FIREWORKS ARMED!', 'NEON ENCORE — ONE MORE TACO!',
       ];
       showMessage(cueMessages[cueIndex], 2.1);
+      const cueEventId = [
+        null,
+        'concert.crowdCheer',
+        'concert.crowdSurfStart',
+        'concert.crowdSurfStart',
+        'concert.crowdSurfLand',
+        'concert.tambourineAccent',
+        'concert.finaleLift',
+        'concert.crowdCheer',
+      ][cueIndex];
+      if (cueEventId) playAudio(cueEventId, {
+        cue: cueIndex,
+        direction: cueIndex === 3 ? 'return' : undefined,
+      });
       if (cueIndex >= 3) spawnConfetti(canvas.width / 2, 160, game.reducedShake ? 45 : 95);
       if (cueIndex >= 6) spawnFireworks(8 + cueIndex * 2);
     }
@@ -2062,13 +2157,15 @@
     tracks.concert.volume = 0;
     game.activeMusic = null;
     game.musicTransition = null;
-    sfx(740, .1, 'triangle', .04, 180);
+    playAudio('ui.confirm');
     finishLevel();
   }
 
   function finishLevel() {
     if (game.state === 'results') return;
     game.state = 'results';
+    if (!game.concert.skipped) playAudio('concert.bow');
+    playAudio('level.complete');
     game.finishTime = performance.now();
     ui.skipConcertBtn.hidden = true;
     const concertSeconds = Math.min(
@@ -2115,7 +2212,11 @@
     if (game.splatTimer <= 0) game.splatCombo = 0;
     game.cameraShake = Math.max(0, game.cameraShake - dt * 38);
     if (game.hitStop > 0) { game.hitStop = Math.max(0, game.hitStop - dt); updateEffects(dt * .2); return; }
+    const frenzyWasActive = abilities.isFrenzy(game.abilities);
+    const magnetWasActive = game.magnetTimer > 0 || abilities.hasMagnet(game.abilities);
     abilities.update(game.abilities, dt);
+    if (frenzyWasActive && !abilities.isFrenzy(game.abilities)) playAudio('ability.frenzyEnd');
+    if (magnetWasActive && !(game.magnetTimer > 0 || abilities.hasMagnet(game.abilities))) playAudio('ability.magnetEnd');
     if (game.state === 'respawning') {
       updateRespawn(dt);
       updateEffects(dt);

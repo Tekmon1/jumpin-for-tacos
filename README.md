@@ -64,6 +64,25 @@ npm run lint
 - `docs/`: gameplay and remaster QA notes
 - `scripts/`: build validation and music-generation utilities
 
+## Shared full-game audio foundation
+
+All nine levels use the shared vanilla-JavaScript audio engine in
+`public/game/audio-engine.js` and the 153-event gameplay catalog in
+`public/game/audio-catalog.js` (plus two private Audio Lab comparison IDs).
+The committed effects combine original procedural layers with three explicitly
+documented CC0 source recordings. Rebuild the complete 282-asset library
+deterministically with:
+
+```bash
+npm run generate:sfx
+```
+
+The private local review surface is `/game/audio-lab.html`; it is intentionally
+not linked from the public landing page. See `docs/sfx-remaster-phase3.md` for
+the final architecture, contact-sound revision, mix calibration, test evidence,
+and remaining physical-device review gates. Phase 1 and Phase 2 reports remain
+in `docs/` as historical implementation records.
+
 ## GitHub setup
 
 This source package intentionally excludes generated dependencies, local caches, build output, and prior Git metadata. Extract it into a new repository, commit the contents, and push the repository normally.

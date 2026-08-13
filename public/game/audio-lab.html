@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="robots" content="noindex,nofollow" />
+  <meta name="theme-color" content="#120f21" />
+  <title>Private Audio Lab | Jumpin' For Tacos</title>
+  <link rel="stylesheet" href="audio-lab.css?v=4" />
+</head>
+<body>
+  <main class="lab-shell">
+    <header class="hero-panel">
+      <p class="eyebrow">Private review utility - Phase 3 source amendment</p>
+      <h1>Jumpin' For Tacos Audio Lab</h1>
+      <p>
+        Audition the complete nine-level semantic catalog, World palettes, power-up identities,
+        enemy outcomes, aircraft distance motion, vehicles, bosses, stress limits, and centralized music ducking. This page
+        remains unlinked from the public site.
+      </p>
+      <button id="enableAudio" class="primary" type="button">Enable Audio</button>
+      <span id="audioStatus" class="status" role="status">Audio is locked until interaction.</span>
+    </header>
+
+    <section class="panel" aria-labelledby="mixHeading">
+      <h2 id="mixHeading">Representative music and bus mix</h2>
+      <div class="music-row">
+        <label for="musicTrack">Music stress source</label>
+        <select id="musicTrack">
+          <option value="assets/music_exploration.ogg" data-start="0">World 1-1 - Exploration</option>
+          <option value="assets/music_showdown.ogg" data-start="0">World 1-1 - Showdown</option>
+          <option value="assets/world3_music/music_cloudtop_midway.ogg" data-start="0">World 3-1 - Cloudtop Midway</option>
+          <option value="assets/world3_music/music_midnight_boss.ogg" data-start="0">World 3-2 - Midnight Boss</option>
+          <option value="assets/world3_music/music_taconova_ringmaster.ogg" data-start="0">World 3-3 - Ringmaster</option>
+          <option value="assets/music_fiesta.ogg" data-start="0">World 1-1 - Fiesta</option>
+          <option value="assets/neon_neckties/jump_for_tacos_final_concert_master.mp3" data-start="142" data-end="168">Neon Neckties final concert master - loudest stress</option>
+        </select>
+        <div class="button-row">
+          <button id="playMusic" type="button">Play selected music</button>
+          <button id="pauseMusic" type="button">Pause music</button>
+          <button id="toggleMute" type="button" aria-pressed="false">Mute</button>
+        </div>
+      </div>
+      <div class="sliders">
+        <label for="musicVolume">Music <output id="musicVolumeValue">70%</output></label>
+        <input id="musicVolume" type="range" min="0" max="100" value="70" />
+        <label for="effectsVolume">Effects <output id="effectsVolumeValue">80%</output></label>
+        <input id="effectsVolume" type="range" min="0" max="100" value="80" />
+        <label for="sceneDuck">Authored music gain <output id="sceneDuckValue">100%</output></label>
+        <input id="sceneDuck" type="range" min="18" max="100" value="100" />
+      </div>
+      <p class="mix-note">
+        The Neon option loops only the existing 142-168 second finale-lift segment. Music files are
+        streamed unchanged; the authored-gain control demonstrates World 3's sustained cinematic duck.
+      </p>
+    </section>
+
+    <section class="panel" aria-labelledby="controlsHeading">
+      <h2 id="controlsHeading">Catalog controls</h2>
+      <div class="control-grid">
+        <label for="enemyType">Enemy family
+          <select id="enemyType">
+            <optgroup label="World 1">
+              <option value="tomato">Tomato</option><option value="onion">Onion</option>
+              <option value="chili">Chili</option><option value="jalapeno">Jalapeño</option>
+              <option value="lime">Lime</option><option value="queso">Queso</option>
+              <option value="slime">Salsa Slime</option><option value="knight">Tortilla Knight</option>
+              <option value="guac">Guac Roller</option><option value="churro">Churro</option><option value="mole">Sombrero Mole</option>
+            </optgroup>
+            <optgroup label="World 2">
+              <option value="crab">Crab</option><option value="coconut">Coconut</option>
+              <option value="seagull">Seagull</option><option value="puffer">Puffer</option>
+              <option value="tiki">Tiki</option><option value="marshmallow">Marshmallow</option>
+              <option value="pineapple">Pineapple</option><option value="pepper">Pepper</option>
+              <option value="nacho">Nacho</option><option value="ash">Ash</option>
+              <option value="berry">Berry</option><option value="mango">Mango</option><option value="spaghetti">Spaghetti</option>
+            </optgroup>
+            <optgroup label="World 3">
+              <option value="popcorn">Popcorn</option><option value="cotton">Cotton Candy</option>
+              <option value="pretzel">Pretzel</option><option value="lemon">Lemon</option>
+              <option value="bumper">Bumper Car</option><option value="corndog">Corn Dog</option>
+            </optgroup>
+          </select>
+        </label>
+        <label for="combo">Combo
+          <input id="combo" type="number" min="1" max="12" value="1" />
+        </label>
+        <label for="vehicleType">Vehicle class
+          <select id="vehicleType">
+            <option value="catamaran">Catamaran</option><option value="trekker">Taco Trekker</option>
+            <option value="roadster">Taco Roadster</option><option value="balloon">Balloon</option>
+            <option value="coaster">Coaster</option><option value="zeppelin">Zeppelin</option>
+          </select>
+        </label>
+        <label for="bossType">Boss
+          <select id="bossType"><option value="elGuacodillo">El Guacodillo</option><option value="cornelius">Sir Cornelius Pop</option><option value="ringmaster">Ringmaster Radish</option></select>
+        </label>
+      </div>
+      <div class="contact-comparison" aria-labelledby="contactComparisonHeading">
+        <div>
+          <h3 id="contactComparisonHeading">Enemy Families and contact outcomes</h3>
+          <p>Non-perfect contact is a soft, juicy squash; perfect contact keeps that body and adds the earned elastic rebound.</p>
+          <p>The Enemy family selector applies each world's texture to both outcomes for direct comparison.</p>
+        </div>
+        <div class="comparison-buttons">
+          <button id="priorEnemySquish" type="button">Prior Procedural Squish</button>
+          <button id="normalEnemySplat" type="button">Final Hybrid Enemy Squish</button>
+          <button id="perfectEnemyStomp" class="primary" type="button">Final Perfect Squish + BOING</button>
+          <button id="enemyContactAB" type="button">Squish Candidate/Final A/B</button>
+        </div>
+        <p class="comparison-language"><strong>Non-perfect:</strong> SQUISH! <strong>Perfect:</strong> SQUISH! BOING!</p>
+      </div>
+      <div class="contact-comparison" aria-labelledby="aircraftComparisonHeading">
+        <div>
+          <h3 id="aircraftComparisonHeading">Olivia propeller aircraft source A/B</h3>
+          <p>The aircraft is authored in World 1-2. The final uses a CC0 field-recorded propeller bed and flyover, with runtime distance gain, pan, and restrained Doppler.</p>
+        </div>
+        <div class="comparison-buttons">
+          <button id="priorPropeller" type="button">Prior Procedural Propeller</button>
+          <button id="finalPropeller" type="button">Final Recorded Propeller</button>
+          <button id="aircraftFlybyDemo" class="primary" type="button">Normal Olivia Propeller Flyby</button>
+          <button id="aircraftGuacHitDemo" type="button">Guacamole-Hit Flyby</button>
+          <button id="aircraftDamagedDemo" type="button">Damaged / Crashing Propeller</button>
+        </div>
+        <p class="comparison-language">Selected CC0 sources: Breviceps cartoon splat, modusmogulus propeller loop, and clif_creates propeller flyover. Full provenance is in the SFX manifest.</p>
+      </div>
+      <div id="catalogSections" class="catalog-sections"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="stressHeading">
+      <h2 id="stressHeading">Sequence demos and stress tests</h2>
+      <div class="stress-grid">
+        <button id="powerDemo" type="button">Power-Up Demo</button>
+        <button id="enemyComboDemo" type="button">Enemy Stomp Combo Demo</button>
+        <button id="oliviaDemo" type="button">Olivia Vehicle Taco Drop Demo</button>
+        <button id="bossDemo" type="button">Boss Combat Demo</button>
+        <button id="pinataDemo" type="button">Piñata Celebration Demo</button>
+        <button id="cosmicDemo" type="button">World 3 Cosmic Finale Demo</button>
+        <button id="jumpStress" type="button">12-jump repetition test</button>
+        <button id="tacoStreak" type="button">Taco-streak simulation</button>
+        <button id="magnetStress" type="button">Magnet-cascade stress test</button>
+        <button id="splatStress" type="button">10 non-perfect squish variants</button>
+        <button id="stompStress" type="button">10 perfect-bounce stress test</button>
+        <button id="coreDemo" class="primary" type="button">Core Gameplay Demo</button>
+        <button id="ambienceToggle" type="button" aria-pressed="false">Start selected ambience</button>
+      </div>
+      <p id="sequenceStatus" class="status" role="status">Ready.</p>
+    </section>
+
+    <section class="panel telemetry-panel" aria-labelledby="telemetryHeading">
+      <h2 id="telemetryHeading">Live audio telemetry</h2>
+      <pre id="telemetry">Waiting for engine...</pre>
+    </section>
+  </main>
+
+  <audio id="labMusic" preload="metadata" loop></audio>
+  <script src="audio-catalog.js?v=7"></script>
+  <script src="audio-engine.js?v=7"></script>
+  <script src="audio-lab.js?v=6"></script>
+</body>
+</html>

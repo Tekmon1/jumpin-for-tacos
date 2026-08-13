@@ -56,6 +56,7 @@
   const heroCore = window.JFT_HERO_CORE;
   const heroPhysics = heroCore.physics;
   const sharedAbilities = window.JFT_SHARED_ABILITIES;
+  const audio = window.JFT_AUDIO;
   const params = new URLSearchParams(location.search);
   const qaMode = location.hostname === 'terminal.local';
   const previewStart = qaMode ? Number(params.get('startX') || 0) : 0;
@@ -157,7 +158,7 @@
     },
   };
   const config = CONFIGS[levelId];
-  const SOURCE_VERSION = 29;
+  const SOURCE_VERSION = 31;
   const WORLD3_REMASTER_PLANS = Object.freeze({
     '3-1': Object.freeze({
       version: 'world3-1-combat-route-v2',
@@ -789,6 +790,7 @@
     tracks[audio.dataset.world3Music] = audio;
     audio.volume = 0;
   });
+  audio?.registerMusicTracks(tracks);
   const keys = { left: false, right: false, jump: false };
   const inputSources = {
     keyboard: { left: false, right: false, jump: false },
@@ -936,6 +938,7 @@
       baseY: 250,
       timer: 0,
       dropTimer: 0,
+      clackBeat: -1,
       throwPhase: 0,
       throwCount: 0,
       catches: 0,
@@ -977,9 +980,11 @@
     controllerStateSequence: 0,
     controllerStateSyncs: 0,
     personalBest: { score: 0, time: 0, runs: 0 },
+    audioAbilityState: { magnet: false, frenzy: false },
   };
 
-  let audioContext = null;
+  let ambienceLoop = null;
+  let vehicleIdleLoop = null;
   let lastFrame = 0;
   let randomSeed = 0x57A21A;
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -2019,6 +2024,7 @@
         announced: false,
         dir: -1,
         defeated: false,
+        audioState: 'intro',
       };
       addPlatform({ x: world.boss.x - 360, y: 350, w: 190, h: 22, style: config.groundStyle, bossRoute: true });
       addPlatform({ x: world.boss.x - 100, y: 292, w: 190, h: 22, style: config.groundStyle, bossRoute: true });
@@ -2323,6 +2329,7 @@
       game.reducedShake = Object.prototype.hasOwnProperty.call(raw, 'reducedShake')
         ? Boolean(raw.reducedShake)
         : prefersReducedMotion;
+      game.muted = Boolean(raw.muted ?? false);
       const best = JSON.parse(localStorage.getItem(`jft-best-${levelId}`) || '{}');
       game.personalBest = { score: Number(best.score || 0), time: Number(best.time || 0), runs: Number(best.runs || 0) };
     } catch { /* local preferences are optional */ }
@@ -2343,6 +2350,7 @@
         musicVolume: game.musicVolume,
         effectsVolume: game.effectsVolume,
         reducedShake: game.reducedShake,
+        muted: game.muted,
       }));
     } catch { /* local preferences are optional */ }
   }
@@ -2353,55 +2361,51 @@
     if (ui.muteBtn) ui.muteBtn.textContent = game.muted ? '🔇 Sound Off' : '🔊 Sound On';
   }
 
+  function audioPosition(worldX) {
+    return clamp(((worldX - game.cameraX) / canvas.width) * 2 - 1, -1, 1);
+  }
+
+  function playAudio(eventId, options = {}) {
+    return audio?.play(eventId, options) || null;
+  }
+
+  function syncAudioSettings(immediateDuck = false) {
+    if (!audio) return;
+    audio.setMusicVolume(game.musicVolume);
+    audio.setEffectsVolume(game.effectsVolume);
+    audio.setMuted(game.muted);
+    audio.setMusicDuck(game.musicDuck, { immediate: immediateDuck, timeConstant: 0.07 });
+  }
+
   function ensureAudio() {
-    if (!audioContext) {
-      const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
-      if (AudioContextCtor) audioContext = new AudioContextCtor();
-    }
-    if (audioContext?.state === 'suspended') audioContext.resume().catch(() => {});
-  }
-
-  function playTone(frequency = 440, duration = 0.08, type = 'sine', volume = 0.12, delay = 0) {
-    if (!audioContext || game.muted || game.effectsVolume <= 0) return;
-    const start = audioContext.currentTime + delay;
-    const oscillator = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    oscillator.type = type;
-    oscillator.frequency.setValueAtTime(frequency, start);
-    gain.gain.setValueAtTime(0.0001, start);
-    gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, volume * game.effectsVolume), start + 0.012);
-    gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-    oscillator.connect(gain);
-    gain.connect(audioContext.destination);
-    oscillator.start(start);
-    oscillator.stop(start + duration + 0.02);
-  }
-
-  function soundCollect(premium = false) {
-    playTone(premium ? 880 : 620, 0.08, 'triangle', premium ? 0.16 : 0.09);
-    if (premium) playTone(1320, 0.12, 'sine', 0.11, 0.045);
-  }
-
-  function soundSplat(combo = 1) {
-    playTone(140 - Math.min(40, combo * 6), 0.11, 'square', 0.12);
-    playTone(280 + combo * 18, 0.13, 'triangle', 0.09, 0.035);
-  }
-
-  function soundNova() {
-    [330, 440, 554, 659, 880].forEach((frequency, index) => playTone(frequency, 0.34, index < 2 ? 'sawtooth' : 'triangle', 0.12, index * 0.075));
-  }
-
-  function soundCosmicHeartbeat() {
-    playTone(82, 0.2, 'sine', 0.16);
-    playTone(123, 0.16, 'triangle', 0.09, 0.08);
-  }
-
-  function soundMegaPinata() {
-    playTone(92, 0.42, 'sawtooth', 0.18);
-    playTone(138, 0.3, 'square', 0.13, 0.035);
-    [392, 523, 659, 784, 1047].forEach((frequency, index) => {
-      playTone(frequency, 0.46, index < 2 ? 'triangle' : 'sine', 0.12, 0.09 + index * 0.065);
+    audio?.init({
+      musicVolume: game.musicVolume,
+      effectsVolume: game.effectsVolume,
+      muted: game.muted,
     });
+    syncAudioSettings(true);
+  }
+
+  function stopVehicleIdle() {
+    if (!vehicleIdleLoop) return;
+    audio?.stopLoop(vehicleIdleLoop);
+    vehicleIdleLoop = null;
+  }
+
+  function startVehicleIdle(vehicleType = config.vehicle.kind) {
+    if (vehicleIdleLoop || !audio) return;
+    vehicleIdleLoop = audio.startLoop('vehicle.cosmicIdle', { vehicleType, gain: 0.72 });
+  }
+
+  function stopWorldAmbience() {
+    if (!ambienceLoop) return;
+    audio?.stopLoop(ambienceLoop);
+    ambienceLoop = null;
+  }
+
+  function startWorldAmbience() {
+    if (ambienceLoop || !audio) return;
+    ambienceLoop = audio.startLoop('ambience.cosmicCarnival', { gain: levelId === '3-3' ? 0.82 : 0.58 });
   }
 
   function silenceUnused(except = []) {
@@ -2431,7 +2435,7 @@
     game.musicTransition = null;
     silenceUnused(previousKey && previousKey !== nextKey ? [previousKey, nextKey] : [nextKey]);
     if (previousKey !== nextKey) alignLoopPhase(previous, next);
-    next.volume = immediate ? (game.muted ? 0 : game.musicVolume) : 0;
+    next.volume = immediate ? 1 : 0;
     next.play().then(() => {
       if (game.musicToken !== token && game.activeMusic !== nextKey) {
         next.pause();
@@ -2443,8 +2447,7 @@
       silenceUnused([nextKey]);
       return;
     }
-    const baseVolume = Math.max(0.001, game.musicVolume);
-    const fromRatio = clamp(previous.volume / baseVolume, 0, 1);
+    const fromRatio = clamp(previous.volume, 0, 1);
     game.musicTransition = {
       token,
       from: previousKey,
@@ -2457,7 +2460,7 @@
   }
 
   function updateMusic(dt) {
-    const target = game.muted ? 0 : game.musicVolume * game.musicDuck;
+    const target = 1;
     if (!game.musicTransition) {
       Object.entries(tracks).forEach(([key, track]) => {
         if (key === game.activeMusic) track.volume = target;
@@ -2563,6 +2566,8 @@
   }
 
   function resetGame() {
+    stopVehicleIdle();
+    stopWorldAmbience();
     buildWorld();
     Object.assign(player, {
       x: previewStart || 140,
@@ -2615,6 +2620,7 @@
         baseY: 245,
         timer: 0,
         dropTimer: 0,
+        clackBeat: -1,
         throwPhase: 0,
         throwCount: 0,
         catches: 0,
@@ -2649,6 +2655,7 @@
       lastRespawnLanding: 'none',
       controllerStateSequence: 0,
       controllerStateSyncs: 0,
+      audioAbilityState: { magnet: false, frenzy: false },
     });
     clearAllInputs();
     sharedAbilities.reset(game.abilities);
@@ -2762,6 +2769,8 @@
     ui.winOverlay?.classList.remove('visible');
     ui.newBestText?.classList.add('hidden');
     ensureAudio();
+    playAudio('ui.start');
+    startWorldAmbience();
     Object.values(tracks).forEach((track) => {
       track.pause();
       track.currentTime = 0;
@@ -2941,7 +2950,7 @@
     game.splatCombo = 0;
     game.splatTimer = 0;
     showMessage('TACO HERO RE-CRUNCHED!', 1.8, 'Golden-beam delivery in progress');
-    playTone(180, 0.28, 'sawtooth', 0.08);
+    playAudio('hero.respawnBeam', { position: audioPosition(landing.targetX) });
   }
 
   function finishRespawnLanding(platform, usedFallback = false) {
@@ -2955,6 +2964,7 @@
     game.respawnCount += 1;
     if (usedFallback) game.respawnFallbacks += 1;
     burst(player.x + player.w / 2, player.y + player.h - 8, 22, ['#ffd65a', '#fff7c6', '#65e7ff'], 130);
+    playAudio('hero.respawnLand', { position: audioPosition(player.x + player.w / 2) });
   }
 
   function updateRespawn(dt) {
@@ -3017,6 +3027,7 @@
       updateRespawn(dt);
       return;
     }
+    const wasGrounded = player.grounded;
     const turbo = game.abilities.frenzyTimer > 0;
     const acceleration = player.grounded ? 1700 : 1150;
     const maxSpeed = turbo ? 350 : 270;
@@ -3058,7 +3069,7 @@
       player.platform = null;
       player.coyote = 0;
       player.jumpBuffer = 0;
-      playTone(320, 0.09, 'triangle', 0.08);
+      playAudio('hero.jump', { position: audioPosition(player.x + player.w / 2) });
     }
     player.x = clamp(player.x + player.vx * dt, 0, WORLD_WIDTH - player.w);
     const previousBottom = player.y + player.h;
@@ -3068,11 +3079,13 @@
     player.y += player.vy * dt;
     player.grounded = false;
     player.platform = null;
+    let landingVelocity = 0;
     if (player.vy >= 0) {
       for (const platform of world.platforms) {
         const top = platform.y;
         if (player.x + player.w < platform.x + 7 || player.x > platform.x + platform.w - 7) continue;
         if (previousBottom <= top + Math.max(10, platform.dy + 5) && player.y + player.h >= top) {
+          landingVelocity = player.vy;
           player.y = top - player.h;
           player.vy = 0;
           player.grounded = true;
@@ -3081,24 +3094,37 @@
         }
       }
     }
-    if (player.y > canvas.height + 110) beginRespawn();
+    if (!wasGrounded && player.grounded && landingVelocity > 110) {
+      playAudio(landingVelocity >= 830 ? 'hero.landHard' : 'hero.landSoft', {
+        position: audioPosition(player.x + player.w / 2),
+      });
+    }
+    if (player.y > canvas.height + 110) {
+      playAudio('hero.fall', { position: audioPosition(player.x + player.w / 2) });
+      beginRespawn();
+    }
     player.invulnerable = Math.max(0, player.invulnerable - dt);
     player.anim += dt * (Math.abs(player.vx) > 25 ? 10 : 4);
   }
 
   function triggerNovaMilestone(value) {
     if (![25, 50, 75, 100].includes(value)) return;
+    const milestonePosition = audioPosition(player.x + player.w / 2);
     if (value === 25) {
       showMessage('TACO NOVA 25% • STAR SPARK!', 1.5);
       burst(player.x + 20, player.y + 20, 22);
+      playAudio('ability.tacoNovaMilestone', { milestone: value, position: milestonePosition, pitchCents: -120 });
     } else if (value === 50) {
       showMessage('TACO NOVA 50% • MAGNETIC MIDWAY!', 1.7);
       sharedAbilities.activateMagnet(game.abilities, 5);
       burst(player.x + 20, player.y + 20, 36);
+      playAudio('ability.tacoNovaMilestone', { milestone: value, position: milestonePosition });
+      playAudio('ability.magnetStart', { position: milestonePosition, delay: 0.08 });
     } else if (value === 75) {
       showMessage('TACO NOVA 75% • RAINBOW RUSH!', 1.8);
       game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 4 : 8);
       burst(player.x + 20, player.y + 20, 54);
+      playAudio('ability.tacoNovaMilestone', { milestone: value, position: milestonePosition, pitchCents: 120 });
     } else {
       game.novaCount += 1;
       game.score += 5000;
@@ -3109,7 +3135,9 @@
       showMessage('TACO NOVA! MAXIMUM STARS, MAXIMUM CRUNCH!', 2.8, '100-taco chain complete');
       addImpact('TACO NOVA!', player.x + 20, player.y - 28, '#fff3a4', 46, 2);
       burst(player.x + 20, player.y + 20, 150, ['#ffd65a', '#ff68b4', '#65e7ff', '#a87bff', '#7dffb2'], 310);
-      soundNova();
+      playAudio('ability.tacoNovaStart', { position: milestonePosition });
+      playAudio('ability.frenzyStart', { position: milestonePosition, delay: 0.1, gain: 0.82 });
+      playAudio('ability.magnetStart', { position: milestonePosition, delay: 0.18, gain: 0.78 });
       game.novaCharge = 0;
     }
   }
@@ -3120,7 +3148,7 @@
     if (item.type === 'golden') {
       game.goldenCollected += 1;
       game.score += 1200;
-      soundCollect(true);
+      playAudio('collect.goldenTaco', { position: audioPosition(item.x + item.w / 2) });
       showMessage('GOLDEN TACO TICKET!', 1.15, `${game.goldenCollected}/8 hidden tickets`);
       burst(item.x, item.y, 30, ['#ffd65a', '#fff6ad', '#ff9c4f'], 180);
       return;
@@ -3137,6 +3165,11 @@
           game.finalTacosCollected < 44 ? 'Keep the cosmic crunch chain alive' : 'SUPER-NOVA SEQUENCE ARMED',
         );
         burst(item.x, item.y, game.finalTacosCollected === 44 ? 56 : 24, ['#ffd65a', '#65e7ff', '#ff68b4'], 180);
+        playAudio('ability.tacoNovaMilestone', {
+          milestone: game.finalTacosCollected,
+          position: audioPosition(item.x + item.w / 2),
+          pitchCents: game.finalTacosCollected * 5,
+        });
       }
     }
     game.novaTimer = 3.6;
@@ -3150,6 +3183,7 @@
     if (frenzy) {
       showMessage('TACO FRENZY! CRUNCH SPEED ENGAGED!', 1.8);
       burst(item.x, item.y, 48);
+      playAudio('ability.frenzyStart', { position: audioPosition(item.x + item.w / 2) });
     }
     if (item.fromOlivia) game.vehicle.catches += 1;
     if (item.fromOlivia && [5, 15, 30].includes(game.vehicle.catches)) {
@@ -3160,6 +3194,10 @@
           : 'NO CRUMBS LEFT BEHIND!';
       showMessage(label, 1.55, `${game.vehicle.catches} aerial tacos caught`);
       burst(item.x, item.y, game.vehicle.catches === 30 ? 65 : 30);
+      playAudio(game.vehicle.catches === 30 ? 'collect.airMailComplete' : 'collect.airMail', {
+        position: audioPosition(item.x + item.w / 2),
+        pitchCents: game.vehicle.catches === 15 ? 90 : 0,
+      });
     }
     if (item.cosmicBonus) {
       game.cosmicFinale.bonusCollected += 1;
@@ -3172,7 +3210,10 @@
         );
       }
     }
-    soundCollect(false);
+    playAudio('collect.taco', {
+      position: audioPosition(item.x + item.w / 2),
+      streak: Math.max(1, game.novaCharge),
+    });
     if (game.collected % 10 === 0) addImpact(`×${game.collected} TACOS!`, item.x, item.y - 10, '#fff3a4', 22);
   }
 
@@ -3211,9 +3252,15 @@
     if (game.novaTimer > 0) game.novaTimer -= dt;
     else if (game.novaCharge > 0) game.novaCharge = Math.max(0, game.novaCharge - dt * 9);
     sharedAbilities.update(game.abilities, dt);
+    const magnetActive = sharedAbilities.hasMagnet(game.abilities) || game.novaCharge >= 50;
+    const frenzyActive = sharedAbilities.isFrenzy(game.abilities);
+    if (game.audioAbilityState.magnet && !magnetActive) playAudio('ability.magnetEnd');
+    if (game.audioAbilityState.frenzy && !frenzyActive) playAudio('ability.frenzyEnd');
+    game.audioAbilityState.magnet = magnetActive;
+    game.audioAbilityState.frenzy = frenzyActive;
   }
 
-  function defeatEnemy(enemy) {
+  function defeatEnemy(enemy, perfectBounce = true) {
     if (!enemy.alive) return;
     enemy.alive = false;
     enemy.defeated = true;
@@ -3223,7 +3270,11 @@
     game.score += 450 * game.splatCombo;
     const feedback = heroCore.splatFeedback(game.splatCombo, true);
     addImpact(feedback.text, enemy.x + enemy.w / 2, enemy.y, feedback.color, feedback.size);
-    soundSplat(game.splatCombo);
+    playAudio(perfectBounce ? 'combat.enemyStomp' : 'combat.enemySplat', {
+      enemyType: enemy.type,
+      combo: game.splatCombo,
+      position: audioPosition(enemy.x + enemy.w / 2),
+    });
     burst(enemy.x + enemy.w / 2, enemy.y + 18, game.splatCombo >= 5 ? 95 : game.splatCombo >= 2 ? 42 : 12);
     const celebration = heroCore.celebrateSplatCombo(game.splatCombo, {
       reduced: game.reducedShake,
@@ -3231,6 +3282,11 @@
         showMessage(reward.label, reward.duration);
         game.cameraShake = Math.max(game.cameraShake, reward.shake);
         startHitStop(reward.hitStop, `splat-${reward.tier || 'combo'}`);
+        playAudio('combat.comboMilestone', {
+          combo: game.splatCombo,
+          position: audioPosition(enemy.x + enemy.w / 2),
+          gain: reward.tier === 'supremacy' ? 1.06 : 0.96,
+        });
       },
     });
     if (celebration?.tier === 'mega') {
@@ -3245,7 +3301,10 @@
       }
     }
     const frenzy = sharedAbilities.splatEnemy(game.abilities);
-    if (frenzy) showMessage('TACO FRENZY! ENEMY-POWERED!', 1.7);
+    if (frenzy) {
+      showMessage('TACO FRENZY! ENEMY-POWERED!', 1.7);
+      playAudio('ability.frenzyStart', { position: audioPosition(enemy.x + enemy.w / 2) });
+    }
   }
 
   function updateEnemies(dt) {
@@ -3279,9 +3338,10 @@
         previousBottom: player.previousBottom,
         previousTargetTop: previousEnemyTop,
       });
-      if (stomp || sharedAbilities.isFrenzy(game.abilities)) {
+      const frenzyContact = !stomp && sharedAbilities.isFrenzy(game.abilities);
+      if (stomp || frenzyContact) {
         if (stomp) player.y = Math.min(player.y, enemy.y - player.h - 1);
-        defeatEnemy(enemy);
+        defeatEnemy(enemy, stomp);
         player.vy = -heroPhysics.enemyBounceVelocity;
         player.grounded = false;
         player.platform = null;
@@ -3292,6 +3352,7 @@
         game.hearts -= 1;
         game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 4 : 9);
         showMessage('CRUNCH CHECK!', 1.2, 'Bounce on enemies from above');
+        playAudio('hero.hurt', { position: audioPosition(player.x + player.w / 2) });
         if (game.hearts <= 0) beginRespawn();
       }
     });
@@ -3307,9 +3368,7 @@
     game.hearts = 3;
     showMessage(checkpoint.name.toUpperCase(), 3, checkpoint.warning);
     burst(checkpoint.x + checkpoint.w / 2, checkpoint.y + 50, 42, ['#ffd65a', '#65e7ff', '#ff68b4'], 180);
-    playTone(523, 0.18, 'triangle', 0.11);
-    playTone(659, 0.2, 'triangle', 0.1, 0.08);
-    playTone(784, 0.26, 'triangle', 0.1, 0.16);
+    playAudio('checkpoint.activate', { position: audioPosition(checkpoint.x + checkpoint.w / 2) });
   }
 
   function updateCheckpoints() {
@@ -3334,7 +3393,11 @@
     registerBonusTacos(1);
     vehicle.throwCount += 1;
     vehicle.throwPhase = zeppelin ? 0.28 : 0.72;
-    playTone(510 + seeded() * 130, 0.06, 'triangle', 0.055);
+    playAudio('vehicle.cosmicTacoDrop', {
+      vehicleType: config.vehicle.kind,
+      position: audioPosition(x),
+      pitchCents: arcIndex * 35,
+    });
   }
 
   function updateVehicle(dt) {
@@ -3353,6 +3416,8 @@
         2.2,
         event.kind === 'coaster' ? 'Rail service is experiencing delicious delays' : 'Catch the glowing taco stream',
       );
+      playAudio('vehicle.cosmicApproach', { vehicleType: event.kind, position: -0.82 });
+      if (event.kind === 'coaster') playAudio('ride.machineStart', { position: -0.65, delay: 0.12 });
     }
     if (vehicle.state === 'enter') {
       vehicle.timer += dt;
@@ -3362,10 +3427,22 @@
         vehicle.state = 'drop';
         vehicle.timer = 0;
         showMessage('OLIVIA TAKES THE LEAD!', 1.7, 'She is tossing the taco trail back to you');
+        playAudio('vehicle.cosmicAccelerate', {
+          vehicleType: event.kind,
+          position: audioPosition(vehicle.x),
+        });
+        startVehicleIdle(event.kind);
       }
     } else if (vehicle.state === 'drop') {
       vehicle.timer += dt;
       vehicle.dropTimer -= dt;
+      if (event.kind === 'coaster') {
+        const clackBeat = Math.floor(vehicle.timer * 2.5);
+        if (clackBeat !== vehicle.clackBeat) {
+          vehicle.clackBeat = clackBeat;
+          playAudio('ride.coasterClack', { position: audioPosition(vehicle.x), gain: 0.72 });
+        }
+      }
       const lead = event.kind === 'balloon' ? 315 : 285;
       const targetX = player.x + lead;
       vehicle.x += (targetX - vehicle.x) * Math.min(1, dt * (event.kind === 'balloon' ? 5.4 : 7));
@@ -3379,12 +3456,20 @@
         vehicle.state = 'exit';
         vehicle.timer = 0;
         showMessage('OLIVIA: DELIVERY COMPLETE! MOSTLY!', 1.8);
+        stopVehicleIdle();
+        playAudio('vehicle.cosmicBoost', {
+          vehicleType: event.kind,
+          position: audioPosition(vehicle.x),
+        });
       }
     } else if (vehicle.state === 'exit') {
       vehicle.timer += dt;
       vehicle.x += (420 + vehicle.timer * 120) * dt;
       vehicle.y -= 18 * dt;
-      if (vehicle.x - game.cameraX > canvas.width + 420) vehicle.state = 'done';
+      if (vehicle.x - game.cameraX > canvas.width + 420) {
+        vehicle.state = 'done';
+        playAudio('vehicle.cosmicDepart', { vehicleType: event.kind, position: 0.9 });
+      }
     }
   }
 
@@ -3407,7 +3492,7 @@
         jackpot: true,
       });
     }
-    soundNova();
+    playAudio('pinata.break', { position: audioPosition(world.pinata.x + world.pinata.w / 2) });
   }
 
   function updatePinata(dt) {
@@ -3424,7 +3509,10 @@
       player.y = Math.min(player.y, world.pinata.y - player.h - 1);
       player.vy = -heroPhysics.enemyBounceVelocity;
       game.cameraShake = game.reducedShake ? 4 : 9;
-      soundSplat(world.pinata.hits);
+      playAudio('pinata.hit', {
+        combo: world.pinata.hits,
+        position: audioPosition(world.pinata.x + world.pinata.w / 2),
+      });
       burst(world.pinata.x + 58, world.pinata.y + 40, 38);
       showMessage(`PIÑATA STOMP ${world.pinata.hits}/3!`, 1.1);
       if (world.pinata.hits >= 3) breakPinata();
@@ -3475,7 +3563,11 @@
     player.platform = null;
     game.cameraShake = game.reducedShake ? 6 : 12;
     startHitStop(0.08 + pinata.hits * 0.025, `fiesta-pinata-${pinata.hits}`);
-    soundSplat(pinata.hits + 2);
+    playAudio('pinata.hit', {
+      combo: pinata.hits,
+      position: audioPosition(pinata.x + pinata.w / 2),
+      pitchCents: pinata.hits * 55,
+    });
     burst(pinata.x + pinata.w / 2, pinata.y + 54, 34 + pinata.hits * 18);
     addImpact(
       pinata.hits === 1 ? 'THUNK!' : pinata.hits === 2 ? 'CRACK!' : 'THIRD STOMP!',
@@ -3559,7 +3651,12 @@
       });
     }
     sharedAbilities.activateMagnet(game.abilities, CLOUDTOP_TACO_RAIN_DURATION + 1.4);
-    soundMegaPinata();
+    playAudio('ability.magnetStart', { position: audioPosition(pinata.x + pinata.w / 2), delay: 0.18 });
+    playAudio('pinata.break', {
+      position: audioPosition(pinata.x + pinata.w / 2),
+      duckDb: 9,
+      gain: 1.08,
+    });
   }
 
   function updateCloudtopFinaleFireworks() {
@@ -3606,7 +3703,7 @@
       if (!finale.brakeEffectPlayed && finale.timer >= 0.98) {
         finale.brakeEffectPlayed = true;
         burst(finale.truckStopX + 20, GROUND_Y - 12, 24, ['#d9b37a', '#fff0b5', '#ff68b4'], 118);
-        playTone(130, 0.16, 'sawtooth', 0.06);
+        playAudio('ride.machineStart', { position: audioPosition(finale.truckStopX + 20) });
       }
       if (finale.timer >= 0.92) {
         finale.oliviaVisible = true;
@@ -3704,7 +3801,7 @@
     game.finalePrompted = true;
     setMidnightFinalePhase('blackout');
     showMessage('MIDWAY POWER DOWN!', 1.7, 'Cornelius is popped—the victory lights are waiting for an encore');
-    playTone(84, 0.34, 'sine', 0.055);
+    playAudio('ride.machineStart', { position: 0.2, pitchCents: -420 });
   }
 
   function spawnMidnightPadTacoArc(padIndex) {
@@ -3744,7 +3841,11 @@
     game.score += 1800;
     game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 6 : 12);
     startHitStop(0.1 + padIndex * 0.02, `midnight-light-pad-${padIndex + 1}`);
-    soundSplat(3 + padIndex);
+    playAudio('ride.machineStart', {
+      position: audioPosition(pad.x + 60),
+      pitchCents: padIndex * 160,
+      duckDb: 4.5 + padIndex * 0.5,
+    });
     burst(
       pad.x + 60,
       GROUND_Y - 20,
@@ -3757,6 +3858,7 @@
     const [headline, subline] = MIDNIGHT_PAD_MESSAGES[padIndex];
     showMessage(headline, 1.75, subline);
     sharedAbilities.activateMagnet(game.abilities, 12);
+    playAudio('ability.magnetStart', { position: audioPosition(pad.x + 60), delay: 0.1, gain: 0.78 });
     if (finale.padCount >= finale.pads.length) {
       setMidnightFinalePhase('full-relight');
       finale.relight = 0;
@@ -3800,6 +3902,7 @@
       if (finale.timer >= 1.65) {
         setMidnightFinalePhase('coaster-entry');
         showMessage('OLIVIA: YOU POPPED HIM!', 2.1, 'Her maintenance coaster is arriving for the midnight encore');
+        playAudio('vehicle.cosmicApproach', { vehicleType: 'coaster', position: 0.88 });
       }
       return;
     }
@@ -3812,7 +3915,7 @@
       if (!finale.brakeEffectPlayed && finale.timer >= 1.25) {
         finale.brakeEffectPlayed = true;
         burst(finale.coasterStopX + 42, GROUND_Y - 12, 28, ['#d9b37a', '#fff0b5', '#65e7ff'], 128);
-        playTone(126, 0.18, 'sawtooth', 0.055);
+        playAudio('ride.coasterDrop', { position: audioPosition(finale.coasterStopX + 42) });
       }
       if (finale.timer >= 1.35) {
         finale.oliviaVisible = true;
@@ -3854,12 +3957,13 @@
         finale.relightAnnounced = true;
         showMessage('THE ENTIRE MIDWAY IS LIT!', 2.4, 'Rides spinning, villagers dancing, popcorn officially promoted to confetti');
         game.novaFlash = Math.max(game.novaFlash, 1.15);
-        soundNova();
+        playAudio('cosmic.finale', { position: 0.25, duckDb: 7.5 });
       }
       if (finale.timer >= 3.45) {
         finale.oliviaVisible = false;
         setMidnightFinalePhase('coaster-lap');
         showMessage('OLIVIA: ENCORE LAP!', 1.9, 'The maintenance coaster is circling the party');
+        playAudio('vehicle.cosmicBoost', { vehicleType: 'coaster', position: 0.1 });
       }
       return;
     }
@@ -3869,6 +3973,11 @@
       const angle = -Math.PI * 0.12 + progress * Math.PI * 2;
       finale.coasterX = world.goal.x - 285 + Math.cos(angle) * 430;
       finale.coasterY = GROUND_Y - 174 + Math.sin(angle) * 54;
+      const clackBeat = Math.floor(finale.timer * 2.2);
+      if (clackBeat !== finale.coasterClackBeat) {
+        finale.coasterClackBeat = clackBeat;
+        playAudio('ride.coasterClack', { position: audioPosition(finale.coasterX), gain: 0.7 });
+      }
       updateMidnightFinaleFireworks();
       if (progress >= 1) {
         finale.coasterX = world.goal.x - 285;
@@ -3902,7 +4011,10 @@
     finale.phase = phase;
     finale.timer = 0;
     if (phase === 'star-dormant') game.musicDuck = 0.18;
-    else if (phase === 'zeppelin-return') game.musicDuck = 0.24;
+    else if (phase === 'zeppelin-return') {
+      game.musicDuck = 0.24;
+      playAudio('vehicle.cosmicApproach', { vehicleType: 'zeppelin', position: 0.85 });
+    }
     else if (phase === 'golden-taco') {
       game.musicDuck = 0.3;
       Object.assign(finale.goldenTaco, {
@@ -3926,12 +4038,14 @@
       game.novaFlash = Math.max(game.novaFlash, 1.55);
       game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 7 : 14);
       showMessage('NINE-STAR TACO NOVA!', 2.8, 'Every adventure is lighting the sky together');
-      soundNova();
+      playAudio('cosmic.finale', { position: 0.15 });
     } else if (phase === 'low-gravity') {
       game.musicDuck = 1;
       spawnCosmicBonusTacos();
       sharedAbilities.activateMagnet(game.abilities, 5.2);
       showMessage('LOW-GRAVITY BONUS TACO FLIGHT!', 2.4, 'Keep jumping while Olivia circles the celebration');
+      playAudio('ability.lowGravityStart', { position: 0.1 });
+      playAudio('ability.magnetStart', { position: 0.1, delay: 0.14, gain: 0.76 });
     } else if (phase === 'landing') {
       game.musicDuck = 1;
       finale.oliviaVisible = true;
@@ -3944,6 +4058,7 @@
       });
       showMessage('OLIVIA: WE DID IT!', 0.95, 'One last fist-bump for all nine levels');
     }
+    audio?.setMusicDuck(game.musicDuck, { timeConstant: 0.09 });
   }
 
   function startCosmicFinale() {
@@ -3963,7 +4078,7 @@
     game.cameraX = WORLD_WIDTH - canvas.width;
     setCosmicFinalePhase('star-dormant');
     showMessage('THE GOLDEN TACO STAR IS STILL DARK...', 2.75, 'One final taco will complete all nine adventures');
-    soundCosmicHeartbeat();
+    playAudio('cosmic.finale', { position: 0.12, gain: 0.48, duckDb: 0, pitchCents: -720 });
     game.cosmicFinale.heartbeatBeat = 0;
   }
 
@@ -3978,7 +4093,7 @@
     game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 5 : 10);
     addImpact('GOLDEN TACO CAUGHT!', player.x + player.w / 2, player.y - 32, '#fff3a4', 34, 1.7);
     burst(player.x + player.w / 2, player.y + 12, 110, ['#ffd65a', '#fff3a4', '#65e7ff', '#ff68b4', '#a87bff'], 270);
-    soundNova();
+    playAudio('collect.cosmicGoldenTaco', { position: audioPosition(player.x + player.w / 2) });
     startCosmicReprise();
     setCosmicFinalePhase('star-relight');
     showMessage('NINE-STAR TACO POWER!', 2.6, 'One star for every completed level');
@@ -4050,7 +4165,7 @@
       const heartbeat = Math.floor(finale.timer);
       if (heartbeat !== finale.heartbeatBeat) {
         finale.heartbeatBeat = heartbeat;
-        soundCosmicHeartbeat();
+        playAudio('cosmic.finale', { position: 0.12, gain: 0.44, duckDb: 0, pitchCents: -720 });
       }
       player.x = lerp(player.x, world.goal.x - 300, 1 - Math.pow(0.001, dt));
       if (finale.timer >= duration) {
@@ -4064,7 +4179,7 @@
       if (finale.timer >= duration) {
         setCosmicFinalePhase('golden-taco');
         showMessage('OLIVIA: CATCH!', 2, 'Jump for the giant Golden Taco—magnet assist is standing by');
-        playTone(740, 0.16, 'triangle', 0.12);
+        playAudio('vehicle.cosmicTacoDrop', { vehicleType: 'zeppelin', position: 0.5, gain: 1.1 });
       }
       return;
     }
@@ -4104,7 +4219,10 @@
           ['#fff3a4', '#ffd65a', '#65e7ff', '#ff68b4'],
           145,
         );
-        playTone(440 + finale.lastRelitStar * 54, 0.18, 'triangle', 0.085);
+        playAudio('cosmic.starRelight', {
+          position: clamp(offsetX / 550, -1, 1),
+          pitchCents: finale.lastRelitStar * 105,
+        });
       }
       if (finale.timer >= duration) setCosmicFinalePhase('taco-nova');
       return;
@@ -4140,8 +4258,8 @@
       if (!finale.fistBumpPlayed && finale.timer >= 1.35) {
         finale.fistBumpPlayed = true;
         burst(world.goal.x - 178, GROUND_Y - 86, 54, ['#ffd65a', '#fff3a4', '#65e7ff', '#ff68b4'], 180);
-        playTone(880, 0.18, 'triangle', 0.13);
-        playTone(1175, 0.2, 'sine', 0.1, 0.08);
+        playAudio('ability.lowGravityEnd', { position: 0.05 });
+        playAudio('cosmic.landing', { position: 0.1 });
       }
       if (finale.timer >= duration) {
         finale.phase = 'complete';
@@ -4184,6 +4302,10 @@
       life: 4,
       bounceable: true,
     });
+    playAudio(boss.kind === 'ringmaster' ? 'boss.special' : 'boss.attack', {
+      bossType: boss.kind,
+      position: audioPosition(boss.x + boss.w / 2),
+    });
   }
 
   function defeatBoss() {
@@ -4215,7 +4337,19 @@
         jackpot: true,
       });
     }
-    soundNova();
+    playAudio('boss.defeat', {
+      bossType: boss.kind,
+      position: audioPosition(boss.x + boss.w / 2),
+    });
+    playAudio('boss.celebrate', {
+      bossType: boss.kind,
+      position: audioPosition(boss.x + boss.w / 2),
+      delay: 0.22,
+      gain: 0.82,
+    });
+    if (boss.kind === 'ringmaster') {
+      playAudio('boss.phase', { bossType: boss.kind, position: 0, delay: 0.16, duckDb: 7 });
+    }
   }
 
   function updateBoss(dt) {
@@ -4229,6 +4363,7 @@
         : 'RINGMASTER RADISH HAS ONE LAST AIRBORNE ACT!';
       showMessage(warning, 2.8, 'Wait for the golden dizzy opening, then bounce');
       game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 4 : 8);
+      playAudio('boss.enter', { bossType: boss.kind, position: audioPosition(boss.x + boss.w / 2) });
     }
     boss.timer += dt;
     boss.invulnerable = Math.max(0, boss.invulnerable - dt);
@@ -4244,6 +4379,16 @@
     } else {
       boss.state = 'dizzy';
       boss.vulnerable = true;
+    }
+    if (boss.state !== boss.audioState) {
+      if (boss.state === 'telegraph') {
+        playAudio('boss.windup', { bossType: boss.kind, position: audioPosition(boss.x + boss.w / 2) });
+      } else if (boss.state === 'dizzy') {
+        playAudio('boss.vulnerable', { bossType: boss.kind, position: audioPosition(boss.x + boss.w / 2) });
+      } else if (boss.state === 'bombard' || boss.state === 'charge') {
+        playAudio('boss.move', { bossType: boss.kind, position: audioPosition(boss.x + boss.w / 2) });
+      }
+      boss.audioState = boss.state;
     }
     const left = boss.roamLeft ?? config.boss.x - 440;
     const right = boss.roamRight ?? config.boss.x + 430;
@@ -4268,7 +4413,20 @@
         player.vy = -heroPhysics.enemyBounceVelocity;
         game.cameraShake = game.reducedShake ? 7 : 14;
         showMessage(`BOSS BOUNCE ${boss.hits}/3!`, 1.5, boss.kind === 'cornelius' ? 'THE BUTTERED KNIGHT IS SHOOK' : 'THE RADISH HAS LOST THE PLOT');
-        soundSplat(5);
+        playAudio('boss.damage', {
+          bossType: boss.kind,
+          combo: boss.hits,
+          position: audioPosition(boss.x + boss.w / 2),
+          pitchCents: boss.hits * 65,
+        });
+        if (boss.hits < 3) {
+          playAudio('boss.phase', {
+            bossType: boss.kind,
+            position: audioPosition(boss.x + boss.w / 2),
+            delay: 0.12,
+            gain: 0.78,
+          });
+        }
         burst(boss.x + boss.w / 2, boss.y + 30, 70);
         if (boss.hits >= 3) defeatBoss();
       } else {
@@ -4276,6 +4434,7 @@
         player.vx = player.x < boss.x ? -230 : 230;
         player.vy = -360;
         game.hearts -= 1;
+        playAudio('hero.hurt', { position: audioPosition(player.x + player.w / 2) });
         if (game.hearts <= 0) beginRespawn();
       }
     }
@@ -4303,12 +4462,17 @@
         game.score += 350;
         addImpact('RETURN TO SENDER!', projectile.x, projectile.y, '#65e7ff', 22);
         burst(projectile.x, projectile.y, 20);
+        playAudio('combat.enemyStomp', {
+          enemyType: world.boss?.kind === 'cornelius' ? 'popcorn' : 'lemon',
+          position: audioPosition(projectile.x),
+        });
       } else {
         projectile.life = 0;
         player.invulnerable = 1.2;
         player.vy = -320;
         game.hearts -= 1;
         showMessage('CARNIVAL PROJECTILE!', 1.1, 'Stomp it or hop clear');
+        playAudio('hero.hurt', { position: audioPosition(player.x + player.w / 2) });
         if (game.hearts <= 0) beginRespawn();
       }
     });
@@ -4395,7 +4559,7 @@
     game.message = '';
     game.subMessage = '';
     burst(world.goal.x + 65, GROUND_Y - 120, 48, ['#ffd65a', '#ff68b4', '#65e7ff', '#a87bff', '#7dffb2'], 230);
-    soundNova();
+    playAudio('level.complete', { position: 0.1 });
   }
 
   function showResultsOverlay() {
@@ -4410,6 +4574,10 @@
     const beat = Math.floor(game.celebrationTime * 1.35);
     if (beat === game.celebrationBeat) return;
     game.celebrationBeat = beat;
+    playAudio('level.celebrationPulse', {
+      position: (beat % 3 - 1) * 0.6,
+      pitchCents: (beat % 4) * 75,
+    });
     const left = world.goal.x - 210 + (beat % 3) * 135;
     if (levelId === '3-1') {
       burst(left, 215 - (beat % 2) * 55, 12, ['#ffd65a', '#ff68b4', '#65e7ff', '#7dffb2'], 175);
@@ -4452,6 +4620,7 @@
           : 'RINGMASTER ROASTED—LIGHT THE GOLDEN TACO STAR!';
       showMessage(victoryMessage, 2.5, 'No enemies ahead—just tacos, cheers, and maximum sparkle');
       burst(player.x + 80, 190, 90, ['#ffd65a', '#ff68b4', '#65e7ff', '#a87bff', '#7dffb2'], 250);
+      playAudio('goal.enter', { position: audioPosition(player.x + 80) });
     }
     if (player.x + player.w >= world.goal.x && !world.finalePinata) {
       if (levelId === '3-2') startMidnightFinale();
@@ -7185,6 +7354,7 @@
           : null;
     if (!input) return;
     if (!event.isTrusted && window.JFT_CONTROLLER) return;
+    if (down) ensureAudio();
     setDigitalInput('keyboard', input, down);
     if (['arrowleft', 'arrowright', 'arrowup', ' '].includes(key)) event.preventDefault();
   }
@@ -7194,6 +7364,7 @@
   window.addEventListener('jft:controlleraction', (event) => {
     const { action, pressed } = event.detail || {};
     if (!['left', 'right', 'jump'].includes(action)) return;
+    if (pressed) ensureAudio();
     setDigitalInput('controller', action, Boolean(pressed));
   });
   window.addEventListener('jft:controllerstate', (event) => {
@@ -7219,16 +7390,27 @@
       game.musicToken += 1;
       game.musicTransition = null;
       silenceUnused([]);
+      stopVehicleIdle();
+      stopWorldAmbience();
     } else if (['playing', 'won'].includes(game.state) && game.activeMusic && tracks[game.activeMusic]) {
+      audio?.init({
+        musicVolume: game.musicVolume,
+        effectsVolume: game.effectsVolume,
+        muted: game.muted,
+      }).catch(() => {});
       const active = tracks[game.activeMusic];
-      active.volume = game.muted ? 0 : game.musicVolume;
+      active.volume = 1;
       active.play().catch(() => {});
+      syncAudioSettings(true);
+      startWorldAmbience();
+      if (game.vehicle.state === 'drop') startVehicleIdle(config.vehicle.kind);
     }
   });
   document.querySelectorAll('[data-input]').forEach((button) => {
     const input = button.dataset.input;
     const press = (event) => {
       event.preventDefault();
+      ensureAudio();
       setTouchInput(input, true, event.pointerId);
       button.setPointerCapture?.(event.pointerId);
     };
@@ -7254,14 +7436,18 @@
   ui.muteBtn?.addEventListener('click', () => {
     game.muted = !game.muted;
     refreshVolumeLabels();
+    audio?.setMuted(game.muted);
     updateMusic(0);
+    savePreferences();
   });
   ui.settingsBtn?.addEventListener('click', () => {
+    playAudio('ui.confirm');
     game.settingsOpen = true;
     ui.settingsOverlay?.classList.remove('hidden');
     ui.settingsOverlay?.classList.add('visible');
   });
   ui.closeSettingsBtn?.addEventListener('click', () => {
+    playAudio('ui.confirm');
     game.settingsOpen = false;
     ui.settingsOverlay?.classList.add('hidden');
     ui.settingsOverlay?.classList.remove('visible');
@@ -7270,11 +7456,13 @@
   ui.musicVolume?.addEventListener('input', () => {
     game.musicVolume = Number(ui.musicVolume.value) / 100;
     refreshVolumeLabels();
+    audio?.setMusicVolume(game.musicVolume);
     updateMusic(0);
   });
   ui.effectsVolume?.addEventListener('input', () => {
     game.effectsVolume = Number(ui.effectsVolume.value) / 100;
     refreshVolumeLabels();
+    audio?.setEffectsVolume(game.effectsVolume);
   });
   ui.reducedShake?.addEventListener('change', () => {
     game.reducedShake = ui.reducedShake.checked;
@@ -7282,6 +7470,8 @@
 
   buildWorld();
   loadPreferences();
+  syncAudioSettings(true);
+  audio?.preloadGroups(['global', 'world3']).catch(() => {});
   draw();
   updateQaState();
   requestAnimationFrame(frame);

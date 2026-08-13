@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { access, readFile } from "node:fs/promises";
 import test from "node:test";
 import vm from "node:vm";
@@ -17,7 +18,7 @@ async function fetchApp(path = "/") {
   );
 }
 
-test("renders development preview metadata", async () => {
+test("omits development preview metadata from release builds", async () => {
   const response = await fetchApp();
 
   assert.equal(response.status, 200);
@@ -25,7 +26,7 @@ test("renders development preview metadata", async () => {
     response.headers.get("content-type") ?? "",
     /^text\/html\b/i,
   );
-  assert.match(await response.text(), developmentPreviewMeta);
+  assert.doesNotMatch(await response.text(), developmentPreviewMeta);
 });
 
 test("renders canonical SEO and social metadata", async () => {
@@ -113,12 +114,12 @@ test("keeps World 1-1 enemy artwork on a separate slower visual clock", async ()
   assert.equal(context.window.JFT_HERO_CORE.physics.enemyVisualAnimationRate, 1.8);
   assert.match(mainRuntime, /enemy\.anim \+= dt \* heroPhysics\.enemyVisualAnimationRate/);
   assert.match(mainRuntime, /return Math\.floor\(enemy\.anim\) % 4/);
-  assert.match(mainRuntime, /SOURCE_VERSION = 'w1-1-v44'/);
+  assert.match(mainRuntime, /SOURCE_VERSION = 'w1-1-v48-phase3-audio-polish'/);
   assert.match(mainRuntime, /function removeOpeningLeadEnemy/);
   assert.match(mainRuntime, /removeOpeningLeadEnemy\(\)/);
   assert.match(mainRuntime, /patrolStartOffset: 420/);
   assert.match(mainHtml, /levels\.js\?v=31/);
-  assert.match(mainHtml, /game\.js\?v=44/);
+  assert.match(mainHtml, /game\.js\?v=48/);
 });
 
 test("creates same-type enemy packs and recognizes swept stomp contacts", async () => {
@@ -620,7 +621,7 @@ test("ships World 1 with authored seamless panorama progressions", async () => {
     assert.match(prototype, new RegExp(filename.replace(".png", "")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(prototypeHtml, /game\.js\?v=44/);
+  assert.match(prototypeHtml, /game\.js\?v=48/);
   assert.match(prototype, /function drawPaintedTerrainSlice/);
   assert.match(prototype, /artStyle: 'goldenCactus'/);
   assert.match(prototype, /function drawTacoTrekkerLayers/);
@@ -645,7 +646,7 @@ test("ships World 1 with authored seamless panorama progressions", async () => {
     assert.match(rescueForeground, new RegExp(filename.replace(".", "\\.")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(rescueForegroundHtml, /level1-2\.js\?v=27/);
+  assert.match(rescueForegroundHtml, /level1-2\.js\?v=30/);
   assert.match(rescueForeground, /function drawPaintedTerrainSlice/);
   assert.match(rescueForeground, /checkpointArtGroundedByVisibleBaseline: true/);
   assert.match(rescueForeground, /independentCheckpointShadows: true/);
@@ -682,7 +683,7 @@ test("ships World 1 with authored seamless panorama progressions", async () => {
     assert.match(showdownForeground, new RegExp(filename.replace(".", "\\.")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(showdownForegroundHtml, /level1-3\.js\?v=21/);
+  assert.match(showdownForegroundHtml, /level1-3\.js\?v=22/);
   assert.match(showdownForeground, /function drawPaintedTerrainSlice/);
   assert.match(showdownForeground, /checkpointArtGroundedByVisibleBaseline: true/);
   assert.match(showdownForeground, /independentCheckpointShadows: true/);
@@ -706,7 +707,7 @@ test("remasters the complete World 1-1 enemy and NPC cast without changing gamep
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /game\.js\?v=44/);
+  assert.match(html, /game\.js\?v=48/);
   assert.match(runtime, /function remasteredEnemyFrame/);
   assert.match(runtime, /function drawRemasteredEnemy/);
   assert.match(runtime, /function drawDesertLocals/);
@@ -756,7 +757,7 @@ test("authors the full World 1-1 pilot around purposeful upper routes and metada
   assert.match(runtime, /game\.salsaMeter = Math\.min\(100, game\.salsaMeter \+ authoredMeter\)/);
   assert.match(core, /const requestedPlatformId = enemy\.supportPlatformId \|\| enemy\.platformId/);
   assert.match(core, /id === `\$\{requestedPlatformId\}-encore`/);
-  assert.match(html, /game\.js\?v=44/);
+  assert.match(html, /game\.js\?v=48/);
   assert.match(html, /explore layered desert\n\s+routes where risky jumps can lead to bonus powers/);
 });
 
@@ -779,8 +780,9 @@ test("remasters the complete World 1-2 aviation enemy and NPC cast and restores 
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /level1-2\.js\?v=27/);
-  assert.match(runtime, /SOURCE_VERSION = 'w1-2-v27'/);
+  assert.match(html, /level1-2\.js\?v=30/);
+  assert.match(runtime, /SOURCE_VERSION = 'w1-2-v30-olivia-propeller-state-sync'/);
+  assert.match(runtime, /\['terminal\.local', '127\.0\.0\.1', 'localhost'\]\.includes\(location\.hostname\)/);
   assert.match(runtime, /function remasteredEnemyFrame/);
   assert.match(runtime, /function drawCrewMember/);
   assert.match(runtime, /function drawAirfieldCrew/);
@@ -814,7 +816,7 @@ test("authors the World 1-2 rescue pilot across combat sections without crowding
   assert.match(runtime, /previousBottom: previousPlayerBottom/);
   assert.match(runtime, /previousTargetTop: previousEnemyTop/);
   assert.match(runtime, /player\.y = Math\.min\(player\.y, enemy\.y - player\.h - 1\)/);
-  assert.match(html, /level1-2\.js\?v=27/);
+  assert.match(html, /level1-2\.js\?v=30/);
 });
 
 test("remasters the complete World 1-3 showdown enemy, boss, stampede, and NPC cast", async () => {
@@ -836,8 +838,8 @@ test("remasters the complete World 1-3 showdown enemy, boss, stampede, and NPC c
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /level1-3\.js\?v=21/);
-  assert.match(runtime, /SOURCE_VERSION = 'w1-3-v21'/);
+  assert.match(html, /level1-3\.js\?v=22/);
+  assert.match(runtime, /SOURCE_VERSION = 'w1-3-v22-shared-audio'/);
   assert.match(runtime, /function remasteredEnemyFrame/);
   assert.match(runtime, /enemyAnimationFrames: 8/);
   assert.match(runtime, /behaviorLinked: true/);
@@ -874,7 +876,7 @@ test("authors World 1-3 combat around readable formations, full-platform patrols
   assert.match(runtime, /previousBottom: player\.previousBottom/);
   assert.match(runtime, /previousTargetTop: previousEnemyTop/);
   assert.match(runtime, /player\.y = Math\.min\(player\.y, enemy\.y - player\.h - 1\)/);
-  assert.match(html, /level1-3\.js\?v=21/);
+  assert.match(html, /level1-3\.js\?v=22/);
 });
 
 test("ships the complete three-level Starlight Taco Carnival world", async () => {
@@ -886,7 +888,7 @@ test("ships the complete three-level Starlight Taco Carnival world", async () =>
     assert.match(html, /World 3/);
     assert.match(html, /35,000 units/);
     assert.match(html, /id="startBtn"/);
-    assert.match(html, /world3\.js\?v=29/);
+    assert.match(html, /world3\.js\?v=31/);
     assert.match(html, /world3\.css\?v=10/);
     assert.match(html, /controller\.js\?v=8/);
     assert.match(html, /data-next-level/);
@@ -1027,7 +1029,7 @@ test("ships the complete three-level Starlight Taco Carnival world", async () =>
   assert.match(runtime, /MIDNIGHT_PAD_LABELS = \['COASTER', 'FERRIS WHEEL', 'FUNHOUSE'\]/);
   assert.match(runtime, /MIDNIGHT_PAD_TACOS = 9/);
   assert.match(runtime, /MIDNIGHT_RESULTS_DELAY = 2\.8/);
-  assert.match(runtime, /function soundMegaPinata/);
+  assert.match(runtime, /playAudio\('pinata\.break'/);
   assert.match(runtime, /cleanCheckpointCrops: true/);
   assert.match(runtime, /groundedEnemySprites: true/);
   assert.match(runtime, /visualGroundingMode: 'opaque-foot-and-base-baseline'/);
@@ -1065,7 +1067,7 @@ test("ships the complete three-level Starlight Taco Carnival world", async () =>
 test("authors World 3 combat around readable packs, full patrols, and safe set pieces", async () => {
   const runtime = await readFile(new URL("../public/game/world3.js", import.meta.url), "utf8");
 
-  assert.match(runtime, /const SOURCE_VERSION = 29/);
+  assert.match(runtime, /const SOURCE_VERSION = 31/);
   assert.match(runtime, /const WORLD3_REMASTER_PLANS = Object\.freeze/);
   assert.match(runtime, /function world3ForbiddenRanges/);
   assert.match(runtime, /function addWorld3Formation/);
@@ -1185,8 +1187,8 @@ test("remasters World 2-1 backgrounds, foregrounds, checkpoints, and catamaran l
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /level2\.js\?v=22/);
-  assert.match(runtime, /SOURCE_VERSION = 'w2-1-v22-world2-encounters'/);
+  assert.match(html, /level2\.js\?v=23/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-1-v23-shared-audio'/);
   assert.match(runtime, /const ENVIRONMENT_TRANSITION_WIDTH = 1600/);
   assert.match(runtime, /const ENVIRONMENT_PANORAMA_CROP = 0\.9/);
   assert.match(runtime, /function drawPaintedEnvironment/);
@@ -1290,7 +1292,7 @@ test("ships the 35,000-unit caldera camping sequel with premium art and adaptive
     assert.match(html, new RegExp(`music_caldera_${track}\\.ogg`));
   }
   assert.match(html, /World 2 • Level 2-2 • 35,000 units/);
-  assert.match(html, /level2-2\.js\?v=4/);
+  assert.match(html, /level2-2\.js\?v=5/);
   assert.match(html, /id="startBtn"/);
   assert.match(runtime, /geyserGuardSpecs/);
   assert.match(runtime, /requiresGeyserAirborne/);
@@ -1342,7 +1344,7 @@ test("ships the complete 35,000-unit Neon Neckties concert level", async () => {
   assert.match(runtime, /OLIVIA IS LOADING THE LAST TACOS!/);
   assert.match(runtime, /TACO ROADSTER: READY TO ROLL!/);
   assert.match(runtime, /SHOWTIME! OLIVIA IS TAKING THE SCENIC ROUTE!/);
-  assert.match(html, /level2-3\.js\?v=13/);
+  assert.match(html, /level2-3\.js\?v=15/);
   assert.match(runtime, /generatorDefensePlans/);
   assert.match(runtime, /function ensureGeneratorDefensePlatform/);
   assert.match(runtime, /finitePlatformGeometry: world\.platforms\.every/);
@@ -1479,4 +1481,303 @@ test("ships the Neon Neckties full-song arrangement and review studio", async ()
   assert.equal(cues.waveform.length, 192);
   assert.equal(cues.integration.world, "2-3");
   assert.equal(cues.integration.role, "finale concert master");
+});
+
+test("loads the shared Phase 3 audio foundation before World 1-1 and resolves every semantic event", async () => {
+  const html = await readFile(new URL("../public/game/index.html", import.meta.url), "utf8");
+  const runtime = await readFile(new URL("../public/game/game.js", import.meta.url), "utf8");
+  const catalogSource = await readFile(new URL("../public/game/audio-catalog.js", import.meta.url), "utf8");
+  const engineSource = await readFile(new URL("../public/game/audio-engine.js", import.meta.url), "utf8");
+  const generatorSource = await readFile(new URL("../scripts/generate-sfx.mjs", import.meta.url), "utf8");
+  const lab = await readFile(new URL("../public/game/audio-lab.html", import.meta.url), "utf8");
+  const labRuntime = await readFile(new URL("../public/game/audio-lab.js", import.meta.url), "utf8");
+  const landingPage = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+
+  const catalogPosition = html.indexOf('src="audio-catalog.js?v=7"');
+  const enginePosition = html.indexOf('src="audio-engine.js?v=7"');
+  const runtimePosition = html.indexOf('src="game.js?v=48"');
+  assert.ok(catalogPosition >= 0, "World 1-1 loads the semantic catalog");
+  assert.ok(enginePosition > catalogPosition, "the engine loads after its catalog");
+  assert.ok(runtimePosition > enginePosition, "the engine loads before the World 1-1 runtime");
+
+  const context = { console, window: {} };
+  vm.runInNewContext(catalogSource, context, { filename: "audio-catalog.js" });
+  vm.runInNewContext(engineSource, context, { filename: "audio-engine.js" });
+  const catalog = context.window.JFT_AUDIO_CATALOG;
+  const engine = context.window.JFT_AUDIO;
+  assert.equal(catalog.version, "phase3-catalog-v2-external-source-amendment");
+  assert.equal(catalog.assetCacheVersion, "sfx-phase3-v2-external-source-amendment");
+
+  const required = [
+    "ui.start", "ui.confirm", "hero.jump", "hero.landSoft", "hero.landHard",
+    "hero.hurt", "hero.fall", "hero.respawnBeam", "hero.respawnLand",
+    "collect.taco", "collect.tacoCluster", "collect.goldenTaco", "collect.rainbowTaco",
+    "combat.enemyStomp", "combat.enemySplat", "combat.comboMilestone",
+    "ability.magnetStart", "ability.frenzyStart", "checkpoint.activate",
+    "pinata.hit", "pinata.break", "goal.enter", "level.complete",
+  ];
+  for (const eventId of required) {
+    assert.ok(catalog.events[eventId], `catalog contains ${eventId}`);
+    assert.equal(engine.hasEvent(eventId), true, `engine resolves ${eventId}`);
+  }
+
+  const eventLiteral = /'((?:ui|hero|collect|combat|ability|checkpoint|pinata|goal|level|world1|vehicle)\.[A-Za-z][A-Za-z0-9]*)'/g;
+  const referencedEvents = [...runtime.matchAll(eventLiteral)].map((match) => match[1]);
+  assert.ok(referencedEvents.length >= required.length, "World 1-1 references a complete semantic event set");
+  for (const eventId of new Set(referencedEvents)) {
+    assert.ok(catalog.events[eventId], `World 1-1 event ${eventId} exists in the catalog`);
+  }
+
+  for (const api of [
+    "init", "preload", "preloadGroups", "registerMusicTracks", "play", "startLoop", "updateLoop", "stopLoop",
+    "setMusicVolume", "setMusicDuck", "clearMusicDuck", "setEffectsVolume", "setMuted", "getTelemetry",
+  ]) {
+    assert.equal(typeof engine[api], "function", `${api} remains available`);
+  }
+  engine.setMusicVolume(0.61);
+  engine.setEffectsVolume(0.89);
+  engine.setMuted(true);
+  const telemetry = engine.getTelemetry();
+  assert.equal(telemetry.engineVersion, "2.2.1-release-preload");
+  assert.equal(telemetry.assetCacheVersion, "sfx-phase3-v2-external-source-amendment");
+  assert.equal(telemetry.audioContextState, "not-created");
+  assert.equal(telemetry.audioContextLatencySeconds.base, null);
+  assert.equal(telemetry.audioContextLatencySeconds.output, null);
+  assert.equal(telemetry.currentBusLevels.music.setting, 0.61);
+  assert.equal(telemetry.currentBusLevels.gameplaySfx.setting, 0.89);
+  assert.equal(telemetry.currentBusLevels.master.muted, true);
+
+  const catalogAssets = new Set();
+  for (const definition of Object.values(catalog.events)) {
+    (definition.variants || []).forEach((asset) => catalogAssets.add(asset));
+    if (definition.variantsByOption) {
+      Object.values(definition.variantsByOption.variants).flat().forEach((asset) => catalogAssets.add(asset));
+    }
+  }
+  for (const asset of catalogAssets) {
+    await access(new URL(`../public/game/${asset}`, import.meta.url));
+  }
+
+  const normalSplat = catalog.events["combat.enemySplat"];
+  const perfectStomp = catalog.events["combat.enemyStomp"];
+  assert.equal(normalSplat.variants, undefined, "normal splats use enemy-specific variants");
+  for (const enemyType of ["tomato", "onion", "chili", "jalapeno"]) {
+    assert.equal(normalSplat.variantsByOption.variants[enemyType].length, 2, `${enemyType} has two normal splats`);
+    assert.equal(perfectStomp.variantsByOption.variants[enemyType].length, 1, `${enemyType} has a perfect stomp`);
+  }
+  assert.ok(normalSplat.duckDb < perfectStomp.duckDb, "perfect bounce adds reward without excessive non-perfect squish gain");
+
+  const splatRecipe = generatorSource.match(/enemySplat\(sound,[\s\S]*?\n  },/)?.[0] || "";
+  const stompRecipe = generatorSource.match(/enemyStomp\(sound,[\s\S]*?\n  },/)?.[0] || "";
+  const squishHelper = generatorSource.match(/function addCartoonEnemySquish[\s\S]*?\n}\n\nfunction addBoing/)?.[0] || "";
+  assert.match(generatorSource, /function addCartoonEnemySquish/);
+  assert.match(generatorSource, /sourceId: "freesound-445118"/);
+  assert.match(splatRecipe, /addCartoonEnemySquish/);
+  assert.doesNotMatch(splatRecipe, /addBoing/, "normal splat has no full rebound layer");
+  assert.match(stompRecipe, /addCartoonEnemySquish/);
+  assert.match(stompRecipe, /addBoing/, "perfect stomp adds the pronounced rebound layer");
+  assert.doesNotMatch(squishHelper, /addShellCrunch/, "non-perfect squish does not lead with the former dry shell crunch");
+
+  const sfxManifest = JSON.parse(
+    await readFile(new URL("../public/game/assets/sfx/sfx-manifest.json", import.meta.url), "utf8"),
+  );
+  assert.match(sfxManifest.source, /procedural layers plus the explicitly documented CC0 recordings/);
+  assert.equal(sfxManifest.assetCount, catalogAssets.size);
+  assert.equal(sfxManifest.generatorVersion, "jft-sfx-phase3-v2-external-source-amendment");
+  assert.equal(sfxManifest.assetCount, 282, "full-game library includes every deterministic Phase 3 render and two private A/B baselines");
+  assert.ok(sfxManifest.totalBytes < 14 * 1024 * 1024, "full-game SFX stay below 14 MiB");
+  assert.ok(sfxManifest.assets.every((asset) => asset.bytes < 450 * 1024), "each SFX stays below 450 KiB, including the 4.45-second propeller loop");
+  assert.ok(sfxManifest.assets.every((asset) => ["procedural", "hybrid", "sourced-recording"].includes(asset.sourceType)), "every asset declares its provenance type");
+  assert.equal(sfxManifest.externalSources.length, 6, "the manifest records every selected and rejected source candidate");
+  const selectedSources = sfxManifest.externalSources.filter((source) => source.selected);
+  assert.deepEqual(selectedSources.map((source) => source.id).sort(), ["freesound-251971", "freesound-445118", "freesound-789390"]);
+  assert.ok(sfxManifest.externalSources.every((source) => source.license === "CC0 1.0"));
+  assert.ok(sfxManifest.externalSources.every((source) => source.sourceUrl && source.originalFilename && source.creator && source.acquisitionDate && source.attributionRequirement && source.modifications));
+  for (const source of selectedSources) {
+    const bytes = await readFile(new URL(`../${source.committedSourcePath}`, import.meta.url));
+    assert.equal(createHash("sha256").update(bytes).digest("hex"), source.committedPreviewSha256, `${source.id} source preview hash matches`);
+  }
+  for (const asset of sfxManifest.assets) {
+    const bytes = await readFile(new URL(`../public/game/${asset.path}`, import.meta.url));
+    assert.equal(bytes.length, asset.bytes, `${asset.path} byte length matches its manifest`);
+    assert.equal(createHash("sha256").update(bytes).digest("hex"), asset.sha256, `${asset.path} hash matches`);
+  }
+
+  const rmsWindowDb = (bytes, startSeconds, endSeconds) => {
+    const startSample = Math.floor(startSeconds * 44_100);
+    const endSample = Math.floor(endSeconds * 44_100);
+    let sumSquares = 0;
+    for (let sample = startSample; sample < endSample; sample += 1) {
+      const value = bytes.readInt16LE(44 + sample * 2) / 32_768;
+      sumSquares += value * value;
+    }
+    return 20 * Math.log10(Math.sqrt(sumSquares / (endSample - startSample)) + 1e-12);
+  };
+  const normalSquishBytes = await readFile(new URL("../public/game/assets/sfx/world1/enemy-splat-tomato-01.wav", import.meta.url));
+  const perfectBounceBytes = await readFile(new URL("../public/game/assets/sfx/world1/enemy-stomp-tomato-01.wav", import.meta.url));
+  const propellerLoopBytes = await readFile(new URL("../public/game/assets/sfx/world1/aircraft-propeller-idle-01.wav", import.meta.url));
+  assert.ok(
+    rmsWindowDb(normalSquishBytes, 0.02, 0.12) >= rmsWindowDb(normalSquishBytes, 0, 0.02) - 1,
+    "the juicy squish body remains at least as present as its padded onset",
+  );
+  assert.ok(
+    rmsWindowDb(perfectBounceBytes, 0.12, 0.22) >= rmsWindowDb(normalSquishBytes, 0.12, 0.22) + 10,
+    "the perfect bounce has a pronounced late boing that the non-perfect squish does not",
+  );
+  const propellerLastSample = propellerLoopBytes.readInt16LE(propellerLoopBytes.length - 2) / 32_768;
+  const propellerFirstSample = propellerLoopBytes.readInt16LE(44) / 32_768;
+  assert.ok(Math.abs(propellerLastSample - propellerFirstSample) < 0.08, "the recorded propeller loop has a bounded wrap seam");
+  const propellerWindows = [
+    rmsWindowDb(propellerLoopBytes, 0.05, 0.35),
+    rmsWindowDb(propellerLoopBytes, 2.05, 2.35),
+    rmsWindowDb(propellerLoopBytes, 4.05, 4.35),
+  ];
+  assert.ok(Math.max(...propellerWindows) - Math.min(...propellerWindows) < 7, "the recorded propeller bed stays stable before runtime distance automation");
+
+  assert.doesNotMatch(runtime, /createOscillator\s*\(/, "World 1-1 has no raw oscillator synthesis");
+  assert.doesNotMatch(runtime, /function\s+sfx\s*\(/, "World 1-1 has no local sfx function");
+  assert.doesNotMatch(runtime, /AudioContext|webkitAudioContext/, "World 1-1 delegates its AudioContext");
+  assert.match(engineSource, /function playFallback/);
+  assert.match(engineSource, /createOscillator\s*\(/, "the only Phase 1 oscillator is the centralized fallback");
+  assert.match(engineSource, /createDynamicsCompressor\s*\(/);
+  assert.match(engineSource, /music\.connect\(musicSceneDuck\)\.connect\(musicDuck\)\.connect\(master\)/);
+  assert.match(engineSource, /maximumVoices/);
+  assert.match(engineSource, /droppedEffectsByPriority/);
+  assert.match(engineSource, /function resumePendingLoops/);
+  assert.match(engineSource, /function updateLoop/);
+  assert.match(engineSource, /const PRELOAD_CONCURRENCY = 8/);
+  assert.match(engineSource, /function preloadAssetPaths/);
+  assert.match(engineSource, /assetPath\.includes\(`\/sfx\/\$\{group\}\/`\)/, "group preloads do not expand mixed-world semantic variants");
+  assert.match(engineSource, /Math\.max\(requestedEndsAt, duckEnvelope\.endsAt/);
+  assert.match(engineSource, /fetch\(assetRequestUrl\(assetPath\)\)/, "Phase 3 assets use a cache-busted request URL");
+  assert.match(runtime, /jumpinForTacosProgressV2/);
+  assert.match(runtime, /savedProgress\.settings\.musicVolume \?\? 0\.7/);
+  assert.match(runtime, /savedProgress\.settings\.effectsVolume \?\? 0\.8/);
+  assert.match(runtime, /function defeatEnemy\(enemy, perfectBounce = true/);
+  assert.match(runtime, /perfectBounce \? 'combat\.enemyStomp' : 'combat\.enemySplat'/);
+  assert.match(runtime, /frenzyWasActive && game\.frenzyTimer <= 0.*ability\.frenzyEnd/);
+  assert.match(runtime, /magnetWasActive && game\.magnetTimer <= 0.*ability\.magnetEnd/);
+
+  assert.match(lab, /jump_for_tacos_final_concert_master\.mp3/);
+  assert.match(lab, /Magnet-cascade stress test/);
+  assert.match(lab, />Prior Procedural Squish</);
+  assert.match(lab, />Final Hybrid Enemy Squish</);
+  assert.match(lab, />Final Perfect Squish \+ BOING</);
+  assert.match(lab, />Squish Candidate\/Final A\/B</);
+  assert.match(lab, />Prior Procedural Propeller</);
+  assert.match(lab, />Final Recorded Propeller</);
+  assert.match(lab, />Normal Olivia Propeller Flyby</);
+  assert.match(lab, />Guacamole-Hit Flyby</);
+  assert.match(lab, />Damaged \/ Crashing Propeller</);
+  assert.match(lab, /Enemy Families and contact outcomes/);
+  assert.match(lab, /SQUISH! BOING!/);
+  assert.match(lab, /10 non-perfect squish variants/);
+  assert.match(lab, /10 perfect-bounce stress test/);
+  assert.match(lab, /12-jump repetition test/);
+  assert.match(labRuntime, /playEvent\('combat\.enemySplat'\)/);
+  assert.match(labRuntime, /playEvent\('combat\.enemyStomp'\)/);
+  assert.match(labRuntime, /button\.dataset\.eventId = eventId/);
+  assert.match(labRuntime, /scheduleSequence\('Squish Candidate\/Final A\/B'/);
+  assert.match(labRuntime, /audio\.updateLoop\(handle/);
+  assert.match(labRuntime, /function runAircraftGuacHitDemo/);
+  assert.match(labRuntime, /function runAircraftDamagedDemo/);
+  assert.match(labRuntime, /reviewLoopHandles\.has\(propellerHandle\)/);
+  assert.match(labRuntime, /stopReviewLoop\(strainHandle\)/);
+  assert.match(labRuntime, /scheduleSequence\('Jump repetition test'/);
+  for (const category of ["Hero", "Movement", "Ordinary Taco", "Premium Tacos", "Power-Ups", "Piñatas", "Celebrations", "Finale", "UI"]) {
+    assert.match(labRuntime, new RegExp(`\\['${category}'`), `Audio Lab includes the ${category} review category`);
+  }
+  assert.match(lab, /Core Gameplay Demo/);
+  assert.doesNotMatch(landingPage, /audio-lab/i, "the private lab is not linked from the landing page");
+});
+
+test("keeps every pre-Phase-1 music file byte-identical", async () => {
+  const expected = JSON.parse(
+    await readFile(new URL("./music-integrity.json", import.meta.url), "utf8"),
+  );
+  assert.ok(Object.keys(expected).length >= 50, "integrity coverage includes every existing music master");
+  for (const [relativePath, expectedHash] of Object.entries(expected)) {
+    const bytes = await readFile(new URL(`../${relativePath}`, import.meta.url));
+    const actualHash = createHash("sha256").update(bytes).digest("hex");
+    assert.equal(actualHash, expectedHash, `${relativePath} was not altered or replaced`);
+  }
+});
+
+test("keeps every remaining level runtime on the shared Phase 3 audio engine", async () => {
+  const pages = [
+    ["level1-2.html", "level1-2.js"], ["level1-3.html", "level1-3.js"],
+    ["level2.html", "level2.js"], ["level2-2.html", "level2-2.js"],
+    ["level2-3.html", "level2-3.js"], ["level3.html", "world3.js"],
+    ["level3-2.html", "world3.js"], ["level3-3.html", "world3.js"],
+  ];
+  const catalogSource = await readFile(new URL("../public/game/audio-catalog.js", import.meta.url), "utf8");
+  const context = { window: {} };
+  vm.runInNewContext(catalogSource, context, { filename: "audio-catalog.js" });
+  const catalog = context.window.JFT_AUDIO_CATALOG;
+  const runtimeCache = new Map();
+  const semanticLiteral = /['"]((?:ui|hero|collect|combat|ability|checkpoint|pinata|goal|level|world1|vehicle|hazard|impact|movement|sequence|boss|surf|volcano|stage|concert|ride|cosmic|carnival|ambience|review)\.[A-Za-z][A-Za-z0-9.]*)['"]/g;
+
+  for (const [pageName, runtimeName] of pages) {
+    const html = await readFile(new URL(`../public/game/${pageName}`, import.meta.url), "utf8");
+    const catalogPosition = html.indexOf('src="audio-catalog.js');
+    const enginePosition = html.indexOf('src="audio-engine.js');
+    const runtimePosition = html.indexOf(`src="${runtimeName}`);
+    assert.match(html, /src="audio-catalog\.js\?v=7"/, `${pageName} uses the release catalog cache key`);
+    assert.match(html, /src="audio-engine\.js\?v=7"/, `${pageName} uses the release engine cache key`);
+    assert.ok(catalogPosition >= 0, `${pageName} loads the audio catalog`);
+    assert.ok(enginePosition > catalogPosition, `${pageName} loads the engine after its catalog`);
+    assert.ok(runtimePosition > enginePosition, `${pageName} loads the engine before ${runtimeName}`);
+
+    if (!runtimeCache.has(runtimeName)) {
+      runtimeCache.set(runtimeName, await readFile(new URL(`../public/game/${runtimeName}`, import.meta.url), "utf8"));
+    }
+    const runtime = runtimeCache.get(runtimeName);
+    assert.doesNotMatch(runtime, /createOscillator\s*\(/, `${runtimeName} has no raw oscillator synthesis`);
+    assert.doesNotMatch(runtime, /function\s+sfx\s*\(/, `${runtimeName} has no local sfx function`);
+    assert.doesNotMatch(runtime, /function\s+playTone\s*\(/, `${runtimeName} has no local playTone function`);
+    assert.doesNotMatch(runtime, /new\s+(?:window\.)?(?:AudioContext|webkitAudioContext)/, `${runtimeName} delegates AudioContext creation`);
+    assert.match(runtime, /window\.JFT_AUDIO/, `${runtimeName} uses the shared audio API`);
+    assert.match(runtime, /preloadGroups\(\['global', 'world[123]'\]\)/, `${runtimeName} preloads only its world group`);
+  }
+
+  for (const [runtimeName, runtime] of runtimeCache) {
+    for (const match of runtime.matchAll(semanticLiteral)) {
+      assert.ok(catalog.events[match[1]], `${runtimeName} event ${match[1]} exists in the catalog`);
+    }
+  }
+
+  const world3 = runtimeCache.get("world3.js");
+  assert.match(world3, /setMusicDuck\(game\.musicDuck/);
+  assert.doesNotMatch(world3, /game\.musicVolume\s*\*\s*game\.musicDuck/);
+  assert.match(world3, /perfectBounce \? 'combat\.enemyStomp' : 'combat\.enemySplat'/);
+
+  const worldOneTwo = runtimeCache.get("level1-2.js");
+  assert.match(worldOneTwo, /flybyAircraftLoop/);
+  assert.match(worldOneTwo, /updateLoop\?\.\(game\.flybyAircraftLoop/);
+  assert.match(worldOneTwo, /const dopplerPitch = lerp\(115, -135/);
+  assert.match(worldOneTwo, /function syncOliviaSetPieceAircraftAudio/);
+  assert.match(worldOneTwo, /ensureTrackedLoop\('ambushAircraftLoop', 'vehicle\.aircraftPropellerIdle'/);
+  assert.match(worldOneTwo, /ensureTrackedLoop\('rescuePropellerLoop', 'vehicle\.aircraftPropellerIdle'/);
+  assert.match(worldOneTwo, /ensureTrackedLoop\('rescueLoop', 'vehicle\.aircraftDamagedLoop'/);
+  assert.match(worldOneTwo, /playAudio\('vehicle\.aircraftApproach', \{ position: -1, variant: 'guac-ambush' \}\)/);
+  assert.match(worldOneTwo, /stopTrackedLoop\('rescuePropellerLoop'\); stopTrackedLoop\('rescueLoop'\)/);
+  assert.match(worldOneTwo, /guacAmbush: Boolean\(game\.ambushAircraftLoop\)/);
+  assert.match(worldOneTwo, /rescuePropeller: Boolean\(game\.rescuePropellerLoop\)/);
+  const worldTwoTwo = runtimeCache.get("level2-2.js");
+  assert.match(worldTwoTwo, /vehicleType: 'trekker'/, "World 2-2 retains the Taco Trekker vehicle identity");
+  assert.doesNotMatch(worldTwoTwo, /vehicle\.aircraftPropellerIdle/, "the Olivia aircraft correction does not fabricate an aircraft in World 2-2");
+
+  const lab = await readFile(new URL("../public/game/audio-lab.html", import.meta.url), "utf8");
+  const labRuntime = await readFile(new URL("../public/game/audio-lab.js", import.meta.url), "utf8");
+  for (const label of ["Power-Up Demo", "Enemy Stomp Combo Demo", "Olivia Vehicle Taco Drop Demo", "Boss Combat Demo", "Piñata Celebration Demo", "World 3 Cosmic Finale Demo"]) {
+    assert.match(lab, new RegExp(label));
+  }
+  assert.match(labRuntime, /audio\.listEvents\(\)/);
+  assert.match(labRuntime, /vehicleType/);
+  assert.match(labRuntime, /bossType/);
+  const dynamicNamespaces = new Set(["boss.elGuacodillo", "vehicle.cosmic"]);
+  for (const match of labRuntime.matchAll(semanticLiteral)) {
+    if (dynamicNamespaces.has(match[1])) continue;
+    assert.ok(catalog.events[match[1]], `Audio Lab event ${match[1]} exists in the catalog`);
+  }
 });
