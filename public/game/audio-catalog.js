@@ -2,6 +2,8 @@
   const root = 'assets/sfx';
   const globalAsset = (filename) => `${root}/global/${filename}`;
   const worldOneAsset = (filename) => `${root}/world1/${filename}`;
+  const worldTwoAsset = (filename) => `${root}/world2/${filename}`;
+  const worldThreeAsset = (filename) => `${root}/world3/${filename}`;
 
   const requiredPhase1Events = Object.freeze([
     'ui.start',
@@ -481,8 +483,207 @@
     },
   };
 
+  const event = (asset, {
+    bus = 'gameplay', priority = 3, cooldownMs = 80, maxPolyphony = 2,
+    gain = 1, duckDb = 0, duckReleaseSeconds = 0.42, panRange = 0.22,
+    loop = false, fallback = { frequency: 360, endFrequency: 720, duration: 0.24, wave: 'triangle' },
+  } = {}) => ({
+    bus,
+    variants: [asset],
+    priority,
+    cooldownMs,
+    maxPolyphony,
+    gain,
+    gainVariationDb: loop ? 0 : 0.35,
+    pitchVariationCents: loop ? 0 : 10,
+    panRange,
+    duckDb,
+    duckReleaseSeconds,
+    loop,
+    ...(fallback ? { fallback } : {}),
+  });
+
+  const optionEvent = (option, defaultKey, variants, settings = {}) => ({
+    ...event(Object.values(variants)[0][0], settings),
+    variantsByOption: { option, defaultKey, variants },
+    variants: undefined,
+  });
+
+  Object.assign(events, {
+    'ability.limeStart': event(globalAsset('ability-lime-start-01.wav'), { priority: 4, duckDb: 5 }),
+    'ability.limeBreak': event(globalAsset('ability-lime-break-01.wav'), { priority: 5, duckDb: 5.5 }),
+    'ability.pepperStart': event(globalAsset('ability-pepper-start-01.wav'), { priority: 4, duckDb: 5 }),
+    'ability.pepperEnd': event(globalAsset('ability-pepper-end-01.wav'), { priority: 2, cooldownMs: 300 }),
+    'ability.coconutStart': event(globalAsset('ability-coconut-start-01.wav'), { priority: 4, duckDb: 4 }),
+    'ability.coconutBounce': event(globalAsset('ability-coconut-bounce-01.wav'), { priority: 5, duckDb: 5 }),
+    'ability.magnetEnd': event(globalAsset('ability-magnet-end-01.wav'), { priority: 2, cooldownMs: 300 }),
+    'ability.frenzyEnd': event(globalAsset('ability-frenzy-end-01.wav'), { priority: 3, cooldownMs: 300 }),
+    'ability.tacoNovaMilestone': event(globalAsset('ability-taco-nova-milestone-01.wav'), { priority: 4, duckDb: 4.5 }),
+    'ability.tacoNovaStart': event(globalAsset('ability-taco-nova-start-01.wav'), { priority: 5, duckDb: 7.5, duckReleaseSeconds: 0.75 }),
+    'ability.lowGravityStart': event(globalAsset('ability-low-gravity-start-01.wav'), { priority: 4, duckDb: 5 }),
+    'ability.lowGravityEnd': event(globalAsset('ability-low-gravity-end-01.wav'), { priority: 3, cooldownMs: 300, duckDb: 2 }),
+    'collect.airMail': event(globalAsset('collect-air-mail-01.wav'), { priority: 4, duckDb: 3.5 }),
+    'collect.airMailComplete': event(globalAsset('collect-air-mail-complete-01.wav'), { priority: 5, duckDb: 6.5 }),
+    'collect.airdropMilestone': event(globalAsset('collect-air-mail-complete-01.wav'), { priority: 4, duckDb: 4 }),
+    'collect.streakMilestone': event(globalAsset('combat-combo-milestone-01.wav'), { priority: 4, duckDb: 4 }),
+    'collect.goldenSombrero': event(globalAsset('collect-golden-sombrero-01.wav'), { priority: 5, duckDb: 6 }),
+    'collect.goldenHotSauce': event(globalAsset('collect-golden-hot-sauce-01.wav'), { priority: 4, duckDb: 4.5 }),
+    'collect.backstagePass': event(globalAsset('collect-backstage-pass-01.wav'), { priority: 5, duckDb: 5.5 }),
+    'collect.hotSauce': event(globalAsset('collect-hot-sauce-01.wav'), { priority: 3, duckDb: 3 }),
+    'collect.jalapeno': event(globalAsset('collect-jalapeno-01.wav'), { priority: 3, duckDb: 3 }),
+    'collect.guacBowl': event(globalAsset('collect-guac-bowl-01.wav'), { priority: 4, duckDb: 4 }),
+    'collect.cosmicGoldenTaco': event(globalAsset('collect-cosmic-golden-taco-01.wav'), { priority: 5, duckDb: 8, duckReleaseSeconds: 0.8 }),
+  });
+
+  const worldOneEnemyTypes = ['lime', 'queso', 'slime', 'knight', 'guac', 'churro', 'mole'];
+  worldOneEnemyTypes.forEach((type) => {
+    events['combat.enemyStomp'].variantsByOption.variants[type] = [worldOneAsset(`enemy-stomp-${type}-01.wav`)];
+    events['combat.enemySplat'].variantsByOption.variants[type] = [
+      worldOneAsset(`enemy-splat-${type}-01.wav`), worldOneAsset(`enemy-splat-${type}-02.wav`),
+    ];
+  });
+
+  Object.assign(events, {
+    'vehicle.aircraftApproach': event(worldOneAsset('aircraft-approach-01.wav'), { priority: 3, duckDb: 2.5 }),
+    'vehicle.aircraftGreeting': event(worldOneAsset('aircraft-ready-01.wav'), { priority: 2 }),
+    'vehicle.aircraftReady': event(worldOneAsset('aircraft-ready-01.wav'), { priority: 3 }),
+    'vehicle.aircraftPropellerIdle': event(worldOneAsset('aircraft-propeller-idle-01.wav'), { bus: 'ambience', priority: 1, gain: 0.58, loop: true, cooldownMs: 0, maxPolyphony: 1, fallback: null }),
+    'vehicle.aircraftTaxi': event(worldOneAsset('aircraft-taxi-01.wav'), { priority: 3 }),
+    'vehicle.aircraftTakeoff': event(worldOneAsset('aircraft-takeoff-01.wav'), { priority: 4, duckDb: 4 }),
+    'vehicle.aircraftBoost': event(worldOneAsset('aircraft-boost-01.wav'), { priority: 4, duckDb: 4.5 }),
+    'vehicle.aircraftDepart': event(worldOneAsset('aircraft-depart-01.wav'), { priority: 3, duckDb: 2.5 }),
+    'vehicle.aircraftDropComplete': event(worldOneAsset('aircraft-drop-complete-01.wav'), { priority: 3 }),
+    'vehicle.aircraftDamage': event(worldOneAsset('aircraft-damage-01.wav'), { priority: 5, duckDb: 6 }),
+    'vehicle.aircraftRescueStart': event(worldOneAsset('aircraft-rescue-start-01.wav'), { priority: 5, duckDb: 5 }),
+    'sequence.rescuePhase': event(worldOneAsset('aircraft-rescue-start-01.wav'), { priority: 4, duckDb: 4 }),
+    'vehicle.aircraftDamagedLoop': event(worldOneAsset('aircraft-damaged-loop-01.wav'), { bus: 'ambience', priority: 1, gain: 0.52, loop: true, cooldownMs: 0, maxPolyphony: 1, fallback: null }),
+    'vehicle.aircraftCrash': event(worldOneAsset('aircraft-crash-01.wav'), { priority: 5, duckDb: 7.5, duckReleaseSeconds: 0.72 }),
+    'vehicle.aircraftSettled': event(worldOneAsset('aircraft-settled-01.wav'), { priority: 3 }),
+    'hazard.guacWarning': event(worldOneAsset('guac-warning-01.wav'), { priority: 4, duckDb: 3 }),
+    'hazard.guacThrow': event(worldOneAsset('guac-throw-01.wav'), { priority: 3 }),
+    'impact.guacKrak': event(worldOneAsset('guac-krak-01.wav'), { priority: 5, duckDb: 7 }),
+    'pinata.aftershock': event(worldOneAsset('pinata-aftershock-01.wav'), { priority: 4, duckDb: 4 }),
+    'pinata.jackpotSparkle': event(worldOneAsset('pinata-jackpot-01.wav'), { priority: 5, duckDb: 7 }),
+    'hazard.stampedeStart': event(worldOneAsset('stampede-start-01.wav'), { priority: 4, duckDb: 4 }),
+    'ambience.stampede': event(worldOneAsset('stampede-loop-01.wav'), { bus: 'ambience', priority: 1, gain: 0.62, loop: true, cooldownMs: 0, maxPolyphony: 1, fallback: null }),
+    'hazard.stampedeLoop': event(worldOneAsset('stampede-loop-01.wav'), { bus: 'ambience', priority: 1, gain: 0.62, loop: true, cooldownMs: 0, maxPolyphony: 1, fallback: null }),
+    'hazard.nearMiss': event(worldOneAsset('stampede-near-miss-01.wav'), { priority: 3, cooldownMs: 140 }),
+    'hazard.stampedeEscape': event(worldOneAsset('stampede-escape-01.wav'), { priority: 4, duckDb: 4.5 }),
+    'movement.speedPad': event(worldOneAsset('salsa-slide-01.wav'), { priority: 2, cooldownMs: 120 }),
+    'movement.salsaSlide': event(worldOneAsset('salsa-slide-01.wav'), { priority: 2, cooldownMs: 120 }),
+    'movement.churroSpring': event(worldOneAsset('churro-spring-01.wav'), { priority: 3, cooldownMs: 100 }),
+    'boss.elGuacodillo.enter': event(worldOneAsset('boss-guac-enter-01.wav'), { priority: 5, duckDb: 7 }),
+    'boss.elGuacodillo.phaseTransition': event(worldOneAsset('boss-guac-phase-01.wav'), { priority: 5, duckDb: 7 }),
+    'boss.elGuacodillo.chargeWindup': event(worldOneAsset('boss-guac-windup-01.wav'), { priority: 4, duckDb: 4.5 }),
+    'boss.elGuacodillo.charge': event(worldOneAsset('boss-guac-charge-01.wav'), { priority: 4, duckDb: 4 }),
+    'boss.elGuacodillo.crashStun': event(worldOneAsset('boss-guac-crash-01.wav'), { priority: 5, duckDb: 7 }),
+    'boss.elGuacodillo.airstrikeStart': event(worldOneAsset('boss-guac-airstrike-01.wav'), { priority: 5, duckDb: 6 }),
+    'boss.elGuacodillo.guacShot': event(worldOneAsset('boss-guac-shot-01.wav'), { priority: 2, cooldownMs: 55, maxPolyphony: 3 }),
+    'hazard.guacLand': event(worldOneAsset('boss-guac-land-01.wav'), { priority: 3, cooldownMs: 70 }),
+    'hazard.guacSpring': event(worldOneAsset('boss-guac-spring-01.wav'), { priority: 3, cooldownMs: 90 }),
+    'boss.elGuacodillo.vulnerable': event(worldOneAsset('boss-guac-vulnerable-01.wav'), { priority: 4, duckDb: 4 }),
+    'boss.elGuacodillo.armorClonk': event(worldOneAsset('boss-guac-clonk-01.wav'), { priority: 4, duckDb: 3 }),
+    'boss.elGuacodillo.damage': event(worldOneAsset('boss-guac-damage-01.wav'), { priority: 5, duckDb: 7.5 }),
+    'boss.elGuacodillo.dodge': event(worldOneAsset('boss-guac-dodge-01.wav'), { priority: 3 }),
+    'boss.elGuacodillo.defeat': event(worldOneAsset('boss-guac-defeat-01.wav'), { priority: 5, duckDb: 9, duckReleaseSeconds: 0.95 }),
+    'level.victoryDashStart': event(worldOneAsset('victory-dash-start-01.wav'), { priority: 4, duckDb: 4.5 }),
+    'ui.resultsReveal': event(globalAsset('ui-confirm-01.wav'), { bus: 'ui', priority: 3, cooldownMs: 120 }),
+  });
+
+  const worldTwoEnemyTypes = ['crab', 'coconut', 'seagull', 'puffer', 'tiki', 'marshmallow', 'pineapple', 'pepper', 'nacho', 'ash', 'berry', 'mango', 'spaghetti'];
+  worldTwoEnemyTypes.forEach((type) => {
+    events['combat.enemyStomp'].variantsByOption.variants[type] = [worldTwoAsset(`enemy-stomp-${type}-01.wav`)];
+    events['combat.enemySplat'].variantsByOption.variants[type] = [
+      worldTwoAsset(`enemy-splat-${type}-01.wav`), worldTwoAsset(`enemy-splat-${type}-02.wav`),
+    ];
+  });
+
+  const worldTwoVehicles = ['catamaran', 'trekker', 'roadster'];
+  ['approach', 'accelerate', 'depart', 'tacoDrop'].forEach((phase) => {
+    const filePhase = phase === 'tacoDrop' ? 'taco-drop' : phase;
+    events[`vehicle.${phase}`] = optionEvent('vehicleType', 'catamaran', Object.fromEntries(
+      worldTwoVehicles.map((type) => [type, [worldTwoAsset(`vehicle-${type}-${filePhase}-01.wav`)]]),
+    ), { priority: phase === 'tacoDrop' ? 1 : 3, cooldownMs: phase === 'tacoDrop' ? 75 : 220, maxPolyphony: phase === 'tacoDrop' ? 2 : 1, duckDb: phase === 'accelerate' ? 3 : 0 });
+  });
+  events['vehicle.depart'].variantsByOption.defaultKey = 'tacoTruck';
+  events['vehicle.depart'].variantsByOption.variants.tacoTruck = [worldOneAsset('vehicle-depart-01.wav')];
+  events['vehicle.depart'].duckDb = 3.5;
+  events['vehicle.depart'].duckReleaseSeconds = 0.48;
+  events['vehicle.depart'].panRange = 0.25;
+  events['vehicle.depart'].cooldownMs = 260;
+  events['vehicle.idle'] = optionEvent('vehicleType', 'catamaran', Object.fromEntries(
+    worldTwoVehicles.map((type) => [type, [worldTwoAsset(`vehicle-${type}-idle-01.wav`)]]),
+  ), { bus: 'ambience', priority: 1, gain: 0.55, loop: true, cooldownMs: 0, maxPolyphony: 1, fallback: null });
+
+  const worldTwoSimple = {
+    'surf.oliviaPass': ['surf-olivia-pass', 2, 0, 180],
+    'surf.mount': ['surf-mount', 3, 2.5, 120],
+    'surf.obstacleClear': ['surf-obstacle-clear', 3, 2, 110],
+    'surf.obstacleHit': ['surf-obstacle-hit', 4, 4.5, 140],
+    'surf.waveHit': ['surf-wave-hit', 5, 6, 180],
+    'surf.waveCrashLaunch': ['surf-wave-crash-launch', 5, 6.5, 220],
+    'surf.land': ['surf-land', 3, 2.5, 140],
+    'hazard.coconutCannonFire': ['hazard-coconut-cannon-fire', 3, 2.5, 100],
+    'hazard.coconutDeflect': ['hazard-coconut-deflect', 3, 2.5, 90],
+    'hazard.geyserWarn': ['hazard-geyser-warn', 4, 3.5, 180],
+    'hazard.geyserLaunch': ['hazard-geyser-launch', 4, 4.5, 160],
+    'volcano.warmup': ['volcano-warmup', 4, 4.5, 260],
+    'volcano.erupt': ['volcano-erupt', 5, 7, 300],
+    'stage.generatorActivate': ['stage-generator-activate', 4, 4.5, 180],
+    'concert.start': ['concert-start', 5, 7, 300],
+    'concert.chorusCannon': ['concert-chorus-cannon', 3, 2.5, 80],
+    'concert.crowdCheer': ['concert-crowd-cheer', 3, 3, 180],
+    'concert.crowdSurfStart': ['concert-crowd-surf-start', 4, 4, 200],
+    'concert.crowdSurfLand': ['concert-crowd-surf-land', 4, 4.5, 200],
+    'concert.tambourineAccent': ['concert-tambourine-accent', 2, 1.5, 120],
+    'concert.finaleLift': ['concert-finale-lift', 5, 7, 300],
+    'concert.bow': ['concert-bow', 5, 7, 300],
+  };
+  Object.entries(worldTwoSimple).forEach(([id, [file, priority, duckDb, cooldownMs]]) => {
+    events[id] = event(worldTwoAsset(`${file}-01.wav`), { priority, duckDb, cooldownMs });
+  });
+  events['volcano.active'] = event(worldTwoAsset('volcano-active-01.wav'), { bus: 'ambience', priority: 1, gain: 0.52, loop: true, cooldownMs: 0, maxPolyphony: 1, fallback: null });
+
+  const worldThreeEnemyTypes = ['popcorn', 'cotton', 'pretzel', 'lemon', 'bumper', 'corndog'];
+  worldThreeEnemyTypes.forEach((type) => {
+    events['combat.enemyStomp'].variantsByOption.variants[type] = [worldThreeAsset(`enemy-stomp-${type}-01.wav`)];
+    events['combat.enemySplat'].variantsByOption.variants[type] = [
+      worldThreeAsset(`enemy-splat-${type}-01.wav`), worldThreeAsset(`enemy-splat-${type}-02.wav`),
+    ];
+  });
+
+  const worldThreeVehicles = ['balloon', 'coaster', 'zeppelin'];
+  ['approach', 'accelerate', 'boost', 'depart', 'tacoDrop'].forEach((phase) => {
+    const filePhase = phase === 'tacoDrop' ? 'taco-drop' : phase;
+    events[`vehicle.cosmic${phase[0].toUpperCase()}${phase.slice(1)}`] = optionEvent('vehicleType', 'balloon', Object.fromEntries(
+      worldThreeVehicles.map((type) => [type, [worldThreeAsset(`vehicle-${type}-${filePhase}-01.wav`)]]),
+    ), { priority: phase === 'tacoDrop' ? 1 : 3, cooldownMs: phase === 'tacoDrop' ? 75 : 220, maxPolyphony: phase === 'tacoDrop' ? 2 : 1, duckDb: phase === 'boost' ? 4 : 0 });
+  });
+  events['vehicle.cosmicIdle'] = optionEvent('vehicleType', 'balloon', Object.fromEntries(
+    worldThreeVehicles.map((type) => [type, [worldThreeAsset(`vehicle-${type}-idle-01.wav`)]]),
+  ), { bus: 'ambience', priority: 1, gain: 0.52, loop: true, cooldownMs: 0, maxPolyphony: 1, fallback: null });
+
+  const worldThreeSimple = {
+    'ride.machineStart': 'ride-machine-start', 'ride.coasterClack': 'ride-coaster-clack',
+    'ride.coasterDrop': 'ride-coaster-drop', 'hazard.cometPass': 'hazard-comet-pass',
+    'cosmic.starRelight': 'cosmic-star-relight', 'cosmic.finale': 'cosmic-finale',
+    'cosmic.landing': 'cosmic-landing', 'carnival.machine': 'carnival-machine',
+  };
+  Object.entries(worldThreeSimple).forEach(([id, file]) => {
+    const exceptional = ['cosmic.finale', 'boss.defeat'].includes(id);
+    events[id] = event(worldThreeAsset(`${file}-01.wav`), { priority: exceptional ? 5 : id.startsWith('boss.') ? 5 : 3, duckDb: exceptional ? 9 : id.startsWith('boss.') ? 6 : 3, duckReleaseSeconds: exceptional ? 0.95 : 0.48 });
+  });
+  ['enter', 'move', 'windup', 'attack', 'damage', 'phase', 'special', 'vulnerable', 'defeat', 'celebrate'].forEach((phase) => {
+    const exceptional = phase === 'defeat';
+    events[`boss.${phase}`] = optionEvent('bossType', 'cornelius', {
+      cornelius: [worldThreeAsset(`boss-cornelius-${phase}-01.wav`)],
+      ringmaster: [worldThreeAsset(`boss-ringmaster-${phase}-01.wav`)],
+    }, { priority: phase === 'move' ? 3 : 5, cooldownMs: phase === 'move' ? 120 : 180, duckDb: exceptional ? 9 : phase === 'damage' || phase === 'phase' ? 7 : 5, duckReleaseSeconds: exceptional ? 0.95 : 0.52 });
+  });
+  events['ambience.cosmicCarnival'] = event(worldThreeAsset('ambience-cosmic-carnival-01.wav'), { bus: 'ambience', priority: 1, gain: 0.48, loop: true, cooldownMs: 0, maxPolyphony: 1, fallback: null });
+
   window.JFT_AUDIO_CATALOG = Object.freeze({
-    version: 'phase1-catalog-v2-splat-clarification',
+    version: 'phase2-catalog-v1-full-game',
     requiredPhase1Events,
     mix: Object.freeze({
       musicCalibration: 0.75,

@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-1-v46-splat-clarification';
+  const SOURCE_VERSION = 'w1-1-v47-phase2-power-identities';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -559,7 +559,7 @@
 
   audio?.registerMusicTracks(musicTracks);
   syncAudioSettings();
-  audio?.preload().catch(() => {
+  audio?.preloadGroups(['global', 'world1']).catch(() => {
     // The shared engine supplies a centralized fallback when an asset cannot load.
   });
 
@@ -2248,7 +2248,10 @@
     const collectionEventId = item.type === 'taco' ? 'collect.taco'
       : item.type === 'golden' ? 'collect.goldenTaco'
         : item.type === 'rainbow' ? 'collect.rainbowTaco'
-          : item.type === 'magnet' ? null : 'collect.powerup';
+          : item.type === 'sauce' ? 'collect.hotSauce'
+            : item.type === 'pepper' ? 'collect.jalapeno'
+              : item.type === 'guac' ? 'collect.guacBowl'
+                : item.type === 'magnet' ? null : 'collect.powerup';
     if (!item.bonusReward) game.collected += 1;
     game.streak += 1;
     game.streakTimer = 2.4;

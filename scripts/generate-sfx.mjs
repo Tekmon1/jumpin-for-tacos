@@ -182,6 +182,32 @@ const cartoonSplatTraits = Object.freeze({
   onion: Object.freeze({ body: 390, smear: 1_080, pop: 640, brightness: 1.08 }),
   chili: Object.freeze({ body: 365, smear: 1_220, pop: 720, brightness: 1.2 }),
   jalapeno: Object.freeze({ body: 410, smear: 1_340, pop: 790, brightness: 1.3 }),
+  lime: Object.freeze({ body: 430, smear: 1_480, pop: 840, brightness: 1.38 }),
+  queso: Object.freeze({ body: 285, smear: 780, pop: 510, brightness: 0.78 }),
+  slime: Object.freeze({ body: 250, smear: 690, pop: 450, brightness: 0.68 }),
+  knight: Object.freeze({ body: 470, smear: 1_280, pop: 720, brightness: 1.48 }),
+  guac: Object.freeze({ body: 265, smear: 740, pop: 500, brightness: 0.72 }),
+  churro: Object.freeze({ body: 440, smear: 1_150, pop: 690, brightness: 1.42 }),
+  mole: Object.freeze({ body: 300, smear: 860, pop: 540, brightness: 0.82 }),
+  crab: Object.freeze({ body: 430, smear: 1_250, pop: 710, brightness: 1.5 }),
+  coconut: Object.freeze({ body: 310, smear: 940, pop: 560, brightness: 1.2 }),
+  seagull: Object.freeze({ body: 460, smear: 1_420, pop: 850, brightness: 1.4 }),
+  puffer: Object.freeze({ body: 260, smear: 780, pop: 590, brightness: 0.86 }),
+  tiki: Object.freeze({ body: 360, smear: 1_020, pop: 630, brightness: 1.38 }),
+  marshmallow: Object.freeze({ body: 220, smear: 620, pop: 430, brightness: 0.58 }),
+  pineapple: Object.freeze({ body: 420, smear: 1_210, pop: 720, brightness: 1.46 }),
+  nacho: Object.freeze({ body: 450, smear: 1_330, pop: 760, brightness: 1.56 }),
+  ash: Object.freeze({ body: 240, smear: 720, pop: 470, brightness: 0.64 }),
+  berry: Object.freeze({ body: 310, smear: 900, pop: 570, brightness: 0.88 }),
+  mango: Object.freeze({ body: 340, smear: 980, pop: 610, brightness: 0.96 }),
+  spaghetti: Object.freeze({ body: 270, smear: 820, pop: 520, brightness: 0.76 }),
+  pepper: Object.freeze({ body: 410, smear: 1_360, pop: 810, brightness: 1.34 }),
+  popcorn: Object.freeze({ body: 500, smear: 1_520, pop: 930, brightness: 1.62 }),
+  cotton: Object.freeze({ body: 210, smear: 650, pop: 450, brightness: 0.62 }),
+  pretzel: Object.freeze({ body: 460, smear: 1_260, pop: 760, brightness: 1.54 }),
+  lemon: Object.freeze({ body: 440, smear: 1_490, pop: 900, brightness: 1.5 }),
+  bumper: Object.freeze({ body: 290, smear: 920, pop: 610, brightness: 1.16 }),
+  corndog: Object.freeze({ body: 370, smear: 1_050, pop: 650, brightness: 1.16 }),
 });
 
 function addCartoonEnemySplat(sound, {
@@ -515,8 +541,84 @@ const recipes = {
     addTone(sound, { start: 0, duration: 0.16, frequency: notes[variant % notes.length], endFrequency: notes[variant % notes.length] * 1.08, gain: 0.32, wave: variant % 2 ? "triangle" : "sine", releasePower: 2.5 });
   },
   ambience(sound) {
-    addNoise(sound, { start: 0, duration: 1.8, gain: 0.16, attack: 0.3, lowpassHz: 1_250, highpassHz: 110, releasePower: 0.65 });
-    addTone(sound, { start: 0.12, duration: 1.45, frequency: 108, endFrequency: 112, gain: 0.08, wave: "sine", attack: 0.35, releasePower: 0.7, vibratoHz: 0.35, vibratoDepth: 0.018 });
+    recipes.loopTexture(sound, "air", 0);
+  },
+  identity(sound, style = "spark", variant = 0) {
+    const profiles = {
+      citrus: { base: 520, end: 1_320, bright: 1.55, body: 0.24 },
+      gold: { base: 610, end: 1_480, bright: 1.35, body: 0.2 },
+      spice: { base: 310, end: 1_020, bright: 1.65, body: 0.28 },
+      coconut: { base: 190, end: 620, bright: 0.82, body: 0.44 },
+      air: { base: 220, end: 980, bright: 1.15, body: 0.22 },
+      water: { base: 170, end: 540, bright: 0.78, body: 0.36 },
+      lava: { base: 120, end: 380, bright: 0.65, body: 0.5 },
+      machine: { base: 105, end: 430, bright: 0.92, body: 0.42 },
+      carnival: { base: 410, end: 1_170, bright: 1.45, body: 0.25 },
+      cosmic: { base: 260, end: 1_440, bright: 1.32, body: 0.2 },
+      boss: { base: 95, end: 520, bright: 0.88, body: 0.58 },
+      guac: { base: 145, end: 580, bright: 0.72, body: 0.5 },
+      crowd: { base: 280, end: 680, bright: 1.08, body: 0.3 },
+      spark: { base: 440, end: 1_100, bright: 1.25, body: 0.22 },
+    };
+    const p = profiles[style] || profiles.spark;
+    addShellCrunch(sound, { gain: 0.28 + p.body * 0.38, brightness: p.bright });
+    addNoise(sound, {
+      start: 0,
+      duration: 0.16 + p.body * 0.18,
+      gain: 0.2 + p.body * 0.48,
+      lowpassHz: 700 + p.end * 1.7,
+      highpassHz: style === "water" ? 110 : 220,
+      crackle: style === "lava" || style === "machine" ? 0.05 : 0.012,
+      releasePower: 2.3,
+    });
+    addTone(sound, {
+      start: 0.008,
+      duration: 0.28 + p.body * 0.22,
+      frequency: p.base * (1 + variant * 0.035),
+      endFrequency: p.end * (1 + variant * 0.025),
+      gain: 0.32 + p.body * 0.3,
+      wave: style === "machine" || style === "spice" ? "saw" : "triangle",
+      attack: 0.004,
+      releasePower: 2,
+      vibratoHz: style === "cosmic" ? 15 : style === "carnival" ? 9 : 0,
+      vibratoDepth: style === "cosmic" ? 0.04 : style === "carnival" ? 0.025 : 0,
+    });
+    if (["gold", "citrus", "carnival", "cosmic", "crowd"].includes(style)) {
+      addChord(sound, [p.end * 0.5, p.end * 0.63, p.end * 0.75], {
+        start: 0.07,
+        duration: 0.3,
+        gain: 0.12,
+        spacing: 0.035,
+        rise: 1.06,
+      });
+    }
+  },
+  loopTexture(sound, style = "machine", variant = 0) {
+    const base = { air: 115, water: 90, lava: 62, machine: 102, carnival: 145, cosmic: 78, crowd: 240 }[style] || 100;
+    // Render past both ends, then wrap with the same steady-state envelopes so
+    // the looping buffer has no periodic 1.8-second attack/release swell.
+    addNoise(sound, {
+      start: -0.12,
+      duration: 2.04,
+      gain: style === "crowd" ? 0.18 : 0.13,
+      attack: 0.004,
+      lowpassHz: style === "air" ? 1_500 : style === "crowd" ? 2_600 : 850,
+      highpassHz: style === "crowd" ? 170 : 45,
+      crackle: style === "lava" ? 0.025 : 0,
+      releasePower: 0.02,
+    });
+    addTone(sound, {
+      start: -0.12,
+      duration: 2.04,
+      frequency: base + variant * 9,
+      endFrequency: base + variant * 9 + 4,
+      gain: 0.09,
+      wave: style === "machine" ? "saw" : "sine",
+      attack: 0.004,
+      releasePower: 0.02,
+      vibratoHz: style === "cosmic" ? 0.42 : 2.8,
+      vibratoDepth: style === "cosmic" ? 0.035 : 0.012,
+    });
   },
 };
 
@@ -569,6 +671,139 @@ const assets = [
   ...[0, 1, 2, 3].map((variant) => [`world1/celebration-pulse-0${variant + 1}.wav`, 0.2, -12, (s) => recipes.celebrationPulse(s, variant)]),
 ];
 
+const addIdentityAsset = (relativePath, style, targetPeakDb = -7, duration = 0.55, variant = 0) => {
+  assets.push([relativePath, duration, targetPeakDb, (sound) => recipes.identity(sound, style, variant)]);
+};
+
+const addLoopAsset = (relativePath, style, targetPeakDb = -18, variant = 0) => {
+  assets.push([relativePath, 1.8, targetPeakDb, (sound) => recipes.loopTexture(sound, style, variant)]);
+};
+
+// Shared Phase 2 power-up identities and endings.
+[
+  ["global/ability-lime-start-01.wav", "citrus", -5],
+  ["global/ability-lime-break-01.wav", "citrus", -6],
+  ["global/ability-pepper-start-01.wav", "spice", -5],
+  ["global/ability-pepper-end-01.wav", "spice", -11],
+  ["global/ability-coconut-start-01.wav", "coconut", -7],
+  ["global/ability-coconut-bounce-01.wav", "coconut", -5],
+  ["global/ability-magnet-end-01.wav", "cosmic", -11],
+  ["global/ability-frenzy-end-01.wav", "spice", -9],
+  ["global/ability-taco-nova-milestone-01.wav", "cosmic", -7],
+  ["global/ability-taco-nova-start-01.wav", "cosmic", -3.5],
+  ["global/ability-low-gravity-start-01.wav", "cosmic", -6],
+  ["global/collect-air-mail-01.wav", "air", -7],
+  ["global/collect-air-mail-complete-01.wav", "gold", -4],
+  ["global/collect-golden-sombrero-01.wav", "gold", -4],
+  ["global/collect-golden-hot-sauce-01.wav", "spice", -6],
+  ["global/collect-backstage-pass-01.wav", "gold", -5],
+  ["global/collect-hot-sauce-01.wav", "spice", -7],
+  ["global/collect-jalapeno-01.wav", "citrus", -7],
+  ["global/collect-guac-bowl-01.wav", "water", -7],
+  ["global/collect-cosmic-golden-taco-01.wav", "cosmic", -3.5],
+  ["global/ability-low-gravity-end-01.wav", "air", -9],
+].forEach(([pathName, style, peak], index) => addIdentityAsset(pathName, style, peak, 0.58, index % 2));
+
+// World 1 enemy extensions and authored aircraft, hazard, boss, and payoff cues.
+const worldOneEnemyTypes = ["lime", "queso", "slime", "knight", "guac", "churro", "mole"];
+worldOneEnemyTypes.forEach((type) => {
+  assets.push([`world1/enemy-stomp-${type}-01.wav`, 0.38, -3.8, (s) => {
+    recipes.enemySplat(s, type, 0);
+    addBoing(s, { start: 0.078, gain: 0.68, frequency: cartoonSplatTraits[type].body, rise: 1.82 });
+  }]);
+  [0, 1].forEach((variant) => assets.push([
+    `world1/enemy-splat-${type}-0${variant + 1}.wav`, 0.22, -4.8, (s) => recipes.enemySplat(s, type, variant),
+  ]));
+});
+
+[
+  ["aircraft-approach", "air", -8], ["aircraft-ready", "machine", -9],
+  ["aircraft-taxi", "machine", -8], ["aircraft-takeoff", "air", -6],
+  ["aircraft-boost", "air", -5], ["aircraft-depart", "air", -8],
+  ["aircraft-drop-complete", "gold", -7], ["aircraft-damage", "machine", -4],
+  ["aircraft-rescue-start", "air", -5], ["aircraft-crash", "boss", -3],
+  ["aircraft-settled", "machine", -8], ["guac-warning", "spice", -7],
+  ["guac-throw", "water", -7], ["guac-krak", "boss", -2.5],
+  ["pinata-aftershock", "carnival", -5], ["pinata-jackpot", "gold", -3],
+  ["stampede-start", "machine", -5], ["stampede-near-miss", "air", -7],
+  ["stampede-escape", "gold", -5], ["salsa-slide", "water", -8],
+  ["churro-spring", "carnival", -8], ["boss-guac-enter", "boss", -3],
+  ["boss-guac-phase", "spice", -3], ["boss-guac-windup", "boss", -5],
+  ["boss-guac-charge", "machine", -4], ["boss-guac-crash", "boss", -2.5],
+  ["boss-guac-airstrike", "air", -4], ["boss-guac-shot", "guac", -9],
+  ["boss-guac-land", "water", -7], ["boss-guac-spring", "carnival", -7],
+  ["boss-guac-vulnerable", "gold", -5], ["boss-guac-clonk", "machine", -6],
+  ["boss-guac-damage", "boss", -2], ["boss-guac-dodge", "air", -8],
+  ["boss-guac-defeat", "carnival", -1.8], ["victory-dash-start", "gold", -4],
+].forEach(([name, style, peak], index) => addIdentityAsset(`world1/${name}-01.wav`, style, peak, name.includes("defeat") ? 0.9 : 0.58, index % 2));
+addLoopAsset("world1/aircraft-propeller-idle-01.wav", "machine", -18);
+addLoopAsset("world1/aircraft-damaged-loop-01.wav", "air", -19, 1);
+addLoopAsset("world1/stampede-loop-01.wav", "machine", -19, 1);
+
+// World 2 enemy families, vehicles, surf, caldera, stage, and concert cues.
+const worldTwoEnemyTypes = ["crab", "coconut", "seagull", "puffer", "tiki", "marshmallow", "pineapple", "pepper", "nacho", "ash", "berry", "mango", "spaghetti"];
+worldTwoEnemyTypes.forEach((type) => {
+  assets.push([`world2/enemy-stomp-${type}-01.wav`, 0.38, -3.8, (s) => {
+    recipes.enemySplat(s, type, 0);
+    addBoing(s, { start: 0.078, gain: 0.68, frequency: cartoonSplatTraits[type].body, rise: 1.8 });
+  }]);
+  [0, 1].forEach((variant) => assets.push([
+    `world2/enemy-splat-${type}-0${variant + 1}.wav`, 0.22, -4.8, (s) => recipes.enemySplat(s, type, variant),
+  ]));
+});
+
+const worldTwoVehicleTypes = { catamaran: "water", trekker: "machine", roadster: "spice" };
+Object.entries(worldTwoVehicleTypes).forEach(([vehicle, style]) => {
+  ["approach", "accelerate", "depart", "taco-drop"].forEach((phase, index) => (
+    addIdentityAsset(`world2/vehicle-${vehicle}-${phase}-01.wav`, style, phase === "taco-drop" ? -11 : -7, 0.55, index)
+  ));
+  addLoopAsset(`world2/vehicle-${vehicle}-idle-01.wav`, style, -19);
+});
+[
+  ["surf-olivia-pass", "water", -8], ["surf-mount", "water", -6],
+  ["surf-obstacle-clear", "gold", -9], ["surf-obstacle-hit", "coconut", -5],
+  ["surf-wave-hit", "water", -4], ["surf-wave-crash-launch", "water", -3],
+  ["surf-land", "water", -6], ["hazard-coconut-cannon-fire", "coconut", -7],
+  ["hazard-coconut-deflect", "coconut", -6], ["hazard-geyser-warn", "water", -9],
+  ["hazard-geyser-launch", "water", -5], ["volcano-warmup", "lava", -6],
+  ["volcano-erupt", "lava", -2], ["stage-generator-activate", "machine", -4],
+  ["concert-start", "crowd", -3], ["concert-chorus-cannon", "carnival", -6],
+  ["concert-crowd-cheer", "crowd", -5], ["concert-crowd-surf-start", "water", -7],
+  ["concert-crowd-surf-land", "crowd", -6], ["concert-tambourine-accent", "carnival", -9],
+  ["concert-finale-lift", "crowd", -2.5], ["concert-bow", "gold", -3],
+].forEach(([name, style, peak], index) => addIdentityAsset(`world2/${name}-01.wav`, style, peak, name.includes("finale") ? 0.86 : 0.58, index % 2));
+addLoopAsset("world2/volcano-active-01.wav", "lava", -20);
+
+// World 3 carnival/cosmic enemy families, rides, vehicles, bosses, and finale.
+const worldThreeEnemyTypes = ["popcorn", "cotton", "pretzel", "lemon", "bumper", "corndog"];
+worldThreeEnemyTypes.forEach((type) => {
+  assets.push([`world3/enemy-stomp-${type}-01.wav`, 0.38, -3.8, (s) => {
+    recipes.enemySplat(s, type, 0);
+    addBoing(s, { start: 0.078, gain: 0.68, frequency: cartoonSplatTraits[type].body, rise: 1.88 });
+  }]);
+  [0, 1].forEach((variant) => assets.push([
+    `world3/enemy-splat-${type}-0${variant + 1}.wav`, 0.22, -4.8, (s) => recipes.enemySplat(s, type, variant),
+  ]));
+});
+const worldThreeVehicleTypes = { balloon: "air", coaster: "carnival", zeppelin: "cosmic" };
+Object.entries(worldThreeVehicleTypes).forEach(([vehicle, style]) => {
+  ["approach", "accelerate", "boost", "depart", "taco-drop"].forEach((phase, index) => (
+    addIdentityAsset(`world3/vehicle-${vehicle}-${phase}-01.wav`, style, phase === "taco-drop" ? -11 : -7, 0.58, index)
+  ));
+  addLoopAsset(`world3/vehicle-${vehicle}-idle-01.wav`, style, -19);
+});
+[
+  ["ride-machine-start", "machine", -7], ["ride-coaster-clack", "machine", -10],
+  ["ride-coaster-drop", "air", -5], ["hazard-comet-pass", "cosmic", -7],
+  ["cosmic-star-relight", "cosmic", -3], ["cosmic-finale", "cosmic", -1.8],
+  ["cosmic-landing", "gold", -4], ["carnival-machine", "carnival", -8],
+].forEach(([name, style, peak], index) => addIdentityAsset(`world3/${name}-01.wav`, style, peak, name.includes("defeat") || name === "cosmic-finale" ? 0.9 : 0.58, index % 2));
+["enter", "move", "windup", "attack", "damage", "phase", "special", "vulnerable", "defeat", "celebrate"].forEach((phase, index) => {
+  addIdentityAsset(`world3/boss-cornelius-${phase}-01.wav`, phase === "move" ? "machine" : phase === "damage" || phase === "defeat" ? "carnival" : "crowd", phase === "defeat" ? -1.8 : phase === "damage" ? -2 : -5, phase === "defeat" ? 0.9 : 0.58, index);
+  addIdentityAsset(`world3/boss-ringmaster-${phase}-01.wav`, phase === "move" ? "air" : phase === "damage" || phase === "defeat" ? "cosmic" : "spice", phase === "defeat" ? -1.8 : phase === "damage" ? -2 : -5, phase === "defeat" ? 0.9 : 0.58, index + 1);
+});
+addLoopAsset("world3/ambience-cosmic-carnival-01.wav", "cosmic", -21);
+
 async function main() {
   const report = [];
   for (const [relativePath, duration, targetPeakDb, render] of assets) {
@@ -593,7 +828,7 @@ async function main() {
   }
 
   const manifest = {
-    generatorVersion: "jft-sfx-phase1-v2-splat-clarification",
+    generatorVersion: "jft-sfx-phase2-v1-full-game",
     generatedAt: "deterministic-build-no-timestamp",
     source: "Original procedural synthesis; no third-party samples.",
     sampleRate: SAMPLE_RATE,

@@ -1,7 +1,7 @@
 (() => {
   if (window.JFT_AUDIO?.engineVersion) return;
 
-  const ENGINE_VERSION = '1.1.0-phase1-splat-clarification';
+  const ENGINE_VERSION = '2.0.0-phase2-full-game';
   const catalog = window.JFT_AUDIO_CATALOG || { events: {}, mix: {} };
   const eventCatalog = catalog.events || {};
   const mix = {
@@ -28,6 +28,7 @@
   let fallbackPlays = 0;
   let aggregatedSourceEvents = 0;
   let aggregateClusters = 0;
+  let authoredMusicDuckGain = 1;
 
   const buffers = new Map();
   const loadPromises = new Map();
@@ -99,6 +100,7 @@
     try {
       context = new AudioContextCtor({ latencyHint: 'interactive' });
       const music = context.createGain();
+      const musicSceneDuck = context.createGain();
       const musicDuck = context.createGain();
       const gameplay = context.createGain();
       const ui = context.createGain();
@@ -117,13 +119,25 @@
       analyser.fftSize = 1_024;
       analyser.smoothingTimeConstant = 0.15;
 
-      music.connect(musicDuck).connect(master);
+      music.connect(musicSceneDuck).connect(musicDuck).connect(master);
       gameplay.connect(master);
       ui.connect(master);
       ambience.connect(master);
       master.connect(compressor).connect(ceiling).connect(analyser).connect(context.destination);
 
-      nodes = { music, musicDuck, gameplay, ui, ambience, master, compressor, ceiling, analyser };
+      nodes = {
+        music,
+        musicSceneDuck,
+        musicDuck,
+        gameplay,
+        ui,
+        ambience,
+        master,
+        compressor,
+        ceiling,
+        analyser,
+      };
+      musicSceneDuck.gain.value = authoredMusicDuckGain;
       applyBusLevels(true);
     } catch (error) {
       contextError = error instanceof Error ? error.message : String(error);
@@ -163,6 +177,7 @@
         contextError = error instanceof Error ? error.message : String(error);
       }
     }
+    resumePendingLoops();
     return getTelemetry();
   }
 
@@ -226,6 +241,20 @@
     });
     await Promise.allSettled([...assets].map((assetPath) => loadAsset(assetPath)));
     return getTelemetry();
+  }
+
+  async function preloadGroups(groups = ['global']) {
+    const requested = new Set(Array.isArray(groups) ? groups : [groups]);
+    const ids = Object.keys(eventCatalog).filter((eventId) => {
+      const definition = eventCatalog[eventId];
+      const paths = allVariantPaths(definition);
+      if (requested.has('global') && paths.some((path) => path.includes('/global/'))) return true;
+      if (requested.has('world1') && paths.some((path) => path.includes('/world1/'))) return true;
+      if (requested.has('world2') && paths.some((path) => path.includes('/world2/'))) return true;
+      if (requested.has('world3') && paths.some((path) => path.includes('/world3/'))) return true;
+      return false;
+    });
+    return preload(ids);
   }
 
   function chooseVariant(eventId, definition, options) {
@@ -351,16 +380,21 @@
   function duckMusic(db, attackSeconds = 0.018, releaseSeconds = 0.45) {
     if (!context || !nodes || db <= 0) return;
     const now = context.currentTime;
+    const requestedEndsAt = now + attackSeconds + 0.035 + releaseSeconds;
+    if (duckEnvelope.endsAt > now && duckEnvelope.db > db && duckEnvelope.endsAt >= requestedEndsAt) return;
+    const effectiveDb = duckEnvelope.endsAt > now ? Math.max(db, duckEnvelope.db) : db;
+    const effectiveEndsAt = Math.max(requestedEndsAt, duckEnvelope.endsAt || 0);
+    const effectiveReleaseSeconds = Math.max(releaseSeconds, effectiveEndsAt - now - attackSeconds - 0.035);
     const gain = nodes.musicDuck.gain;
-    const target = dbToGain(-db);
+    const target = dbToGain(-effectiveDb);
     holdAudioParam(gain, now);
     const current = Math.max(0.001, gain.value);
     gain.setValueAtTime(current, now);
     gain.linearRampToValueAtTime(Math.min(current, target), now + attackSeconds);
     const releaseAt = now + attackSeconds + 0.035;
     gain.setValueAtTime(Math.min(current, target), releaseAt);
-    gain.exponentialRampToValueAtTime(1, releaseAt + releaseSeconds);
-    duckEnvelope = { db, startedAt: now, releaseAt, endsAt: releaseAt + releaseSeconds };
+    gain.exponentialRampToValueAtTime(1, releaseAt + effectiveReleaseSeconds);
+    duckEnvelope = { db: effectiveDb, startedAt: now, releaseAt, endsAt: releaseAt + effectiveReleaseSeconds };
   }
 
   function applyEventDuck(definition, options) {
@@ -369,11 +403,14 @@
     const comboLift = definition.comboPitchCents && Number.isFinite(options.combo)
       ? Math.min(1, Math.max(0, options.combo - 1) * 0.12)
       : 0;
-    duckMusic(
+    const apply = () => duckMusic(
       Math.min(9, requested + comboLift),
       definition.duckAttackSeconds || 0.018,
       definition.duckReleaseSeconds || 0.45,
     );
+    const delayMs = Math.max(0, Number(options.delay) || 0) * 1_000;
+    if (delayMs > 0) window.setTimeout(apply, delayMs);
+    else apply();
   }
 
   function trackVoice(eventId, definition, source, gainNode, panner, loop = false) {
@@ -515,6 +552,25 @@
 
   function beginLoop(handle, definition, options, assetPath) {
     if (handle.stopped || muted || effectsVolume <= 0 || !context || !nodes) return;
+    const sameEventLoops = [...loops.values()].filter((loopHandle) => (
+      loopHandle.id !== handle.id && !loopHandle.stopped && loopHandle.eventId === handle.eventId && loopHandle.voiceId
+    ));
+    const eventLimit = Math.max(1, definition.maxPolyphony || 1);
+    if (sameEventLoops.length >= eventLimit) {
+      recordDrop(handle.eventId, definition.priority || 1, 'eventPolyphony');
+      handle.pending = false;
+      handle.stopped = true;
+      loops.delete(handle.id);
+      return;
+    }
+    const activeLoopVoices = [...voices.values()].filter((voice) => voice.loop).length;
+    if (activeEffectVoices().length + activeLoopVoices >= mix.maximumVoices) {
+      recordDrop(handle.eventId, definition.priority || 1, 'globalPolyphony');
+      handle.pending = false;
+      handle.stopped = true;
+      loops.delete(handle.id);
+      return;
+    }
     const buffer = buffers.get(assetPath);
     if (!buffer) return;
     const source = context.createBufferSource();
@@ -528,6 +584,9 @@
     handle.pending = false;
     handle.voiceId = voice.id;
     handle.source = source;
+    handle.assetPath = assetPath;
+    handle.definition = definition;
+    handle.options = options;
     source.start(context.currentTime + Math.max(0, Number(options.delay) || 0));
   }
 
@@ -542,11 +601,15 @@
       stopped: false,
       voiceId: null,
       source: null,
+      assetPath: null,
+      definition,
+      options,
     };
     nextLoopId += 1;
     loops.set(handle.id, handle);
     const assetPath = chooseVariant(eventId, definition, options);
     if (!assetPath) return handle;
+    handle.assetPath = assetPath;
     if (buffers.has(assetPath)) beginLoop(handle, definition, options, assetPath);
     else loadAsset(assetPath)
       .then(() => beginLoop(handle, definition, options, assetPath))
@@ -592,16 +655,47 @@
     return musicVolume;
   }
 
+  function setMusicDuck(value, options = {}) {
+    authoredMusicDuckGain = clamp(value);
+    if (!context || !nodes?.musicSceneDuck) return authoredMusicDuckGain;
+    const now = context.currentTime;
+    const gain = nodes.musicSceneDuck.gain;
+    const immediate = options.immediate === true;
+    const timeConstant = Math.max(0.005, Number(options.timeConstant) || 0.08);
+    gain.cancelScheduledValues(now);
+    if (immediate) gain.setValueAtTime(authoredMusicDuckGain, now);
+    else gain.setTargetAtTime(Math.max(0.0001, authoredMusicDuckGain), now, timeConstant);
+    return authoredMusicDuckGain;
+  }
+
+  function clearMusicDuck(options = {}) {
+    return setMusicDuck(1, options);
+  }
+
   function setEffectsVolume(value) {
+    const wasUnavailable = effectsVolume <= 0 || muted;
     effectsVolume = clamp(value);
     applyBusLevels();
+    if (wasUnavailable && effectsVolume > 0 && !muted) resumePendingLoops();
     return effectsVolume;
   }
 
   function setMuted(value) {
+    const wasMuted = muted;
     muted = Boolean(value);
     applyBusLevels();
+    if (wasMuted && !muted && effectsVolume > 0) resumePendingLoops();
     return muted;
+  }
+
+  function resumePendingLoops() {
+    if (!context || !nodes || muted || effectsVolume <= 0) return;
+    loops.forEach((handle) => {
+      if (handle.stopped || !handle.pending || handle.voiceId) return;
+      if (handle.assetPath && buffers.has(handle.assetPath)) {
+        beginLoop(handle, handle.definition, handle.options, handle.assetPath);
+      }
+    });
   }
 
   function sampleOutputPeak() {
@@ -630,7 +724,9 @@
 
   function getTelemetry() {
     const outputPeak = sampleOutputPeak();
-    const duckGain = nodes?.musicDuck?.gain?.value ?? 1;
+    const eventDuckGain = nodes?.musicDuck?.gain?.value ?? 1;
+    const sceneDuckGain = nodes?.musicSceneDuck?.gain?.value ?? authoredMusicDuckGain;
+    const duckGain = eventDuckGain * sceneDuckGain;
     const currentVoices = activeEffectVoices();
     return {
       engineVersion: ENGINE_VERSION,
@@ -656,6 +752,9 @@
       },
       currentMusicDuckAmountDb: Number(Math.max(0, -gainToDb(duckGain)).toFixed(2)),
       currentMusicDuckGain: Number(duckGain.toFixed(3)),
+      currentEventMusicDuckAmountDb: Number(Math.max(0, -gainToDb(eventDuckGain)).toFixed(2)),
+      currentAuthoredMusicDuckAmountDb: Number(Math.max(0, -gainToDb(sceneDuckGain)).toFixed(2)),
+      currentAuthoredMusicDuckGain: Number(sceneDuckGain.toFixed(3)),
       duckEnvelope: { ...duckEnvelope },
       currentBusLevels: {
         music: busTelemetry(musicVolume, mix.musicCalibration, nodes?.music?.gain?.value),
@@ -691,11 +790,14 @@
     engineVersion: ENGINE_VERSION,
     init,
     preload,
+    preloadGroups,
     registerMusicTracks,
     play,
     startLoop,
     stopLoop,
     setMusicVolume,
+    setMusicDuck,
+    clearMusicDuck,
     setEffectsVolume,
     setMuted,
     getTelemetry,
