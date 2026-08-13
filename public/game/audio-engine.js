@@ -1,9 +1,10 @@
 (() => {
   if (window.JFT_AUDIO?.engineVersion) return;
 
-  const ENGINE_VERSION = '2.0.0-phase2-full-game';
+  const ENGINE_VERSION = '2.1.0-phase3-final-polish';
   const catalog = window.JFT_AUDIO_CATALOG || { events: {}, mix: {} };
   const eventCatalog = catalog.events || {};
+  const assetCacheVersion = catalog.assetCacheVersion || '';
   const mix = {
     musicCalibration: 0.75,
     gameplayCalibration: 0.95,
@@ -206,13 +207,19 @@
     return audioContext.decodeAudioData(arrayBuffer.slice(0));
   }
 
+  function assetRequestUrl(assetPath) {
+    if (!assetCacheVersion) return assetPath;
+    const separator = assetPath.includes('?') ? '&' : '?';
+    return `${assetPath}${separator}v=${encodeURIComponent(assetCacheVersion)}`;
+  }
+
   async function loadAsset(assetPath) {
     if (buffers.has(assetPath)) return buffers.get(assetPath);
     if (loadPromises.has(assetPath)) return loadPromises.get(assetPath);
 
     const promise = (async () => {
       try {
-        const response = await fetch(assetPath);
+        const response = await fetch(assetRequestUrl(assetPath));
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const buffer = await decodeAudioData(await response.arrayBuffer());
         buffers.set(assetPath, buffer);
@@ -731,7 +738,13 @@
     return {
       engineVersion: ENGINE_VERSION,
       catalogVersion: catalog.version || 'unversioned',
+      assetCacheVersion: assetCacheVersion || 'unversioned',
       audioContextState: context?.state || (contextError ? 'unavailable' : 'not-created'),
+      audioContextSampleRate: context?.sampleRate || null,
+      audioContextLatencySeconds: {
+        base: Number.isFinite(context?.baseLatency) ? Number(context.baseLatency.toFixed(4)) : null,
+        output: Number.isFinite(context?.outputLatency) ? Number(context.outputLatency.toFixed(4)) : null,
+      },
       contextError,
       loadedAssets: [...buffers.keys()].sort(),
       failedAssets: [...failedAssets.entries()].sort(([a], [b]) => a.localeCompare(b))

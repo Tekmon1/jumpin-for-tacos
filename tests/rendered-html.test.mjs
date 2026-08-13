@@ -114,12 +114,12 @@ test("keeps World 1-1 enemy artwork on a separate slower visual clock", async ()
   assert.equal(context.window.JFT_HERO_CORE.physics.enemyVisualAnimationRate, 1.8);
   assert.match(mainRuntime, /enemy\.anim \+= dt \* heroPhysics\.enemyVisualAnimationRate/);
   assert.match(mainRuntime, /return Math\.floor\(enemy\.anim\) % 4/);
-  assert.match(mainRuntime, /SOURCE_VERSION = 'w1-1-v47-phase2-power-identities'/);
+  assert.match(mainRuntime, /SOURCE_VERSION = 'w1-1-v48-phase3-audio-polish'/);
   assert.match(mainRuntime, /function removeOpeningLeadEnemy/);
   assert.match(mainRuntime, /removeOpeningLeadEnemy\(\)/);
   assert.match(mainRuntime, /patrolStartOffset: 420/);
   assert.match(mainHtml, /levels\.js\?v=31/);
-  assert.match(mainHtml, /game\.js\?v=47/);
+  assert.match(mainHtml, /game\.js\?v=48/);
 });
 
 test("creates same-type enemy packs and recognizes swept stomp contacts", async () => {
@@ -621,7 +621,7 @@ test("ships World 1 with authored seamless panorama progressions", async () => {
     assert.match(prototype, new RegExp(filename.replace(".png", "")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(prototypeHtml, /game\.js\?v=47/);
+  assert.match(prototypeHtml, /game\.js\?v=48/);
   assert.match(prototype, /function drawPaintedTerrainSlice/);
   assert.match(prototype, /artStyle: 'goldenCactus'/);
   assert.match(prototype, /function drawTacoTrekkerLayers/);
@@ -707,7 +707,7 @@ test("remasters the complete World 1-1 enemy and NPC cast without changing gamep
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /game\.js\?v=47/);
+  assert.match(html, /game\.js\?v=48/);
   assert.match(runtime, /function remasteredEnemyFrame/);
   assert.match(runtime, /function drawRemasteredEnemy/);
   assert.match(runtime, /function drawDesertLocals/);
@@ -757,7 +757,7 @@ test("authors the full World 1-1 pilot around purposeful upper routes and metada
   assert.match(runtime, /game\.salsaMeter = Math\.min\(100, game\.salsaMeter \+ authoredMeter\)/);
   assert.match(core, /const requestedPlatformId = enemy\.supportPlatformId \|\| enemy\.platformId/);
   assert.match(core, /id === `\$\{requestedPlatformId\}-encore`/);
-  assert.match(html, /game\.js\?v=47/);
+  assert.match(html, /game\.js\?v=48/);
   assert.match(html, /explore layered desert\n\s+routes where risky jumps can lead to bonus powers/);
 });
 
@@ -1482,7 +1482,7 @@ test("ships the Neon Neckties full-song arrangement and review studio", async ()
   assert.equal(cues.integration.role, "finale concert master");
 });
 
-test("loads the shared Phase 1 audio foundation before World 1-1 and resolves every semantic event", async () => {
+test("loads the shared Phase 3 audio foundation before World 1-1 and resolves every semantic event", async () => {
   const html = await readFile(new URL("../public/game/index.html", import.meta.url), "utf8");
   const runtime = await readFile(new URL("../public/game/game.js", import.meta.url), "utf8");
   const catalogSource = await readFile(new URL("../public/game/audio-catalog.js", import.meta.url), "utf8");
@@ -1492,9 +1492,9 @@ test("loads the shared Phase 1 audio foundation before World 1-1 and resolves ev
   const labRuntime = await readFile(new URL("../public/game/audio-lab.js", import.meta.url), "utf8");
   const landingPage = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
 
-  const catalogPosition = html.indexOf('src="audio-catalog.js?v=4"');
-  const enginePosition = html.indexOf('src="audio-engine.js?v=4"');
-  const runtimePosition = html.indexOf('src="game.js?v=47"');
+  const catalogPosition = html.indexOf('src="audio-catalog.js?v=5"');
+  const enginePosition = html.indexOf('src="audio-engine.js?v=5"');
+  const runtimePosition = html.indexOf('src="game.js?v=48"');
   assert.ok(catalogPosition >= 0, "World 1-1 loads the semantic catalog");
   assert.ok(enginePosition > catalogPosition, "the engine loads after its catalog");
   assert.ok(runtimePosition > enginePosition, "the engine loads before the World 1-1 runtime");
@@ -1504,7 +1504,8 @@ test("loads the shared Phase 1 audio foundation before World 1-1 and resolves ev
   vm.runInNewContext(engineSource, context, { filename: "audio-engine.js" });
   const catalog = context.window.JFT_AUDIO_CATALOG;
   const engine = context.window.JFT_AUDIO;
-  assert.equal(catalog.version, "phase2-catalog-v1-full-game");
+  assert.equal(catalog.version, "phase3-catalog-v1-final-polish");
+  assert.equal(catalog.assetCacheVersion, "sfx-phase3-v1-final-polish");
 
   const required = [
     "ui.start", "ui.confirm", "hero.jump", "hero.landSoft", "hero.landHard",
@@ -1536,8 +1537,11 @@ test("loads the shared Phase 1 audio foundation before World 1-1 and resolves ev
   engine.setEffectsVolume(0.89);
   engine.setMuted(true);
   const telemetry = engine.getTelemetry();
-  assert.equal(telemetry.engineVersion, "2.0.0-phase2-full-game");
+  assert.equal(telemetry.engineVersion, "2.1.0-phase3-final-polish");
+  assert.equal(telemetry.assetCacheVersion, "sfx-phase3-v1-final-polish");
   assert.equal(telemetry.audioContextState, "not-created");
+  assert.equal(telemetry.audioContextLatencySeconds.base, null);
+  assert.equal(telemetry.audioContextLatencySeconds.output, null);
   assert.equal(telemetry.currentBusLevels.music.setting, 0.61);
   assert.equal(telemetry.currentBusLevels.gameplaySfx.setting, 0.89);
   assert.equal(telemetry.currentBusLevels.master.muted, true);
@@ -1560,22 +1564,25 @@ test("loads the shared Phase 1 audio foundation before World 1-1 and resolves ev
     assert.equal(normalSplat.variantsByOption.variants[enemyType].length, 2, `${enemyType} has two normal splats`);
     assert.equal(perfectStomp.variantsByOption.variants[enemyType].length, 1, `${enemyType} has a perfect stomp`);
   }
-  assert.ok(normalSplat.duckDb < perfectStomp.duckDb, "perfect stomp adds reward without excessive normal-splat gain");
+  assert.ok(normalSplat.duckDb < perfectStomp.duckDb, "perfect bounce adds reward without excessive non-perfect squish gain");
 
   const splatRecipe = generatorSource.match(/enemySplat\(sound,[\s\S]*?\n  },/)?.[0] || "";
   const stompRecipe = generatorSource.match(/enemyStomp\(sound,[\s\S]*?\n  },/)?.[0] || "";
-  assert.match(generatorSource, /function addCartoonEnemySplat/);
-  assert.match(splatRecipe, /addCartoonEnemySplat/);
+  const squishHelper = generatorSource.match(/function addCartoonEnemySquish[\s\S]*?\n}\n\nfunction addBoing/)?.[0] || "";
+  assert.match(generatorSource, /function addCartoonEnemySquish/);
+  assert.match(splatRecipe, /addCartoonEnemySquish/);
   assert.doesNotMatch(splatRecipe, /addBoing/, "normal splat has no full rebound layer");
-  assert.match(stompRecipe, /addCartoonEnemySplat/);
+  assert.match(stompRecipe, /addCartoonEnemySquish/);
   assert.match(stompRecipe, /addBoing/, "perfect stomp adds the pronounced rebound layer");
+  assert.doesNotMatch(squishHelper, /addShellCrunch/, "non-perfect squish does not lead with the former dry shell crunch");
 
   const sfxManifest = JSON.parse(
     await readFile(new URL("../public/game/assets/sfx/sfx-manifest.json", import.meta.url), "utf8"),
   );
   assert.equal(sfxManifest.source, "Original procedural synthesis; no third-party samples.");
   assert.equal(sfxManifest.assetCount, catalogAssets.size);
-  assert.equal(sfxManifest.assetCount, 280, "full-game library includes every deterministic Phase 2 render");
+  assert.equal(sfxManifest.generatorVersion, "jft-sfx-phase3-v1-final-polish");
+  assert.equal(sfxManifest.assetCount, 280, "full-game library includes every deterministic Phase 3 render");
   assert.ok(sfxManifest.totalBytes < 14 * 1024 * 1024, "full-game SFX stay below 14 MiB");
   assert.ok(sfxManifest.assets.every((asset) => asset.bytes < 200 * 1024), "each SFX stays below 200 KiB");
   for (const asset of sfxManifest.assets) {
@@ -1583,6 +1590,27 @@ test("loads the shared Phase 1 audio foundation before World 1-1 and resolves ev
     assert.equal(bytes.length, asset.bytes, `${asset.path} byte length matches its manifest`);
     assert.equal(createHash("sha256").update(bytes).digest("hex"), asset.sha256, `${asset.path} hash matches`);
   }
+
+  const rmsWindowDb = (bytes, startSeconds, endSeconds) => {
+    const startSample = Math.floor(startSeconds * 44_100);
+    const endSample = Math.floor(endSeconds * 44_100);
+    let sumSquares = 0;
+    for (let sample = startSample; sample < endSample; sample += 1) {
+      const value = bytes.readInt16LE(44 + sample * 2) / 32_768;
+      sumSquares += value * value;
+    }
+    return 20 * Math.log10(Math.sqrt(sumSquares / (endSample - startSample)) + 1e-12);
+  };
+  const normalSquishBytes = await readFile(new URL("../public/game/assets/sfx/world1/enemy-splat-tomato-01.wav", import.meta.url));
+  const perfectBounceBytes = await readFile(new URL("../public/game/assets/sfx/world1/enemy-stomp-tomato-01.wav", import.meta.url));
+  assert.ok(
+    rmsWindowDb(normalSquishBytes, 0.02, 0.12) >= rmsWindowDb(normalSquishBytes, 0, 0.02) - 1,
+    "the juicy squish body remains at least as present as its padded onset",
+  );
+  assert.ok(
+    rmsWindowDb(perfectBounceBytes, 0.12, 0.22) >= rmsWindowDb(normalSquishBytes, 0.12, 0.22) + 10,
+    "the perfect bounce has a pronounced late boing that the non-perfect squish does not",
+  );
 
   assert.doesNotMatch(runtime, /createOscillator\s*\(/, "World 1-1 has no raw oscillator synthesis");
   assert.doesNotMatch(runtime, /function\s+sfx\s*\(/, "World 1-1 has no local sfx function");
@@ -1595,21 +1623,33 @@ test("loads the shared Phase 1 audio foundation before World 1-1 and resolves ev
   assert.match(engineSource, /droppedEffectsByPriority/);
   assert.match(engineSource, /function resumePendingLoops/);
   assert.match(engineSource, /Math\.max\(requestedEndsAt, duckEnvelope\.endsAt/);
+  assert.match(engineSource, /fetch\(assetRequestUrl\(assetPath\)\)/, "Phase 3 assets use a cache-busted request URL");
   assert.match(runtime, /jumpinForTacosProgressV2/);
   assert.match(runtime, /savedProgress\.settings\.musicVolume \?\? 0\.7/);
   assert.match(runtime, /savedProgress\.settings\.effectsVolume \?\? 0\.8/);
   assert.match(runtime, /function defeatEnemy\(enemy, perfectBounce = true/);
   assert.match(runtime, /perfectBounce \? 'combat\.enemyStomp' : 'combat\.enemySplat'/);
+  assert.match(runtime, /frenzyWasActive && game\.frenzyTimer <= 0.*ability\.frenzyEnd/);
+  assert.match(runtime, /magnetWasActive && game\.magnetTimer <= 0.*ability\.magnetEnd/);
 
   assert.match(lab, /jump_for_tacos_final_concert_master\.mp3/);
   assert.match(lab, /Magnet-cascade stress test/);
-  assert.match(lab, />Normal Enemy Splat</);
-  assert.match(lab, />Perfect Stomp \/ Bounce</);
-  assert.match(lab, /SPLAT! BOING!/);
-  assert.match(lab, /10 normal-splat variants/);
-  assert.match(lab, /10 perfect-stomp stress test/);
+  assert.match(lab, />Non-Perfect Enemy Squish</);
+  assert.match(lab, />Perfect Enemy Bounce</);
+  assert.match(lab, />Enemy Contact A\/B Demo</);
+  assert.match(lab, /Enemy Families and contact outcomes/);
+  assert.match(lab, /SQUISH! BOING!/);
+  assert.match(lab, /10 non-perfect squish variants/);
+  assert.match(lab, /10 perfect-bounce stress test/);
+  assert.match(lab, /12-jump repetition test/);
   assert.match(labRuntime, /playEvent\('combat\.enemySplat'\)/);
   assert.match(labRuntime, /playEvent\('combat\.enemyStomp'\)/);
+  assert.match(labRuntime, /button\.dataset\.eventId = eventId/);
+  assert.match(labRuntime, /scheduleSequence\('Enemy Contact A\/B Demo'/);
+  assert.match(labRuntime, /scheduleSequence\('Jump repetition test'/);
+  for (const category of ["Hero", "Movement", "Ordinary Taco", "Premium Tacos", "Power-Ups", "Piñatas", "Celebrations", "Finale", "UI"]) {
+    assert.match(labRuntime, new RegExp(`\\['${category}'`), `Audio Lab includes the ${category} review category`);
+  }
   assert.match(lab, /Core Gameplay Demo/);
   assert.doesNotMatch(landingPage, /audio-lab/i, "the private lab is not linked from the landing page");
 });
@@ -1626,7 +1666,7 @@ test("keeps every pre-Phase-1 music file byte-identical", async () => {
   }
 });
 
-test("migrates every remaining level runtime to the shared Phase 2 audio engine", async () => {
+test("keeps every remaining level runtime on the shared Phase 3 audio engine", async () => {
   const pages = [
     ["level1-2.html", "level1-2.js"], ["level1-3.html", "level1-3.js"],
     ["level2.html", "level2.js"], ["level2-2.html", "level2-2.js"],
@@ -1645,8 +1685,8 @@ test("migrates every remaining level runtime to the shared Phase 2 audio engine"
     const catalogPosition = html.indexOf('src="audio-catalog.js');
     const enginePosition = html.indexOf('src="audio-engine.js');
     const runtimePosition = html.indexOf(`src="${runtimeName}`);
-    assert.match(html, /src="audio-catalog\.js\?v=4"/, `${pageName} uses the Phase 2 catalog cache key`);
-    assert.match(html, /src="audio-engine\.js\?v=4"/, `${pageName} uses the Phase 2 engine cache key`);
+    assert.match(html, /src="audio-catalog\.js\?v=5"/, `${pageName} uses the Phase 3 catalog cache key`);
+    assert.match(html, /src="audio-engine\.js\?v=5"/, `${pageName} uses the Phase 3 engine cache key`);
     assert.ok(catalogPosition >= 0, `${pageName} loads the audio catalog`);
     assert.ok(enginePosition > catalogPosition, `${pageName} loads the engine after its catalog`);
     assert.ok(runtimePosition > enginePosition, `${pageName} loads the engine before ${runtimeName}`);

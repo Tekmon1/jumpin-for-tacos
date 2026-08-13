@@ -6,12 +6,12 @@
   <meta name="robots" content="noindex,nofollow" />
   <meta name="theme-color" content="#120f21" />
   <title>Private Audio Lab | Jumpin' For Tacos</title>
-  <link rel="stylesheet" href="audio-lab.css?v=3" />
+  <link rel="stylesheet" href="audio-lab.css?v=4" />
 </head>
 <body>
   <main class="lab-shell">
     <header class="hero-panel">
-      <p class="eyebrow">Private review utility - Phase 2</p>
+      <p class="eyebrow">Private review utility - Phase 3 final polish</p>
       <h1>Jumpin' For Tacos Audio Lab</h1>
       <p>
         Audition the complete nine-level semantic catalog, World palettes, power-up identities,
@@ -98,14 +98,16 @@
       </div>
       <div class="contact-comparison" aria-labelledby="contactComparisonHeading">
         <div>
-          <h3 id="contactComparisonHeading">Enemy-contact comparison</h3>
-          <p>Normal keeps the juicy splat body; perfect adds the earned elastic rebound.</p>
+          <h3 id="contactComparisonHeading">Enemy Families and contact outcomes</h3>
+          <p>Non-perfect contact is a soft, juicy squash; perfect contact keeps that body and adds the earned elastic rebound.</p>
+          <p>The Enemy family selector applies each world's texture to both outcomes for direct comparison.</p>
         </div>
         <div class="comparison-buttons">
-          <button id="normalEnemySplat" type="button">Normal Enemy Splat</button>
-          <button id="perfectEnemyStomp" class="primary" type="button">Perfect Stomp / Bounce</button>
+          <button id="normalEnemySplat" type="button">Non-Perfect Enemy Squish</button>
+          <button id="perfectEnemyStomp" class="primary" type="button">Perfect Enemy Bounce</button>
+          <button id="enemyContactAB" type="button">Enemy Contact A/B Demo</button>
         </div>
-        <p class="comparison-language"><strong>Normal:</strong> SPLAT! <strong>Perfect:</strong> SPLAT! BOING!</p>
+        <p class="comparison-language"><strong>Non-perfect:</strong> SQUISH! <strong>Perfect:</strong> SQUISH! BOING!</p>
       </div>
       <div id="catalogSections" class="catalog-sections"></div>
     </section>
@@ -119,10 +121,11 @@
         <button id="bossDemo" type="button">Boss Combat Demo</button>
         <button id="pinataDemo" type="button">Piñata Celebration Demo</button>
         <button id="cosmicDemo" type="button">World 3 Cosmic Finale Demo</button>
+        <button id="jumpStress" type="button">12-jump repetition test</button>
         <button id="tacoStreak" type="button">Taco-streak simulation</button>
         <button id="magnetStress" type="button">Magnet-cascade stress test</button>
-        <button id="splatStress" type="button">10 normal-splat variants</button>
-        <button id="stompStress" type="button">10 perfect-stomp stress test</button>
+        <button id="splatStress" type="button">10 non-perfect squish variants</button>
+        <button id="stompStress" type="button">10 perfect-bounce stress test</button>
         <button id="coreDemo" class="primary" type="button">Core Gameplay Demo</button>
         <button id="ambienceToggle" type="button" aria-pressed="false">Start selected ambience</button>
       </div>
@@ -136,8 +139,8 @@
   </main>
 
   <audio id="labMusic" preload="metadata" loop></audio>
-  <script src="audio-catalog.js?v=4"></script>
-  <script src="audio-engine.js?v=4"></script>
-  <script src="audio-lab.js?v=3"></script>
+  <script src="audio-catalog.js?v=5"></script>
+  <script src="audio-engine.js?v=5"></script>
+  <script src="audio-lab.js?v=4"></script>
 </body>
 </html>

@@ -64,20 +64,23 @@ npm run lint
 - `docs/`: gameplay and remaster QA notes
 - `scripts/`: build validation and music-generation utilities
 
-## Phase 1 shared audio foundation
+## Shared full-game audio foundation
 
-World 1-1 uses the shared vanilla-JavaScript audio engine in
-`public/game/audio-engine.js` and the semantic event catalog in
-`public/game/audio-catalog.js`. The committed Phase 1 effects are original,
-procedurally rendered WAV files. Rebuild them deterministically with:
+All nine levels use the shared vanilla-JavaScript audio engine in
+`public/game/audio-engine.js` and the 153-event semantic catalog in
+`public/game/audio-catalog.js`. The committed effects are original,
+procedurally rendered WAV files. Rebuild the complete 280-asset library
+deterministically with:
 
 ```bash
 npm run generate:sfx
 ```
 
 The private local review surface is `/game/audio-lab.html`; it is intentionally
-not linked from the public landing page. See `docs/sfx-remaster-phase1.md` for
-the architecture, mix calibration, test evidence, and later-world rollout plan.
+not linked from the public landing page. See `docs/sfx-remaster-phase3.md` for
+the final architecture, contact-sound revision, mix calibration, test evidence,
+and remaining physical-device review gates. Phase 1 and Phase 2 reports remain
+in `docs/` as historical implementation records.
 
 ## GitHub setup
 

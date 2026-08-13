@@ -117,27 +117,32 @@
   }
 
   const categoryRules = [
-    ['Taco Hero', /^(hero\.|checkpoint\.|goal\.|level\.(complete|victoryDashStart))/],
-    ['Taco Collection', /^collect\./],
-    ['Power-Ups', /^ability\./],
-    ['Enemy Splats', /^combat\.enemySplat$/],
-    ['Perfect Stomps', /^(combat\.enemyStomp|combat\.comboMilestone)$/],
-    ['World 1', /^(world1\.|vehicle\.aircraft|hazard\.(guac|stampede|nearMiss)|impact\.|movement\.|sequence\.)/],
-    ['World 2', /^(surf\.|volcano\.|stage\.|concert\.|hazard\.(coconut|geyser))/],
-    ['World 3', /^(ride\.|cosmic\.|carnival\.|ambience\.cosmic|hazard\.comet)/],
-    ['Olivia Vehicles', /^vehicle\.(?!aircraft)/],
-    ['Hazards', /^hazard\./],
+    ['Hero', /^(hero\.(hurt|fall|respawn)|checkpoint\.)/],
+    ['Movement', /^(hero\.(jump|land)|movement\.|ride\.)/],
+    ['Ordinary Taco', /^collect\.(taco|tacoCluster)$/],
+    ['Premium Tacos', /^collect\.(?!powerup$)/],
+    ['Power-Ups', /^(ability\.|collect\.powerup$)/],
+    ['Non-Perfect Enemy Squishes', /^combat\.enemySplat$/],
+    ['Perfect Enemy Bounces', /^(combat\.enemyStomp|combat\.comboMilestone)$/],
+    ['Olivia Vehicles', /^(vehicle\.|surf\.oliviaPass$)/],
     ['Bosses', /^boss\./],
-    ['Celebrations', /^(pinata\.|level\.celebration|celebration\.)/],
+    ['Hazards', /^(hazard\.|impact\.|volcano\.)/],
+    ['Piñatas', /^pinata\./],
+    ['Celebrations', /^(level\.celebrationPulse$|concert\.(crowdCheer|chorusCannon|tambourineAccent)$)/],
+    ['Finale', /^(goal\.|level\.(complete|victoryDashStart)$|cosmic\.finale$|concert\.(finaleLift|bow)$)/],
+    ['World 1', /^(world1\.|sequence\.)/],
+    ['World 2', /^(surf\.|stage\.|concert\.)/],
+    ['World 3', /^(cosmic\.|carnival\.)/],
     ['UI', /^ui\./],
     ['Ambience', /^ambience\./],
+    ['Other', /.*/],
   ];
 
   const categorized = new Map(categoryRules.map(([name]) => [name, []]));
   const seen = new Set();
   audio.listEvents().forEach((eventId) => {
     const match = categoryRules.find(([, pattern]) => pattern.test(eventId) && !seen.has(eventId));
-    const category = match?.[0] || 'World 3';
+    const category = match?.[0] || 'Other';
     categorized.get(category).push(eventId);
     seen.add(eventId);
   });
@@ -147,7 +152,7 @@
     if (!eventIds.length) return;
     const details = document.createElement('details');
     details.className = 'catalog-category';
-    if (['Taco Hero', 'Power-Ups', 'Bosses'].includes(category)) details.open = true;
+    if (['Hero', 'Movement', 'Power-Ups', 'Non-Perfect Enemy Squishes', 'Perfect Enemy Bounces'].includes(category)) details.open = true;
     const summary = document.createElement('summary');
     summary.textContent = `${category} (${eventIds.length})`;
     const grid = document.createElement('div');
@@ -156,6 +161,7 @@
       const button = document.createElement('button');
       button.type = 'button';
       button.textContent = eventId;
+      button.dataset.eventId = eventId;
       button.addEventListener('click', () => playEvent(eventId));
       grid.appendChild(button);
     });
@@ -165,6 +171,14 @@
 
   byId('normalEnemySplat').addEventListener('click', () => playEvent('combat.enemySplat'));
   byId('perfectEnemyStomp').addEventListener('click', () => playEvent('combat.enemyStomp'));
+  byId('enemyContactAB').addEventListener('click', () => scheduleSequence('Enemy Contact A/B Demo', [
+    { at: 0, eventId: 'combat.enemySplat' },
+    { at: 650, eventId: 'combat.enemyStomp', options: { combo: 1 } },
+    { at: 1_450, eventId: 'combat.enemySplat' },
+    { at: 2_100, eventId: 'combat.enemyStomp', options: { combo: 2 } },
+    { at: 2_900, eventId: 'combat.enemySplat' },
+    { at: 3_550, eventId: 'combat.enemyStomp', options: { combo: 3 } },
+  ]));
 
   byId('powerDemo').addEventListener('click', () => scheduleSequence('Power-Up Demo', [
     { at: 0, eventId: 'ability.limeStart' }, { at: 650, eventId: 'ability.limeBreak' },
@@ -226,6 +240,10 @@
     { at: 5_700, eventId: 'level.complete' },
   ]));
 
+  byId('jumpStress').addEventListener('click', () => scheduleSequence('Jump repetition test', Array.from({ length: 12 }, (_, index) => ({
+    at: index * 140, eventId: 'hero.jump', options: { position: Math.sin(index * 0.8) * 0.25 },
+  }))));
+
   byId('tacoStreak').addEventListener('click', () => scheduleSequence('Taco streak', Array.from({ length: 16 }, (_, index) => ({
     at: index * 105, eventId: 'collect.taco', options: { streak: index + 1, position: (index % 5 - 2) / 2 },
   }))));
@@ -239,10 +257,10 @@
   });
 
   const stressEnemyTypes = ['tomato', 'lime', 'slime', 'crab', 'coconut', 'spaghetti', 'popcorn', 'cotton', 'bumper', 'corndog'];
-  byId('splatStress').addEventListener('click', () => scheduleSequence('Normal splat variants', Array.from({ length: 10 }, (_, index) => ({
+  byId('splatStress').addEventListener('click', () => scheduleSequence('Non-perfect squish variants', Array.from({ length: 10 }, (_, index) => ({
     at: index * 105, eventId: 'combat.enemySplat', options: { enemyType: stressEnemyTypes[index], position: (index % 5 - 2) / 2 },
   }))));
-  byId('stompStress').addEventListener('click', () => scheduleSequence('Perfect stomp stress', Array.from({ length: 10 }, (_, index) => ({
+  byId('stompStress').addEventListener('click', () => scheduleSequence('Perfect bounce stress', Array.from({ length: 10 }, (_, index) => ({
     at: index * 85, eventId: 'combat.enemyStomp', options: { enemyType: stressEnemyTypes[index], combo: index + 1, position: (index % 5 - 2) / 2 },
   }))));
 

@@ -683,7 +683,8 @@
   events['ambience.cosmicCarnival'] = event(worldThreeAsset('ambience-cosmic-carnival-01.wav'), { bus: 'ambience', priority: 1, gain: 0.48, loop: true, cooldownMs: 0, maxPolyphony: 1, fallback: null });
 
   window.JFT_AUDIO_CATALOG = Object.freeze({
-    version: 'phase2-catalog-v1-full-game',
+    version: 'phase3-catalog-v1-final-polish',
+    assetCacheVersion: 'sfx-phase3-v1-final-polish',
     requiredPhase1Events,
     mix: Object.freeze({
       musicCalibration: 0.75,

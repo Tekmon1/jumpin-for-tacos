@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-1-v47-phase2-power-identities';
+  const SOURCE_VERSION = 'w1-1-v48-phase3-audio-polish';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -2477,8 +2477,12 @@
     player.jumpBuffer = Math.max(0, player.jumpBuffer - dt);
     player.coyote = player.grounded ? heroPhysics.coyoteTime : Math.max(0, player.coyote - dt);
     game.messageTimer = Math.max(0, game.messageTimer - dt);
+    const frenzyWasActive = game.frenzyTimer > 0;
+    const magnetWasActive = game.magnetTimer > 0;
     game.frenzyTimer = Math.max(0, game.frenzyTimer - dt);
     game.magnetTimer = Math.max(0, game.magnetTimer - dt);
+    if (frenzyWasActive && game.frenzyTimer <= 0) playAudio('ability.frenzyEnd');
+    if (magnetWasActive && game.magnetTimer <= 0) playAudio('ability.magnetEnd');
     game.stompTimer = Math.max(0, game.stompTimer - dt);
     game.airChainTimer = Math.max(0, game.airChainTimer - dt);
     game.truckThrowAnim = Math.max(0, game.truckThrowAnim - dt);
