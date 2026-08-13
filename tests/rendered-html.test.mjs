@@ -114,12 +114,12 @@ test("keeps World 1-1 enemy artwork on a separate slower visual clock", async ()
   assert.equal(context.window.JFT_HERO_CORE.physics.enemyVisualAnimationRate, 1.8);
   assert.match(mainRuntime, /enemy\.anim \+= dt \* heroPhysics\.enemyVisualAnimationRate/);
   assert.match(mainRuntime, /return Math\.floor\(enemy\.anim\) % 4/);
-  assert.match(mainRuntime, /SOURCE_VERSION = 'w1-1-v48-phase3-audio-polish'/);
+  assert.match(mainRuntime, /SOURCE_VERSION = 'w1-1-v49-visual-polish'/);
   assert.match(mainRuntime, /function removeOpeningLeadEnemy/);
   assert.match(mainRuntime, /removeOpeningLeadEnemy\(\)/);
   assert.match(mainRuntime, /patrolStartOffset: 420/);
   assert.match(mainHtml, /levels\.js\?v=31/);
-  assert.match(mainHtml, /game\.js\?v=48/);
+  assert.match(mainHtml, /game\.js\?v=49/);
 });
 
 test("creates same-type enemy packs and recognizes swept stomp contacts", async () => {
@@ -615,18 +615,24 @@ test("ships World 1 with authored seamless panorama progressions", async () => {
     "world1_1_taco_trekker_body_v1.png",
     "world1_1_taco_trekker_olivia_v1.png",
     "world1_1_taco_trekker_wheel_v1.png",
-    "world1_1_olivia_throw_arm_v1.png",
+    "world1_1_taco_drop_payload_v1.png",
   ];
   for (const filename of foregroundAssets) {
     assert.match(prototype, new RegExp(filename.replace(".png", "")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(prototypeHtml, /game\.js\?v=48/);
+  assert.match(prototypeHtml, /game\.js\?v=49/);
   assert.match(prototype, /function drawPaintedTerrainSlice/);
   assert.match(prototype, /artStyle: 'goldenCactus'/);
   assert.match(prototype, /function drawTacoTrekkerLayers/);
   assert.match(prototype, /independentWheels: true/);
-  assert.match(prototype, /armOnlyThrowFrame/);
+  assert.match(prototype, /rearTacoLauncher: true/);
+  assert.match(prototype, /oliviaDrivingPose: true/);
+  assert.match(prototype, /armThrowOverlay: false/);
+  assert.match(prototype, /pinataVisualRemaster: 'burro-fringe-v1'/);
+  assert.match(prototype, /function drawPinataFringeBand/);
+  assert.match(prototype, /function tracePinataStar/);
+  assert.doesNotMatch(prototype, /truckThrowAnim|truckThrowWorldX|tacoTrekkerThrowFrames|world1_1_olivia_throw_arm_v1/);
 
   const rescueForeground = await readFile(new URL("../public/game/level1-2.js", import.meta.url), "utf8");
   const rescueForegroundHtml = await readFile(new URL("../public/game/level1-2.html", import.meta.url), "utf8");
@@ -707,7 +713,7 @@ test("remasters the complete World 1-1 enemy and NPC cast without changing gamep
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /game\.js\?v=48/);
+  assert.match(html, /game\.js\?v=49/);
   assert.match(runtime, /function remasteredEnemyFrame/);
   assert.match(runtime, /function drawRemasteredEnemy/);
   assert.match(runtime, /function drawDesertLocals/);
@@ -757,7 +763,7 @@ test("authors the full World 1-1 pilot around purposeful upper routes and metada
   assert.match(runtime, /game\.salsaMeter = Math\.min\(100, game\.salsaMeter \+ authoredMeter\)/);
   assert.match(core, /const requestedPlatformId = enemy\.supportPlatformId \|\| enemy\.platformId/);
   assert.match(core, /id === `\$\{requestedPlatformId\}-encore`/);
-  assert.match(html, /game\.js\?v=48/);
+  assert.match(html, /game\.js\?v=49/);
   assert.match(html, /explore layered desert\r?\n\s+routes where risky jumps can lead to bonus powers/);
 });
 
@@ -1495,7 +1501,7 @@ test("loads the shared Phase 3 audio foundation before World 1-1 and resolves ev
 
   const catalogPosition = html.indexOf('src="audio-catalog.js?v=7"');
   const enginePosition = html.indexOf('src="audio-engine.js?v=7"');
-  const runtimePosition = html.indexOf('src="game.js?v=48"');
+  const runtimePosition = html.indexOf('src="game.js?v=49"');
   assert.ok(catalogPosition >= 0, "World 1-1 loads the semantic catalog");
   assert.ok(enginePosition > catalogPosition, "the engine loads after its catalog");
   assert.ok(runtimePosition > enginePosition, "the engine loads before the World 1-1 runtime");
