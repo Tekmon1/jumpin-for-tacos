@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-1-v50-confetti-platform-consistency';
+  const SOURCE_VERSION = 'w1-1-v51-shared-stomp-standard';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -1603,7 +1603,7 @@
     });
   }
 
-  function increaseAirChain(label = 'AIRBORNE APPETITE') {
+  function increaseAirChain(label = 'AIRBORNE APPETITE', celebrate = true) {
     game.airChain += 1;
     game.maxAirChain = Math.max(game.maxAirChain, game.airChain);
     game.airChainTimer = 1.8;
@@ -1611,7 +1611,7 @@
       game.message = `${label} ×${game.airChain}!`;
       game.messageTimer = 1.15;
       game.score += game.airChain * 8;
-      spawnConfetti(canvas.width * 0.5, 190, 36);
+      if (celebrate) spawnConfetti(canvas.width * 0.5, 190, 36);
       playAudio('combat.comboMilestone', { combo: game.airChain });
     }
   }
@@ -2293,7 +2293,7 @@
     game.bestStreak = Math.max(game.bestStreak, game.streak);
     const multiplier = 1 + Math.min(4, Math.floor(game.streak / 5));
     game.score += itemTypes[item.type].points * multiplier;
-    if (!player.grounded || (item.isDrop && !item.landed)) increaseAirChain();
+    if (!player.grounded || (item.isDrop && !item.landed)) increaseAirChain('AIRBORNE APPETITE', item.type !== 'taco');
     if (item.isDrop && !item.landed) {
       game.score += item.chaseDrop ? 40 : 25;
       if (item.chaseDrop) {
@@ -2305,9 +2305,6 @@
       } else {
         game.message = 'AIR CATCH! +25';
         game.messageTimer = 0.8;
-      }
-      if (item.chaseDrop && game.chaseCatchCount % 5 === 0) {
-        spawnConfetti(item.x + 12 - game.cameraX, item.y + 12, 24);
       }
     }
     game.salsaMeter = Math.min(100, game.salsaMeter + itemTypes[item.type].meter);
@@ -2350,15 +2347,12 @@
     } else if (game.streak === 5) {
       game.message = 'TACO STREAK!';
       game.messageTimer = 1.4;
-      spawnConfetti(item.x + 12 - game.cameraX, item.y + 12, 18);
     } else if (game.streak === 10) {
       game.message = 'SALSA FEVER!';
       game.messageTimer = 1.6;
-      spawnConfetti(item.x + 12 - game.cameraX, item.y + 12, 24);
     } else if (game.streak === 20) {
       game.message = 'TACO FRENZY READY!';
       game.messageTimer = 1.8;
-      spawnConfetti(item.x + 12 - game.cameraX, item.y + 12, 32);
     }
     if (item.type !== 'taco') {
       spawnConfetti(item.x + 12 - game.cameraX, item.y + 12, 10);
@@ -2454,24 +2448,18 @@
         enemy.x = clamp(enemy.x, enemy.minX, enemy.maxX);
       }
 
-      if (rectsIntersect(player, enemy)) {
+      const contact = heroCore.classifyEnemyContact(player, enemy, {
+        routeHelper: enemy.routeHelper,
+        previousBottom: previousPlayerBottom,
+        previousTargetTop: previousEnemyTop,
+      });
+      if (contact) {
         if (stompResolvedThisFrame) continue;
-        if (game.frenzyTimer > 0) {
-          defeatEnemy(enemy, false);
-          continue;
-        }
-        if (heroCore.isStomp(player, enemy, {
-          topInset: 6,
-          topTolerance: enemy.routeHelper
-            ? Math.max(heroPhysics.stompTopTolerance, enemy.h * 0.9)
-            : enemy.behaviorType === 'onion'
-              ? Math.max(heroPhysics.stompTopTolerance, 54)
-              : heroPhysics.stompTopTolerance,
-          previousBottom: previousPlayerBottom,
-          previousTargetTop: previousEnemyTop,
-        })) {
+        if (contact === 'stomp') {
           stompResolvedThisFrame = true;
           defeatEnemy(enemy, true, { enemyTop: enemy.y + 6 });
+        } else if (game.frenzyTimer > 0) {
+          defeatEnemy(enemy, false);
         } else if (enemy.routeHelper) {
           // Bounce helpers are traversal aids, not invisible walls. Passing
           // beside or rising through one remains safe; only a landing from
@@ -2548,6 +2536,8 @@
 
     const airborneBeforePhysics = !player.grounded;
     const prevY = player.y;
+    player.previousY = prevY;
+    player.previousBottom = prevY + player.h;
     player.vy = Math.min(heroPhysics.maxFallVelocity, player.vy + heroPhysics.gravity * dt);
     player.x += player.vx * dt;
     player.y += player.vy * dt;
@@ -2647,7 +2637,6 @@
         const entranceTarget = Math.min(zones.dropTruckLimit, player.x + 245);
         game.midTruckEntrySpeed = Math.min(1220, game.midTruckEntrySpeed + 920 * dt);
         game.dropTruckX = Math.min(entranceTarget, game.dropTruckX + game.midTruckEntrySpeed * dt);
-        if (Math.random() < dt * 20) spawnConfetti(game.dropTruckX - game.cameraX + 18, 408, 2);
         if (game.dropTruckX >= entranceTarget - 2) {
           game.dropTruckX = entranceTarget;
           game.midTruckEntering = false;
@@ -2680,7 +2669,6 @@
     if (game.midTruckEscaping) {
       game.midTruckEscapeSpeed = Math.min(1540, game.midTruckEscapeSpeed + 1750 * dt);
       game.dropTruckX += game.midTruckEscapeSpeed * dt;
-      if (Math.random() < dt * 26) spawnConfetti(game.dropTruckX - game.cameraX + 18, 408, 3);
       if (game.dropTruckX - game.cameraX > canvas.width + 280) game.midTruckEscaping = false;
     }
 
@@ -2699,7 +2687,6 @@
         const entranceTarget = Math.min(zones.encoreDropTruckLimit, player.x + 250);
         game.encoreTruckEntrySpeed = Math.min(1280, game.encoreTruckEntrySpeed + 980 * dt);
         game.encoreTruckX = Math.min(entranceTarget, game.encoreTruckX + game.encoreTruckEntrySpeed * dt);
-        if (Math.random() < dt * 22) spawnConfetti(game.encoreTruckX - game.cameraX + 18, 408, 2);
         if (game.encoreTruckX >= entranceTarget - 2) {
           game.encoreTruckX = entranceTarget;
           game.encoreTruckEntering = false;
@@ -2741,7 +2728,6 @@
     if (game.encoreTruckEscaping) {
       game.encoreTruckEscapeSpeed = Math.min(1620, game.encoreTruckEscapeSpeed + 1850 * dt);
       game.encoreTruckX += game.encoreTruckEscapeSpeed * dt;
-      if (Math.random() < dt * 30) spawnConfetti(game.encoreTruckX - game.cameraX + 18, 408, 3);
       if (game.encoreTruckX - game.cameraX > canvas.width + 280) game.encoreTruckEscaping = false;
     }
 
@@ -2779,7 +2765,6 @@
       game.chaseEscapeTimer += dt;
       game.chaseEscapeSpeed += 1800 * dt;
       game.chaseTruckX += game.chaseEscapeSpeed * dt;
-      if (Math.random() < dt * 18) spawnConfetti(game.chaseTruckX - game.cameraX + 32, 408, 5);
       if (game.chaseTruckX - player.x > 1080 || game.chaseEscapeTimer > 1) {
         game.chaseTruckEscaping = false;
         game.chaseTruckDone = true;

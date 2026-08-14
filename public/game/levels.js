@@ -28,6 +28,29 @@
     normalJumpRise: Math.round((680 * 680) / (2 * 1800)),
     enemyBounceRise: Math.round((720 * 720) / (2 * 1800)),
   });
+  // Ordinary enemies share one deliberately generous top-contact contract.
+  // Values scale with each collider so small enemies are not harder to land on,
+  // while the caps keep side/body contact from becoming an automatic stomp.
+  const ordinaryStompStandard = Object.freeze({
+    version: 'ordinary-stomp-v1',
+    topInsetRatio: 0.12,
+    topInsetMin: 4,
+    topInsetMax: 6,
+    topRegionRatio: 0.6,
+    topRegionMin: 22,
+    topRegionMax: 34,
+    routeTopRegionRatio: 0.86,
+    routeTopRegionMax: 54,
+    horizontalGraceRatio: 0.2,
+    horizontalGraceMin: 8,
+    horizontalGraceMax: 12,
+    playerFootInsetRatio: 0.1,
+    minimumOverlapRatio: 0.18,
+    minimumOverlapMin: 6,
+    minimumOverlapMax: 10,
+    surfaceGrace: 8,
+    minimumVelocity: 0,
+  });
   const splatCaptions = Object.freeze(['SPLAT!', 'GUAC’D!', 'EXTRA SAUCED!', 'NO CRUMBS!', 'TACO’D!']);
   const splatColors = Object.freeze(['#ffd166', '#65d8ff', '#ff67ad', '#fff1a6', '#63d878']);
   const enemyPlacementRoles = Object.freeze({
@@ -906,28 +929,84 @@
     const minimumVelocity = options.minVelocity ?? heroPhysics.stompMinVelocity;
     const crossingAllowance = options.crossingAllowance ?? heroPhysics.stompCrossingAllowance;
     const horizontalInset = options.horizontalInset ?? heroPhysics.stompHorizontalInset;
+    const horizontalGrace = Math.max(0, Number(options.horizontalGrace) || 0);
+    const playerFootInset = Math.max(0, Number(options.playerFootInset) || 0);
+    const minimumHorizontalOverlap = Math.max(0, Number(options.minimumHorizontalOverlap) || 0);
+    const surfaceGrace = Math.max(0, Number(options.surfaceGrace ?? 10) || 0);
     const playerBottom = player.y + player.h;
     const previousBottom = Number.isFinite(options.previousBottom)
       ? options.previousBottom
       : Number.isFinite(player.previousBottom)
         ? player.previousBottom
-        : playerBottom;
+        : Number.isFinite(player.previousY)
+          ? player.previousY + player.h
+          : playerBottom;
     const previousTop = Number.isFinite(options.previousTargetTop)
       ? options.previousTargetTop + (options.topInset || 0)
       : top;
-    const horizontalOverlap = player.x + player.w > target.x + horizontalInset
-      && player.x < target.x + target.w - horizontalInset;
+    const playerLeft = player.x + playerFootInset;
+    const playerRight = player.x + player.w - playerFootInset;
+    const targetLeft = target.x + horizontalInset - horizontalGrace;
+    const targetRight = target.x + target.w - horizontalInset + horizontalGrace;
+    const horizontalOverlap = Math.min(playerRight, targetRight) - Math.max(playerLeft, targetLeft);
     // Use the target's swept top rather than only its current top. Hop-type
     // enemies can move upward between frames, and the old min() check rejected
     // a legitimate downward landing when the garlic rose into Taco Hero.
     const sweptTop = Math.min(previousTop, top);
     const enteredFromAbove = previousBottom <= previousTop + crossingAllowance;
-    const crossedTop = enteredFromAbove && playerBottom >= sweptTop - 10;
+    const crossedTop = enteredFromAbove && playerBottom >= sweptTop - surfaceGrace;
     const nearTop = enteredFromAbove
-      && playerBottom >= sweptTop - 10
+      && playerBottom >= sweptTop - surfaceGrace
       && playerBottom - sweptTop <= tolerance + (top < previousTop ? heroPhysics.stompMovingTargetAllowance : 0);
-    const descending = player.vy > minimumVelocity || playerBottom > previousBottom + 0.5;
-    return horizontalOverlap && descending && (crossedTop || nearTop);
+    const descending = player.vy >= minimumVelocity || playerBottom > previousBottom + 0.5;
+    return horizontalOverlap >= minimumHorizontalOverlap && descending && (crossedTop || nearTop);
+  }
+
+  function classifyEnemyContact(player, target, options = {}) {
+    if (!player || !target || !(player.w > 0) || !(player.h > 0) || !(target.w > 0) || !(target.h > 0)) return null;
+    const clampValue = (value, min, max) => Math.max(min, Math.min(max, value));
+    const routeHelper = Boolean(options.routeHelper);
+    const topInset = options.topInset ?? clampValue(
+      target.h * ordinaryStompStandard.topInsetRatio,
+      ordinaryStompStandard.topInsetMin,
+      ordinaryStompStandard.topInsetMax,
+    );
+    const topRegionDepth = options.topRegionDepth ?? clampValue(
+      target.h * (routeHelper ? ordinaryStompStandard.routeTopRegionRatio : ordinaryStompStandard.topRegionRatio),
+      ordinaryStompStandard.topRegionMin,
+      routeHelper ? ordinaryStompStandard.routeTopRegionMax : ordinaryStompStandard.topRegionMax,
+    );
+    const horizontalGrace = options.horizontalGrace ?? clampValue(
+      target.w * ordinaryStompStandard.horizontalGraceRatio,
+      ordinaryStompStandard.horizontalGraceMin,
+      ordinaryStompStandard.horizontalGraceMax,
+    );
+    const playerFootInset = options.playerFootInset ?? player.w * ordinaryStompStandard.playerFootInsetRatio;
+    const usableFootWidth = Math.max(1, player.w - playerFootInset * 2);
+    const minimumHorizontalOverlap = options.minimumHorizontalOverlap ?? clampValue(
+      Math.min(usableFootWidth, target.w) * ordinaryStompStandard.minimumOverlapRatio,
+      ordinaryStompStandard.minimumOverlapMin,
+      ordinaryStompStandard.minimumOverlapMax,
+    );
+    const stomp = isStomp(player, target, {
+      ...options,
+      topInset,
+      topTolerance: options.topTolerance ?? topRegionDepth,
+      crossingAllowance: options.crossingAllowance ?? topRegionDepth,
+      horizontalInset: options.horizontalInset ?? 0,
+      horizontalGrace,
+      playerFootInset,
+      minimumHorizontalOverlap,
+      surfaceGrace: options.surfaceGrace ?? ordinaryStompStandard.surfaceGrace,
+      minVelocity: options.minVelocity ?? ordinaryStompStandard.minimumVelocity,
+    });
+    if (stomp) return 'stomp';
+
+    const bodyContact = player.x + player.w > target.x
+      && player.x < target.x + target.w
+      && player.y + player.h > target.y
+      && player.y < target.y + target.h;
+    return bodyContact ? 'body' : null;
   }
 
   function createRespawnState() {
@@ -1072,7 +1151,9 @@
     updateEnemyBehavior,
     drawEnemyBehaviorSignals,
     celebrateSplatCombo,
+    ordinaryStompStandard,
     isStomp,
+    classifyEnemyContact,
     createRespawnState,
     beginRespawn,
     advanceRespawn,

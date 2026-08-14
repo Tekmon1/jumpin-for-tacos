@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w2-2-v5-shared-audio';
+  const SOURCE_VERSION = 'w2-2-v6-shared-stomp-standard';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -1766,8 +1766,10 @@
   }
 
   function updateEnemies(dt) {
+    let stompResolvedThisFrame = false;
     for (const enemy of world.enemies) {
       if (!enemy.alive) continue;
+      const previousEnemyTop = enemy.y;
       enemy.clock += dt;
       let speedScale = heroCore.updateEnemyBehavior(enemy, dt, { jumpScale: enemy.comboHelper ? .62 : 1 });
       if (enemy.type === 'coconut') speedScale *= 1.2;
@@ -1782,10 +1784,15 @@
         enemy.x = clamp(enemy.x, enemy.minX, enemy.maxX);
       }
       if (enemy.requiresGeyserAirborne && !(game.geyserLaunchTimer > 0 && player.vy < -180)) continue;
-      if (!intersects(player, enemy)) continue;
-      if (game.pepperTimer > 0 || sharedAbilities.isFrenzy(game.abilities)) { defeatEnemy(enemy, false); continue; }
-      const stomp = heroCore.isStomp(player, enemy, { topInset: 6, topTolerance: enemy.comboHelper ? 38 : heroPhysics.stompTopTolerance });
-      if (stomp) defeatEnemy(enemy, true); else hurtPlayer(enemy.x);
+      const contact = heroCore.classifyEnemyContact(player, enemy, {
+        routeHelper: enemy.comboHelper,
+        previousBottom: player.previousBottom,
+        previousTargetTop: previousEnemyTop,
+      });
+      if (!contact || stompResolvedThisFrame) continue;
+      if (contact === 'stomp') { stompResolvedThisFrame = true; defeatEnemy(enemy, true); }
+      else if (game.pepperTimer > 0 || sharedAbilities.isFrenzy(game.abilities)) defeatEnemy(enemy, false);
+      else hurtPlayer(enemy.x);
     }
   }
 
@@ -1860,6 +1867,8 @@
     }
 
     const previousY = player.y;
+    player.previousY = previousY;
+    player.previousBottom = previousY + player.h;
     player.vy = Math.min(heroPhysics.maxFallVelocity, player.vy + heroPhysics.gravity * dt);
     player.x += player.vx * dt;
     player.y += player.vy * dt;

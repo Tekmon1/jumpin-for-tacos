@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const SOURCE_VERSION = 'w2-3-v15-phase2-premium-audio';
+  const SOURCE_VERSION = 'w2-3-v16-shared-stomp-standard';
 
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
@@ -1468,6 +1468,8 @@
     }
 
     const previousY = player.y;
+    player.previousY = previousY;
+    player.previousBottom = previousY + player.h;
     if (player.platform?.moving && player.grounded) {
       player.x += player.platform.dx;
       player.y += player.platform.dy;
@@ -1598,21 +1600,28 @@
   }
 
   function updateEnemies(dt) {
+    let stompResolvedThisFrame = false;
     for (let index = 0; index < world.enemies.length; index += 1) {
       const enemy = world.enemies[index];
       if (!enemy.alive) {
         enemy.splat += dt;
         continue;
       }
+      const previousEnemyTop = enemy.y;
       const speedScale = heroCore.updateEnemyBehavior(enemy, dt, {
         index, fallback: enemy.behaviorType,
         onTear: (source) => spawnParticle(source.x - game.cameraX + 24, source.y + 12, '#8ff6ff', 4),
       });
       enemy.x += enemy.dir * enemy.speed * speedScale * dt;
       if (enemy.x <= enemy.minX || enemy.x >= enemy.maxX) enemy.dir *= -1;
-      if (!intersects(player, enemy)) continue;
-      const stomp = heroCore.isStomp(player, enemy);
+      const contact = heroCore.classifyEnemyContact(player, enemy, {
+        previousBottom: player.previousBottom,
+        previousTargetTop: previousEnemyTop,
+      });
+      if (!contact || stompResolvedThisFrame) continue;
+      const stomp = contact === 'stomp';
       if (stomp || abilities.isFrenzy(game.abilities)) {
+        if (stomp) stompResolvedThisFrame = true;
         defeatEnemy(enemy, stomp);
       } else if (player.invulnerable <= 0) {
         player.invulnerable = 1.2;
@@ -1629,8 +1638,12 @@
   function defeatEnemy(enemy, stomped) {
     enemy.alive = false;
     enemy.splat = 0;
-    player.vy = -heroPhysics.enemyBounceVelocity;
-    player.grounded = false;
+    if (stomped) {
+      player.y = Math.min(player.y, enemy.y - player.h - 1);
+      player.vy = -heroPhysics.enemyBounceVelocity;
+      player.grounded = false;
+      player.platform = null;
+    }
     game.splatCombo += 1;
     game.splatTimer = 1.45;
     game.bestSplat = Math.max(game.bestSplat, game.splatCombo);

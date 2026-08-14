@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-3-v22-shared-audio';
+  const SOURCE_VERSION = 'w1-3-v23-shared-stomp-standard';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -1513,7 +1513,7 @@
 
     game.hitStop = game.chainCount >= 5 ? 0.075 : 0.045;
     game.cameraShake = Math.max(game.cameraShake, 6 + Math.min(12, game.chainCount));
-    playAudio(perfectStomp ? 'combat.enemyStomp' : 'combat.enemySplat', {
+    playAudio(stomped ? 'combat.enemyStomp' : 'combat.enemySplat', {
       enemyType: enemy.type,
       combo: stomped ? game.chainCount : 1,
       position: audioPosition(enemy.x + enemy.w / 2),
@@ -1563,6 +1563,7 @@
   }
 
   function updateEnemies(dt) {
+    let stompResolvedThisFrame = false;
     for (const enemy of world.enemies) {
       if (!enemy.alive) continue;
       const previousEnemyTop = Number.isFinite(enemy.previousY) ? enemy.previousY : enemy.y;
@@ -1601,24 +1602,35 @@
         else enemy.dir *= -1;
       }
       enemy.previousY = enemy.y;
-      if (!enemy.visible || enemy.hitCooldown > 0 || enemy.intangible || !intersects(player, enemy)) continue;
-      const stomp = heroCore.isStomp(player, enemy, {
-        topTolerance: enemy.routeHelper ? Math.max(heroPhysics.stompTopTolerance, enemy.h * .9) : heroPhysics.stompTopTolerance,
+      if (!enemy.visible || enemy.hitCooldown > 0 || enemy.intangible) continue;
+      if (enemy.boss) {
+        if (!intersects(player, enemy)) continue;
+        const bossStomp = heroCore.isStomp(player, enemy, {
+          topTolerance: heroPhysics.stompTopTolerance,
+          previousBottom: player.previousBottom,
+          previousTargetTop: previousEnemyTop,
+        });
+        if (bossStomp) stompBoss(enemy); else hurtPlayer(enemy.x);
+        continue;
+      }
+      const contact = heroCore.classifyEnemyContact(player, enemy, {
+        routeHelper: enemy.routeHelper,
         previousBottom: player.previousBottom,
         previousTargetTop: previousEnemyTop,
       });
+      if (!contact || stompResolvedThisFrame) continue;
+      const stomp = contact === 'stomp';
       // Bounce-route enemies are traversal aids, not invisible walls. Passing
       // beside or rising through one is safe; descending onto it still gives
       // the full splat, boosted bounce, combo, and sound reward.
       if (enemy.routeHelper && !stomp) continue;
       if (stomp) {
+        stompResolvedThisFrame = true;
         const playerCenter = player.x + player.w / 2;
         const enemyCenter = enemy.x + enemy.w / 2;
-        enemy.perfectStomp = !enemy.boss && Math.abs(playerCenter - enemyCenter) <= Math.min(13, enemy.w * 0.28);
+        enemy.perfectStomp = Math.abs(playerCenter - enemyCenter) <= Math.min(13, enemy.w * 0.28);
       }
-      if (enemy.boss) {
-        if (stomp) stompBoss(enemy); else hurtPlayer(enemy.x);
-      } else if (stomp || sharedAbilities.isFrenzy(game.abilities)) defeatEnemy(enemy, stomp); else hurtPlayer(enemy.x);
+      if (stomp || sharedAbilities.isFrenzy(game.abilities)) defeatEnemy(enemy, stomp); else hurtPlayer(enemy.x);
     }
   }
 
