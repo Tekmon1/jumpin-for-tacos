@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-1-v49-visual-polish';
+  const SOURCE_VERSION = 'w1-1-v50-confetti-platform-consistency';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -2090,10 +2090,44 @@
     }
   }
 
+  function isOneWayPlatform(platform) {
+    return platform.h <= 30 && !platform.solidTerrain;
+  }
+
+  function crossesOneWayPlatformTop(platform, prevY) {
+    if (player.vy < 0) return false;
+    const prevBottom = prevY + player.h;
+    const currBottom = player.y + player.h;
+    const overlapsHorizontally = player.x + player.w > platform.x
+      && player.x < platform.x + platform.w;
+    return overlapsHorizontally
+      && prevBottom <= platform.y + 12
+      && currBottom >= platform.y
+      && player.y < platform.y;
+  }
+
+  function landOnPlatform(platform) {
+    player.y = platform.y - player.h;
+    player.vy = 0;
+    player.grounded = true;
+    player.platform = platform;
+  }
+
   function resolvePlatformCollision(prevY) {
     player.grounded = false;
     player.platform = null;
     for (const p of level.platforms) {
+      // Match the later-level convention: elevated and moving platforms only
+      // catch Taco Hero while descending across their top surface. Ground-height
+      // terrain remains a full solid collider at its sides and underside.
+      if (isOneWayPlatform(p)) {
+        if (crossesOneWayPlatformTop(p, prevY)) {
+          landOnPlatform(p);
+          return;
+        }
+        continue;
+      }
+
       const hits = rectsIntersect(player, p);
       if (!hits) continue;
 
@@ -2103,10 +2137,7 @@
       const currTop = player.y;
 
       if (prevBottom <= p.y + 12 && currBottom >= p.y) {
-        player.y = p.y - player.h;
-        player.vy = 0;
-        player.grounded = true;
-        player.platform = p;
+        landOnPlatform(p);
       } else if (prevTop >= p.y + p.h - 12 && currTop <= p.y + p.h) {
         player.y = p.y + p.h;
         player.vy = 10;
@@ -2275,7 +2306,9 @@
         game.message = 'AIR CATCH! +25';
         game.messageTimer = 0.8;
       }
-      spawnConfetti(item.x + 12 - game.cameraX, item.y + 12, item.chaseDrop ? 24 : 16);
+      if (item.chaseDrop && game.chaseCatchCount % 5 === 0) {
+        spawnConfetti(item.x + 12 - game.cameraX, item.y + 12, 24);
+      }
     }
     game.salsaMeter = Math.min(100, game.salsaMeter + itemTypes[item.type].meter);
     if (item.type === 'golden') {
@@ -2317,14 +2350,19 @@
     } else if (game.streak === 5) {
       game.message = 'TACO STREAK!';
       game.messageTimer = 1.4;
+      spawnConfetti(item.x + 12 - game.cameraX, item.y + 12, 18);
     } else if (game.streak === 10) {
       game.message = 'SALSA FEVER!';
       game.messageTimer = 1.6;
+      spawnConfetti(item.x + 12 - game.cameraX, item.y + 12, 24);
     } else if (game.streak === 20) {
       game.message = 'TACO FRENZY READY!';
       game.messageTimer = 1.8;
+      spawnConfetti(item.x + 12 - game.cameraX, item.y + 12, 32);
     }
-    spawnConfetti(item.x + 12 - game.cameraX, item.y + 12, 10);
+    if (item.type !== 'taco') {
+      spawnConfetti(item.x + 12 - game.cameraX, item.y + 12, 10);
+    }
     if (collectionEventId) {
       playAudio(collectionEventId, {
         streak: game.streak,
@@ -2555,7 +2593,6 @@
           item.vx = 0;
           item.vy = 0;
           item.landed = true;
-          spawnConfetti(item.x - game.cameraX + 12, item.y + 12, 5);
         }
       }
       if (!item.collected && (game.frenzyTimer > 0 || game.magnetTimer > 0)) {

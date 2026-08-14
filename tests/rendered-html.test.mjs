@@ -114,12 +114,12 @@ test("keeps World 1-1 enemy artwork on a separate slower visual clock", async ()
   assert.equal(context.window.JFT_HERO_CORE.physics.enemyVisualAnimationRate, 1.8);
   assert.match(mainRuntime, /enemy\.anim \+= dt \* heroPhysics\.enemyVisualAnimationRate/);
   assert.match(mainRuntime, /return Math\.floor\(enemy\.anim\) % 4/);
-  assert.match(mainRuntime, /SOURCE_VERSION = 'w1-1-v49-visual-polish'/);
+  assert.match(mainRuntime, /SOURCE_VERSION = 'w1-1-v50-confetti-platform-consistency'/);
   assert.match(mainRuntime, /function removeOpeningLeadEnemy/);
   assert.match(mainRuntime, /removeOpeningLeadEnemy\(\)/);
   assert.match(mainRuntime, /patrolStartOffset: 420/);
   assert.match(mainHtml, /levels\.js\?v=31/);
-  assert.match(mainHtml, /game\.js\?v=49/);
+  assert.match(mainHtml, /game\.js\?v=50/);
 });
 
 test("creates same-type enemy packs and recognizes swept stomp contacts", async () => {
@@ -621,7 +621,7 @@ test("ships World 1 with authored seamless panorama progressions", async () => {
     assert.match(prototype, new RegExp(filename.replace(".png", "")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(prototypeHtml, /game\.js\?v=49/);
+  assert.match(prototypeHtml, /game\.js\?v=50/);
   assert.match(prototype, /function drawPaintedTerrainSlice/);
   assert.match(prototype, /artStyle: 'goldenCactus'/);
   assert.match(prototype, /function drawTacoTrekkerLayers/);
@@ -697,6 +697,27 @@ test("ships World 1 with authored seamless panorama progressions", async () => {
   assert.match(showdownForeground, /allCheckpointsGrounded/);
 });
 
+test("normalizes World 1-1 taco confetti and makes elevated platforms one-way", async () => {
+  const runtime = await readFile(new URL("../public/game/game.js", import.meta.url), "utf8");
+
+  const collectStart = runtime.indexOf('function collectItem(item)');
+  const collectEnd = runtime.indexOf('function spawnTruckTaco', collectStart);
+  const collectRuntime = runtime.slice(collectStart, collectEnd);
+  assert.match(collectRuntime, /if \(item\.type !== 'taco'\)/, 'ordinary tacos skip pickup confetti');
+  assert.match(collectRuntime, /game\.chaseCatchCount % 5 === 0[\s\S]*spawnConfetti/, 'truck tacos celebrate only an authored catch milestone');
+  assert.doesNotMatch(collectRuntime, /item\.chaseDrop \? 24 : 16/, 'each airborne taco no longer emits a full confetti burst');
+  assert.doesNotMatch(runtime, /item\.landed = true;\s*spawnConfetti/, 'ordinary truck tacos do not burst confetti when they land');
+
+  const collisionStart = runtime.indexOf('function resolvePlatformCollision(prevY)');
+  const collisionEnd = runtime.indexOf('function findRespawnPoint', collisionStart);
+  const collisionRuntime = runtime.slice(collisionStart, collisionEnd);
+  assert.match(runtime, /function isOneWayPlatform\(platform\)[\s\S]*platform\.h <= 30/);
+  assert.match(runtime, /function crossesOneWayPlatformTop\(platform, prevY\)[\s\S]*if \(player\.vy < 0\) return false/);
+  assert.match(collisionRuntime, /if \(isOneWayPlatform\(p\)\)[\s\S]*crossesOneWayPlatformTop\(p, prevY\)[\s\S]*continue/);
+  assert.ok(collisionRuntime.indexOf('if (isOneWayPlatform(p))') < collisionRuntime.indexOf('const hits = rectsIntersect(player, p)'), 'one-way surfaces bypass four-sided collision');
+  assert.match(collisionRuntime, /const hits = rectsIntersect\(player, p\)/, 'ground-height terrain keeps its solid collider');
+});
+
 test("remasters the complete World 1-1 enemy and NPC cast without changing gameplay geometry", async () => {
   const runtime = await readFile(new URL("../public/game/game.js", import.meta.url), "utf8");
   const html = await readFile(new URL("../public/game/index.html", import.meta.url), "utf8");
@@ -713,7 +734,7 @@ test("remasters the complete World 1-1 enemy and NPC cast without changing gamep
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /game\.js\?v=49/);
+  assert.match(html, /game\.js\?v=50/);
   assert.match(runtime, /function remasteredEnemyFrame/);
   assert.match(runtime, /function drawRemasteredEnemy/);
   assert.match(runtime, /function drawDesertLocals/);
@@ -763,7 +784,7 @@ test("authors the full World 1-1 pilot around purposeful upper routes and metada
   assert.match(runtime, /game\.salsaMeter = Math\.min\(100, game\.salsaMeter \+ authoredMeter\)/);
   assert.match(core, /const requestedPlatformId = enemy\.supportPlatformId \|\| enemy\.platformId/);
   assert.match(core, /id === `\$\{requestedPlatformId\}-encore`/);
-  assert.match(html, /game\.js\?v=49/);
+  assert.match(html, /game\.js\?v=50/);
   assert.match(html, /explore layered desert\r?\n\s+routes where risky jumps can lead to bonus powers/);
 });
 
@@ -1501,7 +1522,7 @@ test("loads the shared Phase 3 audio foundation before World 1-1 and resolves ev
 
   const catalogPosition = html.indexOf('src="audio-catalog.js?v=7"');
   const enginePosition = html.indexOf('src="audio-engine.js?v=7"');
-  const runtimePosition = html.indexOf('src="game.js?v=49"');
+  const runtimePosition = html.indexOf('src="game.js?v=50"');
   assert.ok(catalogPosition >= 0, "World 1-1 loads the semantic catalog");
   assert.ok(enginePosition > catalogPosition, "the engine loads after its catalog");
   assert.ok(runtimePosition > enginePosition, "the engine loads before the World 1-1 runtime");
