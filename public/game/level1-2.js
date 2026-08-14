@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-2-v30-olivia-propeller-state-sync';
+  const SOURCE_VERSION = 'w1-2-v31-shared-stomp-standard';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = true;
@@ -1121,7 +1121,7 @@
     player.vx = clamp(player.vx, -maxSpeed, maxSpeed);
     if (player.jumpBuffer > 0 && player.coyote > 0) { player.vy = -heroPhysics.jumpVelocity; player.grounded = false; player.platform = null; player.coyote = 0; player.jumpBuffer = 0; playAudio('hero.jump', { position: audioPosition(player.x + player.w / 2) }); }
     player.vy = Math.min(heroPhysics.maxFallVelocity, player.vy + heroPhysics.gravity * dt);
-    const oldY = player.y; player.previousY = oldY; player.x += player.vx * dt; player.y += player.vy * dt; const landingVelocity = player.vy; player.x = clamp(player.x, 0, WORLD_WIDTH - player.w);
+    const oldY = player.y; player.previousY = oldY; player.previousBottom = oldY + player.h; player.x += player.vx * dt; player.y += player.vy * dt; const landingVelocity = player.vy; player.x = clamp(player.x, 0, WORLD_WIDTH - player.w);
     player.grounded = false; player.platform = null;
     const previousBottom = oldY + player.h; const currentBottom = player.y + player.h;
     let landedThisFrame = false;
@@ -1218,15 +1218,14 @@
       });
       enemy.previousY = enemy.y;
       enemy.x += enemy.dir * enemy.baseSpeed * speedScale * dt; if (enemy.x <= enemy.minX || enemy.x >= enemy.maxX) { enemy.x = clamp(enemy.x, enemy.minX, enemy.maxX); enemy.dir *= -1; }
-      if (!intersects(player, enemy)) continue;
-      if (stompResolvedThisFrame) continue;
-      const stomp = heroCore.isStomp(player, enemy, {
-        topInset: 6,
-        topTolerance: enemy.bounceHelper || enemy.behaviorType === 'onion' ? Math.max(38, 54) : heroPhysics.stompTopTolerance,
+      const contact = heroCore.classifyEnemyContact(player, enemy, {
+        routeHelper: enemy.bounceHelper,
         previousBottom: previousPlayerBottom,
         previousTargetTop: previousEnemyTop,
       });
-      if (stomp) { stompResolvedThisFrame = true; defeatEnemy(enemy, true); }
+      if (!contact) continue;
+      if (stompResolvedThisFrame) continue;
+      if (contact === 'stomp') { stompResolvedThisFrame = true; defeatEnemy(enemy, true); }
       else if (sharedAbilities.isFrenzy(game.abilities)) defeatEnemy(enemy, false);
       else if (enemy.bounceHelper) continue;
       else if (player.invulnerable <= 0) { player.invulnerable = 1.2; player.vx = player.x < enemy.x ? -260 : 260; player.vy = -390; game.hearts -= 1; game.cameraShake = 8; playAudio('hero.hurt', { position: audioPosition(player.x + player.w / 2) }); if (game.hearts <= 0) { game.hearts = 3; beginRespawn(); } }

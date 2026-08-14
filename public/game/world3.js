@@ -158,7 +158,7 @@
     },
   };
   const config = CONFIGS[levelId];
-  const SOURCE_VERSION = 31;
+  const SOURCE_VERSION = 32;
   const WORLD3_REMASTER_PLANS = Object.freeze({
     '3-1': Object.freeze({
       version: 'world3-1-combat-route-v2',
@@ -3073,6 +3073,7 @@
     }
     player.x = clamp(player.x + player.vx * dt, 0, WORLD_WIDTH - player.w);
     const previousBottom = player.y + player.h;
+    player.previousY = player.y;
     player.previousBottom = previousBottom;
     const gravityScale = cosmicLowGravity ? 0.42 : 1;
     player.vy = Math.min(heroPhysics.maxFallVelocity, player.vy + heroPhysics.gravity * gravityScale * dt);
@@ -3308,6 +3309,7 @@
   }
 
   function updateEnemies(dt) {
+    let stompResolvedThisFrame = false;
     world.enemies.forEach((enemy, index) => {
       if (!enemy.alive) return;
       const previousEnemyTop = enemy.y;
@@ -3332,19 +3334,26 @@
       } else {
         enemy.frame = slowBeat % 2;
       }
-      if (!intersects(player, enemy) || player.invulnerable > 0 || game.respawn.active) return;
-      const stomp = heroCore.isStomp(player, enemy, {
-        topTolerance: enemy.routeHelper ? Math.max(42, enemy.h * .9) : 42,
+      if (player.invulnerable > 0 || game.respawn.active) return;
+      const contact = heroCore.classifyEnemyContact(player, enemy, {
+        routeHelper: enemy.routeHelper,
         previousBottom: player.previousBottom,
         previousTargetTop: previousEnemyTop,
       });
+      if (!contact || stompResolvedThisFrame) return;
+      const stomp = contact === 'stomp';
       const frenzyContact = !stomp && sharedAbilities.isFrenzy(game.abilities);
       if (stomp || frenzyContact) {
-        if (stomp) player.y = Math.min(player.y, enemy.y - player.h - 1);
+        if (stomp) {
+          stompResolvedThisFrame = true;
+          player.y = Math.min(player.y, enemy.y - player.h - 1);
+        }
         defeatEnemy(enemy, stomp);
-        player.vy = -heroPhysics.enemyBounceVelocity;
-        player.grounded = false;
-        player.platform = null;
+        if (stomp) {
+          player.vy = -heroPhysics.enemyBounceVelocity;
+          player.grounded = false;
+          player.platform = null;
+        }
       } else {
         player.invulnerable = 1.2;
         player.vx = -player.dir * 180;

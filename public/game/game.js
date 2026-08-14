@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-1-v48-phase3-audio-polish';
+  const SOURCE_VERSION = 'w1-1-v51-shared-stomp-standard';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -88,7 +88,7 @@
     'world1_1_taco_trekker_body_v1',
     'world1_1_taco_trekker_olivia_v1',
     'world1_1_taco_trekker_wheel_v1',
-    'world1_1_olivia_throw_arm_v1',
+    'world1_1_taco_drop_payload_v1',
   ];
   const webpImageNames = [
     'world1_1_chili_bandit_sheet_v1',
@@ -180,8 +180,8 @@
     midTruckEscaping: false,
     midTruckDone: false,
     truckDropTimer: 0,
-    truckThrowAnim: 0,
-    truckThrowWorldX: 0,
+    truckDropPulse: 0,
+    truckLauncherWorldX: 0,
     dropTruckX: 0,
     midTruckEntrySpeed: 0,
     midTruckEscapeSpeed: 0,
@@ -422,7 +422,11 @@
     magnet: { frame: 0, points: 100, meter: 20, name: 'Taco Magnet' },
     rainbow: { frame: 0, points: 500, meter: 40, name: 'Rainbow Taco' },
   };
-  const oliviaThrowTacoFrame = Object.freeze({ sx: 1916, sy: 317, sw: 164, sh: 105 });
+  const tacoTrekkerRearLauncher = Object.freeze({
+    x: 66,
+    sourceY: 246,
+    pulseDuration: 0.24,
+  });
 
   let lastFrame = 0;
   const localPreviewStart = location.hostname === 'terminal.local'
@@ -1364,8 +1368,8 @@
     game.midTruckEscaping = false;
     game.midTruckDone = false;
     game.truckDropTimer = 0;
-    game.truckThrowAnim = 0;
-    game.truckThrowWorldX = 0;
+    game.truckDropPulse = 0;
+    game.truckLauncherWorldX = 0;
     game.dropTruckX = 0;
     game.midTruckEntrySpeed = 0;
     game.midTruckEscapeSpeed = 0;
@@ -1599,7 +1603,7 @@
     });
   }
 
-  function increaseAirChain(label = 'AIRBORNE APPETITE') {
+  function increaseAirChain(label = 'AIRBORNE APPETITE', celebrate = true) {
     game.airChain += 1;
     game.maxAirChain = Math.max(game.maxAirChain, game.airChain);
     game.airChainTimer = 1.8;
@@ -1607,7 +1611,7 @@
       game.message = `${label} ×${game.airChain}!`;
       game.messageTimer = 1.15;
       game.score += game.airChain * 8;
-      spawnConfetti(canvas.width * 0.5, 190, 36);
+      if (celebrate) spawnConfetti(canvas.width * 0.5, 190, 36);
       playAudio('combat.comboMilestone', { combo: game.airChain });
     }
   }
@@ -2086,10 +2090,44 @@
     }
   }
 
+  function isOneWayPlatform(platform) {
+    return platform.h <= 30 && !platform.solidTerrain;
+  }
+
+  function crossesOneWayPlatformTop(platform, prevY) {
+    if (player.vy < 0) return false;
+    const prevBottom = prevY + player.h;
+    const currBottom = player.y + player.h;
+    const overlapsHorizontally = player.x + player.w > platform.x
+      && player.x < platform.x + platform.w;
+    return overlapsHorizontally
+      && prevBottom <= platform.y + 12
+      && currBottom >= platform.y
+      && player.y < platform.y;
+  }
+
+  function landOnPlatform(platform) {
+    player.y = platform.y - player.h;
+    player.vy = 0;
+    player.grounded = true;
+    player.platform = platform;
+  }
+
   function resolvePlatformCollision(prevY) {
     player.grounded = false;
     player.platform = null;
     for (const p of level.platforms) {
+      // Match the later-level convention: elevated and moving platforms only
+      // catch Taco Hero while descending across their top surface. Ground-height
+      // terrain remains a full solid collider at its sides and underside.
+      if (isOneWayPlatform(p)) {
+        if (crossesOneWayPlatformTop(p, prevY)) {
+          landOnPlatform(p);
+          return;
+        }
+        continue;
+      }
+
       const hits = rectsIntersect(player, p);
       if (!hits) continue;
 
@@ -2099,10 +2137,7 @@
       const currTop = player.y;
 
       if (prevBottom <= p.y + 12 && currBottom >= p.y) {
-        player.y = p.y - player.h;
-        player.vy = 0;
-        player.grounded = true;
-        player.platform = p;
+        landOnPlatform(p);
       } else if (prevTop >= p.y + p.h - 12 && currTop <= p.y + p.h) {
         player.y = p.y + p.h;
         player.vy = 10;
@@ -2258,7 +2293,7 @@
     game.bestStreak = Math.max(game.bestStreak, game.streak);
     const multiplier = 1 + Math.min(4, Math.floor(game.streak / 5));
     game.score += itemTypes[item.type].points * multiplier;
-    if (!player.grounded || (item.isDrop && !item.landed)) increaseAirChain();
+    if (!player.grounded || (item.isDrop && !item.landed)) increaseAirChain('AIRBORNE APPETITE', item.type !== 'taco');
     if (item.isDrop && !item.landed) {
       game.score += item.chaseDrop ? 40 : 25;
       if (item.chaseDrop) {
@@ -2271,7 +2306,6 @@
         game.message = 'AIR CATCH! +25';
         game.messageTimer = 0.8;
       }
-      spawnConfetti(item.x + 12 - game.cameraX, item.y + 12, item.chaseDrop ? 24 : 16);
     }
     game.salsaMeter = Math.min(100, game.salsaMeter + itemTypes[item.type].meter);
     if (item.type === 'golden') {
@@ -2320,7 +2354,9 @@
       game.message = 'TACO FRENZY READY!';
       game.messageTimer = 1.8;
     }
-    spawnConfetti(item.x + 12 - game.cameraX, item.y + 12, 10);
+    if (item.type !== 'taco') {
+      spawnConfetti(item.x + 12 - game.cameraX, item.y + 12, 10);
+    }
     if (collectionEventId) {
       playAudio(collectionEventId, {
         streak: game.streak,
@@ -2329,15 +2365,14 @@
     }
   }
 
-  function spawnTruckTaco(truckX, chaseDrop = false, burstOffset = 0, dropStyle = 'standard') {
+  function spawnTruckTaco(truckX, chaseDrop = false, trajectoryOffset = 0, dropStyle = 'standard') {
     const glitchDrop = dropStyle === 'glitch';
-    if (game.truckThrowAnim <= 0) {
-      game.truckThrowAnim = 0.32;
-      game.truckThrowWorldX = truckX;
-    }
+    const launchSpread = clamp(trajectoryOffset, -8, 52) * 0.18;
+    game.truckDropPulse = tacoTrekkerRearLauncher.pulseDuration;
+    game.truckLauncherWorldX = truckX;
     level.collectibles.push({
-      x: truckX + 72 + burstOffset,
-      y: (chaseDrop ? 360 : glitchDrop ? 350 : 356) - Math.random() * (chaseDrop ? 18 : 24),
+      x: truckX + tacoTrekkerRearLauncher.x + launchSpread,
+      y: (chaseDrop ? 362 : glitchDrop ? 354 : 360) - Math.random() * (chaseDrop ? 18 : 24),
       w: 24,
       h: 24,
       type: 'taco',
@@ -2347,8 +2382,8 @@
       chaseDrop,
       glitchDrop,
       landed: false,
-      vx: glitchDrop ? -145 - Math.random() * 95 : -105 - Math.random() * (chaseDrop ? 95 : 75),
-      vy: glitchDrop ? -245 - Math.random() * 115 : (chaseDrop ? -145 : -220) - Math.random() * (chaseDrop ? 90 : 105),
+      vx: (glitchDrop ? -145 - Math.random() * 95 : -105 - Math.random() * (chaseDrop ? 95 : 75)) - trajectoryOffset * 0.72,
+      vy: (glitchDrop ? -245 - Math.random() * 115 : (chaseDrop ? -145 : -220) - Math.random() * (chaseDrop ? 90 : 105)) - trajectoryOffset * 0.38,
       angle: 0,
     });
     game.totalCollectibles += 1;
@@ -2413,24 +2448,18 @@
         enemy.x = clamp(enemy.x, enemy.minX, enemy.maxX);
       }
 
-      if (rectsIntersect(player, enemy)) {
+      const contact = heroCore.classifyEnemyContact(player, enemy, {
+        routeHelper: enemy.routeHelper,
+        previousBottom: previousPlayerBottom,
+        previousTargetTop: previousEnemyTop,
+      });
+      if (contact) {
         if (stompResolvedThisFrame) continue;
-        if (game.frenzyTimer > 0) {
-          defeatEnemy(enemy, false);
-          continue;
-        }
-        if (heroCore.isStomp(player, enemy, {
-          topInset: 6,
-          topTolerance: enemy.routeHelper
-            ? Math.max(heroPhysics.stompTopTolerance, enemy.h * 0.9)
-            : enemy.behaviorType === 'onion'
-              ? Math.max(heroPhysics.stompTopTolerance, 54)
-              : heroPhysics.stompTopTolerance,
-          previousBottom: previousPlayerBottom,
-          previousTargetTop: previousEnemyTop,
-        })) {
+        if (contact === 'stomp') {
           stompResolvedThisFrame = true;
           defeatEnemy(enemy, true, { enemyTop: enemy.y + 6 });
+        } else if (game.frenzyTimer > 0) {
+          defeatEnemy(enemy, false);
         } else if (enemy.routeHelper) {
           // Bounce helpers are traversal aids, not invisible walls. Passing
           // beside or rising through one remains safe; only a landing from
@@ -2485,7 +2514,7 @@
     if (magnetWasActive && game.magnetTimer <= 0) playAudio('ability.magnetEnd');
     game.stompTimer = Math.max(0, game.stompTimer - dt);
     game.airChainTimer = Math.max(0, game.airChainTimer - dt);
-    game.truckThrowAnim = Math.max(0, game.truckThrowAnim - dt);
+    game.truckDropPulse = Math.max(0, game.truckDropPulse - dt);
     game.radioTimer = Math.max(0, game.radioTimer - dt);
     game.cinematicTimer = Math.max(0, game.cinematicTimer - dt);
     if (game.stompTimer <= 0) game.stompCombo = 0;
@@ -2507,6 +2536,8 @@
 
     const airborneBeforePhysics = !player.grounded;
     const prevY = player.y;
+    player.previousY = prevY;
+    player.previousBottom = prevY + player.h;
     player.vy = Math.min(heroPhysics.maxFallVelocity, player.vy + heroPhysics.gravity * dt);
     player.x += player.vx * dt;
     player.y += player.vy * dt;
@@ -2552,7 +2583,6 @@
           item.vx = 0;
           item.vy = 0;
           item.landed = true;
-          spawnConfetti(item.x - game.cameraX + 12, item.y + 12, 5);
         }
       }
       if (!item.collected && (game.frenzyTimer > 0 || game.magnetTimer > 0)) {
@@ -2607,7 +2637,6 @@
         const entranceTarget = Math.min(zones.dropTruckLimit, player.x + 245);
         game.midTruckEntrySpeed = Math.min(1220, game.midTruckEntrySpeed + 920 * dt);
         game.dropTruckX = Math.min(entranceTarget, game.dropTruckX + game.midTruckEntrySpeed * dt);
-        if (Math.random() < dt * 20) spawnConfetti(game.dropTruckX - game.cameraX + 18, 408, 2);
         if (game.dropTruckX >= entranceTarget - 2) {
           game.dropTruckX = entranceTarget;
           game.midTruckEntering = false;
@@ -2640,7 +2669,6 @@
     if (game.midTruckEscaping) {
       game.midTruckEscapeSpeed = Math.min(1540, game.midTruckEscapeSpeed + 1750 * dt);
       game.dropTruckX += game.midTruckEscapeSpeed * dt;
-      if (Math.random() < dt * 26) spawnConfetti(game.dropTruckX - game.cameraX + 18, 408, 3);
       if (game.dropTruckX - game.cameraX > canvas.width + 280) game.midTruckEscaping = false;
     }
 
@@ -2659,7 +2687,6 @@
         const entranceTarget = Math.min(zones.encoreDropTruckLimit, player.x + 250);
         game.encoreTruckEntrySpeed = Math.min(1280, game.encoreTruckEntrySpeed + 980 * dt);
         game.encoreTruckX = Math.min(entranceTarget, game.encoreTruckX + game.encoreTruckEntrySpeed * dt);
-        if (Math.random() < dt * 22) spawnConfetti(game.encoreTruckX - game.cameraX + 18, 408, 2);
         if (game.encoreTruckX >= entranceTarget - 2) {
           game.encoreTruckX = entranceTarget;
           game.encoreTruckEntering = false;
@@ -2701,7 +2728,6 @@
     if (game.encoreTruckEscaping) {
       game.encoreTruckEscapeSpeed = Math.min(1620, game.encoreTruckEscapeSpeed + 1850 * dt);
       game.encoreTruckX += game.encoreTruckEscapeSpeed * dt;
-      if (Math.random() < dt * 30) spawnConfetti(game.encoreTruckX - game.cameraX + 18, 408, 3);
       if (game.encoreTruckX - game.cameraX > canvas.width + 280) game.encoreTruckEscaping = false;
     }
 
@@ -2739,7 +2765,6 @@
       game.chaseEscapeTimer += dt;
       game.chaseEscapeSpeed += 1800 * dt;
       game.chaseTruckX += game.chaseEscapeSpeed * dt;
-      if (Math.random() < dt * 18) spawnConfetti(game.chaseTruckX - game.cameraX + 32, 408, 5);
       if (game.chaseTruckX - player.x > 1080 || game.chaseEscapeTimer > 1) {
         game.chaseTruckEscaping = false;
         game.chaseTruckDone = true;
@@ -3089,7 +3114,7 @@
       }
       if (item.isDrop && !item.landed) {
         const flightSize = item.glitchDrop ? 39 : item.chaseDrop ? 29 : 36;
-        const premiumTaco = images.world1_1_olivia_throw_arm_v1;
+        const premiumTaco = images.world1_1_taco_drop_payload_v1;
         ctx.save();
         ctx.translate(x + size / 2, y + size / 2);
         ctx.globalAlpha = item.chaseDrop ? 0.46 : 0.72;
@@ -3108,24 +3133,13 @@
         ctx.rotate(item.angle || 0);
         ctx.shadowColor = item.glitchDrop ? '#b78cff' : item.chaseDrop ? '#ff6fae' : '#65d8ff';
         ctx.shadowBlur = item.chaseDrop ? 15 : item.glitchDrop ? 28 : 24;
-        ctx.drawImage(
-          premiumTaco,
-          oliviaThrowTacoFrame.sx, oliviaThrowTacoFrame.sy,
-          oliviaThrowTacoFrame.sw, oliviaThrowTacoFrame.sh,
-          -flightSize * 0.62, -flightSize * 0.4,
-          flightSize * 1.24, flightSize * 0.8,
-        );
+        ctx.drawImage(premiumTaco, -flightSize * 0.62, -flightSize * 0.4, flightSize * 1.24, flightSize * 0.8);
         ctx.restore();
         continue;
       }
       if (item.isDrop) {
-        const premiumTaco = images.world1_1_olivia_throw_arm_v1;
-        ctx.drawImage(
-          premiumTaco,
-          oliviaThrowTacoFrame.sx, oliviaThrowTacoFrame.sy,
-          oliviaThrowTacoFrame.sw, oliviaThrowTacoFrame.sh,
-          x - 3, y + 2, 30, 19,
-        );
+        const premiumTaco = images.world1_1_taco_drop_payload_v1;
+        ctx.drawImage(premiumTaco, x - 3, y + 2, 30, 19);
         continue;
       }
       if (item.type === 'golden') {
@@ -3315,59 +3329,231 @@
     ctx.beginPath(); ctx.moveTo(22, -15); ctx.lineTo(17, -12); ctx.lineTo(22, -9); ctx.closePath(); ctx.fill();
   }
 
+  function tracePinataBody() {
+    ctx.beginPath();
+    ctx.moveTo(-27, -15);
+    ctx.bezierCurveTo(-31, -7, -30, 12, -21, 17);
+    ctx.bezierCurveTo(-10, 22, 9, 21, 20, 15);
+    ctx.bezierCurveTo(27, 7, 25, -9, 15, -17);
+    ctx.bezierCurveTo(5, -22, -18, -21, -27, -15);
+    ctx.closePath();
+  }
+
+  function drawPinataFringeBand(y, halfWidth, color, phase = 0) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(-halfWidth, y);
+    ctx.lineTo(halfWidth, y);
+    ctx.lineTo(halfWidth, y + 7);
+    for (let fringeX = halfWidth; fringeX >= -halfWidth; fringeX -= 6) {
+      const tooth = (Math.floor((fringeX + phase) / 6) & 1) === 0 ? 2.5 : 0;
+      ctx.lineTo(fringeX - 3, y + 9 + tooth);
+      ctx.lineTo(fringeX - 6, y + 7);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function tracePinataStar(x, y, outerRadius, innerRadius, rotation = -Math.PI / 2) {
+    ctx.beginPath();
+    for (let point = 0; point < 10; point += 1) {
+      const radius = point % 2 === 0 ? outerRadius : innerRadius;
+      const angle = rotation + point * Math.PI / 5;
+      const pointX = x + Math.cos(angle) * radius;
+      const pointY = y + Math.sin(angle) * radius;
+      if (point === 0) ctx.moveTo(pointX, pointY);
+      else ctx.lineTo(pointX, pointY);
+    }
+    ctx.closePath();
+  }
+
   function drawPinata(time) {
     const pinata = level.pinata;
     if (!pinata) return;
     const x = pinata.x - game.cameraX;
     if (x < -100 || x > canvas.width + 100) return;
+    const centerX = x + pinata.w / 2;
+    const centerY = pinata.y + pinata.h / 2;
 
     ctx.save();
-    ctx.strokeStyle = '#fff1a6';
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(x + pinata.w / 2, 0); ctx.lineTo(x + pinata.w / 2, pinata.y + 5); ctx.stroke();
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = 'rgba(47, 24, 48, .72)';
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(centerX, -3); ctx.lineTo(centerX, pinata.y + 4); ctx.stroke();
+    ctx.strokeStyle = '#f7d98b';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(centerX - 0.7, -3); ctx.lineTo(centerX - 0.7, pinata.y + 4); ctx.stroke();
 
     if (pinata.broken) {
+      const sway = Math.sin(time * 0.004) * 0.12;
+      ctx.translate(centerX, pinata.y + 9);
+      ctx.rotate(sway);
+      ctx.shadowColor = '#ffd166';
+      ctx.shadowBlur = 9;
       ctx.fillStyle = '#ffd166';
-      ctx.beginPath(); ctx.arc(x + pinata.w / 2, pinata.y + 10, 5 + Math.sin(time * 0.012) * 2, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#4a213f';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(0, 0, 6.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.shadowBlur = 0;
+      const fragments = [
+        { x: -14, y: 9, rotation: -0.42, color: '#ff5f91' },
+        { x: 13, y: 12, rotation: 0.5, color: '#65d8ff' },
+      ];
+      for (const fragment of fragments) {
+        ctx.save();
+        ctx.translate(fragment.x, fragment.y);
+        ctx.rotate(fragment.rotation - sway * 0.5);
+        ctx.fillStyle = fragment.color;
+        ctx.strokeStyle = '#4a213f';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-8, -3); ctx.lineTo(8, -2); ctx.lineTo(5, 10); ctx.lineTo(0, 7); ctx.lineTo(-5, 11); ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        ctx.restore();
+      }
+      const scrapColors = ['#ffd166', '#63d878', '#b78cff', '#ff6fae'];
+      for (let scrap = 0; scrap < 6; scrap += 1) {
+        const drift = time * 0.0015 + scrap * 1.7;
+        ctx.save();
+        ctx.globalAlpha = 0.4 + (scrap % 3) * 0.16;
+        ctx.translate(Math.sin(drift) * (15 + scrap * 3), 18 + (scrap % 3) * 8 + Math.cos(drift * 1.3) * 4);
+        ctx.rotate(drift * 2);
+        ctx.fillStyle = scrapColors[scrap % scrapColors.length];
+        ctx.fillRect(-3, -1.5, 6, 3);
+        ctx.restore();
+      }
       ctx.restore();
       return;
     }
 
+    const damage = clamp(pinata.hits / pinata.targetHits, 0, 1);
     const wobble = pinata.wobble > 0 ? Math.sin(time * 0.07) * pinata.wobble : Math.sin(time * 0.004) * 0.035;
-    ctx.translate(x + pinata.w / 2, pinata.y + pinata.h / 2);
+    const bob = Math.sin(time * 0.0032) * 1.2;
+    ctx.translate(centerX, centerY + bob);
     ctx.rotate(wobble);
-    ctx.shadowColor = '#ff67ad';
-    ctx.shadowBlur = 14;
-    ctx.fillStyle = '#f4b94f';
-    ctx.strokeStyle = '#3a1c17';
+    ctx.lineJoin = 'round';
+    ctx.shadowColor = damage > 0.4 ? '#ffd166' : '#ff67ad';
+    ctx.shadowBlur = 15;
+
+    // Tail and tissue tassel sit behind the body for a clean, readable burro silhouette.
+    ctx.strokeStyle = '#4a213f';
+    ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(-24, -6); ctx.quadraticCurveTo(-34, -14, -35, -22); ctx.stroke();
+    ctx.strokeStyle = '#65d8ff';
     ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(-26, 18);
-    ctx.quadraticCurveTo(-24, -28, 0, -31);
-    ctx.quadraticCurveTo(24, -28, 26, 18);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
-    const fringe = ['#ff5f91', '#65d8ff', '#63d878', '#b78cff'];
-    for (let i = 0; i < 4; i++) {
-      ctx.strokeStyle = fringe[i];
-      ctx.lineWidth = 6;
-      ctx.beginPath(); ctx.moveTo(-21 + i * 2, -10 + i * 9); ctx.lineTo(21 - i * 2, -10 + i * 9); ctx.stroke();
-    }
+    ctx.beginPath(); ctx.moveTo(-24, -6); ctx.quadraticCurveTo(-34, -14, -35, -22); ctx.stroke();
+    ['#ff5f91', '#ffd166', '#63d878'].forEach((color, index) => {
+      ctx.strokeStyle = color; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(-35, -22); ctx.lineTo(-41 + index * 4, -29 - (index % 2) * 3); ctx.stroke();
+    });
+
+    // Three visible legs keep the silhouette lively without becoming noisy at gameplay scale.
+    [-17, -2, 14].forEach((legX, index) => {
+      const legGradient = ctx.createLinearGradient(legX, 9, legX, 30);
+      legGradient.addColorStop(0, ['#ff5f91', '#65d8ff', '#ffd166'][index]);
+      legGradient.addColorStop(1, ['#b92d70', '#258fb6', '#d77b35'][index]);
+      ctx.fillStyle = legGradient;
+      ctx.strokeStyle = '#4a213f';
+      ctx.lineWidth = 2.6;
+      ctx.beginPath(); ctx.roundRect(legX - 4.5, 8, 9, 22, 4); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#3b203c';
+      ctx.beginPath(); ctx.roundRect(legX - 5.5, 25, 11, 6, 3); ctx.fill();
+    });
+
+    const bodyGradient = ctx.createLinearGradient(-24, -20, 24, 20);
+    bodyGradient.addColorStop(0, '#52e5ed');
+    bodyGradient.addColorStop(0.48, '#2bb6d6');
+    bodyGradient.addColorStop(1, '#7353c8');
+    tracePinataBody();
+    ctx.fillStyle = bodyGradient;
+    ctx.fill();
+    ctx.strokeStyle = '#4a213f';
+    ctx.lineWidth = 3.4;
+    ctx.stroke();
+
+    ctx.save();
+    tracePinataBody();
+    ctx.clip();
+    drawPinataFringeBand(-15, 30, '#ff5f91', 0);
+    drawPinataFringeBand(-5, 30, '#ffd166', 3);
+    drawPinataFringeBand(5, 29, '#63d878', 0);
+    drawPinataFringeBand(15, 24, '#b78cff', 3);
+    const shade = ctx.createLinearGradient(0, -23, 0, 23);
+    shade.addColorStop(0, 'rgba(255,255,255,.28)');
+    shade.addColorStop(0.45, 'rgba(255,255,255,0)');
+    shade.addColorStop(1, 'rgba(39,15,53,.3)');
+    ctx.fillStyle = shade;
+    ctx.fillRect(-32, -24, 64, 50);
+    ctx.restore();
+    tracePinataBody();
+    ctx.strokeStyle = '#4a213f';
+    ctx.lineWidth = 3.4;
+    ctx.stroke();
+
+    // Head, ears, and expression give the piñata personality while keeping its body readable.
+    ctx.fillStyle = '#ff6fae';
+    ctx.strokeStyle = '#4a213f';
+    ctx.lineWidth = 2.8;
+    ctx.beginPath(); ctx.moveTo(12, -18); ctx.lineTo(13, -32); ctx.lineTo(21, -20); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(22, -17); ctx.lineTo(29, -29); ctx.lineTo(29, -14); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ffd166';
+    ctx.beginPath(); ctx.ellipse(21, -8, 15, 14, -0.12, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ff9d6c';
+    ctx.beginPath(); ctx.ellipse(31, -2, 10, 7.5, 0.08, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#fff8df';
-    ctx.strokeStyle = '#3a1c17'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(-8, -19, 5, 0, Math.PI * 2); ctx.arc(8, -19, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#3a1c17';
-    ctx.beginPath(); ctx.arc(-7, -18, 2, 0, Math.PI * 2); ctx.arc(9, -18, 2, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#3a1c17'; ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.arc(0, -7, 8, 0.15, Math.PI - 0.15); ctx.stroke();
+    ctx.beginPath(); ctx.arc(23, -11, 4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#3a1737';
+    ctx.beginPath(); ctx.arc(24, -10.5, 1.8, 0, Math.PI * 2); ctx.arc(34, -3, 1.4, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#3a1737';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.arc(30, 1, 5, 0.1, Math.PI * 0.75); ctx.stroke();
+    ctx.fillStyle = '#65d8ff';
+    ctx.beginPath(); ctx.moveTo(8, -17); ctx.lineTo(20, -20); ctx.lineTo(26, -15); ctx.lineTo(13, -11); ctx.closePath(); ctx.fill(); ctx.stroke();
+
+    // A small papel-picado rosette acts as the interaction focal point.
+    tracePinataStar(-4, -1, 9, 4.2, time * 0.00035 - Math.PI / 2);
+    ctx.fillStyle = '#fff1a6';
+    ctx.strokeStyle = '#b53d79';
+    ctx.lineWidth = 2;
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ff5f91';
+    ctx.beginPath(); ctx.arc(-4, -1, 2.5, 0, Math.PI * 2); ctx.fill();
+
+    if (pinata.hits >= 1) {
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = '#4a213f';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.moveTo(-9, -16); ctx.lineTo(-4, -8); ctx.lineTo(-9, -1); ctx.lineTo(-3, 7); ctx.stroke();
+      ctx.fillStyle = '#fff1a6';
+      ctx.beginPath(); ctx.moveTo(-10, -8); ctx.lineTo(-4, -8); ctx.lineTo(-7, -2); ctx.closePath(); ctx.fill();
+    }
+    if (pinata.hits >= 2) {
+      ctx.fillStyle = '#4a213f';
+      ctx.beginPath(); ctx.moveTo(7, 6); ctx.lineTo(18, 4); ctx.lineTo(13, 13); ctx.lineTo(6, 12); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#65d8ff';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(13, 12); ctx.lineTo(17, 20); ctx.moveTo(9, 12); ctx.lineTo(7, 21); ctx.stroke();
+    }
     ctx.restore();
 
     ctx.save();
-    ctx.fillStyle = 'rgba(43,24,17,.84)';
-    ctx.strokeStyle = '#ff67ad'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.roundRect(x - 20, pinata.y - 35, 98, 26, 7); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#fff1a6'; ctx.font = '900 12px Arial'; ctx.textAlign = 'center';
-    ctx.fillText(`${pinata.targetHits - pinata.hits} STOMPS!`, x + pinata.w / 2, pinata.y - 17);
+    const promptWidth = 112;
+    const promptX = centerX - promptWidth / 2;
+    const promptY = pinata.y - 40;
+    const promptGradient = ctx.createLinearGradient(promptX, promptY, promptX, promptY + 28);
+    promptGradient.addColorStop(0, 'rgba(65, 26, 63, .97)');
+    promptGradient.addColorStop(1, 'rgba(31, 18, 45, .94)');
+    ctx.shadowColor = '#ff67ad';
+    ctx.shadowBlur = 9;
+    ctx.fillStyle = promptGradient;
+    ctx.strokeStyle = damage > 0.45 ? '#ffd166' : '#ff67ad'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.roundRect(promptX, promptY, promptWidth, 28, 9); ctx.fill(); ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#ffd166';
+    tracePinataStar(promptX + 13, promptY + 14, 5, 2.2); ctx.fill();
+    tracePinataStar(promptX + promptWidth - 13, promptY + 14, 5, 2.2); ctx.fill();
+    ctx.fillStyle = '#fff8df'; ctx.font = '900 12px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(`${pinata.targetHits - pinata.hits} STOMPS!`, centerX, promptY + 14.5);
     ctx.restore();
   }
 
@@ -3758,13 +3944,6 @@
     drawCheckpointSign(checkpoint, x, index);
   }
 
-  const tacoTrekkerThrowFrames = Object.freeze([
-    Object.freeze({ sx: 95, sy: 265, sw: 256, sh: 216, pivotY: 410 }),
-    Object.freeze({ sx: 475, sy: 279, sw: 341, sh: 175, pivotY: 402 }),
-    Object.freeze({ sx: 948, sy: 271, sw: 322, sh: 183, pivotY: 404 }),
-    Object.freeze({ sx: 1446, sy: 268, sw: 324, sh: 186, pivotY: 407 }),
-  ]);
-
   function drawTacoTrekkerLayers(screenX, worldX, options = {}) {
     const {
       chase = false,
@@ -3776,7 +3955,6 @@
     const body = images.world1_1_taco_trekker_body_v1;
     const olivia = images.world1_1_taco_trekker_olivia_v1;
     const wheel = images.world1_1_taco_trekker_wheel_v1;
-    const armSheet = images.world1_1_olivia_throw_arm_v1;
     const scale = 0.35;
     const width = body.naturalWidth * scale;
     const height = body.naturalHeight * scale;
@@ -3828,23 +4006,35 @@
       olivia.naturalHeight * scale,
     );
 
-    const throwIsForThisTruck = !ghost
-      && game.truckThrowAnim > 0
-      && Math.abs(game.truckThrowWorldX - worldX) < 150;
-    if (throwIsForThisTruck) {
-      const throwProgress = clamp(1 - game.truckThrowAnim / 0.32, 0, 1);
-      const frameIndex = throwProgress < 0.23 ? 0 : throwProgress < 0.49 ? 1 : throwProgress < 0.74 ? 2 : 3;
-      const frame = tacoTrekkerThrowFrames[frameIndex];
-      const armScale = 0.17;
-      const shoulderX = screenX + 425 * scale;
-      const shoulderY = bodyY + 280 * scale;
-      const armX = shoulderX - frame.sw * armScale;
-      const armY = shoulderY - (frame.pivotY - frame.sy) * armScale;
-      ctx.drawImage(
-        armSheet,
-        frame.sx, frame.sy, frame.sw, frame.sh,
-        armX, armY, frame.sw * armScale, frame.sh * armScale,
-      );
+    const launcherIsForThisTruck = !ghost
+      && game.truckDropPulse > 0
+      && Math.abs(game.truckLauncherWorldX - worldX) < 150;
+    if (launcherIsForThisTruck) {
+      const pulseProgress = clamp(1 - game.truckDropPulse / tacoTrekkerRearLauncher.pulseDuration, 0, 1);
+      const kick = Math.sin(pulseProgress * Math.PI);
+      const launcherX = screenX + tacoTrekkerRearLauncher.x;
+      const launcherY = bodyY + tacoTrekkerRearLauncher.sourceY * scale;
+      ctx.save();
+      ctx.translate(launcherX, launcherY);
+      ctx.rotate(-0.1 - kick * 0.2);
+      ctx.shadowColor = glitch ? '#b78cff' : '#65d8ff';
+      ctx.shadowBlur = 8 + kick * 13;
+      ctx.fillStyle = '#ffd166';
+      ctx.strokeStyle = '#4a213f';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.roundRect(-16, -5, 30, 9, 4); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = glitch ? '#b78cff' : '#65d8ff';
+      ctx.beginPath(); ctx.roundRect(-11, -8 - kick * 4, 20, 5, 2.5); ctx.fill();
+      ctx.globalAlpha = 1 - pulseProgress;
+      ctx.strokeStyle = glitch ? '#b78cff' : '#fff1a6';
+      ctx.lineWidth = 2.5;
+      for (let ray = 0; ray < 3; ray += 1) {
+        ctx.beginPath();
+        ctx.moveTo(-4 - ray * 4, -10 - kick * 5);
+        ctx.lineTo(-10 - ray * 8, -21 - kick * (7 + ray * 2));
+        ctx.stroke();
+      }
+      ctx.restore();
     }
 
     ctx.imageSmoothingEnabled = smoothing;
@@ -4602,9 +4792,13 @@
           goldenCactusCheckpoint: level.checkpoints.some((checkpoint) => checkpoint.artStyle === 'goldenCactus'),
           layeredTacoTrekker: true,
           independentWheels: true,
-          armOnlyThrowFrame: game.truckThrowAnim > 0
-            ? Math.min(3, Math.floor((1 - game.truckThrowAnim / 0.32) * 4))
+          rearTacoLauncher: true,
+          oliviaDrivingPose: true,
+          armThrowOverlay: false,
+          rearLauncherPulse: game.truckDropPulse > 0
+            ? Number((1 - game.truckDropPulse / tacoTrekkerRearLauncher.pulseDuration).toFixed(2))
             : -1,
+          pinataVisualRemaster: 'burro-fringe-v1',
         },
         characterRemaster: {
           enemyTypes: Object.keys(enemySpriteArt),

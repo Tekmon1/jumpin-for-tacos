@@ -114,12 +114,12 @@ test("keeps World 1-1 enemy artwork on a separate slower visual clock", async ()
   assert.equal(context.window.JFT_HERO_CORE.physics.enemyVisualAnimationRate, 1.8);
   assert.match(mainRuntime, /enemy\.anim \+= dt \* heroPhysics\.enemyVisualAnimationRate/);
   assert.match(mainRuntime, /return Math\.floor\(enemy\.anim\) % 4/);
-  assert.match(mainRuntime, /SOURCE_VERSION = 'w1-1-v48-phase3-audio-polish'/);
+  assert.match(mainRuntime, /SOURCE_VERSION = 'w1-1-v51-shared-stomp-standard'/);
   assert.match(mainRuntime, /function removeOpeningLeadEnemy/);
   assert.match(mainRuntime, /removeOpeningLeadEnemy\(\)/);
   assert.match(mainRuntime, /patrolStartOffset: 420/);
-  assert.match(mainHtml, /levels\.js\?v=31/);
-  assert.match(mainHtml, /game\.js\?v=48/);
+  assert.match(mainHtml, /levels\.js\?v=32/);
+  assert.match(mainHtml, /game\.js\?v=51/);
 });
 
 test("creates same-type enemy packs and recognizes swept stomp contacts", async () => {
@@ -199,6 +199,100 @@ test("creates same-type enemy packs and recognizes swept stomp contacts", async 
   assert.equal(core.stompComboReward(3).bonus, "golden");
   assert.equal(core.stompComboReward(5).bonus, "rainbow");
   assert.equal(core.stompComboReward(8).bonus, "taco-frenzy");
+});
+
+test("classifies forgiving ordinary-enemy stomps consistently across all nine levels", async () => {
+  const source = await readFile(new URL("../public/game/levels.js", import.meta.url), "utf8");
+  const context = {
+    console,
+    Math,
+    Number,
+    Object,
+    URL,
+    window: { location: { href: "http://localhost/game/index.html" } },
+    location: { href: "http://localhost/game/index.html" },
+    document: {
+      currentScript: null,
+      head: { appendChild() {} },
+      getElementById() { return null; },
+      querySelector() { return null; },
+      createElement() { return { async: false, dataset: {} }; },
+    },
+  };
+  vm.runInNewContext(source, context, { filename: "levels.js" });
+  const core = context.window.JFT_HERO_CORE;
+  const target = { x: 500, y: 422, w: 36, h: 38 };
+
+  assert.equal(core.ordinaryStompStandard.version, "ordinary-stomp-v1");
+  assert.equal(
+    core.classifyEnemyContact(
+      { x: 533.5, y: 390, w: 34, h: 42, vy: 260 },
+      target,
+      { previousBottom: 420, previousTargetTop: 422 },
+    ),
+    "stomp",
+    "a visually clear edge landing succeeds even on World 1-1's narrow legacy collider",
+  );
+  assert.equal(
+    core.classifyEnemyContact(
+      { x: 500, y: 418, w: 34, h: 42, vy: 0 },
+      target,
+      { previousBottom: 460, previousTargetTop: 422 },
+    ),
+    "body",
+    "a lateral grounded collision remains body contact",
+  );
+  assert.equal(
+    core.classifyEnemyContact(
+      { x: 500, y: 390, w: 34, h: 42, vy: -120 },
+      target,
+      { previousBottom: 434, previousTargetTop: 422 },
+    ),
+    "body",
+    "rising through the top region does not earn a stomp",
+  );
+  assert.equal(
+    core.classifyEnemyContact(
+      { x: 500, y: 418, w: 34, h: 42, vy: 220 },
+      target,
+      { previousBottom: 450, previousTargetTop: 422, routeHelper: true },
+    ),
+    "stomp",
+    "authored route helpers retain their larger shared upper-region allowance",
+  );
+  assert.equal(
+    core.classifyEnemyContact(
+      { x: 590, y: 390, w: 34, h: 42, vy: 260 },
+      target,
+      { previousBottom: 420, previousTargetTop: 422 },
+    ),
+    null,
+    "a clearly missed enemy does not become an automatic stomp",
+  );
+
+  const runtimeFiles = [
+    "game.js",
+    "level1-2.js",
+    "level1-3.js",
+    "level2.js",
+    "level2-2.js",
+    "level2-3.js",
+    "world3.js",
+  ];
+  for (const filename of runtimeFiles) {
+    const runtime = await readFile(new URL(`../public/game/${filename}`, import.meta.url), "utf8");
+    assert.match(runtime, /heroCore\.classifyEnemyContact\(player, enemy/, `${filename} uses the shared ordinary-enemy classifier`);
+    assert.match(runtime, /stompResolvedThisFrame/, `${filename} limits a frame to one rewarded enemy bounce`);
+  }
+
+  const showdown = await readFile(new URL("../public/game/level1-3.js", import.meta.url), "utf8");
+  assert.match(showdown, /if \(enemy\.boss\)[\s\S]*heroCore\.isStomp\(player, enemy/, "El Guacodillo keeps its explicit boss-only stomp gate");
+  assert.match(showdown, /playAudio\(stomped \? 'combat\.enemyStomp' : 'combat\.enemySplat'/, "every genuine ordinary-enemy bounce keeps the approved boing mapping");
+
+  const backstage = await readFile(new URL("../public/game/level2-3.js", import.meta.url), "utf8");
+  assert.match(backstage, /if \(stomped\) \{[\s\S]*player\.vy = -heroPhysics\.enemyBounceVelocity/, "World 2-3 only applies the enemy bounce impulse to a classified stomp");
+  const world3 = await readFile(new URL("../public/game/world3.js", import.meta.url), "utf8");
+  assert.match(world3, /if \(stomp\) \{[\s\S]*player\.vy = -heroPhysics\.enemyBounceVelocity/, "all three World 3 levels only apply the enemy bounce impulse to a classified stomp");
 });
 
 test("gives World 1-1 formations visible patrol lanes without overlap", async () => {
@@ -502,14 +596,14 @@ test("standardizes World 1 and World 2 controls, progression, and QA safeguards"
     const html = await readFile(new URL(`../public/game/${filename}`, import.meta.url), "utf8");
     assert.match(html, /style\.css\?v=27/);
     assert.match(html, /controller\.js\?v=8/);
-    assert.match(html, /levels\.js\?v=31/);
+    assert.match(html, /levels\.js\?v=32/);
     assert.match(html, /id="startBtn"/);
     assert.match(html, /data-next-level/);
     assert.match(html, /class="touch-controls" aria-label="Touch controls"/);
     assert.match(html, /data-input="left" aria-label="Move left"/);
     assert.match(html, /data-input="right" aria-label="Move right"/);
     assert.match(html, /data-input="jump" aria-label="Jump"/);
-    assert.ok(html.indexOf("controller.js?v=8") < html.indexOf("levels.js?v=31"));
+    assert.ok(html.indexOf("controller.js?v=8") < html.indexOf("levels.js?v=32"));
   }
 
   const controller = await readFile(new URL("../public/game/controller.js", import.meta.url), "utf8");
@@ -615,18 +709,24 @@ test("ships World 1 with authored seamless panorama progressions", async () => {
     "world1_1_taco_trekker_body_v1.png",
     "world1_1_taco_trekker_olivia_v1.png",
     "world1_1_taco_trekker_wheel_v1.png",
-    "world1_1_olivia_throw_arm_v1.png",
+    "world1_1_taco_drop_payload_v1.png",
   ];
   for (const filename of foregroundAssets) {
     assert.match(prototype, new RegExp(filename.replace(".png", "")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(prototypeHtml, /game\.js\?v=48/);
+  assert.match(prototypeHtml, /game\.js\?v=51/);
   assert.match(prototype, /function drawPaintedTerrainSlice/);
   assert.match(prototype, /artStyle: 'goldenCactus'/);
   assert.match(prototype, /function drawTacoTrekkerLayers/);
   assert.match(prototype, /independentWheels: true/);
-  assert.match(prototype, /armOnlyThrowFrame/);
+  assert.match(prototype, /rearTacoLauncher: true/);
+  assert.match(prototype, /oliviaDrivingPose: true/);
+  assert.match(prototype, /armThrowOverlay: false/);
+  assert.match(prototype, /pinataVisualRemaster: 'burro-fringe-v1'/);
+  assert.match(prototype, /function drawPinataFringeBand/);
+  assert.match(prototype, /function tracePinataStar/);
+  assert.doesNotMatch(prototype, /truckThrowAnim|truckThrowWorldX|tacoTrekkerThrowFrames|world1_1_olivia_throw_arm_v1/);
 
   const rescueForeground = await readFile(new URL("../public/game/level1-2.js", import.meta.url), "utf8");
   const rescueForegroundHtml = await readFile(new URL("../public/game/level1-2.html", import.meta.url), "utf8");
@@ -646,7 +746,7 @@ test("ships World 1 with authored seamless panorama progressions", async () => {
     assert.match(rescueForeground, new RegExp(filename.replace(".", "\\.")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(rescueForegroundHtml, /level1-2\.js\?v=30/);
+  assert.match(rescueForegroundHtml, /level1-2\.js\?v=31/);
   assert.match(rescueForeground, /function drawPaintedTerrainSlice/);
   assert.match(rescueForeground, /checkpointArtGroundedByVisibleBaseline: true/);
   assert.match(rescueForeground, /independentCheckpointShadows: true/);
@@ -683,12 +783,39 @@ test("ships World 1 with authored seamless panorama progressions", async () => {
     assert.match(showdownForeground, new RegExp(filename.replace(".", "\\.")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(showdownForegroundHtml, /level1-3\.js\?v=22/);
+  assert.match(showdownForegroundHtml, /level1-3\.js\?v=23/);
   assert.match(showdownForeground, /function drawPaintedTerrainSlice/);
   assert.match(showdownForeground, /checkpointArtGroundedByVisibleBaseline: true/);
   assert.match(showdownForeground, /independentCheckpointShadows: true/);
   assert.match(showdownForeground, /partyTruckRemastered/);
   assert.match(showdownForeground, /allCheckpointsGrounded/);
+});
+
+test("reserves World 1-1 confetti for authored celebrations and keeps elevated platforms one-way", async () => {
+  const runtime = await readFile(new URL("../public/game/game.js", import.meta.url), "utf8");
+
+  const collectStart = runtime.indexOf('function collectItem(item)');
+  const collectEnd = runtime.indexOf('function spawnTruckTaco', collectStart);
+  const collectRuntime = runtime.slice(collectStart, collectEnd);
+  assert.match(collectRuntime, /if \(item\.type !== 'taco'\)/, 'ordinary tacos skip pickup confetti');
+  assert.doesNotMatch(collectRuntime, /game\.chaseCatchCount % 5 === 0[\s\S]{0,240}spawnConfetti/, 'ordinary chase tacos do not emit pickup confetti');
+  const streakStart = collectRuntime.indexOf("} else if (game.streak === 5)");
+  const specialPickupStart = collectRuntime.indexOf("if (item.type !== 'taco')", streakStart);
+  const streakRuntime = collectRuntime.slice(streakStart, specialPickupStart);
+  assert.doesNotMatch(streakRuntime, /spawnConfetti/, 'repeatable ordinary taco streak thresholds stay text-only');
+  assert.doesNotMatch(collectRuntime, /item\.chaseDrop \? 24 : 16/, 'each airborne taco no longer emits a full confetti burst');
+  assert.doesNotMatch(runtime, /item\.landed = true;\s*spawnConfetti/, 'ordinary truck tacos do not burst confetti when they land');
+  assert.match(runtime, /increaseAirChain\('AIRBORNE APPETITE', item\.type !== 'taco'\)/, 'ordinary airborne tacos suppress the shared chain burst');
+  assert.doesNotMatch(runtime, /Math\.random\(\) < dt \* \d+\) spawnConfetti\(game\.(?:dropTruckX|encoreTruckX|chaseTruckX)/, 'vehicle movement no longer sprays continuous confetti');
+
+  const collisionStart = runtime.indexOf('function resolvePlatformCollision(prevY)');
+  const collisionEnd = runtime.indexOf('function findRespawnPoint', collisionStart);
+  const collisionRuntime = runtime.slice(collisionStart, collisionEnd);
+  assert.match(runtime, /function isOneWayPlatform\(platform\)[\s\S]*platform\.h <= 30/);
+  assert.match(runtime, /function crossesOneWayPlatformTop\(platform, prevY\)[\s\S]*if \(player\.vy < 0\) return false/);
+  assert.match(collisionRuntime, /if \(isOneWayPlatform\(p\)\)[\s\S]*crossesOneWayPlatformTop\(p, prevY\)[\s\S]*continue/);
+  assert.ok(collisionRuntime.indexOf('if (isOneWayPlatform(p))') < collisionRuntime.indexOf('const hits = rectsIntersect(player, p)'), 'one-way surfaces bypass four-sided collision');
+  assert.match(collisionRuntime, /const hits = rectsIntersect\(player, p\)/, 'ground-height terrain keeps its solid collider');
 });
 
 test("remasters the complete World 1-1 enemy and NPC cast without changing gameplay geometry", async () => {
@@ -707,7 +834,7 @@ test("remasters the complete World 1-1 enemy and NPC cast without changing gamep
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /game\.js\?v=48/);
+  assert.match(html, /game\.js\?v=51/);
   assert.match(runtime, /function remasteredEnemyFrame/);
   assert.match(runtime, /function drawRemasteredEnemy/);
   assert.match(runtime, /function drawDesertLocals/);
@@ -757,7 +884,7 @@ test("authors the full World 1-1 pilot around purposeful upper routes and metada
   assert.match(runtime, /game\.salsaMeter = Math\.min\(100, game\.salsaMeter \+ authoredMeter\)/);
   assert.match(core, /const requestedPlatformId = enemy\.supportPlatformId \|\| enemy\.platformId/);
   assert.match(core, /id === `\$\{requestedPlatformId\}-encore`/);
-  assert.match(html, /game\.js\?v=48/);
+  assert.match(html, /game\.js\?v=51/);
   assert.match(html, /explore layered desert\r?\n\s+routes where risky jumps can lead to bonus powers/);
 });
 
@@ -780,8 +907,8 @@ test("remasters the complete World 1-2 aviation enemy and NPC cast and restores 
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /level1-2\.js\?v=30/);
-  assert.match(runtime, /SOURCE_VERSION = 'w1-2-v30-olivia-propeller-state-sync'/);
+  assert.match(html, /level1-2\.js\?v=31/);
+  assert.match(runtime, /SOURCE_VERSION = 'w1-2-v31-shared-stomp-standard'/);
   assert.match(runtime, /\['terminal\.local', '127\.0\.0\.1', 'localhost'\]\.includes\(location\.hostname\)/);
   assert.match(runtime, /function remasteredEnemyFrame/);
   assert.match(runtime, /function drawCrewMember/);
@@ -816,7 +943,7 @@ test("authors the World 1-2 rescue pilot across combat sections without crowding
   assert.match(runtime, /previousBottom: previousPlayerBottom/);
   assert.match(runtime, /previousTargetTop: previousEnemyTop/);
   assert.match(runtime, /player\.y = Math\.min\(player\.y, enemy\.y - player\.h - 1\)/);
-  assert.match(html, /level1-2\.js\?v=30/);
+  assert.match(html, /level1-2\.js\?v=31/);
 });
 
 test("remasters the complete World 1-3 showdown enemy, boss, stampede, and NPC cast", async () => {
@@ -838,8 +965,8 @@ test("remasters the complete World 1-3 showdown enemy, boss, stampede, and NPC c
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /level1-3\.js\?v=22/);
-  assert.match(runtime, /SOURCE_VERSION = 'w1-3-v22-shared-audio'/);
+  assert.match(html, /level1-3\.js\?v=23/);
+  assert.match(runtime, /SOURCE_VERSION = 'w1-3-v23-shared-stomp-standard'/);
   assert.match(runtime, /function remasteredEnemyFrame/);
   assert.match(runtime, /enemyAnimationFrames: 8/);
   assert.match(runtime, /behaviorLinked: true/);
@@ -876,7 +1003,7 @@ test("authors World 1-3 combat around readable formations, full-platform patrols
   assert.match(runtime, /previousBottom: player\.previousBottom/);
   assert.match(runtime, /previousTargetTop: previousEnemyTop/);
   assert.match(runtime, /player\.y = Math\.min\(player\.y, enemy\.y - player\.h - 1\)/);
-  assert.match(html, /level1-3\.js\?v=22/);
+  assert.match(html, /level1-3\.js\?v=23/);
 });
 
 test("ships the complete three-level Starlight Taco Carnival world", async () => {
@@ -888,7 +1015,7 @@ test("ships the complete three-level Starlight Taco Carnival world", async () =>
     assert.match(html, /World 3/);
     assert.match(html, /35,000 units/);
     assert.match(html, /id="startBtn"/);
-    assert.match(html, /world3\.js\?v=31/);
+    assert.match(html, /world3\.js\?v=32/);
     assert.match(html, /world3\.css\?v=10/);
     assert.match(html, /controller\.js\?v=8/);
     assert.match(html, /data-next-level/);
@@ -1067,7 +1194,7 @@ test("ships the complete three-level Starlight Taco Carnival world", async () =>
 test("authors World 3 combat around readable packs, full patrols, and safe set pieces", async () => {
   const runtime = await readFile(new URL("../public/game/world3.js", import.meta.url), "utf8");
 
-  assert.match(runtime, /const SOURCE_VERSION = 31/);
+  assert.match(runtime, /const SOURCE_VERSION = 32/);
   assert.match(runtime, /const WORLD3_REMASTER_PLANS = Object\.freeze/);
   assert.match(runtime, /function world3ForbiddenRanges/);
   assert.match(runtime, /function addWorld3Formation/);
@@ -1187,8 +1314,8 @@ test("remasters World 2-1 backgrounds, foregrounds, checkpoints, and catamaran l
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /level2\.js\?v=23/);
-  assert.match(runtime, /SOURCE_VERSION = 'w2-1-v23-shared-audio'/);
+  assert.match(html, /level2\.js\?v=24/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-1-v24-shared-stomp-standard'/);
   assert.match(runtime, /const ENVIRONMENT_TRANSITION_WIDTH = 1600/);
   assert.match(runtime, /const ENVIRONMENT_PANORAMA_CROP = 0\.9/);
   assert.match(runtime, /function drawPaintedEnvironment/);
@@ -1292,7 +1419,7 @@ test("ships the 35,000-unit caldera camping sequel with premium art and adaptive
     assert.match(html, new RegExp(`music_caldera_${track}\\.ogg`));
   }
   assert.match(html, /World 2 • Level 2-2 • 35,000 units/);
-  assert.match(html, /level2-2\.js\?v=5/);
+  assert.match(html, /level2-2\.js\?v=6/);
   assert.match(html, /id="startBtn"/);
   assert.match(runtime, /geyserGuardSpecs/);
   assert.match(runtime, /requiresGeyserAirborne/);
@@ -1344,7 +1471,7 @@ test("ships the complete 35,000-unit Neon Neckties concert level", async () => {
   assert.match(runtime, /OLIVIA IS LOADING THE LAST TACOS!/);
   assert.match(runtime, /TACO ROADSTER: READY TO ROLL!/);
   assert.match(runtime, /SHOWTIME! OLIVIA IS TAKING THE SCENIC ROUTE!/);
-  assert.match(html, /level2-3\.js\?v=15/);
+  assert.match(html, /level2-3\.js\?v=16/);
   assert.match(runtime, /generatorDefensePlans/);
   assert.match(runtime, /function ensureGeneratorDefensePlatform/);
   assert.match(runtime, /finitePlatformGeometry: world\.platforms\.every/);
@@ -1495,7 +1622,7 @@ test("loads the shared Phase 3 audio foundation before World 1-1 and resolves ev
 
   const catalogPosition = html.indexOf('src="audio-catalog.js?v=7"');
   const enginePosition = html.indexOf('src="audio-engine.js?v=7"');
-  const runtimePosition = html.indexOf('src="game.js?v=48"');
+  const runtimePosition = html.indexOf('src="game.js?v=51"');
   assert.ok(catalogPosition >= 0, "World 1-1 loads the semantic catalog");
   assert.ok(enginePosition > catalogPosition, "the engine loads after its catalog");
   assert.ok(runtimePosition > enginePosition, "the engine loads before the World 1-1 runtime");
