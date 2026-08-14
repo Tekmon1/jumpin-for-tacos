@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w2-2-v6-shared-stomp-standard';
+  const SOURCE_VERSION = 'w2-2-v8-scale-trekker-polish';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -95,6 +95,25 @@
       [0, 622, 1536, 190], [0, 826, 1536, 190],
     ],
   };
+  const calderaEnemyDrawProfiles = Object.freeze({
+    marshmallow: Object.freeze({ width: 78, height: 94 }),
+    pineapple: Object.freeze({ width: 76, height: 90 }),
+    queso: Object.freeze({ width: 76, height: 94 }),
+    pepper: Object.freeze({ width: 70, height: 88 }),
+    crab: Object.freeze({ width: 76, height: 96 }),
+    nacho: Object.freeze({ width: 76, height: 90 }),
+    ash: Object.freeze({ width: 76, height: 66 }),
+  });
+  const calderaPlatformVisualProfile = Object.freeze({
+    groundMinimumHeight: 86,
+    elevatedMinimumHeight: 46,
+    elevatedExtraDepth: 22,
+  });
+  const calderaTrekkerRearLauncher = Object.freeze({
+    xOffset: -104,
+    yOffset: -119,
+    pulseDuration: .16,
+  });
   const keys = { left: false, right: false, jump: false };
   const world = {
     platforms: [], collectibles: [], enemies: [], checkpoints: [], cannons: [],
@@ -119,7 +138,7 @@
       phase: 'idle', oliviaX: 0, oliviaY: 330, oliviaTimer: 0,
       boardMounted: false, mountX: 25900, landingLaunched: false, clearedObstacles: 0,
     },
-    boat: { state: 'basecamp', x: 720, speed: 0, dropTimer: 0, catches: 0, pass: 0 },
+    boat: { state: 'basecamp', x: 720, speed: 0, dropTimer: 0, dropPulse: 0, catches: 0, pass: 0 },
     eruption: { state: 'dormant', timer: 0, flash: 0, tremor: 0, rainbowBurst: 0 },
     cannonballs: [],
     tideY: 474, confetti: [], particles: [], impactTexts: [], fireworks: [],
@@ -140,12 +159,13 @@
   let lastFrame = 0;
   let randomSeed = 0xC0C0A;
   const params = new URLSearchParams(location.search);
-  const previewStart = location.hostname === 'terminal.local' ? Number(params.get('startX') || 0) : 0;
-  const previewAutoRun = location.hostname === 'terminal.local' && params.get('autoRun') === '1';
-  const previewAutoJump = location.hostname === 'terminal.local' && params.get('autoJump') === '1';
-  const previewFastCelebrate = location.hostname === 'terminal.local' && params.get('fastCelebrate') === '1';
-  const previewRespawn = location.hostname === 'terminal.local' && params.get('respawn') === '1';
-  const previewRespawnCheckpoint = location.hostname === 'terminal.local' ? Number(params.get('respawnCheckpoint') || -1) : -1;
+  const previewHost = ['terminal.local', 'localhost', '127.0.0.1'].includes(location.hostname);
+  const previewStart = previewHost ? Number(params.get('startX') || 0) : 0;
+  const previewAutoRun = previewHost && params.get('autoRun') === '1';
+  const previewAutoJump = previewHost && params.get('autoJump') === '1';
+  const previewFastCelebrate = previewHost && params.get('fastCelebrate') === '1';
+  const previewRespawn = previewHost && params.get('respawn') === '1';
+  const previewRespawnCheckpoint = previewHost ? Number(params.get('respawnCheckpoint') || -1) : -1;
 
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
   const lerp = (a, b, t) => a + (b - a) * t;
@@ -974,7 +994,7 @@
         phase: 'idle', oliviaX: 0, oliviaY: 330, oliviaTimer: 0,
         boardMounted: false, mountX: 25900, landingLaunched: false, clearedObstacles: 0,
       },
-      boat: { state: 'basecamp', x: 720, speed: 0, dropTimer: 0, catches: 0, pass: 0 },
+      boat: { state: 'basecamp', x: 720, speed: 0, dropTimer: 0, dropPulse: 0, catches: 0, pass: 0 },
       eruption: { state: 'dormant', timer: 0, flash: 0, tremor: 0, rainbowBurst: 0 },
       cannonballs: [],
       geyserLaunchTimer: 0,
@@ -1405,11 +1425,20 @@
     }
   }
 
+  function trekkerRearLauncherOrigin(boat, groundY = GROUND_Y) {
+    return {
+      x: boat.x + calderaTrekkerRearLauncher.xOffset,
+      y: groundY + calderaTrekkerRearLauncher.yOffset,
+    };
+  }
+
   function spawnBoatTaco() {
-    addItem(game.boat.x + 28, 314, 'taco', {
+    const origin = trekkerRearLauncherOrigin(game.boat);
+    addItem(origin.x, origin.y, 'taco', {
       bonusReward: true, dynamic: true, boatDrop: true,
       vx: -150 - seeded() * 90, vy: -270 - seeded() * 140, angle: 0,
     });
+    game.boat.dropPulse = calderaTrekkerRearLauncher.pulseDuration;
     playAudio('vehicle.tacoDrop', {
       vehicleType: 'trekker',
       position: audioPosition(game.boat.x),
@@ -1418,6 +1447,7 @@
 
   function updateBoat(dt) {
     const boat = game.boat;
+    boat.dropPulse = Math.max(0, boat.dropPulse - dt);
     const geyserDrop = player.x > 7000 && player.x < 11900;
     const lavaChase = player.x > 19400 && player.x < 27400;
 
@@ -2720,7 +2750,9 @@
     const row = terrainSourceRows[ground ? 'ground' : 'platform'][rowIndex];
     const screenX = Math.floor(platform.x - game.cameraX);
     const screenY = Math.floor(platform.y);
-    const visualHeight = ground ? Math.max(platform.h, 86) : Math.max(platform.h + 34, 52);
+    const visualHeight = ground
+      ? Math.max(platform.h, calderaPlatformVisualProfile.groundMinimumHeight)
+      : Math.max(platform.h + calderaPlatformVisualProfile.elevatedExtraDepth, calderaPlatformVisualProfile.elevatedMinimumHeight);
     const visualTop = screenY - 3;
     const radius = ground ? 9 : Math.min(17, visualHeight * .34);
     const tileWidth = ground ? 304 : 226;
@@ -2955,6 +2987,7 @@
     }[enemy.type] || [0, 1];
     const active = enemy.telegraph || enemy.charging || enemy.rolling || Math.floor(time / 260 + enemy.clock) % 2;
     const frame = active ? frames[1] : frames[0];
+    const drawProfile = calderaEnemyDrawProfiles[enemy.type] || calderaEnemyDrawProfiles.marshmallow;
     const screenX = enemy.x - game.cameraX + enemy.w / 2;
     const groundY = enemy.baseY + enemy.h + 5;
     const bob = enemy.telegraph ? Math.sin(time * .024 + enemy.clock) * 3
@@ -2963,17 +2996,34 @@
     ctx.save();
     ctx.globalAlpha = .22;
     ctx.fillStyle = '#1d1730';
+    const shadowRadius = Math.min(23, Math.max(18, drawProfile.width * .27));
     ctx.beginPath();
-    ctx.ellipse(screenX, groundY + 2, 25, 6, 0, 0, Math.PI * 2);
+    ctx.ellipse(screenX, groundY + 2, shadowRadius, 5.5, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
     ctx.save();
     ctx.shadowColor = enemy.telegraph ? '#ffd65a' : 'rgba(0,0,0,.28)';
     ctx.shadowBlur = enemy.telegraph ? 17 : 5;
-    drawAtlasCell(images.enemies, 6, 3, frame, screenX, groundY - bob, 84, 112, {
-      flip: enemy.dir < 0,
-      rotation: lean,
-    });
+    if (enemy.type === 'ash' && images.ashEnemy) {
+      const cellWidth = images.ashEnemy.width / 2;
+      ctx.save();
+      ctx.translate(screenX, groundY - bob);
+      if (enemy.dir < 0) ctx.scale(-1, 1);
+      ctx.rotate(lean);
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(
+        images.ashEnemy,
+        (active ? 1 : 0) * cellWidth, 230, cellWidth, 550,
+        -drawProfile.width / 2, -drawProfile.height, drawProfile.width, drawProfile.height,
+      );
+      ctx.imageSmoothingEnabled = false;
+      ctx.restore();
+    } else {
+      drawAtlasCell(images.enemies, 6, 3, frame, screenX, groundY - bob, drawProfile.width, drawProfile.height, {
+        flip: enemy.dir < 0,
+        rotation: lean,
+      });
+    }
     ctx.restore();
     heroCore.drawEnemyBehaviorSignals(ctx, enemy, enemy.x - game.cameraX, {
       groundOffset: 4,
@@ -3070,33 +3120,30 @@
     ctx.restore();
   }
 
-  function drawTrekkerThrowArm(screenX, drawTop, drawHeight, time) {
-    if (!images.items) return;
-    const frame = Math.floor((time * .012) % 4);
-    const shoulderX = screenX - 4;
-    const shoulderY = drawTop + drawHeight * .45;
-    const angles = [-2.02, -2.3, -2.57, -2.85];
-    const angle = angles[frame];
-    const elbowX = shoulderX + Math.cos(angle) * 19;
-    const elbowY = shoulderY + Math.sin(angle) * 19;
-    const handX = elbowX + Math.cos(angle - .14) * 18;
-    const handY = elbowY + Math.sin(angle - .14) * 18;
+  function drawTrekkerRearLauncherPulse(screenX, groundY, remaining, time) {
+    if (remaining <= 0) return;
+    const strength = clamp(remaining / calderaTrekkerRearLauncher.pulseDuration, 0, 1);
+    const originX = screenX + calderaTrekkerRearLauncher.xOffset;
+    const originY = groundY + calderaTrekkerRearLauncher.yOffset;
+    const expansion = 1 - strength;
     ctx.save();
-    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#ff718f'; ctx.lineWidth = 12;
-    ctx.beginPath(); ctx.moveTo(shoulderX, shoulderY); ctx.lineTo(elbowX, elbowY); ctx.stroke();
-    ctx.strokeStyle = '#f2b07e'; ctx.lineWidth = 7;
-    ctx.beginPath(); ctx.moveTo(elbowX, elbowY); ctx.lineTo(handX, handY); ctx.stroke();
-    ctx.fillStyle = '#f2b07e'; ctx.beginPath(); ctx.arc(handX, handY, 4.2, 0, Math.PI * 2); ctx.fill();
-    if (frame >= 2) {
-      const release = frame === 2 ? 5 : 17;
-      const tacoX = handX - release;
-      const tacoY = handY - (frame === 3 ? 9 : 3);
-      ctx.save(); ctx.translate(tacoX, tacoY); ctx.rotate(-.32 - frame * .18);
-      ctx.shadowColor = '#ffe17f'; ctx.shadowBlur = 8;
-      ctx.drawImage(images.items, 0, 0, 16, 16, -10, -10, 20, 20);
-      ctx.restore();
+    ctx.globalAlpha = strength;
+    ctx.strokeStyle = '#ffe17f';
+    ctx.fillStyle = '#fff4bd';
+    ctx.shadowColor = '#ffb84d';
+    ctx.shadowBlur = 12;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(originX, originY, 5 + expansion * 12, 0, Math.PI * 2);
+    ctx.stroke();
+    for (let spark = 0; spark < 3; spark += 1) {
+      const wobble = Math.sin(time * .02 + spark * 2.1) * 3;
+      ctx.beginPath();
+      ctx.moveTo(originX - 5, originY + (spark - 1) * 6);
+      ctx.lineTo(originX - 16 - expansion * 16, originY + (spark - 1) * 8 + wobble);
+      ctx.stroke();
     }
+    ctx.beginPath(); ctx.arc(originX, originY, 3.2, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
   }
 
@@ -3125,7 +3172,7 @@
     const rotation = game.levelTime * (heat ? 11 : 8);
     drawTrekkerWheel(screenX - drawWidth * .28, wheelY, 21, rotation, heat);
     drawTrekkerWheel(screenX + drawWidth * .27, wheelY, 21, rotation, heat);
-    if (options.throwing) drawTrekkerThrowArm(screenX, drawTop, drawHeight, time);
+    drawTrekkerRearLauncherPulse(screenX, groundY, options.launcherPulse || 0, time);
     return true;
   }
 
@@ -3143,7 +3190,6 @@
     const screenX = boat.x - game.cameraX;
     const entering = boat.state.startsWith('entering');
     const escaping = boat.state.startsWith('escaping') || boat.state === 'fiesta-bound';
-    const dropping = boat.state === 'geyser-drop' || boat.state === 'lava-chase';
     const heat = boat.state === 'lava-chase' || boat.state === 'entering-lava' || boat.state === 'fiesta-bound';
     const suspension = Math.abs(Math.sin(time * .009 + boat.x * .01)) * 2.2;
     if (entering || escaping || heat) {
@@ -3161,7 +3207,7 @@
       groundY: GROUND_Y,
       suspension,
       heat,
-      throwing: dropping,
+      launcherPulse: boat.dropPulse,
     });
   }
 
@@ -3965,7 +4011,7 @@
     drawParticles();
     ctx.restore();
     drawHUD(time);
-    if (location.hostname === 'terminal.local') {
+    if (previewHost) {
       canvas.dataset.qaState = JSON.stringify({
         sourceVersion: SOURCE_VERSION,
         state: game.state, player: { x: Math.round(player.x), y: Math.round(player.y), vx: Math.round(player.vx), vy: Math.round(player.vy), grounded: player.grounded },
@@ -3983,7 +4029,12 @@
         platformSweepCrossings: game.platformSweepCrossings || 0,
         checkpoints: { total: world.checkpoints.length, grounded: game.checkpointsGrounded, allGrounded: game.checkpointsGrounded === world.checkpoints.length },
         tacoCoins: world.collectibles.filter((item) => item.type === 'tacoCoin').length,
-        boat: { state: game.boat.state, x: Math.round(game.boat.x), catches: game.boat.catches },
+        boat: {
+          state: game.boat.state,
+          x: Math.round(game.boat.x),
+          catches: game.boat.catches,
+          launcherPulse: Number(game.boat.dropPulse.toFixed(3)),
+        },
         eruption: { state: game.eruption.state, timer: Number(game.eruption.timer.toFixed(2)), done: game.wave.done },
         wave: {
           active: game.wave.active, done: game.wave.done, crashing: game.wave.crashing,
@@ -4009,6 +4060,7 @@
           groundFamilies: terrainSourceRows.ground.length,
           platformFamilies: terrainSourceRows.platform.length,
           checkpointFamilies: Object.keys(checkpointArtKeys).length,
+          platformVisualProfile: calderaPlatformVisualProfile,
           collisionGeometryPreserved: true,
           geyserPhysicsPreserved: true,
           lavaHazardsPreserved: true,
@@ -4016,8 +4068,18 @@
         trekkerRemaster: {
           stableBody: Boolean(images.calderaTrekkerBase),
           independentWheelMotion: true,
-          armOnlyThrow: true,
+          armAnimationRemoved: true,
+          rearVehicleLauncher: calderaTrekkerRearLauncher,
+          dropStates: ['geyser-drop', 'lava-chase'],
           pinkBlueBangs: true,
+        },
+        enemyScaleAudit: {
+          drawProfiles: calderaEnemyDrawProfiles,
+          opaqueArtWidthRangePx: [50, 76],
+          opaqueArtHeightRangePx: [49, 67],
+          playerHeightPx: player.h,
+          collisionBoxPx: [44, 44],
+          collisionGeometryPreserved: true,
         },
         music: {
           active: game.activeMusic,
@@ -4056,6 +4118,7 @@
     items: 'assets/items_sheet.png',
     oliviaTrekker: 'assets/olivia_taco_trekker_sheet_v1.png',
     enemies: 'assets/caldera_enemy_checkpoint_sheet_v1.png',
+    ashEnemy: 'assets/world2_2_ash_enemy_v1.png',
     environment: 'assets/caldera_environment_sheet_v1.png',
     environmentCamp: 'assets/world2_2_env_camp_v1.webp',
     environmentGeyser: 'assets/world2_2_env_geyser_v1.webp',

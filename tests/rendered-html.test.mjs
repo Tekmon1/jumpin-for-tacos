@@ -1294,7 +1294,7 @@ test("uses animated premium art for El Guacodillo, the Guac Pack, and island che
   assert.match(skyRescue, /trueBodyGrounding: true/);
 });
 
-test("remasters World 2-1 backgrounds, foregrounds, checkpoints, and catamaran layers without changing gameplay geometry", async () => {
+test("remasters World 2-1 art while preserving collision geometry and widening safe patrol lanes", async () => {
   const runtime = await readFile(new URL("../public/game/level2.js", import.meta.url), "utf8");
   const html = await readFile(new URL("../public/game/level2.html", import.meta.url), "utf8");
   const remasterAssets = [
@@ -1307,6 +1307,7 @@ test("remasters World 2-1 backgrounds, foregrounds, checkpoints, and catamaran l
     "world2_1_olivia_checkpoint_lighthouse_v1.webp", "world2_1_olivia_checkpoint_moon_v1.webp",
     "world2_1_catamaran_base_v1.webp", "world2_1_catamaran_arm_layer_base_v1.webp",
     "world2_1_catamaran_escape_v1.webp", "world2_1_catamaran_throw_arm_v1.webp",
+    "world2_1_enemy_cast_v1.png",
   ];
 
   for (const filename of remasterAssets) {
@@ -1314,18 +1315,30 @@ test("remasters World 2-1 backgrounds, foregrounds, checkpoints, and catamaran l
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /level2\.js\?v=24/);
-  assert.match(runtime, /SOURCE_VERSION = 'w2-1-v24-shared-stomp-standard'/);
+  assert.match(html, /level2\.js\?v=26/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-1-v26-scale-patrol-polish'/);
+  assert.match(runtime, /encounterAudit: game\.world2EncounterAudit/);
   assert.match(runtime, /const ENVIRONMENT_TRANSITION_WIDTH = 1600/);
   assert.match(runtime, /const ENVIRONMENT_PANORAMA_CROP = 0\.9/);
   assert.match(runtime, /function drawPaintedEnvironment/);
   assert.match(runtime, /function drawPaintedTerrainSlice/);
   assert.match(runtime, /function drawCheckpointPullOff/);
   assert.match(runtime, /function drawCatamaranThrowArm/);
+  assert.match(runtime, /function drawRemasteredIslandEnemy/);
+  assert.match(runtime, /const islandEnemyRows = \{ crab: 0, coconut: 1, seagull: 2, puffer: 3, tiki: 4 \}/);
+  assert.match(runtime, /crab: \[84, 66\], coconut: \[94, 68\], seagull: \[104, 68\], puffer: \[94, 68\], tiki: \[104, 70\]/);
+  assert.match(runtime, /function retuneIslandGroundPatrols/);
+  assert.match(runtime, /patrolCoverage: 'full-safe-platform-with-separated-lanes'/);
+  assert.match(runtime, /groundPatrolAudit/);
+  assert.match(runtime, /comboPatrolAudit/);
+  assert.match(runtime, /game\.decorativeMidgroundRemoved = true;[\s\S]{0,80}return;/);
+  assert.match(runtime, /enemyVisualRemaster/);
   assert.match(runtime, /noTiling: true/);
   assert.match(runtime, /backgroundRepeats: 0/);
   assert.match(runtime, /groundFamilies: terrainSourceRows\.ground\.length/);
   assert.match(runtime, /platformFamilies: terrainSourceRows\.platform\.length/);
+  assert.match(runtime, /elevatedMinimumHeight: 44/);
+  assert.match(runtime, /elevatedExtraDepth: 20/);
   assert.match(runtime, /collisionGeometryPreserved: true/);
   assert.match(runtime, /waterPhysicsPreserved: true/);
   assert.match(runtime, /locationSpecificPullOffs: Boolean\(images\.checkpointPadAtlas\)/);
@@ -1395,9 +1408,21 @@ test("ships the 35,000-unit caldera camping sequel with premium art and adaptive
   assert.match(runtime, /function drawPaintedTerrainSlice/);
   assert.match(runtime, /function drawCalderaCheckpointPullOff/);
   assert.match(runtime, /function drawCalderaTrekkerVehicle/);
-  assert.match(runtime, /function drawTrekkerThrowArm/);
+  assert.match(runtime, /function drawTrekkerRearLauncherPulse/);
+  assert.doesNotMatch(runtime, /function drawTrekkerThrowArm/);
+  assert.doesNotMatch(runtime, /throwing:/);
   assert.match(runtime, /independentWheelMotion: true/);
-  assert.match(runtime, /armOnlyThrow: true/);
+  assert.match(runtime, /armAnimationRemoved: true/);
+  assert.match(runtime, /rearVehicleLauncher: calderaTrekkerRearLauncher/);
+  assert.match(runtime, /dropStates: \['geyser-drop', 'lava-chase'\]/);
+  assert.match(runtime, /const origin = trekkerRearLauncherOrigin\(game\.boat\)/);
+  assert.match(runtime, /xOffset: -104/);
+  assert.match(runtime, /yOffset: -119/);
+  assert.match(runtime, /const calderaEnemyDrawProfiles = Object\.freeze/);
+  assert.match(runtime, /marshmallow: Object\.freeze\(\{ width: 78, height: 94 \}\)/);
+  assert.match(runtime, /pepper: Object\.freeze\(\{ width: 70, height: 88 \}\)/);
+  assert.match(runtime, /elevatedMinimumHeight: 46/);
+  assert.match(runtime, /elevatedExtraDepth: 22/);
   for (const act of ["camp", "geyser", "caves", "eruption", "luau"]) {
     assert.match(runtime, new RegExp(`world2_2_env_${act}_v1\\.webp`));
     assert.match(runtime, new RegExp(`world2_2_checkpoint_${act}_v1\\.webp`));
@@ -1408,6 +1433,8 @@ test("ships the 35,000-unit caldera camping sequel with premium art and adaptive
   assert.match(runtime, /world2_2_caldera_trekker_base_v1\.webp/);
   assert.match(runtime, /olivia_taco_trekker_sheet_v1\.png/);
   assert.match(runtime, /caldera_enemy_checkpoint_sheet_v1\.png/);
+  assert.match(runtime, /world2_2_ash_enemy_v1\.png/);
+  assert.match(runtime, /enemy\.type === 'ash' && images\.ashEnemy/);
   assert.match(runtime, /caldera_environment_sheet_v1\.png/);
 
   assert.match(catalog, /name: 'Campfire Caldera Caper'/);
@@ -1419,7 +1446,8 @@ test("ships the 35,000-unit caldera camping sequel with premium art and adaptive
     assert.match(html, new RegExp(`music_caldera_${track}\\.ogg`));
   }
   assert.match(html, /World 2 • Level 2-2 • 35,000 units/);
-  assert.match(html, /level2-2\.js\?v=6/);
+  assert.match(html, /level2-2\.js\?v=8/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-2-v8-scale-trekker-polish'/);
   assert.match(html, /id="startBtn"/);
   assert.match(runtime, /geyserGuardSpecs/);
   assert.match(runtime, /requiresGeyserAirborne/);
