@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w2-2-v6-shared-stomp-standard';
+  const SOURCE_VERSION = 'w2-2-v7-ash-visual-fix';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -2970,10 +2970,22 @@
     ctx.save();
     ctx.shadowColor = enemy.telegraph ? '#ffd65a' : 'rgba(0,0,0,.28)';
     ctx.shadowBlur = enemy.telegraph ? 17 : 5;
-    drawAtlasCell(images.enemies, 6, 3, frame, screenX, groundY - bob, 84, 112, {
-      flip: enemy.dir < 0,
-      rotation: lean,
-    });
+    if (enemy.type === 'ash' && images.ashEnemy) {
+      const cellWidth = images.ashEnemy.width / 2;
+      ctx.save();
+      ctx.translate(screenX, groundY - bob);
+      if (enemy.dir < 0) ctx.scale(-1, 1);
+      ctx.rotate(lean);
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(images.ashEnemy, (active ? 1 : 0) * cellWidth, 230, cellWidth, 550, -38, -66, 76, 66);
+      ctx.imageSmoothingEnabled = false;
+      ctx.restore();
+    } else {
+      drawAtlasCell(images.enemies, 6, 3, frame, screenX, groundY - bob, 84, 112, {
+        flip: enemy.dir < 0,
+        rotation: lean,
+      });
+    }
     ctx.restore();
     heroCore.drawEnemyBehaviorSignals(ctx, enemy, enemy.x - game.cameraX, {
       groundOffset: 4,
@@ -4056,6 +4068,7 @@
     items: 'assets/items_sheet.png',
     oliviaTrekker: 'assets/olivia_taco_trekker_sheet_v1.png',
     enemies: 'assets/caldera_enemy_checkpoint_sheet_v1.png',
+    ashEnemy: 'assets/world2_2_ash_enemy_v1.png',
     environment: 'assets/caldera_environment_sheet_v1.png',
     environmentCamp: 'assets/world2_2_env_camp_v1.webp',
     environmentGeyser: 'assets/world2_2_env_geyser_v1.webp',

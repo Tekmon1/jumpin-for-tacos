@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w2-1-v24-shared-stomp-standard';
+  const SOURCE_VERSION = 'w2-1-v25-enemy-midground-remaster';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -70,6 +70,13 @@
     fiesta: 'environmentFiesta',
   };
   const terrainRows = { shore: 0, canopy: 1, tides: 2, surge: 3, fiesta: 4 };
+  const islandEnemyRows = { crab: 0, coconut: 1, seagull: 2, puffer: 3, tiki: 4 };
+  const islandEnemySourceRows = {
+    crab: [36, 307], coconut: [339, 313], seagull: [643, 278], puffer: [908, 287], tiki: [1162, 354],
+  };
+  const islandEnemyDrawSizes = {
+    crab: [100, 70], coconut: [114, 74], seagull: [116, 74], puffer: [104, 74], tiki: [112, 80],
+  };
   const checkpointArtKeys = {
     shell: 'checkpointShell',
     canopy: 'checkpointCanopy',
@@ -134,6 +141,7 @@
     respawnCount: 0, respawnFallbacks: 0, lastRespawnLanding: null,
     platformOverlapCount: 0, checkpointsGrounded: 0,
     environmentRemasterReady: false, foregroundRemasterReady: false,
+    decorativeMidgroundRemoved: false,
     world2EncounterAudit: null,
   };
 
@@ -1784,13 +1792,20 @@
     game.backgroundBlend = { from: paletteBlend.from, to: paletteBlend.to, amount: Number(paletteBlend.amount.toFixed(3)), distance: 720 };
     const isNight = section.id === 'surge' || section.id === 'fiesta';
     const paintedEnvironment = drawPaintedEnvironment(time);
-    if (!paintedEnvironment) {
-      const sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      sky.addColorStop(0, palettes[0]); sky.addColorStop(0.42, palettes[1]); sky.addColorStop(0.74, palettes[2]); sky.addColorStop(1, palettes[3]);
-      ctx.fillStyle = sky; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    if (paintedEnvironment) {
+      // The approved environment plates already contain the island skyline,
+      // palms, temples, clouds, sun/moon, and depth treatment. Returning here
+      // keeps the obsolete procedural ridges and palms from sitting on top of
+      // that painted composition while preserving the complete fallback below.
+      game.decorativeMidgroundRemoved = true;
+      return;
     }
+    game.decorativeMidgroundRemoved = false;
+    const sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    sky.addColorStop(0, palettes[0]); sky.addColorStop(0.42, palettes[1]); sky.addColorStop(0.74, palettes[2]); sky.addColorStop(1, palettes[3]);
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    if (!paintedEnvironment && isNight) {
+    if (isNight) {
       for (let i = 0; i < 54; i += 1) {
         const x = ((i * 149 - game.cameraX * 0.035) % 1080 + 1080) % 1080 - 50;
         const y = 26 + (i * 73) % 282;
@@ -1805,7 +1820,7 @@
       ctx.beginPath(); ctx.arc(moonX, 112, 58, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
       ctx.fillStyle = 'rgba(134,147,170,.16)';
       ctx.beginPath(); ctx.arc(moonX - 18, 94, 9, 0, Math.PI * 2); ctx.arc(moonX + 19, 125, 12, 0, Math.PI * 2); ctx.fill();
-    } else if (!paintedEnvironment) {
+    } else {
       const sunX = 760 - game.cameraX * 0.018;
       const sunY = 108;
       ctx.globalAlpha = 0.24;
@@ -1821,9 +1836,7 @@
       ctx.beginPath(); ctx.arc(sunX, sunY, 51, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
     }
 
-    const cloudColor = paintedEnvironment
-      ? (isNight ? 'rgba(151,190,237,.08)' : 'rgba(255,250,218,.14)')
-      : (isNight ? 'rgba(151,190,237,.16)' : 'rgba(255,250,218,.55)');
+    const cloudColor = isNight ? 'rgba(151,190,237,.16)' : 'rgba(255,250,218,.55)';
     for (let i = 0; i < 7; i += 1) {
       const x = ((i * 340 - game.cameraX * 0.1) % 1370 + 1370) % 1370 - 180;
       const y = 74 + (i % 4) * 57;
@@ -1831,8 +1844,8 @@
     }
 
     const horizon = isNight ? 365 : 382;
-    const farColor = paintedEnvironment ? (isNight ? 'rgba(10,39,76,.22)' : 'rgba(27,118,105,.1)') : (isNight ? 'rgba(10,39,76,.64)' : 'rgba(27,118,105,.28)');
-    const nearColor = paintedEnvironment ? (isNight ? 'rgba(7,48,66,.38)' : 'rgba(19,102,78,.22)') : (isNight ? 'rgba(7,48,66,.8)' : 'rgba(19,102,78,.48)');
+    const farColor = isNight ? 'rgba(10,39,76,.64)' : 'rgba(27,118,105,.28)';
+    const nearColor = isNight ? 'rgba(7,48,66,.8)' : 'rgba(19,102,78,.48)';
     ctx.fillStyle = farColor;
     for (let i = -2; i < 9; i += 1) {
       const x = i * 245 - (game.cameraX * 0.16) % 245;
@@ -2132,6 +2145,7 @@
 
   function drawEnemy(enemy, time) {
     if (!enemy.alive || !visibleWorldX(enemy.x, enemy.w, 80)) return;
+    if (drawRemasteredIslandEnemy(enemy, time)) return;
     const x = enemy.x - game.cameraX;
     const y = enemy.y;
     const bounce = Math.sin(enemy.clock * 5) * 2.5;
@@ -2203,6 +2217,54 @@
       ctx.fillStyle = '#55e6a5'; for (const leaf of [-12, 0, 12]) { ctx.beginPath(); ctx.ellipse(leaf, -23, 9, 4, leaf * 0.03, 0, Math.PI * 2); ctx.fill(); }
     }
     ctx.restore();
+  }
+
+  function drawRemasteredIslandEnemy(enemy, time) {
+    if (!images.enemyCast || islandEnemyRows[enemy.type] === undefined) return false;
+    const cellWidth = images.enemyCast.width / 2;
+    const [sourceY, sourceHeight] = islandEnemySourceRows[enemy.type];
+    const stateAction = Boolean(enemy.telegraph || enemy.charging || enemy.rolling);
+    const travelFrame = Math.floor(enemy.clock * (enemy.type === 'seagull' ? 7 : 5)) % 2;
+    const frame = enemy.type === 'coconut' || enemy.type === 'puffer'
+      ? (stateAction ? 1 : 0)
+      : (stateAction ? 1 : travelFrame);
+    const [drawWidth, drawHeight] = islandEnemyDrawSizes[enemy.type];
+    const screenX = enemy.x - game.cameraX + enemy.w / 2;
+    const contactY = enemy.y + enemy.h + 5;
+    const bob = enemy.type === 'seagull'
+      ? Math.sin(enemy.clock * 6.5) * 3
+      : enemy.type === 'puffer'
+        ? Math.sin(enemy.clock * 2.5) * 2
+        : Math.abs(Math.sin(enemy.clock * 5)) * 2;
+    const lean = enemy.charging ? (enemy.dir || 1) * .07
+      : enemy.type === 'coconut' ? Math.sin(enemy.clock * 2.8) * .035 : 0;
+
+    ctx.save();
+    ctx.globalAlpha = .24;
+    ctx.fillStyle = 'rgba(9,31,49,.72)';
+    ctx.beginPath();
+    ctx.ellipse(screenX, contactY + 1, enemy.type === 'seagull' ? 25 : 23, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(screenX, contactY - bob);
+    ctx.scale(enemy.dir < 0 ? -1 : 1, 1);
+    ctx.rotate(lean);
+    ctx.shadowColor = enemy.telegraph ? '#ffe17f' : 'rgba(8,27,45,.34)';
+    ctx.shadowBlur = enemy.telegraph ? 17 : 5;
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(
+      images.enemyCast,
+      frame * cellWidth, sourceY, cellWidth, sourceHeight,
+      -drawWidth / 2, -drawHeight, drawWidth, drawHeight,
+    );
+    ctx.imageSmoothingEnabled = false;
+    ctx.restore();
+    heroCore.drawEnemyBehaviorSignals(ctx, enemy, enemy.x - game.cameraX, {
+      groundOffset: 4, warningColor: '#ffe17f', chargeColor: '#ff718f', rollColor: '#63e7ff',
+    });
+    return true;
   }
 
   function drawOlivia(x, y, scale = 1, time = performance.now()) {
@@ -3022,6 +3084,14 @@
           panoramaCrop: ENVIRONMENT_PANORAMA_CROP,
           backgroundRepeats: 0,
           subpixelParallax: true,
+          decorativeMidgroundRemoved: game.decorativeMidgroundRemoved,
+        },
+        enemyVisualRemaster: {
+          ready: Boolean(images.enemyCast),
+          families: Object.keys(islandEnemyRows),
+          poseColumns: 2,
+          collisionGeometryPreserved: true,
+          proceduralFallback: !images.enemyCast,
         },
         foregroundRemaster: {
           ready: game.foregroundRemasterReady,
@@ -3090,6 +3160,7 @@
     catamaranLayerBase: 'assets/world2_1_catamaran_arm_layer_base_v1.webp',
     catamaranEscape: 'assets/world2_1_catamaran_escape_v1.webp',
     catamaranThrowArm: 'assets/world2_1_catamaran_throw_arm_v1.webp',
+    enemyCast: 'assets/world2_1_enemy_cast_v1.png',
   };
 
   Promise.all(Object.entries(imageAssets).map(([key, path]) => loadImage(path).then((image) => [key, image]))).then((entries) => {
