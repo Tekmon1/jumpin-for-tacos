@@ -118,7 +118,7 @@ test("keeps World 1-1 enemy artwork on a separate slower visual clock", async ()
   assert.match(mainRuntime, /function removeOpeningLeadEnemy/);
   assert.match(mainRuntime, /removeOpeningLeadEnemy\(\)/);
   assert.match(mainRuntime, /patrolStartOffset: 420/);
-  assert.match(mainHtml, /levels\.js\?v=32/);
+  assert.match(mainHtml, /levels\.js\?v=33/);
   assert.match(mainHtml, /game\.js\?v=51/);
 });
 
@@ -596,14 +596,14 @@ test("standardizes World 1 and World 2 controls, progression, and QA safeguards"
     const html = await readFile(new URL(`../public/game/${filename}`, import.meta.url), "utf8");
     assert.match(html, /style\.css\?v=27/);
     assert.match(html, /controller\.js\?v=8/);
-    assert.match(html, /levels\.js\?v=32/);
+    assert.match(html, /levels\.js\?v=33/);
     assert.match(html, /id="startBtn"/);
     assert.match(html, /data-next-level/);
     assert.match(html, /class="touch-controls" aria-label="Touch controls"/);
     assert.match(html, /data-input="left" aria-label="Move left"/);
     assert.match(html, /data-input="right" aria-label="Move right"/);
     assert.match(html, /data-input="jump" aria-label="Jump"/);
-    assert.ok(html.indexOf("controller.js?v=8") < html.indexOf("levels.js?v=32"));
+    assert.ok(html.indexOf("controller.js?v=8") < html.indexOf("levels.js?v=33"));
   }
 
   const controller = await readFile(new URL("../public/game/controller.js", import.meta.url), "utf8");
@@ -621,6 +621,32 @@ test("standardizes World 1 and World 2 controls, progression, and QA safeguards"
 
   const concertHtml = await readFile(new URL("../public/game/level2-3.html", import.meta.url), "utf8");
   assert.match(concertHtml, /href="level3\.html" data-next-level/);
+});
+
+test("shares one character scale contract and removes piloted taco-throw arm overlays", async () => {
+  const catalog = await readFile(new URL("../public/game/levels.js", import.meta.url), "utf8");
+  assert.match(catalog, /version: 'jft-visual-scale-v1'/);
+  assert.match(catalog, /heroRenderHeight: 66/);
+  assert.match(catalog, /standingHeight: 112/);
+  assert.match(catalog, /mountedVisibleRange: Object\.freeze\(\[62, 112\]\)/);
+  assert.match(catalog, /policy: 'rear-mounted-vehicle-launcher'/);
+  assert.match(catalog, /externalArm: false/);
+  assert.match(catalog, /visualScale: visualScaleStandard/);
+
+  for (const filename of [
+    "index.html", "level1-2.html", "level1-3.html",
+    "level2.html", "level2-2.html", "level2-3.html",
+    "level3.html", "level3-2.html", "level3-3.html",
+  ]) {
+    const html = await readFile(new URL(`../public/game/${filename}`, import.meta.url), "utf8");
+    assert.match(html, /levels\.js\?v=33/);
+  }
+
+  const forbiddenArmImplementation = /world1_1_olivia_throw_arm_v1|world1_2_olivia_plane_throw_arm_v1|world2_1_catamaran_throw_arm_v1|world3_olivia_balloon_throw_v2|draw[A-Za-z]*ThrowArm|throwPhase|truckThrowAnim/;
+  for (const filename of ["game.js", "level1-2.js", "level1-3.js", "level2.js", "level2-2.js", "level2-3.js", "world3.js"]) {
+    const runtime = await readFile(new URL(`../public/game/${filename}`, import.meta.url), "utf8");
+    assert.doesNotMatch(runtime, forbiddenArmImplementation, `${filename} must not load or draw a detached taco-throw arm`);
+  }
 });
 
 test("keeps World 1 and World 2 routes uncluttered and transitions continuous", async () => {
@@ -740,20 +766,22 @@ test("ships World 1 with authored seamless panorama progressions", async () => {
     "world1_2_platform_wing_v1.webp",
     "world1_2_platform_adobe_v1.webp",
     "world1_2_platform_guac_v1.webp",
-    "world1_2_olivia_plane_throw_arm_v1.webp",
   ];
   for (const filename of rescueForegroundAssets) {
     assert.match(rescueForeground, new RegExp(filename.replace(".", "\\.")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(rescueForegroundHtml, /level1-2\.js\?v=31/);
+  assert.match(rescueForegroundHtml, /level1-2\.js\?v=32/);
   assert.match(rescueForeground, /function drawPaintedTerrainSlice/);
   assert.match(rescueForeground, /checkpointArtGroundedByVisibleBaseline: true/);
   assert.match(rescueForeground, /independentCheckpointShadows: true/);
   assert.match(rescueForeground, /independentPropeller: true/);
   assert.match(rescueForeground, /independentTaxiWheels: true/);
-  assert.match(rescueForeground, /function drawOliviaPlaneThrowArm/);
-  assert.match(rescueForeground, /armOnlyThrowFrame/);
+  assert.match(rescueForeground, /function planeRearLauncherOrigin/);
+  assert.match(rescueForeground, /function drawPlaneRearLauncherPulse/);
+  assert.match(rescueForeground, /armAnimationRemoved: true/);
+  assert.match(rescueForeground, /rearVehicleLauncher: true/);
+  assert.doesNotMatch(rescueForeground, /world1_2_olivia_plane_throw_arm_v1|drawOliviaPlaneThrowArm|planeThrowArmFrames/);
 
   const showdownForeground = await readFile(new URL("../public/game/level1-3.js", import.meta.url), "utf8");
   const showdownForegroundHtml = await readFile(new URL("../public/game/level1-3.html", import.meta.url), "utf8");
@@ -907,8 +935,8 @@ test("remasters the complete World 1-2 aviation enemy and NPC cast and restores 
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /level1-2\.js\?v=31/);
-  assert.match(runtime, /SOURCE_VERSION = 'w1-2-v31-shared-stomp-standard'/);
+  assert.match(html, /level1-2\.js\?v=32/);
+  assert.match(runtime, /SOURCE_VERSION = 'w1-2-v32-rear-plane-launcher'/);
   assert.match(runtime, /\['terminal\.local', '127\.0\.0\.1', 'localhost'\]\.includes\(location\.hostname\)/);
   assert.match(runtime, /function remasteredEnemyFrame/);
   assert.match(runtime, /function drawCrewMember/);
@@ -943,7 +971,7 @@ test("authors the World 1-2 rescue pilot across combat sections without crowding
   assert.match(runtime, /previousBottom: previousPlayerBottom/);
   assert.match(runtime, /previousTargetTop: previousEnemyTop/);
   assert.match(runtime, /player\.y = Math\.min\(player\.y, enemy\.y - player\.h - 1\)/);
-  assert.match(html, /level1-2\.js\?v=31/);
+  assert.match(html, /level1-2\.js\?v=32/);
 });
 
 test("remasters the complete World 1-3 showdown enemy, boss, stampede, and NPC cast", async () => {
@@ -1015,7 +1043,7 @@ test("ships the complete three-level Starlight Taco Carnival world", async () =>
     assert.match(html, /World 3/);
     assert.match(html, /35,000 units/);
     assert.match(html, /id="startBtn"/);
-    assert.match(html, /world3\.js\?v=32/);
+    assert.match(html, /world3\.js\?v=33/);
     assert.match(html, /world3\.css\?v=10/);
     assert.match(html, /controller\.js\?v=8/);
     assert.match(html, /data-next-level/);
@@ -1037,7 +1065,7 @@ test("ships the complete three-level Starlight Taco Carnival world", async () =>
   assert.match(runtime, /world3_olivia_vehicles_v1\.png/);
   assert.match(runtime, /world3_enemies_bosses_v1\.png/);
   assert.match(runtime, /world3_checkpoints_fiesta_v1\.png/);
-  assert.match(runtime, /world3_olivia_balloon_throw_v2\.png/);
+  assert.doesNotMatch(runtime, /world3_olivia_balloon_throw_v2\.png/);
   assert.match(runtime, /world3_1_midground_hd_v2\.png/);
   assert.match(runtime, /world3_1_near_hd_v2\.png/);
   assert.match(runtime, /world3_1_env_sunrise_v1\.webp/);
@@ -1130,6 +1158,11 @@ test("ships the complete three-level Starlight Taco Carnival world", async () =>
   assert.match(runtime, /heroRenderSize: 66/);
   assert.match(runtime, /-33, -33, 66, 66/);
   assert.match(runtime, /vx: zeppelin \? -168 - arcIndex \* 22/);
+  assert.match(runtime, /function vehicleRearLauncherOrigin/);
+  assert.match(runtime, /function drawVehicleRearLauncherPulse/);
+  assert.match(runtime, /armAnimationRemoved: true/);
+  assert.match(runtime, /rearVehicleLauncher: true/);
+  assert.doesNotMatch(runtime, /drawZeppelinThrowArm|throwPhase|vehicleThrowFrame/);
   assert.match(runtime, /vehicle\.x \+= \(targetX - vehicle\.x\)/);
   assert.match(runtime, /vehicleHorizontalWobble: levelId === '3-1' \? 0/);
   assert.match(runtime, /CLOUDTOP PIÑATA PARADE/);
@@ -1194,7 +1227,7 @@ test("ships the complete three-level Starlight Taco Carnival world", async () =>
 test("authors World 3 combat around readable packs, full patrols, and safe set pieces", async () => {
   const runtime = await readFile(new URL("../public/game/world3.js", import.meta.url), "utf8");
 
-  assert.match(runtime, /const SOURCE_VERSION = 32/);
+  assert.match(runtime, /const SOURCE_VERSION = 33/);
   assert.match(runtime, /const WORLD3_REMASTER_PLANS = Object\.freeze/);
   assert.match(runtime, /function world3ForbiddenRanges/);
   assert.match(runtime, /function addWorld3Formation/);
@@ -1306,7 +1339,7 @@ test("remasters World 2-1 art while preserving collision geometry and widening s
     "world2_1_olivia_checkpoint_shell_v1.webp", "world2_1_olivia_checkpoint_canopy_v1.webp",
     "world2_1_olivia_checkpoint_lighthouse_v1.webp", "world2_1_olivia_checkpoint_moon_v1.webp",
     "world2_1_catamaran_base_v1.webp", "world2_1_catamaran_arm_layer_base_v1.webp",
-    "world2_1_catamaran_escape_v1.webp", "world2_1_catamaran_throw_arm_v1.webp",
+    "world2_1_catamaran_escape_v1.webp",
     "world2_1_enemy_cast_v1.png",
   ];
 
@@ -1315,15 +1348,16 @@ test("remasters World 2-1 art while preserving collision geometry and widening s
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /level2\.js\?v=26/);
-  assert.match(runtime, /SOURCE_VERSION = 'w2-1-v26-scale-patrol-polish'/);
+  assert.match(html, /level2\.js\?v=27/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-1-v27-olivia-vehicle-scale'/);
   assert.match(runtime, /encounterAudit: game\.world2EncounterAudit/);
   assert.match(runtime, /const ENVIRONMENT_TRANSITION_WIDTH = 1600/);
   assert.match(runtime, /const ENVIRONMENT_PANORAMA_CROP = 0\.9/);
   assert.match(runtime, /function drawPaintedEnvironment/);
   assert.match(runtime, /function drawPaintedTerrainSlice/);
   assert.match(runtime, /function drawCheckpointPullOff/);
-  assert.match(runtime, /function drawCatamaranThrowArm/);
+  assert.match(runtime, /function catamaranRearLauncherOrigin/);
+  assert.match(runtime, /function drawCatamaranRearLauncherPulse/);
   assert.match(runtime, /function drawRemasteredIslandEnemy/);
   assert.match(runtime, /const islandEnemyRows = \{ crab: 0, coconut: 1, seagull: 2, puffer: 3, tiki: 4 \}/);
   assert.match(runtime, /crab: \[84, 66\], coconut: \[94, 68\], seagull: \[104, 68\], puffer: \[94, 68\], tiki: \[104, 70\]/);
@@ -1342,7 +1376,13 @@ test("remasters World 2-1 art while preserving collision geometry and widening s
   assert.match(runtime, /collisionGeometryPreserved: true/);
   assert.match(runtime, /waterPhysicsPreserved: true/);
   assert.match(runtime, /locationSpecificPullOffs: Boolean\(images\.checkpointPadAtlas\)/);
-  assert.match(runtime, /armOnlyThrowFrame: Boolean\(images\.catamaranThrowArm\)/);
+  assert.match(runtime, /armAnimationRemoved: true/);
+  assert.match(runtime, /rearVehicleLauncher: true/);
+  assert.match(runtime, /activeWidth: 304/);
+  assert.match(runtime, /escapeWidth: 330/);
+  assert.match(runtime, /checkpointHeight: visualScale\.olivia\.standingHeight/);
+  assert.match(runtime, /surfIntroSize: \[SURF_OLIVIA_VISUAL\.width, SURF_OLIVIA_VISUAL\.height\]/);
+  assert.doesNotMatch(runtime, /world2_1_catamaran_throw_arm_v1|catamaranThrowArm|drawCatamaranThrowArm/);
   assert.match(runtime, /surfaceEncounterSpecs/);
   assert.match(runtime, /surfaceKind: 'palm-canopy'/);
   assert.match(runtime, /surfaceKind: 'tidal-temple-ledge'/);
@@ -1363,11 +1403,11 @@ test("ships the 36,000-unit island route, premium vehicles, and playable surf fi
   assert.match(runtime, /KERSPLASH!/);
   assert.match(runtime, /finalRunway: true/);
   assert.match(runtime, /world2_1_catamaran_base_v1\.webp/);
-  assert.match(runtime, /world2_1_catamaran_throw_arm_v1\.webp/);
   assert.match(runtime, /island_surf_sheet_v1\.png/);
   assert.match(runtime, /island_wave_sheet_v1\.png/);
   assert.match(runtime, /images\.catamaranBase/);
-  assert.match(runtime, /images\.catamaranThrowArm/);
+  assert.match(runtime, /images\.catamaranLayerBase/);
+  assert.match(runtime, /visualScale\.olivia\.standingHeight/);
   assert.match(runtime, /images\.islandSurf/);
   assert.match(runtime, /images\.islandWave/);
   assert.match(runtime, /const activeFrames = \[0, 1, 2, 1\]/);
@@ -1499,14 +1539,16 @@ test("ships the complete 35,000-unit Neon Neckties concert level", async () => {
   assert.match(runtime, /OLIVIA IS LOADING THE LAST TACOS!/);
   assert.match(runtime, /TACO ROADSTER: READY TO ROLL!/);
   assert.match(runtime, /SHOWTIME! OLIVIA IS TAKING THE SCENIC ROUTE!/);
-  assert.match(html, /level2-3\.js\?v=16/);
+  assert.match(html, /level2-3\.js\?v=17/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-3-v17-concert-entry-repair'/);
   assert.match(runtime, /generatorDefensePlans/);
   assert.match(runtime, /function ensureGeneratorDefensePlatform/);
   assert.match(runtime, /finitePlatformGeometry: world\.platforms\.every/);
   assert.doesNotMatch(runtime, /support = addPlatform\(\{/);
   assert.match(runtime, /defenseEncounter: true/);
   assert.match(runtime, /CLEAR \$\{remaining\}/);
-  assert.match(runtime, /preConcertDefenseRequired: true/);
+  assert.match(runtime, /preConcertDefenseRequired: false/);
+  assert.match(runtime, /concertRouteRequirement: 'none'/);
   assert.match(runtime, /const world23GroundEncounterPlan = Object\.freeze/);
   assert.match(runtime, /const world23UpperEncounterPlan = Object\.freeze/);
   assert.match(runtime, /function buildWorld23AuthoredRoutes/);
@@ -1550,7 +1592,39 @@ test("ships the complete 35,000-unit Neon Neckties concert level", async () => {
   assert.match(runtime, /animatedArm: false/);
   assert.match(runtime, /BOAT_LAUNCH_X_OFFSET/);
   assert.match(runtime, /full-energy-backstage-encore/);
-  assert.match(runtime, /CONCERT_GATE_TRIGGER_X/);
+  assert.match(runtime, /CONCERT_ENTRY_TRIGGER_X/);
+  assert.doesNotMatch(runtime, /CONCERT_GATE_BLOCK_X|CONCERT GATE:/);
+  const concertEntryFunction = runtime.match(
+    /function resolveConcertEntry\(playerX, score, entryStatus\) \{[\s\S]*?\n  \}/,
+  );
+  assert.ok(concertEntryFunction, "World 2-3 exposes a deterministic concert-entry transition");
+  const concertEntryContext = { CONCERT_ENTRY_TRIGGER_X: 34520 };
+  vm.runInNewContext(
+    `${concertEntryFunction[0]}; globalThis.resolveConcertEntryForTest = resolveConcertEntry;`,
+    concertEntryContext,
+    { filename: "level2-3-concert-entry.js" },
+  );
+  const mainRouteStatus = { reason: "main-route", routeReady: true, encoreReady: false };
+  const beforeBoundary = concertEntryContext.resolveConcertEntryForTest(34519, 50000, mainRouteStatus);
+  assert.equal(beforeBoundary.shouldStart, false);
+  for (const score of [0, 34540, 35000, 50000]) {
+    const decision = concertEntryContext.resolveConcertEntryForTest(34520, score, mainRouteStatus);
+    assert.equal(decision.shouldStart, true, `score ${score} must not block the main concert route`);
+    assert.equal(decision.entryReason, "main-route");
+    assert.equal(decision.scoreRequirement, 0);
+  }
+  const circuitDecision = concertEntryContext.resolveConcertEntryForTest(
+    34520,
+    1000,
+    { reason: "stage-circuits", routeReady: true, encoreReady: true },
+  );
+  const encoreDecision = concertEntryContext.resolveConcertEntryForTest(
+    34520,
+    1000,
+    { reason: "full-energy-backstage-encore", routeReady: true, encoreReady: true },
+  );
+  assert.equal(circuitDecision.shouldStart, true);
+  assert.equal(encoreDecision.shouldStart, true);
   assert.match(runtime, /premiumPinata: Boolean\(images\.neonPinata\)/);
   assert.match(runtime, /KABOOM! MAXIMUM NEON TACO RAINBOW!/);
   assert.match(runtime, /TACO RAINBOW JACKPOT!/);

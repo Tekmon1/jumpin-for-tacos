@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const SOURCE_VERSION = 'w2-3-v16-shared-stomp-standard';
+  const SOURCE_VERSION = 'w2-3-v17-concert-entry-repair';
 
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
@@ -48,8 +48,7 @@
   const BOAT_RENDER_WIDTH = 270;
   const BOAT_LAUNCH_X_OFFSET = -122;
   const BOAT_LAUNCH_Y_OFFSET = -106;
-  const CONCERT_GATE_TRIGGER_X = 34520;
-  const CONCERT_GATE_BLOCK_X = 34550;
+  const CONCERT_ENTRY_TRIGGER_X = 34520;
   const CONCERT_ENCORE_ENERGY = 100;
   const OPENING_ROADSTER_SOURCE_WIDTH = 215;
   const OPENING_ROADSTER_SOURCE_HEIGHT = 148;
@@ -301,7 +300,7 @@
       started: false, timer: 0, duration: 186.72, cueIndex: 0, items: [], collected: 0,
       platforms: [], chorusTacos: [], chorusVolleys: new Set(), cannonFlash: 0,
       controlRecoveries: 0, lastSafeX: 110, lastSafeY: 390,
-      bowDone: false, songReady: false, entryReason: null,
+      bowDone: false, songReady: false, entryReason: null, entryDecision: null,
     },
     personalBest: { score: 0, time: 0, energy: 0, runs: 0 },
     routeMaxGap: 0,
@@ -315,26 +314,35 @@
   let lastFrame = 0;
   let seed = 0x23C0FFEE;
   const params = new URLSearchParams(location.search);
-  const previewStart = location.hostname === 'terminal.local' ? Number(params.get('startX') || 0) : 0;
-  const previewStartY = location.hostname === 'terminal.local' && params.has('startY')
+  const qaMode = ['terminal.local', '127.0.0.1', 'localhost'].includes(location.hostname);
+  const previewStart = qaMode ? Number(params.get('startX') || 0) : 0;
+  const previewStartY = qaMode && params.has('startY')
     ? Number(params.get('startY')) : Number.NaN;
-  const previewConcert = location.hostname === 'terminal.local' && params.get('concert') === '1';
-  const previewConcertTime = location.hostname === 'terminal.local' ? Number(params.get('concertTime') || 0) : 0;
-  const previewAutoRun = location.hostname === 'terminal.local' && params.get('autoRun') === '1';
-  const previewRespawn = location.hostname === 'terminal.local' && params.get('respawn') === '1';
-  const previewRespawnCheckpoint = location.hostname === 'terminal.local' ? Number(params.get('respawnCheckpoint') || -1) : -1;
-  const previewPinataHits = location.hostname === 'terminal.local'
+  const previewConcert = qaMode && params.get('concert') === '1';
+  const previewConcertTime = qaMode ? Number(params.get('concertTime') || 0) : 0;
+  const previewAutoRun = qaMode && params.get('autoRun') === '1';
+  const previewRespawn = qaMode && params.get('respawn') === '1';
+  const previewRespawnCheckpoint = qaMode ? Number(params.get('respawnCheckpoint') || -1) : -1;
+  const previewPinataHits = qaMode
     ? Math.max(0, Math.min(2, Number(params.get('pinataHits') || 0)))
     : 0;
-  const previewOpeningTime = location.hostname === 'terminal.local'
+  const previewOpeningTime = qaMode
     ? Math.max(0, Number(params.get('openingTime') || 0))
     : 0;
-  const previewBoatThrowProgress = location.hostname === 'terminal.local' && params.has('boatThrowProgress')
+  const previewBoatThrowProgress = qaMode && params.has('boatThrowProgress')
     ? Number(params.get('boatThrowProgress')) : Number.NaN;
-  const previewEnergy = location.hostname === 'terminal.local' && params.has('energy')
+  const previewEnergy = qaMode && params.has('energy')
     ? Number(params.get('energy')) : Number.NaN;
-  const previewGolden = location.hostname === 'terminal.local' && params.has('golden')
+  const previewGolden = qaMode && params.has('golden')
     ? Number(params.get('golden')) : Number.NaN;
+  const previewScore = qaMode && params.has('score')
+    ? Number(params.get('score')) : Number.NaN;
+  const previewCollected = qaMode && params.has('collected')
+    ? Number(params.get('collected')) : Number.NaN;
+  const previewBestSplat = qaMode && params.has('splats')
+    ? Number(params.get('splats')) : Number.NaN;
+  const previewGenerators = qaMode && params.has('generators')
+    ? Number(params.get('generators')) : Number.NaN;
 
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
   const lerp = (a, b, t) => a + (b - a) * t;
@@ -389,17 +397,30 @@
     catamaranLoopHandle = null;
   }
 
-  function getConcertReadiness() {
+  function getConcertEntryStatus() {
     const circuitsReady = game.generators === world.generators.length;
     const fullEnergy = game.energy >= CONCERT_ENCORE_ENERGY;
     const backstageReady = game.totalGolden > 0 && game.golden >= game.totalGolden;
+    const encoreReady = circuitsReady || (fullEnergy && backstageReady);
     return {
-      ready: circuitsReady || (fullEnergy && backstageReady),
+      routeReady: true,
+      encoreReady,
       reason: circuitsReady ? 'stage-circuits'
-        : fullEnergy && backstageReady ? 'full-energy-backstage-encore' : 'not-ready',
+        : fullEnergy && backstageReady ? 'full-energy-backstage-encore' : 'main-route',
       circuitsReady,
       fullEnergy,
       backstageReady,
+    };
+  }
+
+  function resolveConcertEntry(playerX, score, entryStatus) {
+    return {
+      shouldStart: playerX >= CONCERT_ENTRY_TRIGGER_X,
+      entryReason: entryStatus.reason,
+      routeReady: true,
+      encoreReady: entryStatus.encoreReady,
+      score: Math.max(0, Math.floor(Number(score) || 0)),
+      scoreRequirement: 0,
     };
   }
 
@@ -919,10 +940,11 @@
     // the three generator defenses below.
     authorWorld23CombatEncounters();
 
-    // Stage power is a short defense encounter. Each tower gets a visually
-    // distinct same-type group with its own color and rhythm, and the concert gate cannot
-    // activate until that local group has been cleared. The later victory
-    // dash and the concert itself remain enemy-free reward space.
+    // Stage power is a short optional defense encounter. Each tower gets a
+    // visually distinct same-type group with its own color and rhythm. Clearing
+    // them raises concert energy and records the strongest concert-entry reason,
+    // while the main story route remains open. The later victory dash and the
+    // concert itself remain enemy-free reward space.
     const generatorDefensePlans = [
       { generatorId: 'vocal-tower', label: 'VOCAL WARMUP', beat: 'CHORUS LINE', color: '#ff4fac', types: ['berry', 'berry', 'berry'], offsets: [-132, -42, 54] },
       { generatorId: 'instrument-tower', label: 'INSTRUMENT CHECK', beat: 'ARPEGGIO RUN', color: '#50e7ff', types: ['spaghetti', 'spaghetti', 'spaghetti'], offsets: [-126, -30, 66] },
@@ -977,7 +999,9 @@
       })),
       defenseEnemyCount: defenseEnemies.length,
       distinctDefenseTypes: new Set(defenseEnemies.map((enemy) => enemy.type)).size,
-      preConcertDefenseRequired: true,
+      preConcertDefenseRequired: false,
+      concertRouteRequirement: 'none',
+      optionalEncoreGoals: ['stage-circuits', 'full-energy-backstage-encore'],
       victoryEnemyFreeFrom: 33000,
       concertEnemyFree: true,
       finitePlatformGeometry: world.platforms.every((platform) => (
@@ -1123,7 +1147,7 @@
         platforms: [], chorusTacos: [], chorusVolleys: new Set(), cannonFlash: 0,
         controlRecoveries: 0, lastSafeX: 110, lastSafeY: 390,
         bowDone: false, songReady: false, skipped: false, skippedAt: 0,
-        entryReason: null,
+        entryReason: null, entryDecision: null,
       },
       respawnCount: 0, respawnFallbacks: 0, lastRespawnLanding: null,
     });
@@ -1298,6 +1322,22 @@
     }
     if (Number.isFinite(previewEnergy)) game.energy = clamp(previewEnergy, 0, 100);
     if (Number.isFinite(previewGolden)) game.golden = Math.max(0, Math.floor(previewGolden));
+    if (Number.isFinite(previewScore)) game.score = Math.max(0, Math.floor(previewScore));
+    if (Number.isFinite(previewCollected)) game.collected = Math.max(0, Math.floor(previewCollected));
+    if (Number.isFinite(previewBestSplat)) game.bestSplat = Math.max(0, Math.floor(previewBestSplat));
+    if (Number.isFinite(previewGenerators)) {
+      game.generators = clamp(Math.floor(previewGenerators), 0, world.generators.length);
+      world.generators.forEach((generator, index) => {
+        generator.activated = index < game.generators;
+        generator.defenseState = generator.activated ? 'cleared' : 'armed';
+      });
+      const activeGeneratorIds = new Set(world.generators
+        .filter((generator) => generator.activated)
+        .map((generator) => generator.id));
+      world.enemies.forEach((enemy) => {
+        if (enemy.generatorId && activeGeneratorIds.has(enemy.generatorId)) enemy.alive = false;
+      });
+    }
     if (previewOpeningTime > 0) {
       game.opening.timer = Math.min(previewOpeningTime, openingTimeline.departingEnd);
       game.opening.phase = openingPhaseAt(game.opening.timer);
@@ -1596,6 +1636,10 @@
       heroCore.finishRespawn(game.respawn, player, 1.6);
       game.state = 'playing';
       clearInputs();
+      if (previewAutoRun) {
+        inputSources.keyboard.right = true;
+        syncInputs();
+      }
     }
   }
 
@@ -2061,14 +2105,19 @@
     concert.controlRecoveries += 1;
   }
 
-  function startConcert(startAt = 0) {
+  function startConcert(startAt = 0, entryDecision = null) {
     if (game.concert.started) return;
-    const readiness = getConcertReadiness();
+    const decision = entryDecision || resolveConcertEntry(
+      CONCERT_ENTRY_TRIGGER_X,
+      game.score,
+      getConcertEntryStatus(),
+    );
     stopRoadsterLoop();
     stopCatamaranLoop();
     game.state = 'concert';
     game.concert.started = true;
-    game.concert.entryReason = readiness.reason;
+    game.concert.entryReason = decision.entryReason;
+    game.concert.entryDecision = { ...decision };
     game.concert.skipped = false;
     game.concert.skippedAt = 0;
     game.concert.timer = clamp(startAt, 0, game.concert.duration - .2);
@@ -2265,18 +2314,9 @@
     }
     const fastCamera = ['stampede', 'victory'].includes(currentSection().id);
     game.cameraX = lerp(game.cameraX, clamp(player.x - canvas.width * (fastCamera ? .34 : .42), 0, WORLD_WIDTH - canvas.width), Math.min(1, dt * 9));
-    const concertReadiness = getConcertReadiness();
-    if (player.x >= CONCERT_GATE_TRIGGER_X && concertReadiness.ready) startConcert();
-    else if (player.x >= CONCERT_GATE_BLOCK_X && !concertReadiness.ready) {
-      player.x = CONCERT_GATE_BLOCK_X - 10;
-      player.vx = 0;
-      const missingCircuits = world.generators.length - game.generators;
-      const missingBackstage = Math.max(0, game.totalGolden - game.golden);
-      showMessage(
-        `CONCERT GATE: POWER ${missingCircuits} CIRCUIT${missingCircuits === 1 ? '' : 'S'} OR REACH 100% ENERGY${missingBackstage ? ` + ${missingBackstage} BACKSTAGE PASS${missingBackstage === 1 ? '' : 'ES'}` : ''}!`,
-        2.1,
-      );
-    }
+    const concertEntryStatus = getConcertEntryStatus();
+    const concertEntry = resolveConcertEntry(player.x, game.score, concertEntryStatus);
+    if (concertEntry.shouldStart) startConcert(0, concertEntry);
   }
 
   function spawnParticle(x, y, color, amount = 1) {
@@ -4400,11 +4440,18 @@
     ctx.restore();
     drawHUD(time);
 
-    if (location.hostname === 'terminal.local') {
+    if (qaMode) {
       canvas.dataset.qaState = JSON.stringify({
         sourceVersion: SOURCE_VERSION,
         state: game.state,
         player: { x: Math.round(player.x), y: Math.round(player.y), vx: Math.round(player.vx), vy: Math.round(player.vy), grounded: player.grounded },
+        score: game.score,
+        collected: game.collected,
+        bestSplat: game.bestSplat,
+        goldenCollected: game.golden,
+        goldenTotal: game.totalGolden,
+        energy: Number(game.energy.toFixed(2)),
+        latestCheckpoint: game.latestCheckpoint ? { name: game.latestCheckpoint.name, x: game.latestCheckpoint.x } : null,
         section: game.state === 'concert' ? 'concert' : currentSection().id,
         worldWidth: WORLD_WIDTH,
         platforms: world.platforms.length,
@@ -4470,8 +4517,11 @@
           started: game.concert.started, timer: Number(game.concert.timer.toFixed(2)),
           duration: game.concert.duration, cueIndex: game.concert.cueIndex,
           entryReason: game.concert.entryReason,
-          gateTriggerX: CONCERT_GATE_TRIGGER_X,
-          gateReadiness: getConcertReadiness(),
+          entryTriggerX: CONCERT_ENTRY_TRIGGER_X,
+          invisibleRouteGate: false,
+          entryStatus: getConcertEntryStatus(),
+          entryDecision: game.concert.entryDecision
+            || resolveConcertEntry(player.x, game.score, getConcertEntryStatus()),
           oliviaPhase: getConcertOliviaRoutine(game.concert.timer).phase,
           chorusTacos: game.concert.chorusTacos.length,
           chorusVolleys: game.concert.chorusVolleys.size,

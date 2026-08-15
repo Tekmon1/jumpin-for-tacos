@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-2-v31-shared-stomp-standard';
+  const SOURCE_VERSION = 'w1-2-v32-rear-plane-launcher';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = true;
@@ -57,12 +57,6 @@
     Object.freeze({ surface: '#615038', edge: '#ffd65a', stripe: '#2d8795', lights: '#ffd65a' }),
     Object.freeze({ surface: '#263d3c', edge: '#9bef70', stripe: '#ff8d57', lights: '#9bef70' }),
     Object.freeze({ surface: '#31374e', edge: '#ff8d57', stripe: '#65d8ff', lights: '#ff8d57' }),
-  ]);
-  const planeThrowArmFrames = Object.freeze([
-    Object.freeze({ sx: 48, sy: 405, sw: 170, sh: 150 }),
-    Object.freeze({ sx: 560, sy: 416, sw: 303, sh: 128 }),
-    Object.freeze({ sx: 1072, sy: 406, sw: 362, sh: 148 }),
-    Object.freeze({ sx: 1584, sy: 418, sw: 353, sh: 124 }),
   ]);
   const enemySpriteArt = Object.freeze({
     tomato: 'world1_2_tomato_trouble_aviator_sheet_v1',
@@ -875,7 +869,7 @@
         started: activePreview || passed || earlierThanPreview,
         timer: activePreview ? 3.35 : passed || earlierThanPreview ? 7.4 : 0,
         finished: !activePreview && (passed || earlierThanPreview),
-        nextDropAt: definition.dropStart || Infinity, dropsReleased: 0, dropCompleteAnnounced: false,
+        nextDropAt: definition.dropStart || Infinity, dropsReleased: 0, dropCompleteAnnounced: false, launcherPulse: 0,
       };
     });
   }
@@ -1513,15 +1507,24 @@
     syncRescueAircraftAudio();
   }
 
+  function planeRearLauncherOrigin(flyby, dropIndex = flyby.dropsReleased) {
+    const plane = flybyPlanePosition(flyby);
+    const screenX = plane.x - flyby.direction * 82;
+    const screenY = plane.y + 30 + (dropIndex % 3 - 1) * 5;
+    return { plane, screenX, screenY, worldX: game.cameraX + screenX - 12, worldY: screenY - 3 };
+  }
+
   function releasePlaneDropTaco(flyby) {
-    const plane = flybyPlanePosition(flyby); const dropIndex = flyby.dropsReleased;
-    addItem(game.cameraX + plane.x - 12 - flyby.direction * 28, plane.y + 27 + (dropIndex % 3 - 1) * 5, 'taco', {
+    const dropIndex = flyby.dropsReleased;
+    const origin = planeRearLauncherOrigin(flyby, dropIndex);
+    addItem(origin.worldX, origin.worldY, 'taco', {
       bonusReward: true, planeDrop: true, dynamic: true, bounces: 0,
       vx: flyby.direction * (58 + dropIndex % 4 * 8), vy: 28 + dropIndex % 3 * 16, angle: dropIndex * .72,
     });
     flyby.dropsReleased += 1; game.airDrop.spawned += 1;
-    spawnBurst(plane.x - flyby.direction * 25, plane.y + 30, dropIndex % 2 ? '#ffd65a' : '#65d8ff', 5);
-    if (dropIndex % 3 === 0) playAudio('vehicle.drop', { combo: dropIndex + 1, position: clamp((plane.x / canvas.width) * 2 - 1, -1, 1) });
+    flyby.launcherPulse = heroCore.visualScale.tacoLauncher.pulseSeconds;
+    spawnBurst(origin.screenX, origin.screenY, dropIndex % 2 ? '#ffd65a' : '#65d8ff', 5);
+    if (dropIndex % 3 === 0) playAudio('vehicle.drop', { combo: dropIndex + 1, position: clamp((origin.plane.x / canvas.width) * 2 - 1, -1, 1) });
   }
 
   function updatePlaneEvents(dt) {
@@ -1542,6 +1545,7 @@
     }
     if (activeFlyby) {
       activeFlyby.timer += dt;
+      activeFlyby.launcherPulse = Math.max(0, activeFlyby.launcherPulse - dt);
       if (!game.flybyAircraftLoop) {
         game.flybyAircraftLoop = audio?.startLoop('vehicle.aircraftPropellerIdle', {
           gain: .12,
@@ -2116,26 +2120,26 @@
     ctx.restore();
   }
 
-  function drawOliviaPlaneThrowArm(planeX, planeY, planeWidth, frameIndex, rotation = 0, direction = 1, flipY = false) {
-    const frame = planeThrowArmFrames[frameIndex];
-    if (!frame || !images.world1_2_olivia_plane_throw_arm_v1) return;
-    const scale = planeWidth / 245 * .2;
-    const shoulderX = -14;
-    const shoulderY = -18;
-    const width = frame.sw * scale;
-    const height = frame.sh * scale;
+  function drawPlaneRearLauncherPulse(flyby) {
+    if (!flyby?.tacoDrop || flyby.launcherPulse <= 0) return;
+    const origin = planeRearLauncherOrigin(flyby, Math.max(0, flyby.dropsReleased - 1));
+    const duration = heroCore.visualScale.tacoLauncher.pulseSeconds;
+    const progress = clamp(1 - flyby.launcherPulse / duration, 0, 1);
     ctx.save();
-    ctx.translate(planeX, planeY);
-    ctx.rotate(rotation);
-    ctx.scale(direction, flipY ? -1 : 1);
-    ctx.imageSmoothingEnabled = true;
-    ctx.shadowColor = '#ff6fae';
-    ctx.shadowBlur = 5;
-    ctx.drawImage(
-      images.world1_2_olivia_plane_throw_arm_v1,
-      frame.sx, frame.sy, frame.sw, frame.sh,
-      shoulderX, shoulderY - height * .48, width, height,
-    );
+    ctx.translate(origin.screenX, origin.screenY);
+    ctx.globalCompositeOperation = 'screen';
+    ctx.globalAlpha = 1 - progress;
+    ctx.shadowColor = '#ffd65a';
+    ctx.shadowBlur = 12;
+    ctx.strokeStyle = '#ffd65a';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, 7 + progress * 15, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = '#65d8ff';
+    ctx.beginPath();
+    ctx.arc(0, 0, 4.5 - progress * 2, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   }
 
@@ -2212,12 +2216,6 @@
     }
   }
 
-  function planeThrowFrameForFlyby(flyby) {
-    if (!flyby?.tacoDrop || flyby.timer < flyby.dropStart || flyby.timer > flyby.dropEnd) return -1;
-    const throwCycle = ((flyby.timer - flyby.dropStart) % flyby.dropInterval) / flyby.dropInterval;
-    return Math.min(3, Math.floor(throwCycle * 4));
-  }
-
   function drawBannerFlyby(time) {
     const flyby = game.flybys.find((item) => item.started && !item.finished); if (!flyby) return; const t = flyby.timer; const direction = flyby.direction;
     const plane = flybyPlanePosition(flyby); const planeX = plane.x; const planeY = plane.y;
@@ -2231,10 +2229,7 @@
     ctx.restore();
     const planeRotation = -.03 * direction;
     drawPlaneCell(2, planeX, planeY, 245, planeRotation, 1, direction, flyby.inverted);
-    const throwFrame = planeThrowFrameForFlyby(flyby);
-    if (throwFrame >= 0) {
-      drawOliviaPlaneThrowArm(planeX, planeY, 245, throwFrame, planeRotation, direction, flyby.inverted);
-    }
+    drawPlaneRearLauncherPulse(flyby);
   }
 
   function planeDuringAmbush() {
@@ -2467,7 +2462,10 @@
         plane: {
           independentPropeller: true,
           independentTaxiWheels: true,
-          armOnlyThrowFrame: planeThrowFrameForFlyby(game.flybys.find((flyby) => flyby.started && !flyby.finished)),
+          armAnimationRemoved: true,
+          rearVehicleLauncher: true,
+          launcherPolicy: heroCore.visualScale.tacoLauncher.policy,
+          launcherPulse: Number((game.flybys.find((flyby) => flyby.started && !flyby.finished)?.launcherPulse || 0).toFixed(3)),
         },
       },
       characterRemaster: {
@@ -2502,7 +2500,7 @@
     loadImage('assets/world1_2_ground_banner_v1.webp'), loadImage('assets/world1_2_ground_mesa_v1.webp'),
     loadImage('assets/world1_2_ground_guac_v1.webp'), loadImage('assets/world1_2_ground_rescue_v1.webp'),
     loadImage('assets/world1_2_platform_wing_v1.webp'), loadImage('assets/world1_2_platform_adobe_v1.webp'),
-    loadImage('assets/world1_2_platform_guac_v1.webp'), loadImage('assets/world1_2_olivia_plane_throw_arm_v1.webp'),
+    loadImage('assets/world1_2_platform_guac_v1.webp'),
   ]).then(([
     , hero, items, plane, checkpoints, crash, fiestaBanner,
     world1_2_tomato_trouble_aviator_sheet_v1, world1_2_onion_drama_aviator_sheet_v1,
@@ -2513,7 +2511,7 @@
     world1_2_ground_banner_v1, world1_2_ground_mesa_v1,
     world1_2_ground_guac_v1, world1_2_ground_rescue_v1,
     world1_2_platform_wing_v1, world1_2_platform_adobe_v1,
-    world1_2_platform_guac_v1, world1_2_olivia_plane_throw_arm_v1,
+    world1_2_platform_guac_v1,
   ]) => {
     Object.assign(images, {
       hero, items, plane, checkpoints, crash, fiestaBanner,
@@ -2525,7 +2523,7 @@
       world1_2_ground_banner_v1, world1_2_ground_mesa_v1,
       world1_2_ground_guac_v1, world1_2_ground_rescue_v1,
       world1_2_platform_wing_v1, world1_2_platform_adobe_v1,
-      world1_2_platform_guac_v1, world1_2_olivia_plane_throw_arm_v1,
+      world1_2_platform_guac_v1,
     });
     loadProgress(); setupInputs(); resetGame(); syncSettings(); updatePersonalBest(); requestAnimationFrame(frame);
   }).catch((error) => { console.error('Could not load Sky-High Salsa Rescue assets:', error); ctx.fillStyle = '#fff5d2'; ctx.font = '24px Arial'; ctx.fillText('The sky-rescue artwork could not be loaded.', 40, 70); });

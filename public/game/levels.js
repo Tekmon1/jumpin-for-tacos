@@ -28,6 +28,34 @@
     normalJumpRise: Math.round((680 * 680) / (2 * 1800)),
     enemyBounceRise: Math.round((720 * 720) / (2 * 1800)),
   });
+  // Shared visual proportions for recurring characters and delivery vehicles.
+  // These are render-only contracts: colliders, movement and camera math remain
+  // owned by each level runtime. Olivia may use a tighter mounted crop, but an
+  // external throwing arm is never part of a piloted vehicle silhouette.
+  const visualScaleStandard = Object.freeze({
+    version: 'jft-visual-scale-v1',
+    heroRenderHeight: 66,
+    olivia: Object.freeze({
+      standingHeight: 112,
+      standingRange: Object.freeze([104, 120]),
+      mountedVisibleRange: Object.freeze([62, 112]),
+    }),
+    scaleClasses: Object.freeze({
+      smallEnemy: Object.freeze({ heroHeightRatio: Object.freeze([0.68, 0.95]) }),
+      standardEnemy: Object.freeze({ heroHeightRatio: Object.freeze([0.9, 1.45]) }),
+      largeEnemy: Object.freeze({ heroHeightRatio: Object.freeze([1.35, 2.15]) }),
+      boss: Object.freeze({ heroHeightRatio: Object.freeze([2, 5.5]), intentionalException: true }),
+      compactGroundVehicle: Object.freeze({ widthRange: Object.freeze([170, 310]) }),
+      propAircraft: Object.freeze({ widthRange: Object.freeze([245, 310]) }),
+      watercraft: Object.freeze({ widthRange: Object.freeze([270, 330]) }),
+      fantasyVehicle: Object.freeze({ widthRange: Object.freeze([188, 330]) }),
+    }),
+    tacoLauncher: Object.freeze({
+      policy: 'rear-mounted-vehicle-launcher',
+      externalArm: false,
+      pulseSeconds: 0.16,
+    }),
+  });
   // Ordinary enemies share one deliberately generous top-contact contract.
   // Values scale with each collider so small enemies are not harder to land on,
   // while the caps keep side/body contact from becoming an automatic stomp.
@@ -1125,6 +1153,7 @@
 
   const heroCore = Object.freeze({
     physics: heroPhysics,
+    visualScale: visualScaleStandard,
     enemyPlacementRoles,
     enemyTraitProfiles,
     enemyTypeProfiles,
