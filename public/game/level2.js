@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w2-1-v28-super-taco-hero';
+  const SOURCE_VERSION = 'w2-1-v29-fiesta-wing-shoes';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -1449,7 +1449,7 @@
 
   function updatePlayer(dt) {
     const scriptedSurf = game.surf.phase === 'riding' || game.surf.phase === 'landing';
-    if (!scriptedSurf && sharedAbilities.suspendForTransformation(game.abilities, player)) return;
+    if (sharedAbilities.suspendForTransformation(game.abilities, player, { disabled: scriptedSurf })) return;
     const wasGrounded = player.grounded;
     if (player.grounded) sharedAbilities.land(game.abilities);
     if (player.grounded && player.platform) {
@@ -3017,7 +3017,7 @@
     if (player.invulnerable > 0 && Math.floor(player.invulnerable * 12) % 2 === 0) ctx.globalAlpha = 0.45;
     const x = player.x - game.cameraX + player.w / 2;
     const y = player.y + player.h / 2;
-    sharedAbilities.drawHeroEffects(ctx, game.abilities, player, game.cameraX, time);
+    sharedAbilities.drawHeroEffects(ctx, game.abilities, player, game.cameraX, time, { reducedMotion: game.reducedShake });
     ctx.save(); ctx.globalAlpha = player.grounded ? 0.24 : 0.12; ctx.fillStyle = '#07243a'; ctx.beginPath(); ctx.ellipse(x, player.y + player.h + 7, player.grounded ? 26 : 18, player.grounded ? 6 : 4, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
     ctx.save(); ctx.translate(x, y); ctx.rotate(player.rotation || 0); if (game.surf.boardMounted) ctx.scale(player.dir * (player.scale || 1), player.scale || 1); else sharedAbilities.applyHeroVisualTransform(ctx, game.abilities, { direction: player.dir, baseScale: player.scale || 1, anchorY: 33, time });
     if (game.surf.boardMounted) {
@@ -3038,6 +3038,7 @@
     sharedAbilities.applyHeroStyle(ctx, game.abilities);
     const sourceWidth = images.hero.width / 8;
     ctx.drawImage(images.hero, frame * sourceWidth, 0, sourceWidth, images.hero.height, -33, -33, 66, 66);
+    sharedAbilities.drawFiestaWingShoes(ctx, game.abilities, time, { size: 66, airborne: !player.grounded, reducedMotion: game.reducedShake });
     ctx.restore(); ctx.globalAlpha = 1;
   }
 

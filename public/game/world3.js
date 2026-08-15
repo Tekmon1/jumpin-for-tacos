@@ -160,7 +160,7 @@
     },
   };
   const config = CONFIGS[levelId];
-  const SOURCE_VERSION = 34;
+  const SOURCE_VERSION = 35;
   const WORLD3_VEHICLE_VISUALS = Object.freeze({
     balloon: Object.freeze({ cell: 4, width: 188, height: 250, launcherX: 24, launcherY: 176 }),
     coaster: Object.freeze({ cell: 6, width: 310, height: 207, launcherX: 28, launcherY: 112 }),
@@ -3056,7 +3056,7 @@
       && game.cosmicFinale?.active
       && cosmicPhase === 'low-gravity';
     const playerLocked = cloudtopPlayerLocked || cosmicPlayerLocked;
-    if (!playerLocked && sharedAbilities.suspendForTransformation(game.abilities, player)) return;
+    if (sharedAbilities.suspendForTransformation(game.abilities, player, { disabled: playerLocked, platformAlreadyCarried: true })) return;
     if (player.grounded) sharedAbilities.land(game.abilities);
     const left = playerLocked ? false : keys.left;
     const right = cloudtopPlayerLocked
@@ -6112,7 +6112,7 @@
     const airborne = !player.grounded;
     const running = Math.abs(player.vx) > 35;
     const frame = airborne ? (player.vy < 0 ? 4 : 5) : running ? 1 + (Math.floor(player.anim) % 3) : 0;
-    sharedAbilities.drawHeroEffects(ctx, game.abilities, player, game.cameraX, game.levelTime * 1000);
+    sharedAbilities.drawHeroEffects(ctx, game.abilities, player, game.cameraX, game.levelTime * 1000, { reducedMotion: game.reducedShake });
     ctx.save();
     ctx.translate(x + player.w / 2, player.y + player.h / 2);
     ctx.rotate(player.rotation);
@@ -6134,6 +6134,7 @@
       ctx.arc(0, 0, 25, 0, Math.PI * 2);
       ctx.fill();
     }
+    sharedAbilities.drawFiestaWingShoes(ctx, game.abilities, game.levelTime * 1000, { size: 66, airborne, reducedMotion: game.reducedShake });
     ctx.restore();
   }
 

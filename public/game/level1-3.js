@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-3-v24-super-taco-hero';
+  const SOURCE_VERSION = 'w1-3-v25-fiesta-wing-shoes';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -3241,7 +3241,7 @@
     if (player.invulnerable > 0 && Math.floor(player.invulnerable * 12) % 2 === 0) ctx.globalAlpha = 0.45;
     const x = player.x - game.cameraX + player.w / 2;
     const y = player.y + player.h / 2;
-    sharedAbilities.drawHeroEffects(ctx, game.abilities, player, game.cameraX, time);
+    sharedAbilities.drawHeroEffects(ctx, game.abilities, player, game.cameraX, time, { reducedMotion: game.reducedShake });
     if (game.chainTrailTimer > 0) {
       const trailColors = ['#65d8ff', '#b78cff', '#ff6fae', '#ffd65a', '#8dff9c'];
       for (let trail = 0; trail < trailColors.length; trail += 1) {
@@ -3260,6 +3260,7 @@
     sharedAbilities.applyHeroStyle(ctx, game.abilities);
     const sourceWidth = images.hero.width / 8;
     ctx.drawImage(images.hero, frame * sourceWidth, 0, sourceWidth, images.hero.height, -33, -33, 66, 66);
+    sharedAbilities.drawFiestaWingShoes(ctx, game.abilities, time, { size: 66, airborne: !player.grounded, reducedMotion: game.reducedShake });
     ctx.restore(); ctx.globalAlpha = 1;
   }
 

@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const SOURCE_VERSION = 'w2-3-v18-super-taco-hero';
+  const SOURCE_VERSION = 'w2-3-v19-fiesta-wing-shoes';
 
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
@@ -1496,7 +1496,7 @@
   }
 
   function updatePlayer(dt, concertMode = false) {
-    if (!concertMode && abilities.suspendForTransformation(game.abilities, player)) return;
+    if (abilities.suspendForTransformation(game.abilities, player, { disabled: concertMode })) return;
     const wasGrounded = player.grounded;
     if (player.grounded) abilities.land(game.abilities);
     player.jumpBuffer = Math.max(0, player.jumpBuffer - dt);
@@ -3861,7 +3861,7 @@
     if (heroCore.hidePlayerDuringRespawn(game.respawn)) return;
     const x = concertMode ? player.x : player.x - game.cameraX;
     const y = player.y + player.h / 2;
-    abilities.drawHeroEffects(ctx, game.abilities, player, game.cameraX, time, { x, y: player.y });
+    abilities.drawHeroEffects(ctx, game.abilities, player, game.cameraX, time, { x, y: player.y, reducedMotion: game.reducedShake });
     if (images.hero) {
       const frame = game.state === 'results' ? 7
         : player.invulnerable > 0 ? 6
@@ -3894,6 +3894,7 @@
       abilities.applyHeroStyle(ctx, game.abilities);
       const frameWidth = images.hero.width / 8;
       ctx.drawImage(images.hero, frame * frameWidth, 0, frameWidth, images.hero.height, -visualSize / 2, -visualSize / 2, visualSize, visualSize);
+      abilities.drawFiestaWingShoes(ctx, game.abilities, time, { size: visualSize, airborne: !player.grounded, reducedMotion: game.reducedShake });
       ctx.restore();
       return;
     }
@@ -3926,6 +3927,7 @@
     ctx.fillRect(-14, 16, 10, 9);
     ctx.fillStyle = '#50e7ff';
     ctx.fillRect(4, 16, 10, 9);
+    abilities.drawFiestaWingShoes(ctx, game.abilities, time, { size: 66, airborne: !player.grounded, reducedMotion: game.reducedShake });
     ctx.restore();
   }
 

@@ -117,10 +117,14 @@ test("implements Taco Power and Super Taco Hero as one shared state machine", as
   vm.runInNewContext(abilitiesSource, context, { filename: "abilities.js" });
 
   const abilities = context.window.JFT_SHARED_ABILITIES;
-  assert.equal(abilities.version, "super-taco-hero-v1");
+  assert.equal(abilities.version, "super-taco-hero-v2-fiesta-wing-shoes");
   assert.equal(abilities.definitions.tacoPower.threshold, 100);
   assert.equal(abilities.definitions.tacoPower.contributions.taco, 7);
+  assert.equal(abilities.definitions.tacoPower.contributions.premiumTaco, 16);
+  assert.equal(abilities.definitions.tacoPower.contributions.enemySplat, 14);
   assert.equal(abilities.definitions.superHero.visualScale, 1.12);
+  assert.equal(abilities.definitions.superHero.transformationDuration, 0.78);
+  assert.equal(abilities.definitions.superHero.powerDownDuration, 0.42);
   assert.equal(context.window.JFT_HERO_CORE.physics.jumpVelocity, 680);
   assert.equal(context.window.JFT_HERO_CORE.physics.superJumpVelocity, 650);
 
@@ -135,6 +139,7 @@ test("implements Taco Power and Super Taco Hero as one shared state machine", as
   assert.equal(state.superCount, 1);
   assert.equal(abilities.collectTaco(state), false, "tacos do not bank another form while Super");
   assert.equal(state.tacoMeter, 0);
+  abilities.update(state, 0.5);
 
   assert.equal(abilities.trySuperJump(state), 650);
   assert.equal(abilities.trySuperJump(state), 0, "only one airborne Super Jump is available");
@@ -163,6 +168,7 @@ test("implements Taco Power and Super Taco Hero as one shared state machine", as
   assert.equal(state.airJumpAvailable, false);
 
   assert.ok(playedEvents.includes("ability.superTransform"));
+  assert.ok(playedEvents.includes("ability.superShoes"));
   assert.ok(playedEvents.includes("hero.superJump"));
   assert.ok(playedEvents.includes("ability.superPowerDown"));
 
@@ -177,6 +183,69 @@ test("implements Taco Power and Super Taco Hero as one shared state machine", as
   assert.equal(transforms[1][0], "scale");
   assert.ok(transforms[1][1] > 1 && transforms[1][2] > 0.8);
   assert.deepEqual(transforms[2], ["translate", 0, -33]);
+
+  abilities.reset(state);
+  abilities.activateSuper(state, "mid-air-test", { silent: true });
+  const airbornePlayer = {
+    x: 180, y: 210, vx: 246, vy: -318, grounded: false, platform: null, jumpBuffer: 0.1,
+  };
+  assert.equal(abilities.suspendForTransformation(state, airbornePlayer), true);
+  assert.deepEqual(
+    { x: airbornePlayer.x, y: airbornePlayer.y, vx: airbornePlayer.vx, vy: airbornePlayer.vy },
+    { x: 180, y: 210, vx: 0, vy: 0 },
+    "mid-air transformation suspends in place",
+  );
+  abilities.update(state, abilities.definitions.superHero.transformationDuration);
+  assert.equal(abilities.suspendForTransformation(state, airbornePlayer), false);
+  assert.deepEqual(
+    { x: airbornePlayer.x, y: airbornePlayer.y, vx: airbornePlayer.vx, vy: airbornePlayer.vy },
+    { x: 180, y: 210, vx: 246, vy: -318 },
+    "mid-air transformation restores the exact incoming trajectory",
+  );
+
+  abilities.reset(state);
+  abilities.activateSuper(state, "moving-platform-test", { silent: true });
+  const platformPlayer = {
+    x: 90, y: 300, vx: 110, vy: 0, grounded: true, jumpBuffer: 0,
+    platform: { dx: 4, dy: -2 },
+  };
+  abilities.suspendForTransformation(state, platformPlayer);
+  assert.deepEqual(
+    { x: platformPlayer.x, y: platformPlayer.y },
+    { x: 94, y: 298 },
+    "shared suspension carries a grounded hero with the platform",
+  );
+  platformPlayer.x += platformPlayer.platform.dx;
+  platformPlayer.y += platformPlayer.platform.dy;
+  abilities.suspendForTransformation(state, platformPlayer, { platformAlreadyCarried: true });
+  assert.deepEqual(
+    { x: platformPlayer.x, y: platformPlayer.y },
+    { x: 98, y: 296 },
+    "runtimes that already carried the platform do not apply its delta twice",
+  );
+  assert.equal(abilities.suspendForTransformation(state, platformPlayer, { disabled: true }), false);
+  assert.deepEqual(
+    { vx: platformPlayer.vx, vy: platformPlayer.vy },
+    { vx: 110, vy: 0 },
+    "scripted movement releases a previously captured trajectory instead of restoring it after the sequence",
+  );
+
+  abilities.reset(state);
+  abilities.activateSuper(state, "shoe-render-test", { silent: true });
+  const anticipation = abilities.fiestaWingShoeVisualState(state, 0, { airborne: true });
+  assert.equal(anticipation.visible, false, "normal shoes remain during the anticipation beat");
+  abilities.update(state, 0.5);
+  const shoeReveal = abilities.fiestaWingShoeVisualState(state, 500, { airborne: true });
+  assert.equal(shoeReveal.visible, true);
+  assert.ok(shoeReveal.wingSpread > 0.36, "compact wings visibly unfold during transformation");
+  abilities.update(state, 0.5);
+  const persistentShoes = abilities.fiestaWingShoeVisualState(state, 1000, { airborne: false });
+  assert.equal(persistentShoes.appearance, 1);
+  assert.equal(persistentShoes.visible, true);
+  abilities.trySuperJump(state, { silent: true });
+  assert.ok(abilities.fiestaWingShoeVisualState(state, 1016, { airborne: true }).jumpFlare > 0.9);
+  abilities.absorbDamage(state, { silent: true });
+  assert.equal(abilities.fiestaWingShoeVisualState(state, 1032).visible, false, "silent resets suppress presentation effects");
 });
 
 test("loads and consumes Super Taco Hero across all nine level entry points", async () => {
@@ -190,9 +259,9 @@ test("loads and consumes Super Taco Hero across all nine level entry points", as
   for (const [pageName, runtimeName] of pages) {
     const html = await readFile(new URL(`../public/game/${pageName}`, import.meta.url), "utf8");
     assert.match(html, /src="levels\.js\?v=34"/);
-    assert.match(html, /src="abilities\.js\?v=2"/);
-    assert.ok(html.indexOf('src="levels.js?v=34"') < html.indexOf('src="abilities.js?v=2"'));
-    assert.ok(html.indexOf('src="abilities.js?v=2"') < html.indexOf(`src="${runtimeName}`));
+    assert.match(html, /src="abilities\.js\?v=3"/);
+    assert.ok(html.indexOf('src="levels.js?v=34"') < html.indexOf('src="abilities.js?v=3"'));
+    assert.ok(html.indexOf('src="abilities.js?v=3"') < html.indexOf(`src="${runtimeName}`));
   }
 
   const runtimeNames = ["game.js", "level1-2.js", "level1-3.js", "level2.js", "level2-2.js", "level2-3.js", "world3.js"];
@@ -204,6 +273,7 @@ test("loads and consumes Super Taco Hero across all nine level entry points", as
     assert.match(runtime, /\.absorbDamage/);
     assert.match(runtime, /\.clearForRespawn/);
     assert.match(runtime, /\.drawHeroEffects/);
+    assert.match(runtime, /\.drawFiestaWingShoes/);
     assert.match(runtime, /\.applyHeroVisualTransform/);
     assert.match(runtime, /\.drawTacoPowerHUD/);
     assert.match(runtime, /collisionWidth/);
@@ -255,12 +325,12 @@ test("keeps World 1-1 enemy artwork on a separate slower visual clock", async ()
   assert.equal(context.window.JFT_HERO_CORE.physics.enemyVisualAnimationRate, 1.8);
   assert.match(mainRuntime, /enemy\.anim \+= dt \* heroPhysics\.enemyVisualAnimationRate/);
   assert.match(mainRuntime, /return Math\.floor\(enemy\.anim\) % 4/);
-  assert.match(mainRuntime, /SOURCE_VERSION = 'w1-1-v52-super-taco-hero'/);
+  assert.match(mainRuntime, /SOURCE_VERSION = 'w1-1-v53-fiesta-wing-shoes'/);
   assert.match(mainRuntime, /function removeOpeningLeadEnemy/);
   assert.match(mainRuntime, /removeOpeningLeadEnemy\(\)/);
   assert.match(mainRuntime, /patrolStartOffset: 420/);
   assert.match(mainHtml, /levels\.js\?v=34/);
-  assert.match(mainHtml, /game\.js\?v=52/);
+  assert.match(mainHtml, /game\.js\?v=53/);
 });
 
 test("creates same-type enemy packs and recognizes swept stomp contacts", async () => {
@@ -882,7 +952,7 @@ test("ships World 1 with authored seamless panorama progressions", async () => {
     assert.match(prototype, new RegExp(filename.replace(".png", "")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(prototypeHtml, /game\.js\?v=52/);
+  assert.match(prototypeHtml, /game\.js\?v=53/);
   assert.match(prototype, /function drawPaintedTerrainSlice/);
   assert.match(prototype, /artStyle: 'goldenCactus'/);
   assert.match(prototype, /function drawTacoTrekkerLayers/);
@@ -912,7 +982,7 @@ test("ships World 1 with authored seamless panorama progressions", async () => {
     assert.match(rescueForeground, new RegExp(filename.replace(".", "\\.")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(rescueForegroundHtml, /level1-2\.js\?v=33/);
+  assert.match(rescueForegroundHtml, /level1-2\.js\?v=34/);
   assert.match(rescueForeground, /function drawPaintedTerrainSlice/);
   assert.match(rescueForeground, /checkpointArtGroundedByVisibleBaseline: true/);
   assert.match(rescueForeground, /independentCheckpointShadows: true/);
@@ -952,7 +1022,7 @@ test("ships World 1 with authored seamless panorama progressions", async () => {
     assert.match(showdownForeground, new RegExp(filename.replace(".", "\\.")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(showdownForegroundHtml, /level1-3\.js\?v=24/);
+  assert.match(showdownForegroundHtml, /level1-3\.js\?v=25/);
   assert.match(showdownForeground, /function drawPaintedTerrainSlice/);
   assert.match(showdownForeground, /checkpointArtGroundedByVisibleBaseline: true/);
   assert.match(showdownForeground, /independentCheckpointShadows: true/);
@@ -1003,7 +1073,7 @@ test("remasters the complete World 1-1 enemy and NPC cast without changing gamep
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /game\.js\?v=52/);
+  assert.match(html, /game\.js\?v=53/);
   assert.match(runtime, /function remasteredEnemyFrame/);
   assert.match(runtime, /function drawRemasteredEnemy/);
   assert.match(runtime, /function drawDesertLocals/);
@@ -1053,7 +1123,7 @@ test("authors the full World 1-1 pilot around purposeful upper routes and metada
   assert.match(runtime, /sharedAbilities\.splatEnemy\(game\.abilities/);
   assert.match(core, /const requestedPlatformId = enemy\.supportPlatformId \|\| enemy\.platformId/);
   assert.match(core, /id === `\$\{requestedPlatformId\}-encore`/);
-  assert.match(html, /game\.js\?v=52/);
+  assert.match(html, /game\.js\?v=53/);
   assert.match(html, /explore layered desert\r?\n\s+routes where risky jumps can lead to bonus powers/);
 });
 
@@ -1076,8 +1146,8 @@ test("remasters the complete World 1-2 aviation enemy and NPC cast and restores 
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /level1-2\.js\?v=33/);
-  assert.match(runtime, /SOURCE_VERSION = 'w1-2-v33-super-taco-hero'/);
+  assert.match(html, /level1-2\.js\?v=34/);
+  assert.match(runtime, /SOURCE_VERSION = 'w1-2-v34-fiesta-wing-shoes'/);
   assert.match(runtime, /\['terminal\.local', '127\.0\.0\.1', 'localhost'\]\.includes\(location\.hostname\)/);
   assert.match(runtime, /function remasteredEnemyFrame/);
   assert.match(runtime, /function drawCrewMember/);
@@ -1112,7 +1182,7 @@ test("authors the World 1-2 rescue pilot across combat sections without crowding
   assert.match(runtime, /previousBottom: previousPlayerBottom/);
   assert.match(runtime, /previousTargetTop: previousEnemyTop/);
   assert.match(runtime, /player\.y = Math\.min\(player\.y, enemy\.y - player\.h - 1\)/);
-  assert.match(html, /level1-2\.js\?v=33/);
+  assert.match(html, /level1-2\.js\?v=34/);
 });
 
 test("remasters the complete World 1-3 showdown enemy, boss, stampede, and NPC cast", async () => {
@@ -1134,8 +1204,8 @@ test("remasters the complete World 1-3 showdown enemy, boss, stampede, and NPC c
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /level1-3\.js\?v=24/);
-  assert.match(runtime, /SOURCE_VERSION = 'w1-3-v24-super-taco-hero'/);
+  assert.match(html, /level1-3\.js\?v=25/);
+  assert.match(runtime, /SOURCE_VERSION = 'w1-3-v25-fiesta-wing-shoes'/);
   assert.match(runtime, /function remasteredEnemyFrame/);
   assert.match(runtime, /enemyAnimationFrames: 8/);
   assert.match(runtime, /behaviorLinked: true/);
@@ -1172,7 +1242,7 @@ test("authors World 1-3 combat around readable formations, full-platform patrols
   assert.match(runtime, /previousBottom: player\.previousBottom/);
   assert.match(runtime, /previousTargetTop: previousEnemyTop/);
   assert.match(runtime, /player\.y = Math\.min\(player\.y, enemy\.y - player\.h - 1\)/);
-  assert.match(html, /level1-3\.js\?v=24/);
+  assert.match(html, /level1-3\.js\?v=25/);
 });
 
 test("ships the complete three-level Starlight Taco Carnival world", async () => {
@@ -1184,7 +1254,7 @@ test("ships the complete three-level Starlight Taco Carnival world", async () =>
     assert.match(html, /World 3/);
     assert.match(html, /35,000 units/);
     assert.match(html, /id="startBtn"/);
-    assert.match(html, /world3\.js\?v=34/);
+    assert.match(html, /world3\.js\?v=35/);
     assert.match(html, /world3\.css\?v=10/);
     assert.match(html, /controller\.js\?v=9/);
     assert.match(html, /data-next-level/);
@@ -1368,7 +1438,7 @@ test("ships the complete three-level Starlight Taco Carnival world", async () =>
 test("authors World 3 combat around readable packs, full patrols, and safe set pieces", async () => {
   const runtime = await readFile(new URL("../public/game/world3.js", import.meta.url), "utf8");
 
-  assert.match(runtime, /const SOURCE_VERSION = 34/);
+  assert.match(runtime, /const SOURCE_VERSION = 35/);
   assert.match(runtime, /const WORLD3_REMASTER_PLANS = Object\.freeze/);
   assert.match(runtime, /function world3ForbiddenRanges/);
   assert.match(runtime, /function addWorld3Formation/);
@@ -1489,8 +1559,8 @@ test("remasters World 2-1 art while preserving collision geometry and widening s
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /level2\.js\?v=28/);
-  assert.match(runtime, /SOURCE_VERSION = 'w2-1-v28-super-taco-hero'/);
+  assert.match(html, /level2\.js\?v=29/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-1-v29-fiesta-wing-shoes'/);
   assert.match(runtime, /encounterAudit: game\.world2EncounterAudit/);
   assert.match(runtime, /const ENVIRONMENT_TRANSITION_WIDTH = 1600/);
   assert.match(runtime, /const ENVIRONMENT_PANORAMA_CROP = 0\.9/);
@@ -1627,8 +1697,8 @@ test("ships the 35,000-unit caldera camping sequel with premium art and adaptive
     assert.match(html, new RegExp(`music_caldera_${track}\\.ogg`));
   }
   assert.match(html, /World 2 • Level 2-2 • 35,000 units/);
-  assert.match(html, /level2-2\.js\?v=9/);
-  assert.match(runtime, /SOURCE_VERSION = 'w2-2-v9-super-taco-hero'/);
+  assert.match(html, /level2-2\.js\?v=10/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-2-v10-fiesta-wing-shoes'/);
   assert.match(html, /id="startBtn"/);
   assert.match(runtime, /geyserGuardSpecs/);
   assert.match(runtime, /requiresGeyserAirborne/);
@@ -1680,8 +1750,8 @@ test("ships the complete 35,000-unit Neon Neckties concert level", async () => {
   assert.match(runtime, /OLIVIA IS LOADING THE LAST TACOS!/);
   assert.match(runtime, /TACO ROADSTER: READY TO ROLL!/);
   assert.match(runtime, /SHOWTIME! OLIVIA IS TAKING THE SCENIC ROUTE!/);
-  assert.match(html, /level2-3\.js\?v=18/);
-  assert.match(runtime, /SOURCE_VERSION = 'w2-3-v18-super-taco-hero'/);
+  assert.match(html, /level2-3\.js\?v=19/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-3-v19-fiesta-wing-shoes'/);
   assert.match(runtime, /generatorDefensePlans/);
   assert.match(runtime, /function ensureGeneratorDefensePlatform/);
   assert.match(runtime, /finitePlatformGeometry: world\.platforms\.every/);
@@ -1863,9 +1933,9 @@ test("loads the shared Phase 3 audio foundation before World 1-1 and resolves ev
   const labRuntime = await readFile(new URL("../public/game/audio-lab.js", import.meta.url), "utf8");
   const landingPage = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
 
-  const catalogPosition = html.indexOf('src="audio-catalog.js?v=8"');
+  const catalogPosition = html.indexOf('src="audio-catalog.js?v=9"');
   const enginePosition = html.indexOf('src="audio-engine.js?v=7"');
-  const runtimePosition = html.indexOf('src="game.js?v=52"');
+  const runtimePosition = html.indexOf('src="game.js?v=53"');
   assert.ok(catalogPosition >= 0, "World 1-1 loads the semantic catalog");
   assert.ok(enginePosition > catalogPosition, "the engine loads after its catalog");
   assert.ok(runtimePosition > enginePosition, "the engine loads before the World 1-1 runtime");
@@ -1875,15 +1945,15 @@ test("loads the shared Phase 3 audio foundation before World 1-1 and resolves ev
   vm.runInNewContext(engineSource, context, { filename: "audio-engine.js" });
   const catalog = context.window.JFT_AUDIO_CATALOG;
   const engine = context.window.JFT_AUDIO;
-  assert.equal(catalog.version, "phase3-catalog-v3-super-taco-hero");
-  assert.equal(catalog.assetCacheVersion, "sfx-phase3-v3-super-taco-hero");
+  assert.equal(catalog.version, "phase3-catalog-v4-fiesta-wing-shoes");
+  assert.equal(catalog.assetCacheVersion, "sfx-phase3-v4-fiesta-wing-shoes");
 
   const required = [
     "ui.start", "ui.confirm", "hero.jump", "hero.landSoft", "hero.landHard",
     "hero.hurt", "hero.fall", "hero.respawnBeam", "hero.respawnLand", "hero.superJump",
     "collect.taco", "collect.tacoCluster", "collect.goldenTaco", "collect.rainbowTaco",
     "combat.enemyStomp", "combat.enemySplat", "combat.comboMilestone",
-    "ability.magnetStart", "ability.frenzyStart", "ability.superTransform", "ability.superPowerDown", "checkpoint.activate",
+    "ability.magnetStart", "ability.frenzyStart", "ability.superTransform", "ability.superShoes", "ability.superPowerDown", "checkpoint.activate",
     "pinata.hit", "pinata.break", "goal.enter", "level.complete",
   ];
   for (const eventId of required) {
@@ -1909,7 +1979,7 @@ test("loads the shared Phase 3 audio foundation before World 1-1 and resolves ev
   engine.setMuted(true);
   const telemetry = engine.getTelemetry();
   assert.equal(telemetry.engineVersion, "2.2.1-release-preload");
-  assert.equal(telemetry.assetCacheVersion, "sfx-phase3-v3-super-taco-hero");
+  assert.equal(telemetry.assetCacheVersion, "sfx-phase3-v4-fiesta-wing-shoes");
   assert.equal(telemetry.audioContextState, "not-created");
   assert.equal(telemetry.audioContextLatencySeconds.base, null);
   assert.equal(telemetry.audioContextLatencySeconds.output, null);
@@ -2092,7 +2162,7 @@ test("keeps every remaining level runtime on the shared Phase 3 audio engine", a
     const catalogPosition = html.indexOf('src="audio-catalog.js');
     const enginePosition = html.indexOf('src="audio-engine.js');
     const runtimePosition = html.indexOf(`src="${runtimeName}`);
-    assert.match(html, /src="audio-catalog\.js\?v=8"/, `${pageName} uses the release catalog cache key`);
+    assert.match(html, /src="audio-catalog\.js\?v=9"/, `${pageName} uses the release catalog cache key`);
     assert.match(html, /src="audio-engine\.js\?v=7"/, `${pageName} uses the release engine cache key`);
     assert.ok(catalogPosition >= 0, `${pageName} loads the audio catalog`);
     assert.ok(enginePosition > catalogPosition, `${pageName} loads the engine after its catalog`);

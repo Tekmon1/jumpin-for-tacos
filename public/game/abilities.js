@@ -10,10 +10,10 @@
     label: 'SUPER TACO HERO',
     visualScale: 1.12,
     superJumpVelocity: 650,
-    transformationDuration: 0.52,
-    powerDownDuration: 0.36,
+    transformationDuration: 0.78,
+    powerDownDuration: 0.42,
     damageInvulnerabilityDuration: 1.3,
-    superJumpFxDuration: 0.3,
+    superJumpFxDuration: 0.32,
   });
   const definitions = Object.freeze({
     tacoPower,
@@ -37,6 +37,9 @@
       powerDownTimer: 0,
       superJumpFxTimer: 0,
       superSource: null,
+      transformMotion: null,
+      transformRestorePending: false,
+      shoeActivationPending: false,
     };
   }
 
@@ -55,11 +58,20 @@
 
   function update(state, dt) {
     normalize(state);
+    const wasTransforming = state.transformTimer > 0;
     state.frenzyTimer = Math.max(0, state.frenzyTimer - dt);
     state.magnetTimer = Math.max(0, state.magnetTimer - dt);
     state.transformTimer = Math.max(0, state.transformTimer - dt);
     state.powerDownTimer = Math.max(0, state.powerDownTimer - dt);
     state.superJumpFxTimer = Math.max(0, state.superJumpFxTimer - dt);
+    if (state.shoeActivationPending
+      && state.transformTimer <= definitions.superHero.transformationDuration * 0.42) {
+      state.shoeActivationPending = false;
+      playSharedEvent('ability.superShoes');
+    }
+    if (wasTransforming && state.transformTimer <= 0 && state.transformMotion) {
+      state.transformRestorePending = true;
+    }
   }
 
   function playSharedEvent(eventId, options = {}) {
@@ -77,6 +89,9 @@
     state.airJumpAvailable = true;
     state.transformTimer = definitions.superHero.transformationDuration;
     state.powerDownTimer = 0;
+    state.transformMotion = null;
+    state.transformRestorePending = false;
+    state.shoeActivationPending = !options.silent;
     playSharedEvent('ability.superTransform', options);
     return true;
   }
@@ -89,6 +104,8 @@
     state.airJumpAvailable = false;
     state.transformTimer = 0;
     state.superJumpFxTimer = 0;
+    state.shoeActivationPending = false;
+    state.transformRestorePending = Boolean(state.transformMotion);
     state.powerDownTimer = options.silent ? 0 : definitions.superHero.powerDownDuration;
     playSharedEvent('ability.superPowerDown', options);
     return true;
@@ -101,6 +118,9 @@
     state.powerDownTimer = 0;
     state.superJumpFxTimer = 0;
     state.airJumpAvailable = false;
+    state.transformMotion = null;
+    state.transformRestorePending = false;
+    state.shoeActivationPending = false;
     return state;
   }
 
@@ -169,10 +189,38 @@
     return Number.isFinite(configuredVelocity) ? configuredVelocity : definitions.superHero.superJumpVelocity;
   }
 
-  function suspendForTransformation(state, player) {
+  function suspendForTransformation(state, player, options = {}) {
     normalize(state);
-    if (state.transformTimer <= 0) return false;
-    player.vx *= 0.72;
+    if (options.disabled) {
+      if (state.transformMotion) {
+        player.vx = state.transformMotion.vx;
+        player.vy = state.transformMotion.vy;
+      }
+      state.transformMotion = null;
+      state.transformRestorePending = false;
+      return false;
+    }
+    if (state.transformTimer <= 0) {
+      if (state.transformRestorePending && state.transformMotion) {
+        player.vx = state.transformMotion.vx;
+        player.vy = state.transformMotion.vy;
+      }
+      state.transformMotion = null;
+      state.transformRestorePending = false;
+      return false;
+    }
+    if (!state.transformMotion) {
+      state.transformMotion = {
+        vx: Number.isFinite(player.vx) ? player.vx : 0,
+        vy: Number.isFinite(player.vy) ? player.vy : 0,
+        grounded: Boolean(player.grounded),
+      };
+    }
+    if (state.transformMotion.grounded && player.grounded && player.platform && !options.platformAlreadyCarried) {
+      player.x += player.platform.dx || 0;
+      player.y += player.platform.dy || 0;
+    }
+    player.vx = 0;
     player.vy = 0;
     player.jumpBuffer = 0;
     return true;
@@ -208,6 +256,57 @@
     return { x, y };
   }
 
+  function clamp01(value) {
+    return Math.max(0, Math.min(1, value));
+  }
+
+  function smoothstep(start, end, value) {
+    const progress = clamp01((value - start) / Math.max(0.0001, end - start));
+    return progress * progress * (3 - 2 * progress);
+  }
+
+  function fiestaWingShoeVisualState(state, time = 0, options = {}) {
+    normalize(state);
+    const config = definitions.superHero;
+    const transformProgress = state.transformTimer > 0
+      ? clamp01(1 - state.transformTimer / config.transformationDuration)
+      : 1;
+    const powerDownProgress = state.powerDownTimer > 0
+      ? clamp01(1 - state.powerDownTimer / config.powerDownDuration)
+      : 0;
+    let appearance = state.superActive ? 1 : 0;
+    let wingSpread = state.superActive ? 0.36 : 0;
+    let transformationFlare = 0;
+    if (state.transformTimer > 0) {
+      appearance = smoothstep(0.3, 0.64, transformProgress);
+      const unfold = smoothstep(0.48, 0.74, transformProgress);
+      const settle = smoothstep(0.82, 1, transformProgress);
+      wingSpread = 0.36 + unfold * 0.82 - settle * 0.82;
+      transformationFlare = Math.sin(smoothstep(0.42, 0.96, transformProgress) * Math.PI);
+    } else if (state.powerDownTimer > 0) {
+      appearance = 1 - smoothstep(0.45, 1, powerDownProgress);
+      wingSpread = Math.max(0, 0.72 - powerDownProgress * 0.72);
+    }
+    const jumpFlare = state.superJumpFxTimer > 0
+      ? clamp01(state.superJumpFxTimer / config.superJumpFxDuration)
+      : 0;
+    const reducedMotion = Boolean(options.reducedMotion);
+    const pulse = reducedMotion ? 0.5 : (Math.sin(time * 0.01) + 1) * 0.5;
+    const airborneFlutter = options.airborne && !reducedMotion ? Math.sin(time * 0.018) * 0.09 : 0;
+    return {
+      visible: appearance > 0.01,
+      appearance,
+      wingSpread: Math.max(0, wingSpread + jumpFlare * 0.78),
+      wingFlutter: airborneFlutter,
+      soleGlow: clamp01(0.54 + pulse * 0.22 + transformationFlare * 0.42 + jumpFlare * 0.58),
+      jumpFlare,
+      transformationFlare,
+      powerDownFlash: state.powerDownTimer > 0 ? 1 - smoothstep(0, 0.38, powerDownProgress) : 0,
+      transformProgress,
+      powerDownProgress,
+    };
+  }
+
   function applyHeroVisualTransform(ctx, state, options = {}) {
     const transform = heroVisualTransform(state, options.time || 0);
     const direction = options.direction ?? 1;
@@ -226,6 +325,123 @@
     ctx.filter = state.superActive
       ? 'saturate(1.38) brightness(1.12) drop-shadow(0 0 3px #65e7ff)'
       : 'saturate(1.15) brightness(1.08)';
+  }
+
+  function drawCompactWing(ctx, side, visual) {
+    const reach = 1 + visual.wingSpread * 0.48;
+    ctx.save();
+    ctx.scale(side * reach, 1);
+    ctx.rotate(-0.12 - visual.wingSpread * 0.08 + visual.wingFlutter * side);
+    ctx.fillStyle = visual.powerDownFlash > 0.01 ? '#fff4ad' : '#fffdf0';
+    ctx.strokeStyle = '#65e7ff';
+    ctx.lineWidth = 1.15;
+    ctx.beginPath();
+    ctx.moveTo(0, 2.5);
+    ctx.bezierCurveTo(3.8, -4.6, 8.6, -6.4, 11.2, -5.1);
+    ctx.bezierCurveTo(9.8, -1.8, 7.1, 0.2, 3.2, 1.3);
+    ctx.bezierCurveTo(6.1, 0.8, 8.5, 1.2, 9.8, 2.6);
+    ctx.bezierCurveTo(6.8, 4.1, 3.4, 4, 0, 2.5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,104,180,.82)';
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    ctx.moveTo(2.4, 1.1); ctx.quadraticCurveTo(5.7, -1.8, 9.3, -3.8);
+    ctx.moveTo(3.5, 2.4); ctx.quadraticCurveTo(6.4, 1.6, 8.2, 1.9);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawFiestaShoe(ctx, side, visual) {
+    const primary = side < 0 ? '#ff4fac' : '#2ed7f2';
+    const secondary = side < 0 ? '#2ed7f2' : '#ff4fac';
+    ctx.save();
+    ctx.rotate(side * (0.035 + visual.jumpFlare * 0.07));
+    ctx.translate(side * 5.8, -2.2);
+    drawCompactWing(ctx, side, visual);
+    ctx.translate(side * -5.8, 2.2);
+    ctx.shadowColor = visual.powerDownFlash > 0.01 ? '#fff4ad' : '#65e7ff';
+    ctx.shadowBlur = 1.5 + visual.soleGlow * 4.5;
+    ctx.fillStyle = primary;
+    ctx.strokeStyle = '#36173d';
+    ctx.lineWidth = 1.45;
+    ctx.beginPath();
+    ctx.moveTo(-7.8, -5.2);
+    ctx.quadraticCurveTo(-4.5, -7.4, 0.2, -5.9);
+    ctx.lineTo(2.5, -2.1);
+    ctx.quadraticCurveTo(6.7, -1.5, 8.8, 2.2);
+    ctx.lineTo(8.2, 4.2);
+    ctx.quadraticCurveTo(0.2, 6.2, -8.4, 4.1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = secondary;
+    ctx.beginPath();
+    ctx.moveTo(-6.2, -4.4);
+    ctx.lineTo(-1.4, -4.8);
+    ctx.lineTo(1.2, 1.5);
+    ctx.lineTo(-5.7, 2.2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#ff9b4a';
+    ctx.beginPath();
+    ctx.moveTo(2.3, -1.5);
+    ctx.quadraticCurveTo(7.1, -1.1, 8.1, 2.5);
+    ctx.lineTo(7.2, 3.5);
+    ctx.lineTo(3.1, 2.7);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#ffd65a';
+    ctx.beginPath();
+    ctx.moveTo(-6.7, -4.9); ctx.lineTo(-2.4, -6.5); ctx.lineTo(0.1, -5.4); ctx.lineTo(-4.6, -3.8); ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#fffdf0';
+    ctx.lineWidth = 1.25;
+    ctx.beginPath();
+    ctx.moveTo(-2.6, -2.8); ctx.lineTo(2.4, -1.7);
+    ctx.moveTo(-2.1, -0.6); ctx.lineTo(3.5, 0.3);
+    ctx.moveTo(-1.2, 1.5); ctx.lineTo(4.5, 2);
+    ctx.stroke();
+    ctx.fillStyle = '#fffdf0';
+    ctx.strokeStyle = '#2ed7f2';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-8.7, 3.4);
+    ctx.quadraticCurveTo(-0.2, 5.7, 8.9, 3.4);
+    ctx.lineTo(9.2, 6.1);
+    ctx.quadraticCurveTo(0.1, 8.2, -9.1, 5.9);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.globalAlpha *= 0.64 + visual.soleGlow * 0.36;
+    ctx.fillStyle = side < 0 ? '#65e7ff' : '#ffd65a';
+    ctx.fillRect(-6.4, 5.35, 12.8, 1.25 + visual.jumpFlare * 1.35);
+    ctx.restore();
+  }
+
+  function drawFiestaWingShoes(ctx, state, time = 0, options = {}) {
+    const visual = fiestaWingShoeVisualState(state, time, options);
+    if (!visual.visible) return;
+    const size = options.size || 66;
+    const unit = size / 66;
+    const footY = options.footY ?? size * 0.39;
+    ctx.save();
+    ctx.translate(0, footY);
+    ctx.scale(unit, unit);
+    ctx.shadowBlur = 0;
+    ctx.filter = 'saturate(1.18) brightness(1.06)';
+    ctx.globalAlpha *= visual.appearance;
+    const revealScale = 0.72 + visual.appearance * 0.28;
+    ctx.scale(revealScale, revealScale);
+    if (visual.powerDownFlash > 0.01) {
+      ctx.shadowColor = '#fff4ad';
+      ctx.shadowBlur = 10 * visual.powerDownFlash;
+    }
+    ctx.save(); ctx.translate(-10.8 - visual.jumpFlare * 1.8, 0); drawFiestaShoe(ctx, -1, visual); ctx.restore();
+    ctx.save(); ctx.translate(10.8 + visual.jumpFlare * 1.8, 0.8); drawFiestaShoe(ctx, 1, visual); ctx.restore();
+    ctx.restore();
   }
 
   function drawOrbitTaco(ctx, x, y, rotation, size, alpha) {
@@ -254,6 +470,8 @@
     normalize(state);
     const visible = state.superActive || state.transformTimer > 0 || state.powerDownTimer > 0 || state.superJumpFxTimer > 0;
     if (!visible) return;
+    const reducedMotion = Boolean(options.reducedMotion);
+    const shoeVisual = fiestaWingShoeVisualState(state, time, { reducedMotion, airborne: !player.grounded });
     const x = options.x ?? player.x - cameraX;
     const y = options.y ?? player.y;
     const w = options.w ?? player.w;
@@ -264,77 +482,125 @@
     ctx.save();
     if (state.superActive || state.transformTimer > 0) {
       const pulse = (Math.sin(time * 0.01) + 1) * 0.5;
-      const radius = 45 + pulse * 8;
+      const radius = state.transformTimer > 0 ? 42 + pulse * 6 : 35 + pulse * 3;
       const glow = ctx.createRadialGradient(centerX, centerY, 6, centerX, centerY, radius);
-      glow.addColorStop(0, 'rgba(255,240,145,.27)');
-      glow.addColorStop(0.42, 'rgba(101,231,255,.18)');
-      glow.addColorStop(0.72, 'rgba(255,104,180,.12)');
+      glow.addColorStop(0, state.transformTimer > 0 ? 'rgba(255,240,145,.28)' : 'rgba(255,240,145,.12)');
+      glow.addColorStop(0.42, state.transformTimer > 0 ? 'rgba(101,231,255,.2)' : 'rgba(101,231,255,.08)');
+      glow.addColorStop(0.72, state.transformTimer > 0 ? 'rgba(255,104,180,.13)' : 'rgba(255,104,180,.045)');
       glow.addColorStop(1, 'rgba(255,214,90,0)');
       ctx.fillStyle = glow;
       ctx.beginPath();
       ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
       ctx.fill();
       ctx.strokeStyle = pulse > 0.5 ? '#65e7ff' : '#ffd65a';
-      ctx.globalAlpha = 0.66;
-      ctx.lineWidth = 3;
+      ctx.globalAlpha = state.transformTimer > 0 ? 0.68 : 0.28;
+      ctx.lineWidth = state.transformTimer > 0 ? 3 : 1.8;
       ctx.beginPath();
-      ctx.ellipse(centerX, footY, 30 + pulse * 4, 7 + pulse, 0, 0, Math.PI * 2);
+      ctx.ellipse(centerX, footY, 25 + pulse * 3, 5.5 + pulse * 0.8, 0, 0, Math.PI * 2);
       ctx.stroke();
       ctx.globalAlpha = 1;
-      for (let index = 0; index < 5; index += 1) {
-        const angle = time * 0.0022 + index * Math.PI * 0.4;
+      const orbitCount = state.transformTimer > 0 ? (reducedMotion ? 2 : 3) : 0;
+      for (let index = 0; index < orbitCount; index += 1) {
+        const angle = time * 0.002 + index * Math.PI * (2 / orbitCount);
         drawOrbitTaco(
           ctx,
-          centerX + Math.cos(angle) * (31 + (index % 2) * 6),
-          centerY + Math.sin(angle) * 24,
+          centerX + Math.cos(angle) * (29 + (index % 2) * 5),
+          centerY + Math.sin(angle) * 21,
           angle + Math.PI * 0.5,
-          4.2,
-          0.72 + pulse * 0.2,
+          3.8,
+          0.58 + pulse * 0.18,
         );
+      }
+      if (state.superActive && state.transformTimer <= 0 && !reducedMotion && Math.sin(time * 0.0041) > 0.94) {
+        ctx.globalAlpha = 0.62;
+        ctx.fillStyle = '#fff4ad';
+        ctx.beginPath();
+        ctx.arc(centerX + Math.sin(time * 0.003) * 24, centerY - 15, 2.1, 0, Math.PI * 2);
+        ctx.fill();
       }
     }
     if (state.transformTimer > 0) {
-      const progress = 1 - state.transformTimer / definitions.superHero.transformationDuration;
-      ctx.globalAlpha = 1 - progress;
+      const progress = shoeVisual.transformProgress;
+      const ringAlpha = 1 - smoothstep(0.22, 1, progress);
+      ctx.globalAlpha = ringAlpha * (reducedMotion ? 0.58 : 1);
       ctx.strokeStyle = progress < 0.5 ? '#fff4ad' : '#65e7ff';
-      ctx.lineWidth = 7 - progress * 4;
+      ctx.lineWidth = 5.5 - progress * 3;
       ctx.beginPath();
-      ctx.arc(centerX, centerY, 18 + progress * 92, 0, Math.PI * 2);
+      ctx.arc(centerX, centerY, 18 + progress * (reducedMotion ? 48 : 70), 0, Math.PI * 2);
       ctx.stroke();
+      const funnelAlpha = Math.sin(smoothstep(0.05, 0.78, progress) * Math.PI);
+      if (funnelAlpha > 0.01) {
+        const funnelCount = reducedMotion ? 3 : 6;
+        ctx.globalAlpha = funnelAlpha * (reducedMotion ? 0.64 : 0.88);
+        ctx.lineCap = 'round';
+        for (let index = 0; index < funnelCount; index += 1) {
+          const spread = (index - (funnelCount - 1) * 0.5) * (reducedMotion ? 11 : 9);
+          const wave = Math.sin(time * 0.018 + index * 1.7) * 4;
+          ctx.strokeStyle = index % 3 === 0 ? '#ffd65a' : index % 2 ? '#ff68b4' : '#65e7ff';
+          ctx.lineWidth = index % 2 ? 2.4 : 3.2;
+          ctx.beginPath();
+          ctx.moveTo(centerX + spread, centerY - 24 + Math.abs(spread) * 0.22);
+          ctx.quadraticCurveTo(centerX + spread * 0.38 + wave, centerY + 8, centerX + spread * 0.18, footY - 2);
+          ctx.stroke();
+        }
+      }
+      const shoeBurst = Math.sin(smoothstep(0.56, 0.96, progress) * Math.PI);
+      if (shoeBurst > 0.01) {
+        const burstCount = reducedMotion ? 4 : 8;
+        ctx.globalAlpha = shoeBurst * (reducedMotion ? 0.6 : 0.92);
+        for (let index = 0; index < burstCount; index += 1) {
+          const angle = -Math.PI + index * (Math.PI * 2 / burstCount);
+          const distance = 10 + shoeBurst * (10 + (index % 2) * 7);
+          ctx.fillStyle = index % 3 === 0 ? '#fff4ad' : index % 2 ? '#ff68b4' : '#65e7ff';
+          ctx.save();
+          ctx.translate(centerX + Math.cos(angle) * distance, footY + Math.sin(angle) * distance * 0.42);
+          ctx.rotate(angle);
+          ctx.fillRect(-2.7, -1.5, 5.4, 3);
+          ctx.restore();
+        }
+      }
     }
     if (state.powerDownTimer > 0) {
-      const remaining = state.powerDownTimer / definitions.superHero.powerDownDuration;
+      const remaining = 1 - shoeVisual.powerDownProgress;
       ctx.globalAlpha = remaining;
-      for (let index = 0; index < 10; index += 1) {
-        const angle = index * Math.PI * 0.2 + 0.17;
-        const distance = (1 - remaining) * 66;
+      const fragmentCount = reducedMotion ? 5 : 9;
+      for (let index = 0; index < fragmentCount; index += 1) {
+        const angle = index * Math.PI * (2 / fragmentCount) + 0.17;
+        const distance = (1 - remaining) * (reducedMotion ? 34 : 52);
         ctx.fillStyle = index % 2 ? '#65e7ff' : index % 3 ? '#ffd65a' : '#ff68b4';
         ctx.save();
-        ctx.translate(centerX + Math.cos(angle) * distance, centerY + Math.sin(angle) * distance);
+        ctx.translate(centerX + Math.cos(angle) * distance, footY + Math.sin(angle) * distance * 0.58);
         ctx.rotate(angle + time * 0.01);
         ctx.fillRect(-4, -2, 8, 4);
         ctx.restore();
       }
+      ctx.strokeStyle = '#fff4ad';
+      ctx.lineWidth = 2 + remaining * 2;
+      ctx.globalAlpha = shoeVisual.powerDownFlash * 0.9;
+      ctx.beginPath();
+      ctx.ellipse(centerX, footY, 19 + (1 - remaining) * 18, 5 + (1 - remaining) * 5, 0, 0, Math.PI * 2);
+      ctx.stroke();
     }
     if (state.superJumpFxTimer > 0) {
       const remaining = state.superJumpFxTimer / definitions.superHero.superJumpFxDuration;
       const progress = 1 - remaining;
       ctx.globalAlpha = remaining;
       ctx.strokeStyle = '#65e7ff';
-      ctx.lineWidth = 5 * remaining + 1;
+      ctx.lineWidth = 4 * remaining + 1;
       ctx.beginPath();
-      ctx.ellipse(centerX, footY + progress * 10, 13 + progress * 34, 4 + progress * 8, 0, 0, Math.PI * 2);
+      ctx.ellipse(centerX, footY + progress * 8, 12 + progress * 26, 3 + progress * 6, 0, 0, Math.PI * 2);
       ctx.stroke();
       ctx.strokeStyle = '#ffd65a';
-      ctx.lineWidth = 2.5;
+      ctx.lineWidth = 2.2;
       ctx.beginPath();
-      ctx.ellipse(centerX, footY + 5, 8 + progress * 22, 2.5 + progress * 5, 0, 0, Math.PI * 2);
+      ctx.ellipse(centerX, footY + 4, 8 + progress * 18, 2.2 + progress * 4, 0, 0, Math.PI * 2);
       ctx.stroke();
-      for (let index = 0; index < 6; index += 1) {
-        const offset = (index - 2.5) * 9;
+      const jumpParticleCount = reducedMotion ? 3 : 5;
+      for (let index = 0; index < jumpParticleCount; index += 1) {
+        const offset = (index - (jumpParticleCount - 1) * 0.5) * 8;
         ctx.fillStyle = index % 2 ? '#ff68b4' : '#fff4ad';
         ctx.beginPath();
-        ctx.arc(centerX + offset, footY + progress * 18 + Math.abs(offset) * 0.08, 2.8 * remaining + 1, 0, Math.PI * 2);
+        ctx.arc(centerX + offset, footY + progress * 14 + Math.abs(offset) * 0.06, 2.1 * remaining + 0.8, 0, Math.PI * 2);
         ctx.fill();
       }
     }
@@ -384,14 +650,19 @@
       tacoPowerThreshold: definitions.tacoPower.threshold,
       airJumpAvailable: state.airJumpAvailable,
       transforming: state.transformTimer > 0,
+      transformationProgress: state.transformTimer > 0
+        ? 1 - state.transformTimer / definitions.superHero.transformationDuration
+        : 1,
+      transformationSuspended: Boolean(state.transformMotion),
       powerDown: state.powerDownTimer > 0,
+      fiestaWingShoes: state.superActive || state.powerDownTimer > 0,
       visualScale: definitions.superHero.visualScale,
       superJumpVelocity: window.JFT_HERO_CORE?.physics?.superJumpVelocity || definitions.superHero.superJumpVelocity,
     };
   }
 
   window.JFT_SHARED_ABILITIES = Object.freeze({
-    version: 'super-taco-hero-v1',
+    version: 'super-taco-hero-v2-fiesta-wing-shoes',
     definitions,
     createState,
     reset,
@@ -411,9 +682,11 @@
     suspendForTransformation,
     meterProgress,
     heroVisualTransform,
+    fiestaWingShoeVisualState,
     applyHeroVisualTransform,
     applyHeroStyle,
     drawHeroEffects,
+    drawFiestaWingShoes,
     drawTacoPowerHUD,
     snapshot,
     isSuper: (state) => Boolean(normalize(state).superActive),
