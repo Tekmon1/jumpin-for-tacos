@@ -37,6 +37,8 @@ test("renders canonical SEO and social metadata", async () => {
   assert.match(html, /property="og:image" content="https:\/\/jumpinfortacos\.com\/assets\/jumpin-for-tacos-social-v1\.jpg"/);
   assert.match(html, /type="application\/ld\+json"/);
   assert.match(html, /Start World 1-1/);
+  assert.match(html, /Build Taco Power/);
+  assert.doesNotMatch(html, /Build the Taco Meter/);
   assert.match(html, /Frequently asked questions/);
 });
 

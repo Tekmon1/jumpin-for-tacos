@@ -45,7 +45,7 @@ const worlds = [
 const controls = [
   { icon: "✥", title: "Move", detail: "Arrow keys, A/D, stick, or touch" },
   { icon: "↟", title: "Jump", detail: "Space, W, controller A, or touch" },
-  { icon: "🌮", title: "Collect", detail: "Build the Taco Meter" },
+  { icon: "🌮", title: "Collect", detail: "Build Taco Power" },
   { icon: "⚑", title: "Fiesta", detail: "Reach the finish" },
 ];
 

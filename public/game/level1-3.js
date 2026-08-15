@@ -734,7 +734,7 @@
     addItem(21820, 98, 'sombrero', { rareReward: true });
 
     // Core abilities carry into every later stage. Magnets sit on safe,
-    // readable detours while the Taco Meter fills naturally from play.
+    // readable detours while Taco Power fills naturally from play.
     [1780, 6760, 12180, 18480, 23980, 29380].forEach((x) => {
       const support = groundPlatformAt(x, 28);
       addItem(x, support ? support.y - 58 : 382, 'magnet', { coreAbility: true });
