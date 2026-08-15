@@ -1539,14 +1539,16 @@ test("ships the complete 35,000-unit Neon Neckties concert level", async () => {
   assert.match(runtime, /OLIVIA IS LOADING THE LAST TACOS!/);
   assert.match(runtime, /TACO ROADSTER: READY TO ROLL!/);
   assert.match(runtime, /SHOWTIME! OLIVIA IS TAKING THE SCENIC ROUTE!/);
-  assert.match(html, /level2-3\.js\?v=16/);
+  assert.match(html, /level2-3\.js\?v=17/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-3-v17-concert-entry-repair'/);
   assert.match(runtime, /generatorDefensePlans/);
   assert.match(runtime, /function ensureGeneratorDefensePlatform/);
   assert.match(runtime, /finitePlatformGeometry: world\.platforms\.every/);
   assert.doesNotMatch(runtime, /support = addPlatform\(\{/);
   assert.match(runtime, /defenseEncounter: true/);
   assert.match(runtime, /CLEAR \$\{remaining\}/);
-  assert.match(runtime, /preConcertDefenseRequired: true/);
+  assert.match(runtime, /preConcertDefenseRequired: false/);
+  assert.match(runtime, /concertRouteRequirement: 'none'/);
   assert.match(runtime, /const world23GroundEncounterPlan = Object\.freeze/);
   assert.match(runtime, /const world23UpperEncounterPlan = Object\.freeze/);
   assert.match(runtime, /function buildWorld23AuthoredRoutes/);
@@ -1590,7 +1592,39 @@ test("ships the complete 35,000-unit Neon Neckties concert level", async () => {
   assert.match(runtime, /animatedArm: false/);
   assert.match(runtime, /BOAT_LAUNCH_X_OFFSET/);
   assert.match(runtime, /full-energy-backstage-encore/);
-  assert.match(runtime, /CONCERT_GATE_TRIGGER_X/);
+  assert.match(runtime, /CONCERT_ENTRY_TRIGGER_X/);
+  assert.doesNotMatch(runtime, /CONCERT_GATE_BLOCK_X|CONCERT GATE:/);
+  const concertEntryFunction = runtime.match(
+    /function resolveConcertEntry\(playerX, score, entryStatus\) \{[\s\S]*?\n  \}/,
+  );
+  assert.ok(concertEntryFunction, "World 2-3 exposes a deterministic concert-entry transition");
+  const concertEntryContext = { CONCERT_ENTRY_TRIGGER_X: 34520 };
+  vm.runInNewContext(
+    `${concertEntryFunction[0]}; globalThis.resolveConcertEntryForTest = resolveConcertEntry;`,
+    concertEntryContext,
+    { filename: "level2-3-concert-entry.js" },
+  );
+  const mainRouteStatus = { reason: "main-route", routeReady: true, encoreReady: false };
+  const beforeBoundary = concertEntryContext.resolveConcertEntryForTest(34519, 50000, mainRouteStatus);
+  assert.equal(beforeBoundary.shouldStart, false);
+  for (const score of [0, 34540, 35000, 50000]) {
+    const decision = concertEntryContext.resolveConcertEntryForTest(34520, score, mainRouteStatus);
+    assert.equal(decision.shouldStart, true, `score ${score} must not block the main concert route`);
+    assert.equal(decision.entryReason, "main-route");
+    assert.equal(decision.scoreRequirement, 0);
+  }
+  const circuitDecision = concertEntryContext.resolveConcertEntryForTest(
+    34520,
+    1000,
+    { reason: "stage-circuits", routeReady: true, encoreReady: true },
+  );
+  const encoreDecision = concertEntryContext.resolveConcertEntryForTest(
+    34520,
+    1000,
+    { reason: "full-energy-backstage-encore", routeReady: true, encoreReady: true },
+  );
+  assert.equal(circuitDecision.shouldStart, true);
+  assert.equal(encoreDecision.shouldStart, true);
   assert.match(runtime, /premiumPinata: Boolean\(images\.neonPinata\)/);
   assert.match(runtime, /KABOOM! MAXIMUM NEON TACO RAINBOW!/);
   assert.match(runtime, /TACO RAINBOW JACKPOT!/);
