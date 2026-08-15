@@ -55,10 +55,11 @@
   ];
   const heroCore = window.JFT_HERO_CORE;
   const heroPhysics = heroCore.physics;
+  const visualScale = heroCore.visualScale;
   const sharedAbilities = window.JFT_SHARED_ABILITIES;
   const audio = window.JFT_AUDIO;
   const params = new URLSearchParams(location.search);
-  const qaMode = location.hostname === 'terminal.local';
+  const qaMode = ['terminal.local', '127.0.0.1', 'localhost'].includes(location.hostname);
   const previewStart = qaMode ? Number(params.get('startX') || 0) : 0;
   const previewAutoRun = qaMode && params.get('autoRun') === '1';
   const previewAutoJump = qaMode && params.get('autoJump') === '1';
@@ -158,7 +159,12 @@
     },
   };
   const config = CONFIGS[levelId];
-  const SOURCE_VERSION = 32;
+  const SOURCE_VERSION = 33;
+  const WORLD3_VEHICLE_VISUALS = Object.freeze({
+    balloon: Object.freeze({ cell: 4, width: 188, height: 250, launcherX: 24, launcherY: 176 }),
+    coaster: Object.freeze({ cell: 6, width: 310, height: 207, launcherX: 28, launcherY: 112 }),
+    zeppelin: Object.freeze({ cell: 8, width: 330, height: 220, launcherX: 46, launcherY: 154 }),
+  });
   const WORLD3_REMASTER_PLANS = Object.freeze({
     '3-1': Object.freeze({
       version: 'world3-1-combat-route-v2',
@@ -751,7 +757,6 @@
     enemies: 'assets/world3_enemies_bosses_v1.png',
     finale: 'assets/world3_checkpoints_fiesta_v1.png',
     ...(levelId === '3-1' ? {
-      balloonThrow: 'assets/world3_olivia_balloon_throw_v2.png',
       middleKickoff: 'assets/world3_1_midground_hd_v2.png',
       nearKickoff: 'assets/world3_1_near_hd_v2.png',
       envSunrise: 'assets/world3_1_env_sunrise_v1.webp',
@@ -939,7 +944,7 @@
       timer: 0,
       dropTimer: 0,
       clackBeat: -1,
-      throwPhase: 0,
+      launcherPulse: 0,
       throwCount: 0,
       catches: 0,
     },
@@ -2621,7 +2626,7 @@
         timer: 0,
         dropTimer: 0,
         clackBeat: -1,
-        throwPhase: 0,
+        launcherPulse: 0,
         throwCount: 0,
         catches: 0,
       },
@@ -3386,11 +3391,17 @@
     });
   }
 
+  function vehicleRearLauncherOrigin(vehicle = game.vehicle, type = config.vehicle.kind) {
+    const visual = WORLD3_VEHICLE_VISUALS[type];
+    return { x: vehicle.x + visual.launcherX, y: vehicle.y + visual.launcherY };
+  }
+
   function throwVehicleTaco() {
     const vehicle = game.vehicle;
     const zeppelin = config.vehicle.kind === 'zeppelin';
-    const x = vehicle.x + (config.vehicle.kind === 'balloon' ? 176 : config.vehicle.kind === 'coaster' ? 74 : 72);
-    const y = vehicle.y + (config.vehicle.kind === 'balloon' ? 154 : zeppelin ? 68 : 84);
+    const origin = vehicleRearLauncherOrigin(vehicle);
+    const x = origin.x;
+    const y = origin.y;
     const arcIndex = vehicle.throwCount % 3;
     addItem(x, y, 'taco', {
       dynamic: true,
@@ -3401,7 +3412,7 @@
     });
     registerBonusTacos(1);
     vehicle.throwCount += 1;
-    vehicle.throwPhase = zeppelin ? 0.28 : 0.72;
+    vehicle.launcherPulse = visualScale.tacoLauncher.pulseSeconds;
     playAudio('vehicle.cosmicTacoDrop', {
       vehicleType: config.vehicle.kind,
       position: audioPosition(x),
@@ -3413,7 +3424,7 @@
     const event = config.vehicle;
     const vehicle = game.vehicle;
     if (vehicle.state === 'done') return;
-    vehicle.throwPhase = Math.max(0, vehicle.throwPhase - dt);
+    vehicle.launcherPulse = Math.max(0, vehicle.launcherPulse - dt);
     if (vehicle.state === 'waiting' && player.x >= event.start - 520) {
       vehicle.state = 'enter';
       vehicle.x = player.x - 760;
@@ -4077,7 +4088,7 @@
     game.cosmicFinale.finishTime = game.levelTime;
     game.finishTime = game.levelTime;
     game.vehicle.state = 'done';
-    game.vehicle.throwPhase = 0;
+    game.vehicle.launcherPulse = 0;
     player.x = world.goal.x - 300;
     player.y = GROUND_Y - player.h;
     player.vx = 0;
@@ -5846,34 +5857,32 @@
     });
   }
 
-  function drawZeppelinThrowArm(screenX, screenY, throwPhase) {
-    if (throwPhase <= 0) return;
-    const progress = clamp(1 - throwPhase / 0.28, 0, 1);
-    const eased = smoothstep(progress);
-    const angle = lerp(1.98, 3.32, eased);
+  function drawVehicleRearLauncherPulse(screenX, screenY, launcherPulse) {
     ctx.save();
-    ctx.translate(screenX + 112, screenY + 70);
-    ctx.rotate(angle);
-    ctx.lineCap = 'round';
-    ctx.shadowColor = '#ff68b4';
-    ctx.shadowBlur = 5;
-    ctx.strokeStyle = '#d83983';
-    ctx.lineWidth = 12;
+    ctx.translate(screenX, screenY);
+    ctx.shadowColor = '#ffd65a';
+    ctx.shadowBlur = launcherPulse > 0 ? 14 : 5;
+    ctx.fillStyle = '#d83983';
+    ctx.strokeStyle = '#ffd65a';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(16, 0);
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-    ctx.strokeStyle = '#d8905b';
-    ctx.lineWidth = 8;
-    ctx.beginPath();
-    ctx.moveTo(15, 0);
-    ctx.lineTo(35, -1);
-    ctx.stroke();
-    ctx.fillStyle = '#e5a06a';
-    ctx.beginPath();
-    ctx.arc(38, -1, 5, 0, Math.PI * 2);
+    ctx.roundRect(-10, -5, 18, 10, 5);
     ctx.fill();
+    ctx.stroke();
+    if (launcherPulse > 0) {
+      const progress = clamp(1 - launcherPulse / visualScale.tacoLauncher.pulseSeconds, 0, 1);
+      ctx.globalCompositeOperation = 'screen';
+      ctx.globalAlpha = 1 - progress;
+      ctx.strokeStyle = '#65e7ff';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(-2, 0, 8 + progress * 18, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = '#ffd65a';
+      ctx.beginPath();
+      ctx.arc(-2, 0, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
   }
 
@@ -5882,30 +5891,11 @@
     if (vehicle.state === 'waiting' || vehicle.state === 'done') return;
     const x = vehicle.x - game.cameraX;
     const type = config.vehicle.kind;
-    const throwing = vehicle.state === 'drop' && Math.floor(vehicle.timer * 4) % 2 === 1;
-    let cell;
-    let width;
-    let height;
-    if (type === 'balloon') {
-      const throwProgress = vehicle.throwPhase > 0 ? 1 - vehicle.throwPhase / 0.72 : 0;
-      cell = vehicle.throwPhase > 0 ? clamp(Math.floor(throwProgress * 4), 0, 3) : 0;
-      width = 188;
-      height = 250;
-    } else if (type === 'coaster') {
-      cell = throwing ? 7 : 6;
-      width = 310;
-      height = 207;
-    } else {
-      // Keep the zeppelin itself locked to one frame. Its only delivery
-      // animation is Olivia's backward throwing arm, drawn independently.
-      cell = vehicle.state === 'exit' ? 10 : 8;
-      width = 330;
-      height = 220;
-    }
-    if (type === 'balloon') drawCell(images.balloonThrow, cell, 4, 1, x, vehicle.y, width, height);
-    else drawCell(images.olivia, cell, 4, 3, x, vehicle.y, width, height);
-    if (type === 'zeppelin' && vehicle.state === 'drop') {
-      drawZeppelinThrowArm(x, vehicle.y, vehicle.throwPhase);
+    const visual = WORLD3_VEHICLE_VISUALS[type];
+    drawCell(images.olivia, visual.cell, 4, 3, x, vehicle.y, visual.width, visual.height);
+    if (vehicle.state === 'drop') {
+      const origin = vehicleRearLauncherOrigin(vehicle, type);
+      drawVehicleRearLauncherPulse(origin.x - game.cameraX, origin.y, vehicle.launcherPulse);
     }
     if (vehicle.state === 'exit') {
       ctx.save();
@@ -6633,10 +6623,15 @@
     ctx.shadowColor = '#65e7ff';
     ctx.shadowBlur = 14;
     drawCell(images.olivia, 8, 4, 3, -165, -100, 330, 220);
-    ctx.restore();
-    if (finale.phase === 'golden-taco' && finale.timer < 0.42) {
-      drawZeppelinThrowArm(orbitX - 165, orbitY - 100, Math.max(0.01, 0.28 - finale.timer * 0.66));
+    if (finale.phase === 'golden-taco' && finale.timer < visualScale.tacoLauncher.pulseSeconds) {
+      const visual = WORLD3_VEHICLE_VISUALS.zeppelin;
+      drawVehicleRearLauncherPulse(
+        -165 + visual.launcherX,
+        -100 + visual.launcherY,
+        visualScale.tacoLauncher.pulseSeconds - finale.timer,
+      );
     }
+    ctx.restore();
   }
 
   function traceFivePointStar(centerX, centerY, outerRadius, innerRadius = outerRadius * 0.45) {
@@ -7170,14 +7165,15 @@
         .map(([key, track]) => `${key}:${track.volume.toFixed(2)}`),
       vehicle: game.vehicle.state,
       vehicleLead: Math.round(game.vehicle.x - player.x),
-      vehicleThrowFrame: game.vehicle.throwPhase > 0
-        ? clamp(Math.floor((1 - game.vehicle.throwPhase / (levelId === '3-3' ? 0.28 : 0.72)) * 4), 0, 3)
-        : 0,
+      vehicleLauncherPulse: Number(game.vehicle.launcherPulse.toFixed(3)),
+      armAnimationRemoved: true,
+      rearVehicleLauncher: true,
+      launcherPolicy: visualScale.tacoLauncher.policy,
       vehicleHorizontalWobble: levelId === '3-1' ? 0 : null,
       vehicleCatches: game.vehicle.catches,
       oliviaTacoVelocity: world.collectibles.find((item) => item.fromOlivia && !item.collected)?.vx ?? null,
       zeppelinBaseFrameStable: levelId === '3-3',
-      zeppelinThrowDirection: levelId === '3-3' ? 'backward' : null,
+      zeppelinLauncherDirection: levelId === '3-3' ? 'rearward' : null,
       zeppelinDeliveryPattern: levelId === '3-3' ? 'three-organized-ballistic-arcs' : null,
       bossHits: world.boss?.hits ?? null,
       bossDefeated: world.boss?.defeated ?? null,

@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w2-1-v26-scale-patrol-polish';
+  const SOURCE_VERSION = 'w2-1-v27-olivia-vehicle-scale';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -37,6 +37,15 @@
   const GROUND_Y = 460;
   const ENVIRONMENT_TRANSITION_WIDTH = 1600;
   const ENVIRONMENT_PANORAMA_CROP = 0.9;
+  const visualScale = heroCore.visualScale;
+  const CATAMARAN_VISUAL = Object.freeze({
+    activeWidth: 304,
+    escapeWidth: 330,
+    leftOffset: -43,
+    launcherXOffset: -14,
+    launcherYOffset: -122,
+  });
+  const SURF_OLIVIA_VISUAL = Object.freeze({ width: 210, height: 140, leftOffset: -3, baselineOffset: -33 });
   const sections = [
     { id: 'shore', name: 'Shimmering Shores', start: 0, end: 7000, music: 'shore', accent: '#ffe17f' },
     { id: 'canopy', name: 'Palm Canopy', start: 7000, end: 14500, music: 'canopy', accent: '#55e6a5' },
@@ -707,7 +716,7 @@
         phase: 'idle', oliviaX: 0, oliviaY: 330, oliviaTimer: 0,
         boardMounted: false, mountX: 25900, landingLaunched: false, clearedObstacles: 0,
       },
-      boat: { state: 'idle', x: 0, speed: 0, dropTimer: 0, catches: 0 },
+      boat: { state: 'idle', x: 0, speed: 0, dropTimer: 0, launcherPulse: 0, catches: 0 },
       cannonballs: [],
       tideY: 474, confetti: [], particles: [], impactTexts: [], fireworks: [],
       cameraShake: 0, hitStop: 0, celebrationTime: 0, partyBeat: -1,
@@ -1132,20 +1141,30 @@
     }
   }
 
+  function catamaranRearLauncherOrigin(boat = game.boat) {
+    return {
+      x: boat.x + CATAMARAN_VISUAL.launcherXOffset,
+      y: game.tideY + CATAMARAN_VISUAL.launcherYOffset,
+    };
+  }
+
   function spawnBoatTaco() {
-    addItem(game.boat.x + 28, 314, 'taco', {
+    const origin = catamaranRearLauncherOrigin();
+    addItem(origin.x, origin.y, 'taco', {
       bonusReward: true, dynamic: true, boatDrop: true,
       vx: -150 - seeded() * 90, vy: -270 - seeded() * 140, angle: 0,
     });
+    game.boat.launcherPulse = visualScale.tacoLauncher.pulseSeconds;
     playAudio('vehicle.tacoDrop', {
       vehicleType: 'catamaran',
-      position: audioPosition(game.boat.x),
+      position: audioPosition(origin.x),
     });
   }
 
   function updateBoat(dt) {
     const inZone = player.x > 16850 && player.x < 21550;
     const boat = game.boat;
+    boat.launcherPulse = Math.max(0, boat.launcherPulse - dt);
     if (inZone && boat.state === 'idle') {
       boat.state = 'entering'; boat.x = game.cameraX - 380; boat.speed = 520;
       showMessage('OLIVIA’S TACO CATAMARAN INCOMING!', 2.2);
@@ -2541,7 +2560,7 @@
     }
     const checkpointOliviaImage = images[checkpointOliviaKeys[checkpoint.look]];
     if (checkpointOliviaImage) {
-      const oliviaHeight = checkpoint.look === 'canopy' ? 112 : 120;
+      const oliviaHeight = visualScale.olivia.standingHeight;
       const oliviaWidth = oliviaHeight * (checkpointOliviaImage.width / checkpointOliviaImage.height);
       const cheerFlex = 1 + Math.sin(time * .0065 + checkpoint.x * .001) * .012;
       ctx.save(); ctx.translate(x + 140, GROUND_Y); ctx.scale(1, cheerFlex);
@@ -2583,21 +2602,36 @@
     ctx.restore();
   }
 
-  function drawCatamaranThrowArm(screenX, bob) {
-    if (!images.catamaranThrowArm || game.boat.state !== 'active') return;
-    const cellWidth = images.catamaranThrowArm.width / 4;
-    const cycleProgress = clamp((0.24 - game.boat.dropTimer) / 0.24, 0, 0.999);
-    const frame = Math.min(3, Math.floor(cycleProgress * 4));
-    const drawWidth = 142;
-    const drawHeight = drawWidth * (images.catamaranThrowArm.height / cellWidth);
+  function drawCatamaranRearLauncherPulse() {
+    if (game.boat.state !== 'active') return;
+    const origin = catamaranRearLauncherOrigin();
+    const x = origin.x - game.cameraX;
+    const pulse = game.boat.launcherPulse;
     ctx.save();
+    ctx.translate(x, origin.y);
     ctx.shadowColor = '#ffe17f';
-    ctx.shadowBlur = frame === 2 ? 13 : 5;
-    ctx.drawImage(
-      images.catamaranThrowArm,
-      frame * cellWidth, 0, cellWidth, images.catamaranThrowArm.height,
-      screenX + 137, game.tideY - 403 + bob, drawWidth, drawHeight,
-    );
+    ctx.shadowBlur = pulse > 0 ? 13 : 5;
+    ctx.fillStyle = '#d85a69';
+    ctx.strokeStyle = '#ffe17f';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(-10, -5, 17, 10, 5);
+    ctx.fill();
+    ctx.stroke();
+    if (pulse > 0) {
+      const progress = clamp(1 - pulse / visualScale.tacoLauncher.pulseSeconds, 0, 1);
+      ctx.globalCompositeOperation = 'screen';
+      ctx.globalAlpha = 1 - progress;
+      ctx.strokeStyle = '#63e7ff';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(-3, 0, 8 + progress * 18, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = '#ffe17f';
+      ctx.beginPath();
+      ctx.arc(-3, 0, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
   }
 
@@ -2611,7 +2645,7 @@
     if (images.catamaranBase) {
       const activeBase = images.catamaranLayerBase || images.catamaranBase;
       const boatImage = boat.state === 'escaping' ? images.catamaranEscape : boat.state === 'active' ? activeBase : images.catamaranBase;
-      const drawW = boat.state === 'escaping' ? 430 : 390;
+      const drawW = boat.state === 'escaping' ? CATAMARAN_VISUAL.escapeWidth : CATAMARAN_VISUAL.activeWidth;
       const drawH = drawW * (boatImage.height / boatImage.width);
       ctx.save();
       ctx.globalAlpha = .25;
@@ -2622,9 +2656,9 @@
       ctx.globalAlpha = 1;
       ctx.shadowColor = boat.state === 'escaping' ? '#ffe17f' : '#63e7ff';
       ctx.shadowBlur = boat.state === 'escaping' ? 20 : 12;
-      ctx.drawImage(boatImage, x - 55, game.tideY - drawH + 35 + bob, drawW, drawH);
+      ctx.drawImage(boatImage, x + CATAMARAN_VISUAL.leftOffset, game.tideY - drawH + 35 + bob, drawW, drawH);
       ctx.restore();
-      drawCatamaranThrowArm(x, bob);
+      drawCatamaranRearLauncherPulse();
       return;
     }
     ctx.save(); ctx.translate(x, y); ctx.scale(speedStretch, 1); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
@@ -2757,14 +2791,14 @@
     const surf = game.surf;
     if (surf.phase === 'olivia-intro') {
       const x = surf.oliviaX - game.cameraX;
-      const y = game.tideY - 223 + Math.sin(time * .008) * 4;
+      const y = game.tideY - SURF_OLIVIA_VISUAL.height + SURF_OLIVIA_VISUAL.baselineOffset + Math.sin(time * .008) * 4;
       ctx.save();
       ctx.shadowColor = '#63e7ff'; ctx.shadowBlur = 18;
-      drawSurfCell(0, x - 40, y, 285, 190);
+      drawSurfCell(0, x + SURF_OLIVIA_VISUAL.leftOffset, y, SURF_OLIVIA_VISUAL.width, SURF_OLIVIA_VISUAL.height);
       ctx.restore();
-      roundedPanel(x + 72, y - 4, 178, 35, 13, 'rgba(5,31,52,.92)', '#ffe17f', 3);
+      roundedPanel(x + 13, y - 4, 178, 35, 13, 'rgba(5,31,52,.92)', '#ffe17f', 3);
       ctx.fillStyle = '#fff8dc'; ctx.font = '900 12px Arial'; ctx.textAlign = 'center';
-      ctx.fillText('OLIVIA: WAVE DELIVERY!', x + 161, y + 18);
+      ctx.fillText('OLIVIA: WAVE DELIVERY!', x + 102, y + 18);
     } else if (surf.phase === 'ready' && visibleWorldX(surf.mountX, 190, 120)) {
       const x = surf.mountX - game.cameraX;
       const bob = Math.sin(time * .008) * 4;
@@ -2941,7 +2975,9 @@
     if (images.islandFiestaTruck) ctx.drawImage(images.islandFiestaTruck, x - 125, 246, 330, 220);
     if (images.islandFiestaOlivia) {
       const oliviaBounce = game.state === 'celebrating' || game.state === 'won' ? Math.abs(Math.sin(time * 0.009)) * 5 : 0;
-      ctx.drawImage(images.islandFiestaOlivia, x + 88, 264 - oliviaBounce, 130, 195);
+      const oliviaHeight = visualScale.olivia.standingHeight;
+      const oliviaWidth = oliviaHeight * (images.islandFiestaOlivia.width / images.islandFiestaOlivia.height);
+      ctx.drawImage(images.islandFiestaOlivia, x + 153 - oliviaWidth / 2, GROUND_Y - oliviaHeight - oliviaBounce, oliviaWidth, oliviaHeight);
     }
 
     for (let i = 0; i < 15; i += 1) {
@@ -3111,8 +3147,20 @@
         tacoCoins: world.collectibles.filter((item) => item.type === 'tacoCoin').length,
         boat: {
           state: game.boat.state, x: Math.round(game.boat.x), catches: game.boat.catches,
-          stableHull: Boolean(images.catamaranBase), armOnlyThrowFrame: Boolean(images.catamaranThrowArm),
+          stableHull: Boolean(images.catamaranBase), armAnimationRemoved: true,
+          rearVehicleLauncher: true, launcherPolicy: visualScale.tacoLauncher.policy,
+          launcherPulse: Number(game.boat.launcherPulse.toFixed(3)),
+          renderWidth: game.boat.state === 'escaping' ? CATAMARAN_VISUAL.escapeWidth : CATAMARAN_VISUAL.activeWidth,
           separateWakeAndWaterline: true,
+        },
+        oliviaScaleAudit: {
+          standardVersion: visualScale.version,
+          heroRenderHeight: visualScale.heroRenderHeight,
+          checkpointHeight: visualScale.olivia.standingHeight,
+          catamaranWidths: [CATAMARAN_VISUAL.activeWidth, CATAMARAN_VISUAL.escapeWidth],
+          surfIntroSize: [SURF_OLIVIA_VISUAL.width, SURF_OLIVIA_VISUAL.height],
+          fiestaHeight: visualScale.olivia.standingHeight,
+          gameplayGeometryPreserved: true,
         },
         wave: {
           active: game.wave.active, done: game.wave.done, crashing: game.wave.crashing,
@@ -3213,7 +3261,6 @@
     catamaranBase: 'assets/world2_1_catamaran_base_v1.webp',
     catamaranLayerBase: 'assets/world2_1_catamaran_arm_layer_base_v1.webp',
     catamaranEscape: 'assets/world2_1_catamaran_escape_v1.webp',
-    catamaranThrowArm: 'assets/world2_1_catamaran_throw_arm_v1.webp',
     enemyCast: 'assets/world2_1_enemy_cast_v1.png',
   };
 
