@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w2-2-v8-scale-trekker-polish';
+  const SOURCE_VERSION = 'w2-2-v9-super-taco-hero';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -132,7 +132,7 @@
     message: '', messageTimer: 0, streak: 0, streakTimer: 0, bestStreak: 0,
     splatCombo: 0, splatTimer: 0, bestSplat: 0,
     abilities: sharedAbilities.createState(),
-    activePower: null, limeShield: false, pepperTimer: 0, magnetTimer: 0, coconutCharges: 0,
+    activePower: null, limeShield: false, pepperTimer: 0, coconutLaunchTimer: 0,
     wave: { active: false, done: false, x: 0, speed: 0, crashing: false, crashTimer: 0 },
     surf: {
       phase: 'idle', oliviaX: 0, oliviaY: 330, oliviaTimer: 0,
@@ -164,6 +164,7 @@
   const previewAutoRun = previewHost && params.get('autoRun') === '1';
   const previewAutoJump = previewHost && params.get('autoJump') === '1';
   const previewFastCelebrate = previewHost && params.get('fastCelebrate') === '1';
+  const previewSuper = previewHost && params.get('super') === '1';
   const previewRespawn = previewHost && params.get('respawn') === '1';
   const previewRespawnCheckpoint = previewHost ? Number(params.get('respawnCheckpoint') || -1) : -1;
 
@@ -988,7 +989,7 @@
       message: '', messageTimer: 0, streak: 0, streakTimer: 0, bestStreak: 0,
       splatCombo: 0, splatTimer: 0, bestSplat: 0,
       abilities: sharedAbilities.createState(),
-      activePower: null, limeShield: false, pepperTimer: 0, magnetTimer: 0, coconutCharges: 0,
+      activePower: null, limeShield: false, pepperTimer: 0, coconutLaunchTimer: 0,
       wave: { active: false, done: false, x: 0, speed: 0, crashing: false, crashTimer: 0 },
       surf: {
         phase: 'idle', oliviaX: 0, oliviaY: 330, oliviaTimer: 0,
@@ -1006,6 +1007,10 @@
       musicTransitionCount: 0, musicOverlapRecoveries: 0, maxMusicPlaying: 0,
     });
     Object.assign(player, { x: 140, y: 380, vx: 0, vy: 0, dir: 1, grounded: false, platform: null, anim: 0, invulnerable: 0, coyote: 0, jumpBuffer: 0, rotation: 0, scale: 1 });
+    if (previewSuper) {
+      sharedAbilities.activateSuper(game.abilities, 'qa-preview', { silent: true });
+      game.abilities.transformTimer = 0;
+    }
     world.checkpoints.forEach((checkpoint) => { checkpoint.activated = false; });
     stopMusic();
     ui.startOverlay.classList.remove('hidden');
@@ -1115,6 +1120,7 @@
   }
 
   function queueJump() {
+    if (keys.jump) return;
     player.jumpBuffer = heroPhysics.jumpBufferTime;
     keys.jump = true;
   }
@@ -1261,6 +1267,7 @@
     if (game.state !== 'playing' || game.respawn.active) return;
     const sourceX = player.x; const sourceY = Math.min(player.y, canvas.height - player.h - 8); const point = findRespawn(sourceX);
     game.state = 'respawning';
+    sharedAbilities.clearForRespawn(game.abilities);
     keys.left = false; keys.right = false; keys.jump = false;
     heroCore.beginRespawn(game.respawn, { fromX: sourceX, fromY: sourceY, ...point });
     game.respawnCount += 1;
@@ -1303,9 +1310,18 @@
       playAudio('ability.limeBreak', { position: audioPosition(player.x + player.w / 2) });
       return;
     }
+    const knockbackX = fromX < player.x ? 270 : -270;
+    if (sharedAbilities.absorbDamage(game.abilities, { position: audioPosition(player.x + player.w / 2) })) {
+      player.invulnerable = sharedAbilities.definitions.superHero.damageInvulnerabilityDuration;
+      player.vx = knockbackX; player.vy = -270;
+      game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 5 : 10);
+      showMessage('SUPER POWER DOWN! NORMAL TACO HERO!', 1.45);
+      spawnBurst(player.x - game.cameraX + player.w / 2, player.y + player.h / 2, '#ff68b4', 42);
+      return;
+    }
     game.hearts -= 1;
     player.invulnerable = 1.3;
-    player.vx = fromX < player.x ? 270 : -270;
+    player.vx = knockbackX;
     player.vy = -270;
     game.cameraShake = 10;
     playAudio('hero.hurt', { position: audioPosition(player.x + player.w / 2) });
@@ -1318,17 +1334,27 @@
 
   function activatePower(type) {
     game.activePower = type;
-    game.limeShield = false; game.pepperTimer = 0; game.magnetTimer = 0; game.coconutCharges = 0;
+    game.limeShield = false; game.pepperTimer = 0; game.coconutLaunchTimer = 0; sharedAbilities.removeMagnet(game.abilities);
     if (type === 'lime') { game.limeShield = true; showMessage('LIME SHIELD! ONE HIT GETS ZESTED!', 2); }
     if (type === 'pepper') { game.pepperTimer = 8; showMessage('PEPPER DASH! SPICY SPEED ONLINE!', 2); }
-    if (type === 'shell') { game.magnetTimer = 10; sharedAbilities.activateMagnet(game.abilities, 10); showMessage('GOLDEN SHELL MAGNET! TACO TIDE INCOMING!', 2); }
-    if (type === 'coconut') { game.coconutCharges = 1; showMessage('COCONUT BOUNCE! ONE MID-AIR SUPER JUMP!', 2); }
+    if (type === 'shell') { sharedAbilities.activateMagnet(game.abilities, 10); showMessage('GOLDEN SHELL MAGNET! TACO TIDE INCOMING!', 2); }
+    if (type === 'coconut') {
+      game.coconutLaunchTimer = 1.1;
+      player.vy = -820; player.grounded = false; player.platform = null; player.coyote = 0; player.jumpBuffer = 0;
+      showMessage('COCONUT LAUNCH! AUTOMATIC SKY BOUNCE!', 1.6);
+    }
     spawnBurst(player.x - game.cameraX + player.w / 2, player.y + player.h / 2, '#fff08a', 60);
     const eventId = {
       lime: 'ability.limeStart', pepper: 'ability.pepperStart',
-      shell: 'ability.magnetStart', coconut: 'ability.coconutStart',
+      shell: 'ability.magnetStart', coconut: 'ability.coconutBounce',
     }[type];
     if (eventId) playAudio(eventId, { position: audioPosition(player.x + player.w / 2) });
+  }
+
+  function announceSuper(sourceX = player.x) {
+    showMessage('SUPER TACO HERO!', 2.1);
+    spawnConfetti(sourceX - game.cameraX + player.w / 2, player.y + player.h / 2, game.reducedShake ? 46 : 104);
+    game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 4 : 10);
   }
 
   function collectItem(item) {
@@ -1344,13 +1370,8 @@
     const points = { taco: 10, golden: 350, rainbow: 600, lime: 120, pepper: 120, shell: 120, coconut: 120 }[item.type] || 10;
     game.score += points * multiplier;
     if (['taco', 'golden', 'rainbow'].includes(item.type)) {
-      const frenzyStarted = sharedAbilities.collectTaco(game.abilities, item.type !== 'taco');
-      if (frenzyStarted) {
-        showMessage('CALDERA TACO FRENZY! CRUNCH THROUGH EVERYTHING!', 2.2);
-        spawnConfetti(canvas.width / 2, 205, game.reducedShake ? 45 : 110);
-        game.cameraShake = Math.max(game.cameraShake, 10);
-        playAudio('ability.frenzyStart');
-      }
+      const superStarted = sharedAbilities.collectTaco(game.abilities, item.type, { position: audioPosition(item.x + item.w / 2) });
+      if (superStarted) announceSuper(item.x);
     }
     if (item.type === 'golden') {
       if (!item.bonusReward) game.goldenCollected += 1;
@@ -1386,11 +1407,8 @@
       game.bestSplat = Math.max(game.bestSplat, game.splatCombo);
     }
     game.score += 180 * Math.max(1, game.splatCombo);
-    const frenzyStarted = sharedAbilities.splatEnemy(game.abilities);
-    if (frenzyStarted) {
-      showMessage('CALDERA TACO FRENZY! MAXIMUM CRUNCH!', 2.2);
-      playAudio('ability.frenzyStart');
-    }
+    const superStarted = sharedAbilities.splatEnemy(game.abilities, { position: audioPosition(enemy.x + enemy.w / 2) });
+    if (superStarted) announceSuper(enemy.x);
     if (stomped) player.vy = -heroPhysics.enemyBounceVelocity;
     game.hitStop = 0.045;
     game.cameraShake = Math.max(game.cameraShake, 7 + game.splatCombo);
@@ -1851,7 +1869,10 @@
   }
 
   function updatePlayer(dt) {
+    const scriptedSurf = game.surf.phase === 'riding' || game.surf.phase === 'landing';
+    if (!scriptedSurf && sharedAbilities.suspendForTransformation(game.abilities, player)) return;
     const wasGrounded = player.grounded;
+    if (player.grounded) sharedAbilities.land(game.abilities);
     if (player.grounded && player.platform) {
       player.x += player.platform.dx || 0;
       player.y += player.platform.dy || 0;
@@ -1886,14 +1907,10 @@
       player.vy = -heroPhysics.jumpVelocity;
       player.grounded = false; player.coyote = 0; player.jumpBuffer = 0;
       playAudio('hero.jump', { position: audioPosition(player.x + player.w / 2) });
-    } else if (player.jumpBuffer > 0 && !player.grounded && game.coconutCharges > 0) {
-      game.coconutCharges -= 1;
-      if (game.coconutCharges <= 0) game.activePower = null;
-      player.vy = -820;
-      player.jumpBuffer = 0;
-      showMessage('COCONUT SUPER BOUNCE!', 1);
-      spawnBurst(player.x - game.cameraX + player.w / 2, player.y + player.h, '#c98b54', 26);
-      playAudio('ability.coconutBounce', { position: audioPosition(player.x + player.w / 2) });
+    } else if (player.jumpBuffer > 0 && !player.grounded) {
+      const superJumpVelocity = sharedAbilities.trySuperJump(game.abilities, { suspended: scriptedSurf, position: audioPosition(player.x + player.w / 2) });
+      if (superJumpVelocity) { player.vy = -superJumpVelocity; player.platform = null; player.jumpBuffer = 0; game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 2 : 5); }
+      else if (scriptedSurf) player.jumpBuffer = 0;
     }
 
     const previousY = player.y;
@@ -1905,6 +1922,7 @@
     const landingVelocity = player.vy;
     player.x = clamp(player.x, 0, WORLD_WIDTH - player.w);
     resolvePlatforms(previousY);
+    if (player.grounded) sharedAbilities.land(game.abilities);
     if (!wasGrounded && player.grounded && landingVelocity > 90) {
       playAudio(landingVelocity >= 830 ? 'hero.landHard' : 'hero.landSoft', {
         position: audioPosition(player.x + player.w / 2),
@@ -1998,13 +2016,14 @@
     if (game.streakTimer <= 0) game.streak = 0;
     if (game.splatTimer <= 0) game.splatCombo = 0;
     const frenzyWasActive = sharedAbilities.isFrenzy(game.abilities);
-    const magnetWasActive = game.magnetTimer > 0 || sharedAbilities.hasMagnet(game.abilities);
+    const magnetWasActive = sharedAbilities.hasMagnet(game.abilities);
     const pepperWasActive = game.pepperTimer > 0;
     sharedAbilities.update(game.abilities, dt);
     if (game.pepperTimer > 0) { game.pepperTimer = Math.max(0, game.pepperTimer - dt); if (!game.pepperTimer) game.activePower = null; }
-    if (game.magnetTimer > 0) { game.magnetTimer = Math.max(0, game.magnetTimer - dt); if (!game.magnetTimer) game.activePower = null; }
+    if (game.activePower === 'shell' && !sharedAbilities.hasMagnet(game.abilities)) game.activePower = null;
+    if (game.coconutLaunchTimer > 0) { game.coconutLaunchTimer = Math.max(0, game.coconutLaunchTimer - dt); if (!game.coconutLaunchTimer && game.activePower === 'coconut') game.activePower = null; }
     if (frenzyWasActive && !sharedAbilities.isFrenzy(game.abilities)) playAudio('ability.frenzyEnd');
-    if (magnetWasActive && !(game.magnetTimer > 0 || sharedAbilities.hasMagnet(game.abilities))) playAudio('ability.magnetEnd');
+    if (magnetWasActive && !sharedAbilities.hasMagnet(game.abilities)) playAudio('ability.magnetEnd');
     if (pepperWasActive && game.pepperTimer <= 0) playAudio('ability.pepperEnd');
     if (game.state === 'playing' || game.state === 'respawning') {
       game.levelTime += dt;
@@ -2024,7 +2043,7 @@
 
       for (const item of world.collectibles) {
         if (item.collected) continue;
-        if ((game.magnetTimer > 0 || sharedAbilities.hasMagnet(game.abilities)) && !['lime', 'pepper', 'shell', 'coconut'].includes(item.type)) {
+        if (sharedAbilities.hasMagnet(game.abilities) && !['lime', 'pepper', 'shell', 'coconut'].includes(item.type)) {
           const dx = player.x + player.w / 2 - (item.x + item.w / 2);
           const dy = player.y + player.h / 2 - (item.y + item.h / 2);
           const distance = Math.hypot(dx, dy);
@@ -3886,8 +3905,9 @@
     if (player.invulnerable > 0 && Math.floor(player.invulnerable * 12) % 2 === 0) ctx.globalAlpha = 0.45;
     const x = player.x - game.cameraX + player.w / 2;
     const y = player.y + player.h / 2;
+    sharedAbilities.drawHeroEffects(ctx, game.abilities, player, game.cameraX, time);
     ctx.save(); ctx.globalAlpha = player.grounded ? 0.24 : 0.12; ctx.fillStyle = '#07243a'; ctx.beginPath(); ctx.ellipse(x, player.y + player.h + 7, player.grounded ? 26 : 18, player.grounded ? 6 : 4, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-    ctx.save(); ctx.translate(x, y); ctx.rotate(player.rotation || 0); ctx.scale(player.dir * (player.scale || 1), player.scale || 1);
+    ctx.save(); ctx.translate(x, y); ctx.rotate(player.rotation || 0); if (game.surf.boardMounted) ctx.scale(player.dir * (player.scale || 1), player.scale || 1); else sharedAbilities.applyHeroVisualTransform(ctx, game.abilities, { direction: player.dir, baseScale: player.scale || 1, anchorY: 33, time });
     if (game.surf.boardMounted) {
       const surfFrame = game.surf.phase === 'landing' ? 3 : !player.grounded ? 2 : 1;
       ctx.save();
@@ -3903,6 +3923,7 @@
       ctx.strokeStyle = auraColor; ctx.lineWidth = 3; ctx.globalAlpha *= 0.7;
       ctx.beginPath(); ctx.ellipse(0, 27, 28 + Math.sin(time * 0.012) * 3, 7, 0, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
     }
+    sharedAbilities.applyHeroStyle(ctx, game.abilities);
     const sourceWidth = images.hero.width / 8;
     ctx.drawImage(images.hero, frame * sourceWidth, 0, sourceWidth, images.hero.height, -33, -33, 66, 66);
     ctx.restore(); ctx.globalAlpha = 1;
@@ -3952,11 +3973,7 @@
     ctx.font = '18px Arial'; ctx.fillText(`Score: ${game.score.toLocaleString()}`, 26, 70); ctx.fillText(`Tacos: ${game.collected}/${game.totalCollectibles}`, 26, 96);
     ctx.fillStyle = game.streak ? '#ffe17f' : 'rgba(255,255,255,.65)'; ctx.fillText(`Streak: ${game.streak}`, 208, 70);
     ctx.fillStyle = '#ffd85e'; ctx.font = '900 13px Arial'; ctx.fillText(`Golden ${game.goldenCollected}/${game.totalGolden}  •  Rainbows ${game.rainbowCollected}/${game.totalRainbow}`, 26, 120);
-    const meterW = 214; ctx.fillStyle = 'rgba(255,255,255,.16)'; ctx.beginPath(); ctx.roundRect(120, 127, meterW, 8, 4); ctx.fill();
-    const meterValue = sharedAbilities.isFrenzy(game.abilities) ? 1 : game.abilities.tacoMeter / sharedAbilities.definitions.tacoMeter.threshold;
-    const meterGradient = ctx.createLinearGradient(120, 0, 334, 0); meterGradient.addColorStop(0, '#ffe17f'); meterGradient.addColorStop(0.55, '#ff718f'); meterGradient.addColorStop(1, '#63e7ff');
-    ctx.fillStyle = meterGradient; ctx.beginPath(); ctx.roundRect(120, 127, Math.max(4, meterW * meterValue), 8, 4); ctx.fill();
-    ctx.fillStyle = sharedAbilities.isFrenzy(game.abilities) ? '#63e7ff' : '#fff8dc'; ctx.font = '900 9px Arial'; ctx.fillText(sharedAbilities.isFrenzy(game.abilities) ? `FRENZY ${Math.ceil(game.abilities.frenzyTimer)}s` : 'TACO METER', 26, 135);
+    sharedAbilities.drawTacoPowerHUD(ctx, game.abilities, { x: 120, y: 127, width: 214, height: 8, labelX: 26, labelY: 135, textColor: '#fff8dc', font: '900 9px Arial' });
     drawProgress();
     for (let i = 0; i < 3; i += 1) {
       const x = 920 - i * 33;
@@ -3966,7 +3983,7 @@
     ctx.textAlign = 'right'; ctx.font = '900 14px Arial';
     if (sharedAbilities.isFrenzy(game.abilities)) { ctx.fillStyle = '#63e7ff'; ctx.fillText(`TACO FRENZY ${Math.ceil(game.abilities.frenzyTimer)}s`, 936, 56); }
     if (game.activePower) {
-      const labels = { lime: game.limeShield ? '🍋 LIME SHIELD' : '', pepper: `🌶 PEPPER DASH ${Math.ceil(game.pepperTimer)}s`, shell: `🐚 SHELL MAGNET ${Math.ceil(game.magnetTimer)}s`, coconut: `🥥 COCONUT BOUNCE ×${game.coconutCharges}` };
+      const labels = { lime: game.limeShield ? '🍋 LIME SHIELD' : '', pepper: `🌶 PEPPER DASH ${Math.ceil(game.pepperTimer)}s`, shell: `🐚 SHELL MAGNET ${Math.ceil(game.abilities.magnetTimer)}s`, coconut: `🥥 COCONUT LAUNCH ${game.coconutLaunchTimer.toFixed(1)}s` };
       ctx.fillStyle = { lime: '#7cff68', pepper: '#ff8b70', shell: '#ffe17f', coconut: '#f0bd7b' }[game.activePower]; ctx.fillText(labels[game.activePower], 936, 76);
     }
     if (game.splatCombo > 1) { ctx.fillStyle = '#ff718f'; ctx.fillText(`CALDERA SPLAT ×${game.splatCombo}`, 936, 100); }
@@ -4015,6 +4032,7 @@
       canvas.dataset.qaState = JSON.stringify({
         sourceVersion: SOURCE_VERSION,
         state: game.state, player: { x: Math.round(player.x), y: Math.round(player.y), vx: Math.round(player.vx), vy: Math.round(player.vy), grounded: player.grounded },
+        superHero: { ...sharedAbilities.snapshot(game.abilities), collisionWidth: player.w, collisionHeight: player.h },
         heroPhysics, respawn: {
           active: game.respawn.active,
           phase: game.respawn.active ? (game.respawn.spawnPlaced ? 'drop' : game.respawn.timer < .38 ? 'vanish' : 'beam') : 'inactive',

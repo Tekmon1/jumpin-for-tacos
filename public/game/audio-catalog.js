@@ -10,6 +10,7 @@
     'ui.start',
     'ui.confirm',
     'hero.jump',
+    'hero.superJump',
     'hero.landSoft',
     'hero.landHard',
     'hero.hurt',
@@ -25,6 +26,8 @@
     'combat.comboMilestone',
     'ability.magnetStart',
     'ability.frenzyStart',
+    'ability.superTransform',
+    'ability.superPowerDown',
     'checkpoint.activate',
     'pinata.hit',
     'pinata.break',
@@ -511,6 +514,9 @@
   });
 
   Object.assign(events, {
+    'ability.superTransform': event(globalAsset('ability-frenzy-start-01.wav'), { priority: 5, duckDb: 7, duckReleaseSeconds: 0.7, cooldownMs: 280 }),
+    'hero.superJump': event(globalAsset('ability-coconut-bounce-01.wav'), { priority: 5, duckDb: 4.5, cooldownMs: 90, maxPolyphony: 2, pitchVariationCents: 18 }),
+    'ability.superPowerDown': event(globalAsset('ability-frenzy-end-01.wav'), { priority: 5, duckDb: 5.5, duckReleaseSeconds: 0.52, cooldownMs: 260 }),
     'ability.limeStart': event(globalAsset('ability-lime-start-01.wav'), { priority: 4, duckDb: 5 }),
     'ability.limeBreak': event(globalAsset('ability-lime-break-01.wav'), { priority: 5, duckDb: 5.5 }),
     'ability.pepperStart': event(globalAsset('ability-pepper-start-01.wav'), { priority: 4, duckDb: 5 }),
@@ -686,8 +692,8 @@
   events['ambience.cosmicCarnival'] = event(worldThreeAsset('ambience-cosmic-carnival-01.wav'), { bus: 'ambience', priority: 1, gain: 0.48, loop: true, cooldownMs: 0, maxPolyphony: 1, fallback: null });
 
   window.JFT_AUDIO_CATALOG = Object.freeze({
-    version: 'phase3-catalog-v2-external-source-amendment',
-    assetCacheVersion: 'sfx-phase3-v2-external-source-amendment',
+    version: 'phase3-catalog-v3-super-taco-hero',
+    assetCacheVersion: 'sfx-phase3-v3-super-taco-hero',
     requiredPhase1Events,
     mix: Object.freeze({
       musicCalibration: 0.75,
