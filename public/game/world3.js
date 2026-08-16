@@ -160,7 +160,7 @@
     },
   };
   const config = CONFIGS[levelId];
-  const SOURCE_VERSION = 36;
+  const SOURCE_VERSION = 37;
   const WORLD3_VEHICLE_VISUALS = Object.freeze({
     balloon: Object.freeze({ cell: 4, width: 188, height: 250, launcherX: 24, launcherY: 176 }),
     coaster: Object.freeze({ cell: 6, width: 310, height: 207, launcherX: 28, launcherY: 112 }),
@@ -6110,7 +6110,7 @@
     if (heroCore.hidePlayerDuringRespawn(game.respawn)) return;
     const x = player.x - game.cameraX;
     const airborne = !player.grounded;
-    const running = Math.abs(player.vx) > 35;
+    const running = !airborne && Math.abs(player.vx) > 35;
     const frame = airborne ? (player.vy < 0 ? 4 : 5) : running ? 1 + (Math.floor(player.anim) % 3) : 0;
     sharedAbilities.drawHeroEffects(ctx, game.abilities, player, game.cameraX, game.levelTime * 1000, { reducedMotion: game.reducedShake });
     ctx.save();
@@ -6127,7 +6127,7 @@
     sharedAbilities.applyHeroStyle(ctx, game.abilities);
     if (player.invulnerable > 0 && Math.floor(game.levelTime * 15) % 2) ctx.globalAlpha = 0.5;
     if (images.hero.complete && images.hero.naturalWidth) {
-      sharedAbilities.drawHeroSpriteFrame(ctx, game.abilities, images.hero, frame, { x: -33, y: -33, width: 66, height: 66 });
+      sharedAbilities.drawHeroSpriteFrame(ctx, game.abilities, images.hero, frame, { x: -33, y: -33, width: 66, height: 66, running, animation: player.anim });
     } else {
       ctx.fillStyle = '#ffd65a';
       ctx.beginPath();

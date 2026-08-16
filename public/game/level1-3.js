@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-3-v26-complete-super-sprite';
+  const SOURCE_VERSION = 'w1-3-v27-alternating-super-run';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -3238,6 +3238,7 @@
       : player.invulnerable > 0 ? 6
       : !player.grounded ? (player.vy < 0 ? 4 : 5)
       : Math.abs(player.vx) > 24 ? 1 + Math.floor(player.anim) % 3 : 0;
+    const running = frame >= 1 && frame <= 3;
     if (player.invulnerable > 0 && Math.floor(player.invulnerable * 12) % 2 === 0) ctx.globalAlpha = 0.45;
     const x = player.x - game.cameraX + player.w / 2;
     const y = player.y + player.h / 2;
@@ -3258,7 +3259,7 @@
       ctx.beginPath(); ctx.ellipse(0, 27, 25 + Math.sin(time * 0.014) * 2, 6, 0, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
     }
     sharedAbilities.applyHeroStyle(ctx, game.abilities);
-    sharedAbilities.drawHeroSpriteFrame(ctx, game.abilities, images.hero, frame, { x: -33, y: -33, width: 66, height: 66 });
+    sharedAbilities.drawHeroSpriteFrame(ctx, game.abilities, images.hero, frame, { x: -33, y: -33, width: 66, height: 66, running, animation: player.anim });
     ctx.restore(); ctx.globalAlpha = 1;
   }
 

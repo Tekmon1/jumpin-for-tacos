@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const SOURCE_VERSION = 'w2-3-v20-complete-super-sprite';
+  const SOURCE_VERSION = 'w2-3-v21-alternating-super-run';
 
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
@@ -3867,6 +3867,7 @@
         : player.invulnerable > 0 ? 6
         : !player.grounded ? (player.vy < 0 ? 4 : 5)
         : Math.abs(player.vx) > 24 ? 1 + Math.floor(player.anim) % 3 : 0;
+      const running = frame >= 1 && frame <= 3 && !concertMode;
       const visualSize = concertMode ? 70 : 66;
       ctx.save();
       ctx.globalAlpha = player.grounded ? .22 : .1;
@@ -3897,6 +3898,8 @@
         y: -visualSize / 2,
         width: visualSize,
         height: visualSize,
+        running,
+        animation: player.anim,
       });
       ctx.restore();
       return;

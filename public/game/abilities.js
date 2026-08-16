@@ -18,6 +18,9 @@
     powerDownArtworkSwapProgress: 0.58,
     spriteSheet: '/game/assets/taco_hero_super_sheet.png?v=1',
     frameCount: 8,
+    runSpriteSheet: '/game/assets/taco_hero_super_run_sheet.png?v=1',
+    runFrameCount: 4,
+    runPhaseScale: 4 / 3,
   });
   const definitions = Object.freeze({
     tacoPower,
@@ -270,6 +273,7 @@
   }
 
   let superHeroSpriteSheet = null;
+  let superHeroRunSpriteSheet = null;
 
   function getSuperHeroSpriteSheet() {
     if (!superHeroSpriteSheet && typeof Image !== 'undefined') {
@@ -278,6 +282,21 @@
       superHeroSpriteSheet.src = definitions.superHero.spriteSheet;
     }
     return superHeroSpriteSheet;
+  }
+
+  function getSuperHeroRunSpriteSheet() {
+    if (!superHeroRunSpriteSheet && typeof Image !== 'undefined') {
+      superHeroRunSpriteSheet = new Image();
+      superHeroRunSpriteSheet.decoding = 'async';
+      superHeroRunSpriteSheet.src = definitions.superHero.runSpriteSheet;
+    }
+    return superHeroRunSpriteSheet;
+  }
+
+  function superLocomotionFrame(animation = 0) {
+    const config = definitions.superHero;
+    const phase = Math.floor(Math.max(0, animation) * config.runPhaseScale);
+    return phase % config.runFrameCount;
   }
 
   function heroArtworkVisualState(state) {
@@ -323,10 +342,17 @@
     normalize(state);
     const visual = heroArtworkVisualState(state);
     const superSprite = options.superSprite || getSuperHeroSpriteSheet();
-    const requestedSprite = visual.artwork === 'super' ? superSprite : normalSprite;
+    const superRunSprite = options.superRunSprite || getSuperHeroRunSpriteSheet();
+    const useSuperRun = visual.artwork === 'super' && options.running && isDrawableSprite(superRunSprite);
+    const requestedSprite = useSuperRun
+      ? superRunSprite
+      : visual.artwork === 'super' ? superSprite : normalSprite;
     const sprite = isDrawableSprite(requestedSprite) ? requestedSprite : normalSprite;
     if (!isDrawableSprite(sprite)) return visual;
-    const frameCount = options.frameCount || definitions.superHero.frameCount;
+    const frameCount = useSuperRun
+      ? definitions.superHero.runFrameCount
+      : options.frameCount || definitions.superHero.frameCount;
+    const requestedFrame = useSuperRun ? superLocomotionFrame(options.animation) : frame;
     const sourceWidth = (sprite.naturalWidth || sprite.width) / frameCount;
     const sourceHeight = sprite.naturalHeight || sprite.height;
     const width = options.width ?? 66;
@@ -340,9 +366,9 @@
       ctx.shadowColor = visual.artwork === 'super' ? '#65e7ff' : '#fff4ad';
       ctx.shadowBlur = 5 + visual.swapFlash * 11;
     }
-    ctx.drawImage(sprite, frame * sourceWidth, 0, sourceWidth, sourceHeight, x, y, width, height);
+    ctx.drawImage(sprite, requestedFrame * sourceWidth, 0, sourceWidth, sourceHeight, x, y, width, height);
     ctx.restore();
-    return visual;
+    return { ...visual, locomotionFrame: useSuperRun ? requestedFrame : null, runningArtwork: useSuperRun };
   }
 
   function applyHeroVisualTransform(ctx, state, options = {}) {
@@ -612,15 +638,18 @@
       fiestaWingShoes: state.superActive || state.powerDownTimer > 0,
       heroArtwork: artwork.artwork,
       completeAlternateSprite: artwork.artwork === 'super',
+      locomotionFrames: definitions.superHero.runFrameCount,
+      alternatingLocomotion: true,
       visualScale: definitions.superHero.visualScale,
       superJumpVelocity: window.JFT_HERO_CORE?.physics?.superJumpVelocity || definitions.superHero.superJumpVelocity,
     };
   }
 
   getSuperHeroSpriteSheet();
+  getSuperHeroRunSpriteSheet();
 
   window.JFT_SHARED_ABILITIES = Object.freeze({
-    version: 'super-taco-hero-v3-complete-sprite',
+    version: 'super-taco-hero-v4-alternating-run',
     definitions,
     createState,
     reset,
@@ -642,6 +671,8 @@
     heroVisualTransform,
     heroArtworkVisualState,
     getSuperHeroSpriteSheet,
+    getSuperHeroRunSpriteSheet,
+    superLocomotionFrame,
     applyHeroVisualTransform,
     applyHeroStyle,
     drawHeroEffects,

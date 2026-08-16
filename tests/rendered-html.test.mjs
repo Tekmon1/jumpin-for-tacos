@@ -117,7 +117,7 @@ test("implements Taco Power and Super Taco Hero as one shared state machine", as
   vm.runInNewContext(abilitiesSource, context, { filename: "abilities.js" });
 
   const abilities = context.window.JFT_SHARED_ABILITIES;
-  assert.equal(abilities.version, "super-taco-hero-v3-complete-sprite");
+  assert.equal(abilities.version, "super-taco-hero-v4-alternating-run");
   assert.equal(abilities.definitions.tacoPower.threshold, 100);
   assert.equal(abilities.definitions.tacoPower.contributions.taco, 7);
   assert.equal(abilities.definitions.tacoPower.contributions.premiumTaco, 16);
@@ -125,6 +125,8 @@ test("implements Taco Power and Super Taco Hero as one shared state machine", as
   assert.equal(abilities.definitions.superHero.visualScale, 1.12);
   assert.equal(abilities.definitions.superHero.transformationDuration, 0.78);
   assert.equal(abilities.definitions.superHero.powerDownDuration, 0.42);
+  assert.equal(abilities.definitions.superHero.runFrameCount, 4);
+  assert.equal(abilities.definitions.superHero.runPhaseScale, 4 / 3);
   assert.equal(context.window.JFT_HERO_CORE.physics.jumpVelocity, 680);
   assert.equal(context.window.JFT_HERO_CORE.physics.superJumpVelocity, 650);
 
@@ -244,6 +246,7 @@ test("implements Taco Power and Super Taco Hero as one shared state machine", as
 
   const normalSprite = { complete: true, naturalWidth: 2176, naturalHeight: 272, width: 2176, height: 272 };
   const superSprite = { complete: true, naturalWidth: 2176, naturalHeight: 272, width: 2176, height: 272 };
+  const superRunSprite = { complete: true, naturalWidth: 1088, naturalHeight: 272, width: 1088, height: 272 };
   const spriteDraws = [];
   const spriteContext = {
     filter: "none",
@@ -257,6 +260,21 @@ test("implements Taco Power and Super Taco Hero as one shared state machine", as
   assert.equal(spriteDraws.length, 1, "the renderer draws exactly one complete character state");
   assert.equal(spriteDraws[0][0], superSprite, "stable Super never draws the Normal footwear sheet underneath");
 
+  assert.equal(abilities.superLocomotionFrame(0), 0);
+  assert.equal(abilities.superLocomotionFrame(0.75), 1);
+  assert.equal(abilities.superLocomotionFrame(1.5), 2);
+  assert.equal(abilities.superLocomotionFrame(2.25), 3);
+  assert.equal(abilities.superLocomotionFrame(3), 0, "four Super gait phases retain the existing three-unit loop cadence");
+  spriteDraws.length = 0;
+  const runVisual = abilities.drawHeroSpriteFrame(spriteContext, state, normalSprite, 2, {
+    superSprite, superRunSprite, running: true, animation: 1.5, width: 66, height: 66,
+  });
+  assert.equal(spriteDraws.length, 1, "the Super run renderer draws one complete character frame");
+  assert.equal(spriteDraws[0][0], superRunSprite, "ground locomotion selects the dedicated alternating gait sheet");
+  assert.equal(spriteDraws[0][1], 544, "the opposite-stride phase selects the third 272-pixel cell");
+  assert.equal(runVisual.locomotionFrame, 2);
+  assert.equal(runVisual.runningArtwork, true);
+
   abilities.absorbDamage(state);
   spriteDraws.length = 0;
   abilities.drawHeroSpriteFrame(spriteContext, state, normalSprite, 6, { superSprite });
@@ -265,19 +283,32 @@ test("implements Taco Power and Super Taco Hero as one shared state machine", as
   spriteDraws.length = 0;
   abilities.drawHeroSpriteFrame(spriteContext, state, normalSprite, 6, { superSprite });
   assert.equal(spriteDraws[0][0], normalSprite, "power-down completes by switching to the complete Normal state");
+  state.powerDownTimer = 0;
+  spriteDraws.length = 0;
+  abilities.drawHeroSpriteFrame(spriteContext, state, normalSprite, 2, {
+    superSprite, superRunSprite, running: true, animation: 1.5,
+  });
+  assert.equal(spriteDraws[0][0], normalSprite, "Normal locomotion keeps the approved original sprite sheet");
 });
 
-test("ships a registered transparent eight-frame Super Taco Hero sprite sheet", async () => {
+test("ships registered transparent complete and four-phase Super Taco Hero sprite sheets", async () => {
   const normalSheet = await readFile(new URL("../public/game/assets/taco_hero_sheet.png", import.meta.url));
   const superSheet = await readFile(new URL("../public/game/assets/taco_hero_super_sheet.png", import.meta.url));
+  const superRunSheet = await readFile(new URL("../public/game/assets/taco_hero_super_run_sheet.png", import.meta.url));
   assert.equal(superSheet.subarray(1, 4).toString("ascii"), "PNG");
   assert.equal(superSheet.readUInt32BE(16), 2176);
   assert.equal(superSheet.readUInt32BE(20), 272);
   assert.equal(superSheet[25], 6, "the alternate sheet retains an RGBA transparency channel");
   assert.notEqual(createHash("sha256").update(superSheet).digest("hex"), createHash("sha256").update(normalSheet).digest("hex"));
+  assert.equal(superRunSheet.subarray(1, 4).toString("ascii"), "PNG");
+  assert.equal(superRunSheet.readUInt32BE(16), 1088);
+  assert.equal(superRunSheet.readUInt32BE(20), 272);
+  assert.equal(superRunSheet[25], 6, "the four-phase gait sheet retains an RGBA transparency channel");
+  assert.notEqual(createHash("sha256").update(superRunSheet).digest("hex"), createHash("sha256").update(superSheet).digest("hex"));
 
   const abilitiesSource = await readFile(new URL("../public/game/abilities.js", import.meta.url), "utf8");
   assert.match(abilitiesSource, /taco_hero_super_sheet\.png\?v=1/);
+  assert.match(abilitiesSource, /taco_hero_super_run_sheet\.png\?v=1/);
   assert.doesNotMatch(abilitiesSource, /function drawFiestaShoe|function drawCompactWing|function drawFiestaWingShoes/);
 });
 
@@ -292,9 +323,9 @@ test("loads and consumes Super Taco Hero across all nine level entry points", as
   for (const [pageName, runtimeName] of pages) {
     const html = await readFile(new URL(`../public/game/${pageName}`, import.meta.url), "utf8");
     assert.match(html, /src="levels\.js\?v=34"/);
-    assert.match(html, /src="abilities\.js\?v=4"/);
-    assert.ok(html.indexOf('src="levels.js?v=34"') < html.indexOf('src="abilities.js?v=4"'));
-    assert.ok(html.indexOf('src="abilities.js?v=4"') < html.indexOf(`src="${runtimeName}`));
+    assert.match(html, /src="abilities\.js\?v=5"/);
+    assert.ok(html.indexOf('src="levels.js?v=34"') < html.indexOf('src="abilities.js?v=5"'));
+    assert.ok(html.indexOf('src="abilities.js?v=5"') < html.indexOf(`src="${runtimeName}`));
   }
 
   const runtimeNames = ["game.js", "level1-2.js", "level1-3.js", "level2.js", "level2-2.js", "level2-3.js", "world3.js"];
@@ -307,6 +338,8 @@ test("loads and consumes Super Taco Hero across all nine level entry points", as
     assert.match(runtime, /\.clearForRespawn/);
     assert.match(runtime, /\.drawHeroEffects/);
     assert.match(runtime, /\.drawHeroSpriteFrame/);
+    assert.match(runtime, /\brunning\b/);
+    assert.match(runtime, /animation: player\.anim/);
     assert.doesNotMatch(runtime, /\.drawFiestaWingShoes/);
     assert.match(runtime, /\.applyHeroVisualTransform/);
     assert.match(runtime, /\.drawTacoPowerHUD/);
@@ -359,12 +392,14 @@ test("keeps World 1-1 enemy artwork on a separate slower visual clock", async ()
   assert.equal(context.window.JFT_HERO_CORE.physics.enemyVisualAnimationRate, 1.8);
   assert.match(mainRuntime, /enemy\.anim \+= dt \* heroPhysics\.enemyVisualAnimationRate/);
   assert.match(mainRuntime, /return Math\.floor\(enemy\.anim\) % 4/);
-  assert.match(mainRuntime, /SOURCE_VERSION = 'w1-1-v54-complete-super-sprite'/);
+  assert.match(mainRuntime, /SOURCE_VERSION = 'w1-1-v55-alternating-super-run'/);
+  assert.match(mainRuntime, /localPreviewAutoRun === 'left'/);
+  assert.match(mainRuntime, /localPreviewAutoRunDirection < 0\) keys\.left = true/);
   assert.match(mainRuntime, /function removeOpeningLeadEnemy/);
   assert.match(mainRuntime, /removeOpeningLeadEnemy\(\)/);
   assert.match(mainRuntime, /patrolStartOffset: 420/);
   assert.match(mainHtml, /levels\.js\?v=34/);
-  assert.match(mainHtml, /game\.js\?v=54/);
+  assert.match(mainHtml, /game\.js\?v=55/);
 });
 
 test("creates same-type enemy packs and recognizes swept stomp contacts", async () => {
@@ -986,7 +1021,7 @@ test("ships World 1 with authored seamless panorama progressions", async () => {
     assert.match(prototype, new RegExp(filename.replace(".png", "")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(prototypeHtml, /game\.js\?v=54/);
+  assert.match(prototypeHtml, /game\.js\?v=55/);
   assert.match(prototype, /function drawPaintedTerrainSlice/);
   assert.match(prototype, /artStyle: 'goldenCactus'/);
   assert.match(prototype, /function drawTacoTrekkerLayers/);
@@ -1016,7 +1051,7 @@ test("ships World 1 with authored seamless panorama progressions", async () => {
     assert.match(rescueForeground, new RegExp(filename.replace(".", "\\.")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(rescueForegroundHtml, /level1-2\.js\?v=35/);
+  assert.match(rescueForegroundHtml, /level1-2\.js\?v=36/);
   assert.match(rescueForeground, /function drawPaintedTerrainSlice/);
   assert.match(rescueForeground, /checkpointArtGroundedByVisibleBaseline: true/);
   assert.match(rescueForeground, /independentCheckpointShadows: true/);
@@ -1056,7 +1091,7 @@ test("ships World 1 with authored seamless panorama progressions", async () => {
     assert.match(showdownForeground, new RegExp(filename.replace(".", "\\.")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(showdownForegroundHtml, /level1-3\.js\?v=26/);
+  assert.match(showdownForegroundHtml, /level1-3\.js\?v=27/);
   assert.match(showdownForeground, /function drawPaintedTerrainSlice/);
   assert.match(showdownForeground, /checkpointArtGroundedByVisibleBaseline: true/);
   assert.match(showdownForeground, /independentCheckpointShadows: true/);
@@ -1107,7 +1142,7 @@ test("remasters the complete World 1-1 enemy and NPC cast without changing gamep
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /game\.js\?v=54/);
+  assert.match(html, /game\.js\?v=55/);
   assert.match(runtime, /function remasteredEnemyFrame/);
   assert.match(runtime, /function drawRemasteredEnemy/);
   assert.match(runtime, /function drawDesertLocals/);
@@ -1157,7 +1192,7 @@ test("authors the full World 1-1 pilot around purposeful upper routes and metada
   assert.match(runtime, /sharedAbilities\.splatEnemy\(game\.abilities/);
   assert.match(core, /const requestedPlatformId = enemy\.supportPlatformId \|\| enemy\.platformId/);
   assert.match(core, /id === `\$\{requestedPlatformId\}-encore`/);
-  assert.match(html, /game\.js\?v=54/);
+  assert.match(html, /game\.js\?v=55/);
   assert.match(html, /explore layered desert\r?\n\s+routes where risky jumps can lead to bonus powers/);
 });
 
@@ -1180,8 +1215,8 @@ test("remasters the complete World 1-2 aviation enemy and NPC cast and restores 
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /level1-2\.js\?v=35/);
-  assert.match(runtime, /SOURCE_VERSION = 'w1-2-v35-complete-super-sprite'/);
+  assert.match(html, /level1-2\.js\?v=36/);
+  assert.match(runtime, /SOURCE_VERSION = 'w1-2-v36-alternating-super-run'/);
   assert.match(runtime, /\['terminal\.local', '127\.0\.0\.1', 'localhost'\]\.includes\(location\.hostname\)/);
   assert.match(runtime, /function remasteredEnemyFrame/);
   assert.match(runtime, /function drawCrewMember/);
@@ -1216,7 +1251,7 @@ test("authors the World 1-2 rescue pilot across combat sections without crowding
   assert.match(runtime, /previousBottom: previousPlayerBottom/);
   assert.match(runtime, /previousTargetTop: previousEnemyTop/);
   assert.match(runtime, /player\.y = Math\.min\(player\.y, enemy\.y - player\.h - 1\)/);
-  assert.match(html, /level1-2\.js\?v=35/);
+  assert.match(html, /level1-2\.js\?v=36/);
 });
 
 test("remasters the complete World 1-3 showdown enemy, boss, stampede, and NPC cast", async () => {
@@ -1238,8 +1273,8 @@ test("remasters the complete World 1-3 showdown enemy, boss, stampede, and NPC c
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /level1-3\.js\?v=26/);
-  assert.match(runtime, /SOURCE_VERSION = 'w1-3-v26-complete-super-sprite'/);
+  assert.match(html, /level1-3\.js\?v=27/);
+  assert.match(runtime, /SOURCE_VERSION = 'w1-3-v27-alternating-super-run'/);
   assert.match(runtime, /function remasteredEnemyFrame/);
   assert.match(runtime, /enemyAnimationFrames: 8/);
   assert.match(runtime, /behaviorLinked: true/);
@@ -1276,7 +1311,7 @@ test("authors World 1-3 combat around readable formations, full-platform patrols
   assert.match(runtime, /previousBottom: player\.previousBottom/);
   assert.match(runtime, /previousTargetTop: previousEnemyTop/);
   assert.match(runtime, /player\.y = Math\.min\(player\.y, enemy\.y - player\.h - 1\)/);
-  assert.match(html, /level1-3\.js\?v=26/);
+  assert.match(html, /level1-3\.js\?v=27/);
 });
 
 test("ships the complete three-level Starlight Taco Carnival world", async () => {
@@ -1288,7 +1323,7 @@ test("ships the complete three-level Starlight Taco Carnival world", async () =>
     assert.match(html, /World 3/);
     assert.match(html, /35,000 units/);
     assert.match(html, /id="startBtn"/);
-    assert.match(html, /world3\.js\?v=36/);
+    assert.match(html, /world3\.js\?v=37/);
     assert.match(html, /world3\.css\?v=10/);
     assert.match(html, /controller\.js\?v=9/);
     assert.match(html, /data-next-level/);
@@ -1472,7 +1507,7 @@ test("ships the complete three-level Starlight Taco Carnival world", async () =>
 test("authors World 3 combat around readable packs, full patrols, and safe set pieces", async () => {
   const runtime = await readFile(new URL("../public/game/world3.js", import.meta.url), "utf8");
 
-  assert.match(runtime, /const SOURCE_VERSION = 36/);
+  assert.match(runtime, /const SOURCE_VERSION = 37/);
   assert.match(runtime, /const WORLD3_REMASTER_PLANS = Object\.freeze/);
   assert.match(runtime, /function world3ForbiddenRanges/);
   assert.match(runtime, /function addWorld3Formation/);
@@ -1593,8 +1628,8 @@ test("remasters World 2-1 art while preserving collision geometry and widening s
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /level2\.js\?v=30/);
-  assert.match(runtime, /SOURCE_VERSION = 'w2-1-v30-complete-super-sprite'/);
+  assert.match(html, /level2\.js\?v=31/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-1-v31-alternating-super-run'/);
   assert.match(runtime, /encounterAudit: game\.world2EncounterAudit/);
   assert.match(runtime, /const ENVIRONMENT_TRANSITION_WIDTH = 1600/);
   assert.match(runtime, /const ENVIRONMENT_PANORAMA_CROP = 0\.9/);
@@ -1731,8 +1766,8 @@ test("ships the 35,000-unit caldera camping sequel with premium art and adaptive
     assert.match(html, new RegExp(`music_caldera_${track}\\.ogg`));
   }
   assert.match(html, /World 2 • Level 2-2 • 35,000 units/);
-  assert.match(html, /level2-2\.js\?v=11/);
-  assert.match(runtime, /SOURCE_VERSION = 'w2-2-v11-complete-super-sprite'/);
+  assert.match(html, /level2-2\.js\?v=12/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-2-v12-alternating-super-run'/);
   assert.match(html, /id="startBtn"/);
   assert.match(runtime, /geyserGuardSpecs/);
   assert.match(runtime, /requiresGeyserAirborne/);
@@ -1784,8 +1819,8 @@ test("ships the complete 35,000-unit Neon Neckties concert level", async () => {
   assert.match(runtime, /OLIVIA IS LOADING THE LAST TACOS!/);
   assert.match(runtime, /TACO ROADSTER: READY TO ROLL!/);
   assert.match(runtime, /SHOWTIME! OLIVIA IS TAKING THE SCENIC ROUTE!/);
-  assert.match(html, /level2-3\.js\?v=20/);
-  assert.match(runtime, /SOURCE_VERSION = 'w2-3-v20-complete-super-sprite'/);
+  assert.match(html, /level2-3\.js\?v=21/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-3-v21-alternating-super-run'/);
   assert.match(runtime, /generatorDefensePlans/);
   assert.match(runtime, /function ensureGeneratorDefensePlatform/);
   assert.match(runtime, /finitePlatformGeometry: world\.platforms\.every/);
@@ -1969,7 +2004,7 @@ test("loads the shared Phase 3 audio foundation before World 1-1 and resolves ev
 
   const catalogPosition = html.indexOf('src="audio-catalog.js?v=9"');
   const enginePosition = html.indexOf('src="audio-engine.js?v=7"');
-  const runtimePosition = html.indexOf('src="game.js?v=54"');
+  const runtimePosition = html.indexOf('src="game.js?v=55"');
   assert.ok(catalogPosition >= 0, "World 1-1 loads the semantic catalog");
   assert.ok(enginePosition > catalogPosition, "the engine loads after its catalog");
   assert.ok(runtimePosition > enginePosition, "the engine loads before the World 1-1 runtime");

@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-1-v54-complete-super-sprite';
+  const SOURCE_VERSION = 'w1-1-v55-alternating-super-run';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -443,7 +443,11 @@
   const localPreviewSuper = localPreviewHost
     && new URLSearchParams(location.search).get('super') === '1';
   const localPreviewAutoRun = localPreviewHost
-    && new URLSearchParams(location.search).get('autoRun') === '1';
+    ? new URLSearchParams(location.search).get('autoRun')
+    : null;
+  const localPreviewAutoRunDirection = localPreviewAutoRun === 'left'
+    ? -1
+    : ['1', 'right'].includes(localPreviewAutoRun) ? 1 : 0;
   const localPreviewRespawn = localPreviewHost
     && new URLSearchParams(location.search).get('respawn') === '1';
   const localPreviewRespawnCheckpoint = localPreviewHost
@@ -1529,7 +1533,8 @@
     }
     if (localPreviewFrenzy) sharedAbilities.activateFrenzy(game.abilities, 5);
     if (localPreviewSuper) sharedAbilities.activateSuper(game.abilities, 'qa-preview', { silent: true });
-    if (localPreviewAutoRun) keys.right = true;
+    if (localPreviewAutoRunDirection < 0) keys.left = true;
+    if (localPreviewAutoRunDirection > 0) keys.right = true;
     if (localPreviewRespawn) {
       if (localPreviewRespawnCheckpoint >= 0 && level.checkpoints[localPreviewRespawnCheckpoint]) {
         game.latestCheckpoint = level.checkpoints[localPreviewRespawnCheckpoint];
@@ -4365,6 +4370,7 @@
       : (player.invulnerable > 0 && !sharedAbilities.isFrenzy(game.abilities) ? 6
       : (!player.grounded ? (player.vy < 0 ? 4 : 5)
       : (Math.abs(player.vx) > 22 ? 1 + (Math.floor(player.anim) % 3) : 0)));
+    const running = frame >= 1 && frame <= 3;
     const flash = player.invulnerable > 0 && Math.floor(player.invulnerable * 10) % 2 === 0;
     const hiddenForRespawn = heroCore.hidePlayerDuringRespawn(game.respawn);
     if (hiddenForRespawn) return;
@@ -4423,6 +4429,8 @@
       y: -spriteSize / 2,
       width: spriteSize,
       height: spriteSize,
+      running,
+      animation: player.anim,
     });
     ctx.restore();
     ctx.globalAlpha = 1;
