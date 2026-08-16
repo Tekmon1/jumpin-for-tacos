@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-3-v23-shared-stomp-standard';
+  const SOURCE_VERSION = 'w1-3-v27-alternating-super-run';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -186,7 +186,7 @@
   let lastFrame = 0;
   let randomSeed = 0x5A15A12;
   const params = new URLSearchParams(location.search);
-  const qa = location.hostname === 'terminal.local';
+  const qa = ['terminal.local', '127.0.0.1', 'localhost'].includes(location.hostname);
   const previewStart = qa ? Number(params.get('startX') || 0) : 0;
   const previewAutoRun = qa && params.get('autoRun') === '1';
   const previewAutoJump = qa && params.get('autoJump') === '1';
@@ -195,6 +195,7 @@
   const previewBossAttack = qa ? params.get('bossAttack') : null;
   const previewFastCelebrate = qa && params.get('fastCelebrate') === '1';
   const previewFrenzy = qa && params.get('frenzy') === '1';
+  const previewSuper = qa && params.get('super') === '1';
   const previewMagnet = qa && params.get('magnet') === '1';
   const previewRespawn = qa && params.get('respawn') === '1';
   const previewRespawnCheckpoint = qa ? Number(params.get('respawnCheckpoint') || -1) : -1;
@@ -733,7 +734,7 @@
     addItem(21820, 98, 'sombrero', { rareReward: true });
 
     // Core abilities carry into every later stage. Magnets sit on safe,
-    // readable detours while the Taco Meter fills naturally from play.
+    // readable detours while Taco Power fills naturally from play.
     [1780, 6760, 12180, 18480, 23980, 29380].forEach((x) => {
       const support = groundPlatformAt(x, 28);
       addItem(x, support ? support.y - 58 : 382, 'magnet', { coreAbility: true });
@@ -953,6 +954,10 @@
       if (boss) { boss.alive = false; boss.defeated = true; }
     }
     if (previewFrenzy) game.abilities.frenzyTimer = sharedAbilities.definitions.tacoFrenzy.duration;
+    if (previewSuper) {
+      sharedAbilities.activateSuper(game.abilities, 'qa-preview', { silent: true });
+      game.abilities.transformTimer = 0;
+    }
     if (previewMagnet) sharedAbilities.activateMagnet(game.abilities);
     stopMusic();
     ui.startOverlay.classList.remove('hidden');
@@ -1096,6 +1101,7 @@
   }
 
   function queueJump() {
+    if (keys.jump) return;
     player.jumpBuffer = heroPhysics.jumpBufferTime;
     keys.jump = true;
   }
@@ -1209,6 +1215,7 @@
     if (game.state !== 'playing' || game.respawn.active) return;
     const sourceX = player.x; const sourceY = Math.min(player.y, canvas.height - player.h - 8); const point = findRespawn(sourceX);
     game.state = 'respawning';
+    sharedAbilities.clearForRespawn(game.abilities);
     keys.left = false; keys.right = false; keys.jump = false;
     heroCore.beginRespawn(game.respawn, { fromX: sourceX, fromY: sourceY, ...point });
     game.respawnCount += 1;
@@ -1242,9 +1249,19 @@
 
   function hurtPlayer(fromX) {
     if (player.invulnerable > 0 || sharedAbilities.isFrenzy(game.abilities) || game.state !== 'playing') return;
+    const knockbackX = fromX < player.x ? 280 : -280;
+    if (sharedAbilities.absorbDamage(game.abilities, { position: audioPosition(player.x + player.w / 2) })) {
+      player.invulnerable = sharedAbilities.definitions.superHero.damageInvulnerabilityDuration;
+      player.vx = knockbackX; player.vy = -300;
+      game.chainCount = 0; game.chainTimer = 0;
+      game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 5 : 11);
+      showMessage('SUPER POWER DOWN! NORMAL TACO HERO!', 1.45);
+      spawnConfetti(player.x - game.cameraX + player.w / 2, player.y + player.h / 2, game.reducedShake ? 30 : 64);
+      return;
+    }
     game.hearts -= 1;
     player.invulnerable = 1.25;
-    player.vx = fromX < player.x ? 280 : -280;
+    player.vx = knockbackX;
     player.vy = -300;
     game.chainCount = 0; game.chainTimer = 0;
     game.cameraShake = 11;
@@ -1254,6 +1271,12 @@
       game.score = Math.max(0, game.score - 150);
       beginRespawn();
     }
+  }
+
+  function announceSuper(sourceX = player.x) {
+    showMessage('SUPER TACO HERO!', 2.1);
+    spawnConfetti(sourceX - game.cameraX + player.w / 2, player.y + player.h / 2, game.reducedShake ? 42 : 96);
+    game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 4 : 10);
   }
 
   function collectItem(item) {
@@ -1285,14 +1308,11 @@
     } else {
       const multiplier = 1 + Math.min(5, Math.floor(game.chainCount / 2));
       game.score += (item.bonusReward ? 35 : 10) * multiplier;
-      const frenzyStarted = sharedAbilities.collectTaco(game.abilities, item.bonusReward);
-      if (frenzyStarted) {
+      const superStarted = sharedAbilities.collectTaco(game.abilities, item.bonusReward ? 'premium' : 'taco', { position: audioPosition(item.x + item.w / 2) });
+      if (superStarted) {
         if (game.bossCelebrationLock <= 0) {
-          showMessage('TACO FRENZY! SPLAT EVERYTHING!', 2.2);
-          spawnConfetti(canvas.width / 2, 210, game.reducedShake ? 45 : 105);
-          game.cameraShake = Math.max(game.cameraShake, 10);
+          announceSuper(item.x);
         }
-        playAudio('ability.frenzyStart');
       }
       playAudio('collect.taco', { streak: game.chainCount, position: audioPosition(item.x + item.w / 2) });
     }
@@ -1500,11 +1520,8 @@
       });
     }
 
-    const frenzyStarted = sharedAbilities.splatEnemy(game.abilities);
-    if (frenzyStarted) {
-      showMessage('TACO FRENZY! THE SHOWDOWN JUST GOT CRUNCHIER!', 2.2);
-      playAudio('ability.frenzyStart');
-    }
+    const superStarted = sharedAbilities.splatEnemy(game.abilities, { position: audioPosition(enemy.x + enemy.w / 2) });
+    if (superStarted) announceSuper(enemy.x);
 
     const nextTarget = stomped && world.enemies
       .filter((candidate) => candidate.alive && !candidate.boss && candidate.x > enemy.x && candidate.x - enemy.x < 590)
@@ -1877,7 +1894,9 @@
   }
 
   function updatePlayer(dt) {
+    if (sharedAbilities.suspendForTransformation(game.abilities, player)) return;
     const wasGrounded = player.grounded;
+    if (player.grounded) sharedAbilities.land(game.abilities);
     if (player.grounded && player.platform) {
       player.x += player.platform.dx || 0;
       player.y += player.platform.dy || 0;
@@ -1904,6 +1923,9 @@
       player.vy = -heroPhysics.jumpVelocity;
       player.grounded = false; player.coyote = 0; player.jumpBuffer = 0;
       playAudio('hero.jump', { position: audioPosition(player.x + player.w / 2) });
+    } else if (player.jumpBuffer > 0 && !player.grounded) {
+      const superJumpVelocity = sharedAbilities.trySuperJump(game.abilities, { position: audioPosition(player.x + player.w / 2) });
+      if (superJumpVelocity) { player.vy = -superJumpVelocity; player.platform = null; player.jumpBuffer = 0; game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 2 : 5); }
     }
     const previousY = player.y;
     player.previousY = previousY;
@@ -1925,6 +1947,7 @@
       }
     }
     resolvePlatforms(previousY);
+    if (player.grounded) sharedAbilities.land(game.abilities);
     if (!wasGrounded && player.grounded && landingVelocity > 90) {
       playAudio(landingVelocity >= 830 ? 'hero.landHard' : 'hero.landSoft', { position: audioPosition(player.x + player.w / 2) });
       game.fallSoundPlayed = false;
@@ -3215,9 +3238,11 @@
       : player.invulnerable > 0 ? 6
       : !player.grounded ? (player.vy < 0 ? 4 : 5)
       : Math.abs(player.vx) > 24 ? 1 + Math.floor(player.anim) % 3 : 0;
+    const running = frame >= 1 && frame <= 3;
     if (player.invulnerable > 0 && Math.floor(player.invulnerable * 12) % 2 === 0) ctx.globalAlpha = 0.45;
     const x = player.x - game.cameraX + player.w / 2;
     const y = player.y + player.h / 2;
+    sharedAbilities.drawHeroEffects(ctx, game.abilities, player, game.cameraX, time, { reducedMotion: game.reducedShake });
     if (game.chainTrailTimer > 0) {
       const trailColors = ['#65d8ff', '#b78cff', '#ff6fae', '#ffd65a', '#8dff9c'];
       for (let trail = 0; trail < trailColors.length; trail += 1) {
@@ -3226,15 +3251,15 @@
       }
       ctx.globalAlpha = 1;
     }
-    ctx.save(); ctx.translate(x, y); ctx.rotate(player.rotation || 0); ctx.scale(player.dir * (player.scale || 1), player.scale || 1);
+    ctx.save(); ctx.translate(x, y); ctx.rotate(player.rotation || 0); sharedAbilities.applyHeroVisualTransform(ctx, game.abilities, { direction: player.dir, baseScale: player.scale || 1, anchorY: 33, time });
     if (game.chainCount >= 3 || sharedAbilities.isFrenzy(game.abilities)) {
       const color = sharedAbilities.isFrenzy(game.abilities) ? '#65d8ff' : game.chainCount >= 5 ? '#ff6fae' : '#ffd65a';
       ctx.shadowColor = color; ctx.shadowBlur = sharedAbilities.isFrenzy(game.abilities) ? 30 : game.chainCount >= 5 ? 24 : 14;
       ctx.strokeStyle = color; ctx.globalAlpha = 0.72; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.ellipse(0, 27, 25 + Math.sin(time * 0.014) * 2, 6, 0, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1;
     }
-    const sourceWidth = images.hero.width / 8;
-    ctx.drawImage(images.hero, frame * sourceWidth, 0, sourceWidth, images.hero.height, -33, -33, 66, 66);
+    sharedAbilities.applyHeroStyle(ctx, game.abilities);
+    sharedAbilities.drawHeroSpriteFrame(ctx, game.abilities, images.hero, frame, { x: -33, y: -33, width: 66, height: 66, running, animation: player.anim });
     ctx.restore(); ctx.globalAlpha = 1;
   }
 
@@ -3299,13 +3324,7 @@
     ctx.fillStyle = '#fff5d2'; ctx.font = '900 22px Arial'; ctx.fillText('World 1-3 • Salsa Showdown', 26, 42);
     ctx.font = '18px Arial'; ctx.fillText(`Score: ${game.score.toLocaleString()}`, 26, 71); ctx.fillText(`Tacos: ${game.collected}/${game.totalCollectibles}`, 26, 98);
     ctx.fillStyle = '#ffd65a'; ctx.font = '900 13px Arial'; ctx.fillText(`Hot Sauce ${game.hotSauce}/${game.totalHotSauce}  •  Splats ${game.defeated}`, 26, 122);
-    const meterWidth = 232;
-    ctx.fillStyle = 'rgba(255,255,255,.16)'; ctx.beginPath(); ctx.roundRect(99, 134, meterWidth, 11, 6); ctx.fill();
-    const meterProgress = sharedAbilities.isFrenzy(game.abilities) ? 1 : game.abilities.tacoMeter / sharedAbilities.definitions.tacoMeter.threshold;
-    const meterGradient = ctx.createLinearGradient(99, 0, 99 + meterWidth, 0); meterGradient.addColorStop(0, '#ffd65a'); meterGradient.addColorStop(0.55, '#ff6fae'); meterGradient.addColorStop(1, '#65d8ff');
-    ctx.fillStyle = meterGradient; ctx.beginPath(); ctx.roundRect(99, 134, Math.max(4, meterWidth * meterProgress), 11, 6); ctx.fill();
-    ctx.fillStyle = sharedAbilities.isFrenzy(game.abilities) ? '#65d8ff' : '#fff5d2'; ctx.font = '900 10px Arial';
-    ctx.fillText(sharedAbilities.isFrenzy(game.abilities) ? `FRENZY ${game.abilities.frenzyTimer.toFixed(1)}s` : 'TACO METER', 26, 144);
+    sharedAbilities.drawTacoPowerHUD(ctx, game.abilities, { x: 99, y: 134, width: 232, height: 11, labelX: 26, labelY: 144, textColor: '#fff5d2' });
     if (sharedAbilities.hasMagnet(game.abilities)) { ctx.fillStyle = '#65d8ff'; ctx.fillText(`MAGNET ${Math.ceil(game.abilities.magnetTimer)}s`, 26, 158); }
     drawProgress();
     for (let index = 0; index < 3; index += 1) {
@@ -3397,6 +3416,7 @@
     if (qa) {
       canvas.dataset.qaState = JSON.stringify({
         sourceVersion: SOURCE_VERSION,
+        superHero: { ...sharedAbilities.snapshot(game.abilities), collisionWidth: player.w, collisionHeight: player.h },
         state: game.state, player: {
           x: Math.round(player.x), y: Math.round(player.y),
           vx: Math.round(player.vx), vy: Math.round(player.vy), grounded: player.grounded,

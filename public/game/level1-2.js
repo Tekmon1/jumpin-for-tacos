@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-2-v32-rear-plane-launcher';
+  const SOURCE_VERSION = 'w1-2-v36-alternating-super-run';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = true;
@@ -191,6 +191,7 @@
   const previewOpeningAt = qa ? Number(params.get('openingAt') || 0) : 0;
   const previewSkipOpening = qa && (params.get('skipOpening') === '1' || previewStart > 500 || previewEvent);
   const previewControllerQa = qa && params.get('controllerQa') === '1';
+  const previewSuper = qa && params.get('super') === '1';
   const previewRespawn = qa && params.get('respawn') === '1';
   const previewRespawnCheckpoint = qa ? Number(params.get('respawnCheckpoint') || -1) : -1;
 
@@ -211,12 +212,17 @@
 
   function setDigitalInput(source, input, down, pointerId = null) {
     if (!['left', 'right', 'jump'].includes(input) || !inputSources[source]) return;
+    let wasPressed;
     if (source === 'touch') {
       const pointers = inputSources.touch[input];
+      wasPressed = pointers.size > 0;
       if (down) pointers.add(pointerId); else pointers.delete(pointerId);
-    } else inputSources[source][input] = down;
+    } else {
+      wasPressed = Boolean(inputSources[source][input]);
+      inputSources[source][input] = down;
+    }
     if (down && (input === 'left' || input === 'right')) keys.lastDir = input === 'right' ? 1 : -1;
-    if (down && input === 'jump') player.jumpBuffer = heroPhysics.jumpBufferTime;
+    if (down && input === 'jump' && !wasPressed) player.jumpBuffer = heroPhysics.jumpBufferTime;
     syncInputs();
   }
 
@@ -893,6 +899,10 @@
     });
     const startX = clamp(previewStart || 140, 0, WORLD_WIDTH - 250);
     Object.assign(player, { x: startX, y: 360, previousY: 360, vx: 0, vy: 0, dir: 1, grounded: false, platform: null, anim: 0, coyote: 0, jumpBuffer: 0, invulnerable: 0, rotation: 0, scale: 1 });
+    if (previewSuper) {
+      sharedAbilities.activateSuper(game.abilities, 'qa-preview', { silent: true });
+      game.abilities.transformTimer = 0;
+    }
     clearInputs('level-reset');
     if (['pinata', 'pinataKaboom', 'pinataAftershock'].includes(previewEvent) && world.pinata) {
       world.pinata.hits = 2; player.x = world.pinata.x + 16; player.y = world.pinata.y - player.h - 16;
@@ -1104,7 +1114,9 @@
 
   function updatePlayer(dt) {
     if (!game.openingComplete) return;
+    if (sharedAbilities.suspendForTransformation(game.abilities, player, { platformAlreadyCarried: true })) return;
     const wasGrounded = player.grounded;
+    if (player.grounded) sharedAbilities.land(game.abilities);
     player.jumpBuffer = Math.max(0, player.jumpBuffer - dt); player.coyote = player.grounded ? heroPhysics.coyoteTime : Math.max(0, player.coyote - dt); player.invulnerable = Math.max(0, player.invulnerable - dt);
     const autoRun = previewAutoRun || game.rescueActive;
     const manualInput = keys.left && keys.right ? keys.lastDir : keys.right ? 1 : keys.left ? -1 : 0;
@@ -1114,6 +1126,10 @@
     if (game.rescueActive && !keys.left) player.vx = Math.max(player.vx, 365);
     player.vx = clamp(player.vx, -maxSpeed, maxSpeed);
     if (player.jumpBuffer > 0 && player.coyote > 0) { player.vy = -heroPhysics.jumpVelocity; player.grounded = false; player.platform = null; player.coyote = 0; player.jumpBuffer = 0; playAudio('hero.jump', { position: audioPosition(player.x + player.w / 2) }); }
+    else if (player.jumpBuffer > 0 && !player.grounded) {
+      const superJumpVelocity = sharedAbilities.trySuperJump(game.abilities, { position: audioPosition(player.x + player.w / 2) });
+      if (superJumpVelocity) { player.vy = -superJumpVelocity; player.platform = null; player.jumpBuffer = 0; game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 2 : 5); }
+    }
     player.vy = Math.min(heroPhysics.maxFallVelocity, player.vy + heroPhysics.gravity * dt);
     const oldY = player.y; player.previousY = oldY; player.previousBottom = oldY + player.h; player.x += player.vx * dt; player.y += player.vy * dt; const landingVelocity = player.vy; player.x = clamp(player.x, 0, WORLD_WIDTH - player.w);
     player.grounded = false; player.platform = null;
@@ -1122,7 +1138,7 @@
     if (player.vy >= 0) {
       for (const platform of world.platforms) {
         if (player.x + player.w <= platform.x + 5 || player.x >= platform.x + platform.w - 5) continue;
-        if (previousBottom <= platform.y + 8 && currentBottom >= platform.y) { player.y = platform.y - player.h; player.vy = 0; player.grounded = true; player.platform = platform; landedThisFrame = !wasGrounded; break; }
+        if (previousBottom <= platform.y + 8 && currentBottom >= platform.y) { player.y = platform.y - player.h; player.vy = 0; player.grounded = true; player.platform = platform; landedThisFrame = !wasGrounded; sharedAbilities.land(game.abilities); break; }
       }
     }
     if (landedThisFrame && input && Math.abs(player.vx) < 72) { player.vx = input * 72; game.landingRecoveries += 1; }
@@ -1158,6 +1174,7 @@
     if (game.state !== 'playing' || game.respawn.active) return;
     const sourceX = player.x; const sourceY = Math.min(player.y, canvas.height - player.h - 8); const point = findRespawnPoint(sourceX);
     clearInputs('respawn'); game.state = 'respawning';
+    sharedAbilities.clearForRespawn(game.abilities);
     heroCore.beginRespawn(game.respawn, { fromX: sourceX, fromY: sourceY, ...point });
     game.respawnCount += 1;
     player.x = sourceX; player.y = sourceY; player.vx = 0; player.vy = 0; player.grounded = false; player.platform = null; player.coyote = 0; player.jumpBuffer = 0; player.invulnerable = 0; player.rotation = 0; player.scale = 1;
@@ -1222,8 +1239,30 @@
       if (contact === 'stomp') { stompResolvedThisFrame = true; defeatEnemy(enemy, true); }
       else if (sharedAbilities.isFrenzy(game.abilities)) defeatEnemy(enemy, false);
       else if (enemy.bounceHelper) continue;
-      else if (player.invulnerable <= 0) { player.invulnerable = 1.2; player.vx = player.x < enemy.x ? -260 : 260; player.vy = -390; game.hearts -= 1; game.cameraShake = 8; playAudio('hero.hurt', { position: audioPosition(player.x + player.w / 2) }); if (game.hearts <= 0) { game.hearts = 3; beginRespawn(); } }
+      else hurtPlayer(enemy.x);
     }
+  }
+
+  function announceSuper(sourceX = player.x) {
+    showMessage('SUPER TACO HERO!', 2.1);
+    spawnConfetti(sourceX - game.cameraX + player.w / 2, player.y + player.h / 2, game.reducedShake ? 42 : 90);
+    game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 4 : 9);
+  }
+
+  function hurtPlayer(fromX) {
+    if (player.invulnerable > 0 || sharedAbilities.isFrenzy(game.abilities) || game.state !== 'playing') return;
+    const knockbackX = player.x < fromX ? -260 : 260;
+    if (sharedAbilities.absorbDamage(game.abilities, { position: audioPosition(player.x + player.w / 2) })) {
+      player.invulnerable = sharedAbilities.definitions.superHero.damageInvulnerabilityDuration;
+      player.vx = knockbackX; player.vy = -390;
+      game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 4 : 8);
+      showMessage('SUPER POWER DOWN! NORMAL TACO HERO!', 1.45);
+      spawnBurst(player.x - game.cameraX + player.w / 2, player.y + player.h / 2, '#ff68b4', 38);
+      return;
+    }
+    player.invulnerable = 1.2; player.vx = knockbackX; player.vy = -390; game.hearts -= 1; game.cameraShake = 8;
+    playAudio('hero.hurt', { position: audioPosition(player.x + player.w / 2) });
+    if (game.hearts <= 0) { game.hearts = 3; beginRespawn(); }
   }
 
   function defeatEnemy(enemy, stomped = true) {
@@ -1237,8 +1276,8 @@
       player.vy = -heroPhysics.enemyBounceVelocity;
     }
     const feedback = heroCore.splatFeedback(Math.max(1, game.splatCombo), stomped);
-    const frenzyStarted = sharedAbilities.splatEnemy(game.abilities);
-    if (frenzyStarted) playAudio('ability.frenzyStart');
+    const superStarted = sharedAbilities.splatEnemy(game.abilities, { position: audioPosition(enemy.x + enemy.w / 2) });
+    if (superStarted) announceSuper(enemy.x);
     spawnBurst(enemy.x - game.cameraX + enemy.w / 2, enemy.y + 12, ['#65d8ff', '#ffd65a', '#ff6fae'][game.defeated % 3], 24);
     impactText(enemy.x + enemy.w / 2, enemy.y - 8, feedback.text, feedback.color, feedback.size);
     if (stomped) {
@@ -1348,7 +1387,7 @@
     game.skyStreak.count += 1; game.skyStreak.best = Math.max(game.skyStreak.best, game.skyStreak.count); game.skyStreak.timer = 2.35; game.skyStreak.decayTimer = .62;
     if ([8, 18, 32].includes(game.skyStreak.count)) { const call = game.skyStreak.count === 8 ? 'TACO TRAIL!' : game.skyStreak.count === 18 ? 'SKY STREAK!' : 'SUPERSONIC SALSA!'; showMessage(call, 1.55); spawnConfetti(item.x - game.cameraX, item.y, 24 + game.skyStreak.count); playAudio('collect.streakMilestone', { combo: game.skyStreak.count, position: audioPosition(item.x) }); }
     if (!item.bonusReward) game.collected += 1; const streakMultiplier = 1 + Math.min(4, Math.floor(game.skyStreak.count / 8)); const multiplier = (sharedAbilities.isFrenzy(game.abilities) ? 3 : 1) * streakMultiplier; game.score += (item.bonusReward ? 35 : 10) * multiplier;
-    const frenzy = sharedAbilities.collectTaco(game.abilities, item.bonusReward); if (frenzy) { showMessage('TACO FRENZY! MAXIMUM CRUNCH!', 2.1); spawnConfetti(canvas.width / 2, 190, 90); game.cameraShake = 9; playAudio('ability.frenzyStart'); }
+    const superStarted = sharedAbilities.collectTaco(game.abilities, item.bonusReward ? 'premium' : 'taco', { position: audioPosition(item.x) }); if (superStarted) announceSuper(item.x);
     const magnetCascade = sharedAbilities.hasMagnet(game.abilities);
     spawnBurst(item.x - game.cameraX, item.y, '#ffd65a', magnetCascade ? 3 : 7);
     if (!item.rainbowReward) playAudio('collect.taco', { streak: game.skyStreak.count, position: audioPosition(item.x) });
@@ -2353,11 +2392,12 @@
   function drawPlayer(time) {
     if (heroCore.hidePlayerDuringRespawn(game.respawn)) return;
     const lookingUp = game.ambush.hitFlash > 0; const frame = game.state === 'celebrating' || game.state === 'won' ? 7 : lookingUp ? 4 : player.invulnerable > 0 ? 6 : !player.grounded ? (player.vy < 0 ? 4 : 5) : Math.abs(player.vx) > 24 ? 1 + Math.floor(player.anim) % 3 : 0;
-    const x = player.x - game.cameraX + player.w / 2; const y = player.y + player.h / 2; ctx.save(); if (player.invulnerable > 0 && Math.floor(player.invulnerable * 12) % 2 === 0) ctx.globalAlpha = .42;
-    if (game.rescueActive && !game.crashLanded) { const sourceW = images.hero.width / 8; for (let ghost = 3; ghost > 0; ghost -= 1) { ctx.globalAlpha = .08 + ghost * .045; ctx.drawImage(images.hero, frame * sourceW, 0, sourceW, images.hero.height, x - 33 - ghost * 18, y - 33, 66, 66); } ctx.globalAlpha = 1; }
-    ctx.translate(x, y); ctx.rotate((player.rotation || 0) + (lookingUp ? -.13 : 0)); ctx.scale(player.dir * (player.scale || 1), player.scale || 1);
+    const running = frame >= 1 && frame <= 3;
+    const x = player.x - game.cameraX + player.w / 2; const y = player.y + player.h / 2; sharedAbilities.drawHeroEffects(ctx, game.abilities, player, game.cameraX, time, { reducedMotion: game.reducedShake }); ctx.save(); if (player.invulnerable > 0 && Math.floor(player.invulnerable * 12) % 2 === 0) ctx.globalAlpha = .42;
+    if (game.rescueActive && !game.crashLanded) { for (let ghost = 3; ghost > 0; ghost -= 1) { ctx.globalAlpha = .08 + ghost * .045; sharedAbilities.drawHeroSpriteFrame(ctx, game.abilities, images.hero, frame, { x: x - 33 - ghost * 18, y: y - 33, width: 66, height: 66, running, animation: player.anim }); } ctx.globalAlpha = 1; }
+    ctx.translate(x, y); ctx.rotate((player.rotation || 0) + (lookingUp ? -.13 : 0)); sharedAbilities.applyHeroVisualTransform(ctx, game.abilities, { direction: player.dir, baseScale: player.scale || 1, anchorY: 33, time });
     if (game.rescueActive || sharedAbilities.isFrenzy(game.abilities)) { ctx.shadowColor = game.rescueActive ? '#ffd65a' : '#65d8ff'; ctx.shadowBlur = 24; ctx.strokeStyle = game.rescueActive ? '#ffd65a' : '#65d8ff'; ctx.globalAlpha = .65; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(0, 27, 27 + Math.sin(time * .012) * 2, 6, 0, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1; }
-    const sourceW = images.hero.width / 8; ctx.drawImage(images.hero, frame * sourceW, 0, sourceW, images.hero.height, -33, -33, 66, 66); ctx.restore();
+    sharedAbilities.applyHeroStyle(ctx, game.abilities); sharedAbilities.drawHeroSpriteFrame(ctx, game.abilities, images.hero, frame, { x: -33, y: -33, width: 66, height: 66, running, animation: player.anim }); ctx.restore();
   }
 
   function drawParticles() {
@@ -2370,7 +2410,7 @@
   function drawHUD(time) {
     ctx.save(); ctx.fillStyle = 'rgba(32,29,61,.36)'; ctx.strokeStyle = 'rgba(255,226,126,.62)'; ctx.lineWidth = 3; ctx.fillRect(14, 14, 330, 174); ctx.strokeRect(14, 14, 330, 174);
     ctx.fillStyle = '#fff5d2'; ctx.font = '900 22px Arial'; ctx.textAlign = 'left'; ctx.fillText('World 1-2 • Sky-High Rescue', 26, 41); ctx.font = '17px Arial'; ctx.fillText(`Score: ${game.score.toLocaleString()}`, 26, 68); ctx.fillText(`Tacos: ${game.collected}/${game.totalTacos}`, 26, 94); ctx.fillStyle = '#65d8ff'; ctx.font = '900 14px Arial'; ctx.fillText(`✉ AIR MAIL ${game.airMail}/5  •  SKY STREAK ${game.skyStreak.count}`, 26, 118); ctx.fillStyle = '#ffd65a'; ctx.font = '900 14px Arial'; ctx.fillText(`Splats ${game.defeated}  •  Plane ${game.crashLanded ? 'Landed-ish' : game.ambush.stage >= 3 ? 'Guac’d' : 'Airborne'}`, 26, 140);
-    ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fillRect(26, 159, 280, 10); ctx.fillStyle = sharedAbilities.isFrenzy(game.abilities) ? '#65d8ff' : '#ffd65a'; ctx.fillRect(26, 159, 280 * (sharedAbilities.isFrenzy(game.abilities) ? 1 : game.abilities.tacoMeter / 100), 10); ctx.font = '900 10px Arial'; ctx.fillStyle = '#fff5d2'; ctx.fillText('TACO METER', 26, 156);
+    sharedAbilities.drawTacoPowerHUD(ctx, game.abilities, { x: 26, y: 159, width: 280, height: 10, labelX: 26, labelY: 156, textColor: '#fff5d2' });
     const section = sections[game.sectionIndex]; ctx.fillStyle = 'rgba(32,29,61,.34)'; ctx.beginPath(); ctx.roundRect(370, 14, 410, 75, 24); ctx.fill(); ctx.strokeStyle = 'rgba(255,226,126,.42)'; ctx.lineWidth = 2; ctx.stroke(); ctx.fillStyle = section.accent; ctx.fillRect(395, 42, 360 * (player.x / WORLD_WIDTH), 8); ctx.fillStyle = 'rgba(255,255,255,.14)'; ctx.fillRect(395 + 360 * (player.x / WORLD_WIDTH), 42, 360 * (1 - player.x / WORLD_WIDTH), 8); ctx.textAlign = 'center'; ctx.fillStyle = '#fff5d2'; ctx.font = '900 15px Arial'; ctx.fillText(section.name, 575, 73);
     ctx.textAlign = 'right'; ctx.font = '900 15px Arial'; if (sharedAbilities.isFrenzy(game.abilities)) { ctx.fillStyle = '#65d8ff'; ctx.fillText(`TACO FRENZY ${Math.ceil(game.abilities.frenzyTimer)}s`, 938, 52); } if (sharedAbilities.hasMagnet(game.abilities)) { ctx.fillStyle = '#ffd65a'; ctx.fillText(`MAGNET ${Math.ceil(game.abilities.magnetTimer)}s`, 938, 75); }
     ctx.fillStyle = '#ff6fae'; ctx.font = '24px Arial'; ctx.fillText('♥'.repeat(game.hearts), 938, 108);
@@ -2386,6 +2426,7 @@
     if (qa) canvas.dataset.qaState = JSON.stringify({
       sourceVersion: SOURCE_VERSION,
       state: game.state, player: { x: Math.round(player.x), y: Math.round(player.y), vx: Math.round(player.vx), vy: Math.round(player.vy), grounded: player.grounded },
+      superHero: { ...sharedAbilities.snapshot(game.abilities), collisionWidth: player.w, collisionHeight: player.h },
       heroPhysics, respawn: {
         active: game.respawn.active,
         phase: game.respawn.active ? (game.respawn.spawnPlaced ? 'drop' : game.respawn.timer < .38 ? 'vanish' : 'beam') : 'inactive',

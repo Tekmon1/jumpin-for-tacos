@@ -26,7 +26,8 @@
     snapshot: { left: false, right: false, jump: false, special: false, back: false, fullscreen: false, menu: false },
     stateSequence: 0,
   };
-  const qaMode = window.location.hostname === 'terminal.local' && new URLSearchParams(window.location.search).get('controllerQa') === '1';
+  const qaHost = ['terminal.local', '127.0.0.1', 'localhost'].includes(window.location.hostname);
+  const qaMode = qaHost && new URLSearchParams(window.location.search).get('controllerQa') === '1';
   const qaVirtualButtons = Array.from({ length: 16 }, () => ({ pressed: false, value: 0 }));
   const qaVirtualGamepad = qaMode ? {
     axes: [0, 0, 0, 0], buttons: qaVirtualButtons, connected: true, id: 'QA Xbox Controller', index: 99, mapping: 'standard', timestamp: 0,
@@ -318,7 +319,7 @@
         qaVirtualGamepad.buttons[0] = { pressed: false, value: 0 };
         qaVirtualGamepad.timestamp += 1;
         syncQaGamepad();
-      }, 900);
+      }, 90);
     });
     panel.append(holdRight, neutral, pressA);
     document.body.appendChild(panel);
@@ -373,7 +374,7 @@
   window.JFT_CONTROLLER = Object.freeze(api);
 
   document.documentElement.dataset.controllerReady = 'true';
-  if (window.location.hostname === 'terminal.local') {
+  if (qaHost) {
     const qaButtons = Array.from({ length: 16 }, () => ({ pressed: false, value: 0 }));
     const leftStick = resolveSnapshot({ axes: [-0.8], buttons: qaButtons });
     qaButtons[0] = { pressed: true, value: 1 };

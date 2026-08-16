@@ -1,7 +1,8 @@
 (() => {
   const coreAbilities = Object.freeze([
-    'Taco Meter',
-    'Taco Frenzy',
+    'Taco Power',
+    'Super Taco Hero',
+    'Scripted Taco Frenzy',
     'Taco Magnet',
   ]);
   // One movement contract for every Taco Hero level. New level runtimes load
@@ -10,6 +11,7 @@
   const heroPhysics = Object.freeze({
     gravity: 1800,
     jumpVelocity: 680,
+    superJumpVelocity: 650,
     maxFallVelocity: 900,
     coyoteTime: 0.14,
     jumpBufferTime: 0.14,
@@ -198,6 +200,7 @@
   });
   const coreHeroSystems = Object.freeze([
     'Shared Taco Hero jump physics',
+    'Shared Super Taco Hero state and one true mid-air jump',
     'Shared enemy stomp and bounce timing',
     'Shared telegraphed enemy behavior archetypes',
     'Shared splat callout vocabulary',
