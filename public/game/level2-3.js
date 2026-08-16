@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const SOURCE_VERSION = 'w2-3-v19-fiesta-wing-shoes';
+  const SOURCE_VERSION = 'w2-3-v20-complete-super-sprite';
 
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
@@ -3892,9 +3892,12 @@
         ctx.globalAlpha = 1;
       }
       abilities.applyHeroStyle(ctx, game.abilities);
-      const frameWidth = images.hero.width / 8;
-      ctx.drawImage(images.hero, frame * frameWidth, 0, frameWidth, images.hero.height, -visualSize / 2, -visualSize / 2, visualSize, visualSize);
-      abilities.drawFiestaWingShoes(ctx, game.abilities, time, { size: visualSize, airborne: !player.grounded, reducedMotion: game.reducedShake });
+      abilities.drawHeroSpriteFrame(ctx, game.abilities, images.hero, frame, {
+        x: -visualSize / 2,
+        y: -visualSize / 2,
+        width: visualSize,
+        height: visualSize,
+      });
       ctx.restore();
       return;
     }
@@ -3927,7 +3930,6 @@
     ctx.fillRect(-14, 16, 10, 9);
     ctx.fillStyle = '#50e7ff';
     ctx.fillRect(4, 16, 10, 9);
-    abilities.drawFiestaWingShoes(ctx, game.abilities, time, { size: 66, airborne: !player.grounded, reducedMotion: game.reducedShake });
     ctx.restore();
   }
 

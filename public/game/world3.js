@@ -160,7 +160,7 @@
     },
   };
   const config = CONFIGS[levelId];
-  const SOURCE_VERSION = 35;
+  const SOURCE_VERSION = 36;
   const WORLD3_VEHICLE_VISUALS = Object.freeze({
     balloon: Object.freeze({ cell: 4, width: 188, height: 250, launcherX: 24, launcherY: 176 }),
     coaster: Object.freeze({ cell: 6, width: 310, height: 207, launcherX: 28, launcherY: 112 }),
@@ -6127,14 +6127,13 @@
     sharedAbilities.applyHeroStyle(ctx, game.abilities);
     if (player.invulnerable > 0 && Math.floor(game.levelTime * 15) % 2) ctx.globalAlpha = 0.5;
     if (images.hero.complete && images.hero.naturalWidth) {
-      ctx.drawImage(images.hero, frame * 272, 0, 272, 272, -33, -33, 66, 66);
+      sharedAbilities.drawHeroSpriteFrame(ctx, game.abilities, images.hero, frame, { x: -33, y: -33, width: 66, height: 66 });
     } else {
       ctx.fillStyle = '#ffd65a';
       ctx.beginPath();
       ctx.arc(0, 0, 25, 0, Math.PI * 2);
       ctx.fill();
     }
-    sharedAbilities.drawFiestaWingShoes(ctx, game.abilities, game.levelTime * 1000, { size: 66, airborne, reducedMotion: game.reducedShake });
     ctx.restore();
   }
 

@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-2-v34-fiesta-wing-shoes';
+  const SOURCE_VERSION = 'w1-2-v35-complete-super-sprite';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = true;
@@ -2393,10 +2393,10 @@
     if (heroCore.hidePlayerDuringRespawn(game.respawn)) return;
     const lookingUp = game.ambush.hitFlash > 0; const frame = game.state === 'celebrating' || game.state === 'won' ? 7 : lookingUp ? 4 : player.invulnerable > 0 ? 6 : !player.grounded ? (player.vy < 0 ? 4 : 5) : Math.abs(player.vx) > 24 ? 1 + Math.floor(player.anim) % 3 : 0;
     const x = player.x - game.cameraX + player.w / 2; const y = player.y + player.h / 2; sharedAbilities.drawHeroEffects(ctx, game.abilities, player, game.cameraX, time, { reducedMotion: game.reducedShake }); ctx.save(); if (player.invulnerable > 0 && Math.floor(player.invulnerable * 12) % 2 === 0) ctx.globalAlpha = .42;
-    if (game.rescueActive && !game.crashLanded) { const sourceW = images.hero.width / 8; for (let ghost = 3; ghost > 0; ghost -= 1) { ctx.globalAlpha = .08 + ghost * .045; ctx.drawImage(images.hero, frame * sourceW, 0, sourceW, images.hero.height, x - 33 - ghost * 18, y - 33, 66, 66); } ctx.globalAlpha = 1; }
+    if (game.rescueActive && !game.crashLanded) { for (let ghost = 3; ghost > 0; ghost -= 1) { ctx.globalAlpha = .08 + ghost * .045; sharedAbilities.drawHeroSpriteFrame(ctx, game.abilities, images.hero, frame, { x: x - 33 - ghost * 18, y: y - 33, width: 66, height: 66 }); } ctx.globalAlpha = 1; }
     ctx.translate(x, y); ctx.rotate((player.rotation || 0) + (lookingUp ? -.13 : 0)); sharedAbilities.applyHeroVisualTransform(ctx, game.abilities, { direction: player.dir, baseScale: player.scale || 1, anchorY: 33, time });
     if (game.rescueActive || sharedAbilities.isFrenzy(game.abilities)) { ctx.shadowColor = game.rescueActive ? '#ffd65a' : '#65d8ff'; ctx.shadowBlur = 24; ctx.strokeStyle = game.rescueActive ? '#ffd65a' : '#65d8ff'; ctx.globalAlpha = .65; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(0, 27, 27 + Math.sin(time * .012) * 2, 6, 0, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1; }
-    sharedAbilities.applyHeroStyle(ctx, game.abilities); const sourceW = images.hero.width / 8; ctx.drawImage(images.hero, frame * sourceW, 0, sourceW, images.hero.height, -33, -33, 66, 66); sharedAbilities.drawFiestaWingShoes(ctx, game.abilities, time, { size: 66, airborne: !player.grounded, reducedMotion: game.reducedShake }); ctx.restore();
+    sharedAbilities.applyHeroStyle(ctx, game.abilities); sharedAbilities.drawHeroSpriteFrame(ctx, game.abilities, images.hero, frame, { x: -33, y: -33, width: 66, height: 66 }); ctx.restore();
   }
 
   function drawParticles() {

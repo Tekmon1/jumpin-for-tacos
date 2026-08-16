@@ -14,6 +14,10 @@
     powerDownDuration: 0.42,
     damageInvulnerabilityDuration: 1.3,
     superJumpFxDuration: 0.32,
+    artworkSwapProgress: 0.54,
+    powerDownArtworkSwapProgress: 0.58,
+    spriteSheet: '/game/assets/taco_hero_super_sheet.png?v=1',
+    frameCount: 8,
   });
   const definitions = Object.freeze({
     tacoPower,
@@ -265,7 +269,18 @@
     return progress * progress * (3 - 2 * progress);
   }
 
-  function fiestaWingShoeVisualState(state, time = 0, options = {}) {
+  let superHeroSpriteSheet = null;
+
+  function getSuperHeroSpriteSheet() {
+    if (!superHeroSpriteSheet && typeof Image !== 'undefined') {
+      superHeroSpriteSheet = new Image();
+      superHeroSpriteSheet.decoding = 'async';
+      superHeroSpriteSheet.src = definitions.superHero.spriteSheet;
+    }
+    return superHeroSpriteSheet;
+  }
+
+  function heroArtworkVisualState(state) {
     normalize(state);
     const config = definitions.superHero;
     const transformProgress = state.transformTimer > 0
@@ -274,37 +289,60 @@
     const powerDownProgress = state.powerDownTimer > 0
       ? clamp01(1 - state.powerDownTimer / config.powerDownDuration)
       : 0;
-    let appearance = state.superActive ? 1 : 0;
-    let wingSpread = state.superActive ? 0.36 : 0;
-    let transformationFlare = 0;
-    if (state.transformTimer > 0) {
-      appearance = smoothstep(0.3, 0.64, transformProgress);
-      const unfold = smoothstep(0.48, 0.74, transformProgress);
-      const settle = smoothstep(0.82, 1, transformProgress);
-      wingSpread = 0.36 + unfold * 0.82 - settle * 0.82;
-      transformationFlare = Math.sin(smoothstep(0.42, 0.96, transformProgress) * Math.PI);
-    } else if (state.powerDownTimer > 0) {
-      appearance = 1 - smoothstep(0.45, 1, powerDownProgress);
-      wingSpread = Math.max(0, 0.72 - powerDownProgress * 0.72);
+    const transforming = state.transformTimer > 0;
+    const poweringDown = state.powerDownTimer > 0;
+    let artwork = state.superActive ? 'super' : 'normal';
+    let swapDistance = 1;
+    if (transforming) {
+      artwork = transformProgress >= config.artworkSwapProgress ? 'super' : 'normal';
+      swapDistance = Math.abs(transformProgress - config.artworkSwapProgress);
+    } else if (poweringDown) {
+      artwork = powerDownProgress < config.powerDownArtworkSwapProgress ? 'super' : 'normal';
+      swapDistance = Math.abs(powerDownProgress - config.powerDownArtworkSwapProgress);
     }
     const jumpFlare = state.superJumpFxTimer > 0
       ? clamp01(state.superJumpFxTimer / config.superJumpFxDuration)
       : 0;
-    const reducedMotion = Boolean(options.reducedMotion);
-    const pulse = reducedMotion ? 0.5 : (Math.sin(time * 0.01) + 1) * 0.5;
-    const airborneFlutter = options.airborne && !reducedMotion ? Math.sin(time * 0.018) * 0.09 : 0;
     return {
-      visible: appearance > 0.01,
-      appearance,
-      wingSpread: Math.max(0, wingSpread + jumpFlare * 0.78),
-      wingFlutter: airborneFlutter,
-      soleGlow: clamp01(0.54 + pulse * 0.22 + transformationFlare * 0.42 + jumpFlare * 0.58),
+      artwork,
+      swapFlash: transforming || poweringDown ? clamp01(1 - swapDistance / 0.13) : 0,
       jumpFlare,
-      transformationFlare,
-      powerDownFlash: state.powerDownTimer > 0 ? 1 - smoothstep(0, 0.38, powerDownProgress) : 0,
+      powerDownFlash: poweringDown ? 1 - smoothstep(0, 0.38, powerDownProgress) : 0,
       transformProgress,
       powerDownProgress,
     };
+  }
+
+  function isDrawableSprite(sprite) {
+    if (!sprite) return false;
+    if (typeof sprite.complete === 'boolean' && !sprite.complete) return false;
+    return (sprite.naturalWidth || sprite.width || 0) > 0 && (sprite.naturalHeight || sprite.height || 0) > 0;
+  }
+
+  function drawHeroSpriteFrame(ctx, state, normalSprite, frame, options = {}) {
+    normalize(state);
+    const visual = heroArtworkVisualState(state);
+    const superSprite = options.superSprite || getSuperHeroSpriteSheet();
+    const requestedSprite = visual.artwork === 'super' ? superSprite : normalSprite;
+    const sprite = isDrawableSprite(requestedSprite) ? requestedSprite : normalSprite;
+    if (!isDrawableSprite(sprite)) return visual;
+    const frameCount = options.frameCount || definitions.superHero.frameCount;
+    const sourceWidth = (sprite.naturalWidth || sprite.width) / frameCount;
+    const sourceHeight = sprite.naturalHeight || sprite.height;
+    const width = options.width ?? 66;
+    const height = options.height ?? width;
+    const x = options.x ?? -width / 2;
+    const y = options.y ?? -height / 2;
+    ctx.save();
+    if (visual.swapFlash > 0.01) {
+      const inheritedFilter = ctx.filter && ctx.filter !== 'none' ? `${ctx.filter} ` : '';
+      ctx.filter = `${inheritedFilter}brightness(${1 + visual.swapFlash * 1.7}) saturate(${1 + visual.swapFlash * 0.32})`;
+      ctx.shadowColor = visual.artwork === 'super' ? '#65e7ff' : '#fff4ad';
+      ctx.shadowBlur = 5 + visual.swapFlash * 11;
+    }
+    ctx.drawImage(sprite, frame * sourceWidth, 0, sourceWidth, sourceHeight, x, y, width, height);
+    ctx.restore();
+    return visual;
   }
 
   function applyHeroVisualTransform(ctx, state, options = {}) {
@@ -325,123 +363,6 @@
     ctx.filter = state.superActive
       ? 'saturate(1.38) brightness(1.12) drop-shadow(0 0 3px #65e7ff)'
       : 'saturate(1.15) brightness(1.08)';
-  }
-
-  function drawCompactWing(ctx, side, visual) {
-    const reach = 1 + visual.wingSpread * 0.48;
-    ctx.save();
-    ctx.scale(side * reach, 1);
-    ctx.rotate(-0.12 - visual.wingSpread * 0.08 + visual.wingFlutter * side);
-    ctx.fillStyle = visual.powerDownFlash > 0.01 ? '#fff4ad' : '#fffdf0';
-    ctx.strokeStyle = '#65e7ff';
-    ctx.lineWidth = 1.15;
-    ctx.beginPath();
-    ctx.moveTo(0, 2.5);
-    ctx.bezierCurveTo(3.8, -4.6, 8.6, -6.4, 11.2, -5.1);
-    ctx.bezierCurveTo(9.8, -1.8, 7.1, 0.2, 3.2, 1.3);
-    ctx.bezierCurveTo(6.1, 0.8, 8.5, 1.2, 9.8, 2.6);
-    ctx.bezierCurveTo(6.8, 4.1, 3.4, 4, 0, 2.5);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,104,180,.82)';
-    ctx.lineWidth = 0.9;
-    ctx.beginPath();
-    ctx.moveTo(2.4, 1.1); ctx.quadraticCurveTo(5.7, -1.8, 9.3, -3.8);
-    ctx.moveTo(3.5, 2.4); ctx.quadraticCurveTo(6.4, 1.6, 8.2, 1.9);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  function drawFiestaShoe(ctx, side, visual) {
-    const primary = side < 0 ? '#ff4fac' : '#2ed7f2';
-    const secondary = side < 0 ? '#2ed7f2' : '#ff4fac';
-    ctx.save();
-    ctx.rotate(side * (0.035 + visual.jumpFlare * 0.07));
-    ctx.translate(side * 5.8, -2.2);
-    drawCompactWing(ctx, side, visual);
-    ctx.translate(side * -5.8, 2.2);
-    ctx.shadowColor = visual.powerDownFlash > 0.01 ? '#fff4ad' : '#65e7ff';
-    ctx.shadowBlur = 1.5 + visual.soleGlow * 4.5;
-    ctx.fillStyle = primary;
-    ctx.strokeStyle = '#36173d';
-    ctx.lineWidth = 1.45;
-    ctx.beginPath();
-    ctx.moveTo(-7.8, -5.2);
-    ctx.quadraticCurveTo(-4.5, -7.4, 0.2, -5.9);
-    ctx.lineTo(2.5, -2.1);
-    ctx.quadraticCurveTo(6.7, -1.5, 8.8, 2.2);
-    ctx.lineTo(8.2, 4.2);
-    ctx.quadraticCurveTo(0.2, 6.2, -8.4, 4.1);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = secondary;
-    ctx.beginPath();
-    ctx.moveTo(-6.2, -4.4);
-    ctx.lineTo(-1.4, -4.8);
-    ctx.lineTo(1.2, 1.5);
-    ctx.lineTo(-5.7, 2.2);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = '#ff9b4a';
-    ctx.beginPath();
-    ctx.moveTo(2.3, -1.5);
-    ctx.quadraticCurveTo(7.1, -1.1, 8.1, 2.5);
-    ctx.lineTo(7.2, 3.5);
-    ctx.lineTo(3.1, 2.7);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = '#ffd65a';
-    ctx.beginPath();
-    ctx.moveTo(-6.7, -4.9); ctx.lineTo(-2.4, -6.5); ctx.lineTo(0.1, -5.4); ctx.lineTo(-4.6, -3.8); ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = '#fffdf0';
-    ctx.lineWidth = 1.25;
-    ctx.beginPath();
-    ctx.moveTo(-2.6, -2.8); ctx.lineTo(2.4, -1.7);
-    ctx.moveTo(-2.1, -0.6); ctx.lineTo(3.5, 0.3);
-    ctx.moveTo(-1.2, 1.5); ctx.lineTo(4.5, 2);
-    ctx.stroke();
-    ctx.fillStyle = '#fffdf0';
-    ctx.strokeStyle = '#2ed7f2';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(-8.7, 3.4);
-    ctx.quadraticCurveTo(-0.2, 5.7, 8.9, 3.4);
-    ctx.lineTo(9.2, 6.1);
-    ctx.quadraticCurveTo(0.1, 8.2, -9.1, 5.9);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-    ctx.globalAlpha *= 0.64 + visual.soleGlow * 0.36;
-    ctx.fillStyle = side < 0 ? '#65e7ff' : '#ffd65a';
-    ctx.fillRect(-6.4, 5.35, 12.8, 1.25 + visual.jumpFlare * 1.35);
-    ctx.restore();
-  }
-
-  function drawFiestaWingShoes(ctx, state, time = 0, options = {}) {
-    const visual = fiestaWingShoeVisualState(state, time, options);
-    if (!visual.visible) return;
-    const size = options.size || 66;
-    const unit = size / 66;
-    const footY = options.footY ?? size * 0.39;
-    ctx.save();
-    ctx.translate(0, footY);
-    ctx.scale(unit, unit);
-    ctx.shadowBlur = 0;
-    ctx.filter = 'saturate(1.18) brightness(1.06)';
-    ctx.globalAlpha *= visual.appearance;
-    const revealScale = 0.72 + visual.appearance * 0.28;
-    ctx.scale(revealScale, revealScale);
-    if (visual.powerDownFlash > 0.01) {
-      ctx.shadowColor = '#fff4ad';
-      ctx.shadowBlur = 10 * visual.powerDownFlash;
-    }
-    ctx.save(); ctx.translate(-10.8 - visual.jumpFlare * 1.8, 0); drawFiestaShoe(ctx, -1, visual); ctx.restore();
-    ctx.save(); ctx.translate(10.8 + visual.jumpFlare * 1.8, 0.8); drawFiestaShoe(ctx, 1, visual); ctx.restore();
-    ctx.restore();
   }
 
   function drawOrbitTaco(ctx, x, y, rotation, size, alpha) {
@@ -471,7 +392,7 @@
     const visible = state.superActive || state.transformTimer > 0 || state.powerDownTimer > 0 || state.superJumpFxTimer > 0;
     if (!visible) return;
     const reducedMotion = Boolean(options.reducedMotion);
-    const shoeVisual = fiestaWingShoeVisualState(state, time, { reducedMotion, airborne: !player.grounded });
+    const artworkVisual = heroArtworkVisualState(state);
     const x = options.x ?? player.x - cameraX;
     const y = options.y ?? player.y;
     const w = options.w ?? player.w;
@@ -498,6 +419,17 @@
       ctx.beginPath();
       ctx.ellipse(centerX, footY, 25 + pulse * 3, 5.5 + pulse * 0.8, 0, 0, Math.PI * 2);
       ctx.stroke();
+      if (artworkVisual.artwork === 'super') {
+        ctx.globalAlpha = state.transformTimer > 0 ? 0.58 : 0.2 + pulse * 0.09;
+        ctx.fillStyle = pulse > 0.5 ? '#65e7ff' : '#ffd65a';
+        ctx.shadowColor = '#65e7ff';
+        ctx.shadowBlur = reducedMotion ? 3 : 5 + pulse * 2;
+        ctx.beginPath();
+        ctx.ellipse(centerX - 8.5, footY - 1.5, 8.8, 2.1, -0.04, 0, Math.PI * 2);
+        ctx.ellipse(centerX + 8.5, footY - 1, 8.8, 2.1, 0.04, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
       ctx.globalAlpha = 1;
       const orbitCount = state.transformTimer > 0 ? (reducedMotion ? 2 : 3) : 0;
       for (let index = 0; index < orbitCount; index += 1) {
@@ -520,7 +452,7 @@
       }
     }
     if (state.transformTimer > 0) {
-      const progress = shoeVisual.transformProgress;
+      const progress = artworkVisual.transformProgress;
       const ringAlpha = 1 - smoothstep(0.22, 1, progress);
       ctx.globalAlpha = ringAlpha * (reducedMotion ? 0.58 : 1);
       ctx.strokeStyle = progress < 0.5 ? '#fff4ad' : '#65e7ff';
@@ -561,7 +493,7 @@
       }
     }
     if (state.powerDownTimer > 0) {
-      const remaining = 1 - shoeVisual.powerDownProgress;
+      const remaining = 1 - artworkVisual.powerDownProgress;
       ctx.globalAlpha = remaining;
       const fragmentCount = reducedMotion ? 5 : 9;
       for (let index = 0; index < fragmentCount; index += 1) {
@@ -576,7 +508,7 @@
       }
       ctx.strokeStyle = '#fff4ad';
       ctx.lineWidth = 2 + remaining * 2;
-      ctx.globalAlpha = shoeVisual.powerDownFlash * 0.9;
+      ctx.globalAlpha = artworkVisual.powerDownFlash * 0.9;
       ctx.beginPath();
       ctx.ellipse(centerX, footY, 19 + (1 - remaining) * 18, 5 + (1 - remaining) * 5, 0, 0, Math.PI * 2);
       ctx.stroke();
@@ -595,6 +527,27 @@
       ctx.beginPath();
       ctx.ellipse(centerX, footY + 4, 8 + progress * 18, 2.2 + progress * 4, 0, 0, Math.PI * 2);
       ctx.stroke();
+      if (!reducedMotion) {
+        for (const side of [-1, 1]) {
+          ctx.save();
+          ctx.translate(centerX + side * 10, footY - 8 - progress * 2);
+          ctx.scale(side, 1);
+          ctx.globalAlpha = remaining * 0.78;
+          ctx.strokeStyle = '#fffdf0';
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.moveTo(0, 3);
+          ctx.quadraticCurveTo(8 + progress * 7, -6 - progress * 2, 15 + progress * 8, -3);
+          ctx.quadraticCurveTo(10 + progress * 5, 1, 2, 4);
+          ctx.stroke();
+          ctx.strokeStyle = '#ff68b4';
+          ctx.lineWidth = 1.1;
+          ctx.beginPath();
+          ctx.moveTo(4, 2); ctx.quadraticCurveTo(10 + progress * 5, -1, 15 + progress * 7, -3);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
       const jumpParticleCount = reducedMotion ? 3 : 5;
       for (let index = 0; index < jumpParticleCount; index += 1) {
         const offset = (index - (jumpParticleCount - 1) * 0.5) * 8;
@@ -644,6 +597,7 @@
 
   function snapshot(state) {
     normalize(state);
+    const artwork = heroArtworkVisualState(state);
     return {
       active: state.superActive,
       tacoPower: state.tacoMeter,
@@ -656,13 +610,17 @@
       transformationSuspended: Boolean(state.transformMotion),
       powerDown: state.powerDownTimer > 0,
       fiestaWingShoes: state.superActive || state.powerDownTimer > 0,
+      heroArtwork: artwork.artwork,
+      completeAlternateSprite: artwork.artwork === 'super',
       visualScale: definitions.superHero.visualScale,
       superJumpVelocity: window.JFT_HERO_CORE?.physics?.superJumpVelocity || definitions.superHero.superJumpVelocity,
     };
   }
 
+  getSuperHeroSpriteSheet();
+
   window.JFT_SHARED_ABILITIES = Object.freeze({
-    version: 'super-taco-hero-v2-fiesta-wing-shoes',
+    version: 'super-taco-hero-v3-complete-sprite',
     definitions,
     createState,
     reset,
@@ -682,11 +640,12 @@
     suspendForTransformation,
     meterProgress,
     heroVisualTransform,
-    fiestaWingShoeVisualState,
+    heroArtworkVisualState,
+    getSuperHeroSpriteSheet,
     applyHeroVisualTransform,
     applyHeroStyle,
     drawHeroEffects,
-    drawFiestaWingShoes,
+    drawHeroSpriteFrame,
     drawTacoPowerHUD,
     snapshot,
     isSuper: (state) => Boolean(normalize(state).superActive),

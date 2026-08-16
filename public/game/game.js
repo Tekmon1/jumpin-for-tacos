@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-1-v53-fiesta-wing-shoes';
+  const SOURCE_VERSION = 'w1-1-v54-complete-super-sprite';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -4372,7 +4372,6 @@
     const py = Math.floor(player.y);
     const scale = player.scale || 1;
     const chaseReadability = game.chaseTruckActive || game.chaseTruckEscaping;
-    const sourceW = sprite.width / 8;
     const spriteSize = chaseReadability ? 70 : 62;
     if (chaseReadability) {
       const pulse = (Math.sin(game.levelTime * 13) + 1) * 0.5;
@@ -4419,8 +4418,12 @@
       ctx.shadowBlur = 18;
     }
     sharedAbilities.applyHeroStyle(ctx, game.abilities);
-    ctx.drawImage(sprite, frame * sourceW, 0, sourceW, sprite.height, -spriteSize / 2, -spriteSize / 2, spriteSize, spriteSize);
-    sharedAbilities.drawFiestaWingShoes(ctx, game.abilities, time, { size: spriteSize, airborne: !player.grounded, reducedMotion: game.reducedShake });
+    sharedAbilities.drawHeroSpriteFrame(ctx, game.abilities, sprite, frame, {
+      x: -spriteSize / 2,
+      y: -spriteSize / 2,
+      width: spriteSize,
+      height: spriteSize,
+    });
     ctx.restore();
     ctx.globalAlpha = 1;
   }
