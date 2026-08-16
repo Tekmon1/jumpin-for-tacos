@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-1-v56-super-exploration-pilot';
+  const SOURCE_VERSION = 'w1-1-v57-super-exploration-correction';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -97,6 +97,9 @@
     'world1_1_onion_drama_sheet_v1',
     'world1_1_jalapeno_popper_sheet_v1',
     'world1_1_desert_locals_v1',
+    'world1_1_super_kite_route_v2',
+    'world1_1_super_skyway_v2',
+    'world1_1_super_radio_roost_v2',
   ];
   const enemySpriteArt = Object.freeze({
     chili: 'world1_1_chili_bandit_sheet_v1',
@@ -381,85 +384,162 @@
       })),
   );
 
-  // Phase 2A is intentionally a World 1-1-only exploration pilot. Every
-  // authored surface sits above the uninterrupted opening road and before
-  // Olivia's first scripted drop, so Normal Taco Hero can ignore all three
-  // discoveries and still finish the complete level. The vertical gates are
-  // taller than the frozen 128-unit normal jump envelope while remaining well
-  // inside Super Taco Hero's two-jump envelope.
+  // Phase 2A remains a World 1-1-only exploration pilot, but the correction
+  // pass spaces its three destinations across the full level. Every entry is
+  // optional, sits over a recoverable normal route, and stays clear of Olivia's
+  // drops and the active taco-truck chase. Entry gates exceed the frozen
+  // 128-unit normal jump envelope while remaining inside Super Taco Hero's
+  // unchanged two-jump envelope.
   const superExplorationPilotPlan = Object.freeze([
     Object.freeze({
-      id: 'cactus-radio-roost',
-      kind: 'concealed-airborne-secret',
-      name: 'Cactus Radio Roost',
-      message: 'AIRBORNE SECRET! CACTUS RADIO ROOST!',
-      score: 900,
-      rewardType: 'rainbow',
-      rewardX: 1043,
-      rewardY: 120,
-      trigger: Object.freeze({ x: 995, y: 104, w: 132, h: 112 }),
-      platformIds: Object.freeze(['phase2-cactus-radio-roost']),
-      waypointPlatformIds: Object.freeze([]),
-      entryRise: 160,
-      visibleByDefault: false,
-    }),
-    Object.freeze({
       id: 'salsa-kite-test',
-      kind: 'moving-double-jump-challenge',
-      name: 'Salsa Kite Test',
-      message: 'SALSA KITE CLEARED! TACO CACHE!',
-      score: 750,
+      kind: 'moving-double-jump-route',
+      name: 'Kite Route',
+      message: 'KITE ROUTE DISCOVERED!',
+      score: 900,
+      rewardTier: 'medium',
       rewardType: 'taco-cache',
-      rewardX: 1972,
-      rewardY: 125,
-      trigger: Object.freeze({ x: 1908, y: 116, w: 136, h: 102 }),
-      platformIds: Object.freeze(['phase2-salsa-kite', 'phase2-salsa-drum-finish']),
-      waypointPlatformIds: Object.freeze(['phase2-salsa-kite']),
-      entryRise: 165,
+      bonusTacos: 8,
+      rewardX: 8548,
+      rewardY: 205,
+      rewardLabel: '+900 SCORE  •  8-TACO FIESTA',
+      trigger: Object.freeze({ x: 8458, y: 142, w: 200, h: 158 }),
+      platformIds: Object.freeze([
+        'phase2-kite-launch', 'phase2-kite-gust-one', 'phase2-kite-gust-two',
+        'phase2-kite-gust-three', 'phase2-kite-gold-finish',
+      ]),
+      waypointGroups: Object.freeze([
+        Object.freeze(['phase2-kite-launch']),
+        Object.freeze(['phase2-kite-gust-one']),
+        Object.freeze(['phase2-kite-gust-two']),
+        Object.freeze(['phase2-kite-gust-three']),
+      ]),
+      entryRise: 210,
       visibleByDefault: true,
+      intendedSeconds: Object.freeze([10, 16]),
+      worldPercent: Object.freeze([22.4, 26.2]),
     }),
     Object.freeze({
       id: 'sunset-skyway',
-      kind: 'visible-elevated-route',
-      name: 'Sunset Skyway',
-      message: 'SUNSET SKYWAY LIT! BONUS GOLDEN!',
-      score: 650,
+      kind: 'branching-elevated-mini-route',
+      name: 'Sunset Salsa Skyway',
+      message: 'SUNSET SALSA SKYWAY DISCOVERED!',
+      score: 1500,
+      rewardTier: 'medium-large',
       rewardType: 'golden',
-      rewardX: 2808,
-      rewardY: 113,
-      trigger: Object.freeze({ x: 2708, y: 0, w: 182, h: 300 }),
-      platformIds: Object.freeze(['phase2-skyway-west', 'phase2-skyway-center', 'phase2-skyway-east']),
-      waypointPlatformIds: Object.freeze(['phase2-skyway-west']),
-      entryRise: 150,
+      bonusTacos: 10,
+      rewardX: 16972,
+      rewardY: 120,
+      rewardLabel: '+1,500 SCORE  •  10-TACO FIESTA  •  BONUS GOLDEN',
+      trigger: Object.freeze({ x: 16918, y: 78, w: 162, h: 220 }),
+      platformIds: Object.freeze([
+        'phase2-skyway-start', 'phase2-skyway-west', 'phase2-skyway-low',
+        'phase2-skyway-high', 'phase2-skyway-center', 'phase2-skyway-east',
+      ]),
+      waypointGroups: Object.freeze([
+        Object.freeze(['phase2-skyway-start']),
+        Object.freeze(['phase2-skyway-west']),
+        Object.freeze(['phase2-skyway-low', 'phase2-skyway-high']),
+        Object.freeze(['phase2-skyway-center']),
+      ]),
+      entryRise: 200,
       visibleByDefault: true,
+      intendedSeconds: Object.freeze([12, 18]),
+      worldPercent: Object.freeze([48, 51.6]),
+    }),
+    Object.freeze({
+      id: 'cactus-radio-roost',
+      kind: 'scene-based-zigzag-secret',
+      name: 'Cactus Radio Roost',
+      message: 'CACTUS RADIO ROOST DISCOVERED!',
+      score: 2400,
+      rewardTier: 'large',
+      rewardType: 'rainbow',
+      bonusTacos: 14,
+      magnetSeconds: 12,
+      rewardX: 24186,
+      rewardY: 76,
+      rewardLabel: '+2,400 SCORE  •  14-TACO FIESTA  •  RAINBOW  •  MAGNET',
+      trigger: Object.freeze({ x: 24092, y: 62, w: 218, h: 180 }),
+      platformIds: Object.freeze([
+        'phase2-roost-approach', 'phase2-roost-cable',
+        'phase2-roost-speaker', 'phase2-roost-main',
+      ]),
+      waypointGroups: Object.freeze([
+        Object.freeze(['phase2-roost-approach']),
+        Object.freeze(['phase2-roost-cable']),
+        Object.freeze(['phase2-roost-speaker']),
+      ]),
+      entryRise: 160,
+      visibleByDefault: true,
+      intendedSeconds: Object.freeze([10, 15]),
+      worldPercent: Object.freeze([72, 73.5]),
     }),
   ]);
 
   const superExplorationPlatformPlan = Object.freeze([
     Object.freeze({
-      id: 'phase2-cactus-radio-roost', x: 985, y: 170, w: 150, h: 26,
-      phase2Style: 'cactus-roost', phase2Discovery: 'cactus-radio-roost', mainRoute: false,
+      id: 'phase2-kite-launch', x: 7420, y: 250, w: 180, h: 26,
+      phase2Style: 'kite-launch', phase2Discovery: 'salsa-kite-test', phase2KiteIndex: 0, mainRoute: false,
     }),
     Object.freeze({
-      id: 'phase2-salsa-kite', x: 1710, y: 155, w: 145, h: 28,
-      moving: true, axis: 'x', baseX: 1710, baseY: 155, range: 48, speed: 1.15, phase: 0.4,
-      style: 'phase2-kite', phase2Style: 'salsa-kite', phase2Discovery: 'salsa-kite-test', mainRoute: false,
+      id: 'phase2-kite-gust-one', x: 7670, y: 225, w: 160, h: 28,
+      moving: true, axis: 'y', baseX: 7670, baseY: 225, range: 20, speed: 0.8, phase: 0.1,
+      style: 'phase2-kite', phase2Style: 'kite-gust', phase2Discovery: 'salsa-kite-test', phase2KiteIndex: 1, mainRoute: false,
     }),
     Object.freeze({
-      id: 'phase2-salsa-drum-finish', x: 1900, y: 175, w: 150, h: 26,
-      phase2Style: 'salsa-drum', phase2Discovery: 'salsa-kite-test', mainRoute: false,
+      id: 'phase2-kite-gust-two', x: 7935, y: 290, w: 165, h: 28,
+      moving: true, axis: 'x', baseX: 7935, baseY: 290, range: 35, speed: 0.9, phase: 1.7,
+      style: 'phase2-kite', phase2Style: 'kite-gust', phase2Discovery: 'salsa-kite-test', phase2KiteIndex: 2, mainRoute: false,
     }),
     Object.freeze({
-      id: 'phase2-skyway-west', x: 2300, y: 150, w: 180, h: 26,
-      phase2Style: 'skyway-west', phase2Discovery: 'sunset-skyway', mainRoute: false,
+      id: 'phase2-kite-gust-three', x: 8200, y: 205, w: 155, h: 28,
+      moving: true, axis: 'y', baseX: 8200, baseY: 205, range: 22, speed: 0.75, phase: 3.1,
+      style: 'phase2-kite', phase2Style: 'kite-gust', phase2Discovery: 'salsa-kite-test', phase2KiteIndex: 3, mainRoute: false,
     }),
     Object.freeze({
-      id: 'phase2-skyway-center', x: 2500, y: 210, w: 175, h: 26,
-      phase2Style: 'skyway-center', phase2Discovery: 'sunset-skyway', mainRoute: false,
+      id: 'phase2-kite-gold-finish', x: 8450, y: 260, w: 210, h: 26,
+      phase2Style: 'kite-finish', phase2Discovery: 'salsa-kite-test', phase2KiteIndex: 4, mainRoute: false,
     }),
     Object.freeze({
-      id: 'phase2-skyway-east', x: 2720, y: 165, w: 165, h: 26,
-      phase2Style: 'skyway-east', phase2Discovery: 'sunset-skyway', mainRoute: false,
+      id: 'phase2-skyway-start', x: 15880, y: 260, w: 185, h: 26,
+      phase2Style: 'skyway-start', phase2Discovery: 'sunset-skyway', phase2Segment: 0, mainRoute: false,
+    }),
+    Object.freeze({
+      id: 'phase2-skyway-west', x: 16145, y: 190, w: 205, h: 26,
+      phase2Style: 'skyway-west', phase2Discovery: 'sunset-skyway', phase2Segment: 1, mainRoute: false,
+    }),
+    Object.freeze({
+      id: 'phase2-skyway-low', x: 16415, y: 345, w: 190, h: 26,
+      phase2Style: 'skyway-low', phase2Discovery: 'sunset-skyway', phase2Segment: 2, mainRoute: false,
+    }),
+    Object.freeze({
+      id: 'phase2-skyway-high', x: 16410, y: 145, w: 185, h: 26,
+      phase2Style: 'skyway-high', phase2Discovery: 'sunset-skyway', phase2Segment: 2, mainRoute: false,
+    }),
+    Object.freeze({
+      id: 'phase2-skyway-center', x: 16665, y: 220, w: 205, h: 26,
+      phase2Style: 'skyway-center', phase2Discovery: 'sunset-skyway', phase2Segment: 3, mainRoute: false,
+    }),
+    Object.freeze({
+      id: 'phase2-skyway-east', x: 16925, y: 175, w: 155, h: 26,
+      phase2Style: 'skyway-east', phase2Discovery: 'sunset-skyway', phase2Segment: 4, mainRoute: false,
+    }),
+    Object.freeze({
+      id: 'phase2-roost-approach', x: 23820, y: 300, w: 180, h: 26,
+      phase2Style: 'roost-approach', phase2Discovery: 'cactus-radio-roost', phase2Segment: 0, mainRoute: false,
+    }),
+    Object.freeze({
+      id: 'phase2-roost-cable', x: 24040, y: 220, w: 155, h: 26,
+      phase2Style: 'roost-cable', phase2Discovery: 'cactus-radio-roost', phase2Segment: 1, mainRoute: false,
+    }),
+    Object.freeze({
+      id: 'phase2-roost-speaker', x: 24235, y: 300, w: 82, h: 26,
+      phase2Style: 'roost-speaker', phase2Discovery: 'cactus-radio-roost', phase2Segment: 2, mainRoute: false,
+    }),
+    Object.freeze({
+      id: 'phase2-roost-main', x: 24092, y: 135, w: 218, h: 26,
+      phase2Style: 'cactus-roost', phase2Discovery: 'cactus-radio-roost', phase2Segment: 3, mainRoute: false,
     }),
   ]);
 
@@ -525,6 +605,9 @@
     && new URLSearchParams(location.search).get('frenzy') === '1';
   const localPreviewSuper = localPreviewHost
     && new URLSearchParams(location.search).get('super') === '1';
+  const localPreviewExplorationComplete = localPreviewHost
+    ? new URLSearchParams(location.search).get('phase2Complete') || ''
+    : '';
   const localPreviewAutoRun = localPreviewHost
     ? new URLSearchParams(location.search).get('autoRun')
     : null;
@@ -1014,42 +1097,73 @@
       level.collectibles.push(item);
     };
 
-    // The moving Salsa Kite teaches one deliberate Super Jump, followed by a
-    // short conventional landing. The road beneath it remains the normal path.
-    addPilotTaco(1734, 258, 'salsa-kite-test', { bob: 0.1 });
-    addPilotTaco(1737, 210, 'salsa-kite-test', { bob: 0.28 });
-    [20, 60, 100].forEach((offset, index) => addPilotTaco(0, 0, 'salsa-kite-test', {
-      ridePlatformId: 'phase2-salsa-kite',
-      rideOffsetX: offset,
-      rideOffsetY: -48,
-      bob: index * 0.19,
-    }));
-    addPilotTaco(1927, 126, 'salsa-kite-test', { bob: 0.22 });
-    addPilotTaco(1980, 126, 'salsa-kite-test', { bob: 0.58 });
-
-    // The visible taco trail traces the full Sunset Skyway without adding a
-    // new collectible category. Its final Golden Taco is a runtime bonus, so
-    // permanent Golden completion totals stay exactly as they were.
+    // Kite Route rises out of the existing moving-canyon band. Five separate
+    // kites carry the eye forward, while the road and its original movers stay
+    // available beneath every optional landing.
     [
-      [2194, 251], [2237, 211], [2280, 165],
-      [2327, 102], [2377, 102], [2431, 128], [2474, 161],
-      [2527, 161], [2578, 161], [2631, 146], [2682, 126],
-      [2747, 117], [2797, 117], [2842, 117],
-    ].forEach(([x, y], index) => addPilotTaco(x, y, 'sunset-skyway', { bob: index * 0.09 }));
+      [7355, 362], [7392, 329], [7442, 278], [7502, 248], [7562, 238],
+      [7855, 245], [8115, 238], [8390, 225], [8488, 208], [8542, 191], [8596, 208],
+    ].forEach(([x, y], index) => addPilotTaco(x, y, 'salsa-kite-test', { bob: index * 0.09 }));
+    [
+      ['phase2-kite-gust-one', [24, 68, 112]],
+      ['phase2-kite-gust-two', [28, 76, 124]],
+      ['phase2-kite-gust-three', [24, 70, 116]],
+    ].forEach(([ridePlatformId, offsets], platformIndex) => {
+      offsets.forEach((rideOffsetX, index) => addPilotTaco(0, 0, 'salsa-kite-test', {
+        ridePlatformId,
+        rideOffsetX,
+        rideOffsetY: -49,
+        bob: platformIndex * 0.27 + index * 0.12,
+      }));
+    });
+
+    // The Skyway trail marks a clear start, two mutually readable middle
+    // branches, a rejoin, and a finish. Its Golden Taco remains a runtime bonus,
+    // so permanent Golden completion totals stay exactly as they were.
+    [
+      [15818, 365], [15858, 330], [15912, 258], [15970, 248],
+      [16065, 236], [16125, 198], [16190, 174], [16252, 174],
+      [16325, 210], [16382, 256],
+      [16438, 258], [16502, 258], [16570, 258],
+      [16434, 105], [16498, 105], [16562, 105],
+      [16630, 178], [16692, 174], [16755, 174], [16820, 164],
+      [16878, 135], [16940, 126], [16998, 126],
+    ].forEach(([x, y], index) => addPilotTaco(x, y, 'sunset-skyway', { bob: index * 0.08 }));
+
+    // The Roost is a compact zigzag scene after the showdown and before the
+    // checkpoint/chase handoff. Losing Super on any step drops Taco Hero back
+    // onto the unchanged road rather than into a scripted or fatal pocket.
+    [
+      [23772, 362], [23812, 332], [23862, 258], [23928, 252],
+      [23992, 225], [24054, 178], [24112, 178], [24172, 206],
+      [24222, 254], [24258, 258], [24292, 258],
+      [24268, 210], [24230, 168], [24188, 104], [24136, 104],
+    ].forEach(([x, y], index) => addPilotTaco(x, y, 'cactus-radio-roost', { bob: index * 0.1 }));
 
     const normalRise = heroPhysics.normalJumpRise;
     const secondJumpRise = Math.round(
       (heroPhysics.superJumpVelocity * heroPhysics.superJumpVelocity) / (2 * heroPhysics.gravity),
     );
+    const protectedRanges = [
+      [zones.dropStart, zones.dropEnd],
+      [zones.encoreDropStart, zones.encoreDropEnd],
+      [zones.showdownMusicStart - 400, zones.showdownEnd],
+      [zones.chaseRadio, zones.chaseEnd],
+    ];
+    const triggerOverlaps = (trigger, start, end) => trigger.x < end && trigger.x + trigger.w > start;
     game.superExploration = {
-      version: 'world-1-1-phase2a-v1',
+      version: 'world-1-1-phase2a-correction-v2',
       scope: 'world-1-1-only',
-      bounds: { start: 985, end: 2885 },
-      scriptedZoneSafe: superExplorationPilotPlan.every((entry) => entry.trigger.x + entry.trigger.w < zones.dropStart),
+      bounds: { start: 7420, end: 24310 },
+      protectedRanges,
+      scriptedZoneSafe: superExplorationPilotPlan.every((entry) => (
+        protectedRanges.every(([start, end]) => !triggerOverlaps(entry.trigger, start, end))
+      )),
       normalRouteUnaffected: true,
       noRequiredSuperTraversal: true,
       callout: '',
       calloutTimer: 0,
+      completionBanner: null,
       jumpEnvelope: {
         normalRise,
         secondJumpRise,
@@ -1704,6 +1818,14 @@
     }
     if (localPreviewFrenzy) sharedAbilities.activateFrenzy(game.abilities, 5);
     if (localPreviewSuper) sharedAbilities.activateSuper(game.abilities, 'qa-preview', { silent: true });
+    if (localPreviewExplorationComplete) {
+      const previewDiscovery = superExplorationPilotPlan.find((entry) => entry.id === localPreviewExplorationComplete);
+      if (previewDiscovery) {
+        const previewState = game.superExploration?.discoveries?.[previewDiscovery.id];
+        if (previewState) previewState.progress = previewDiscovery.waypointGroups?.length || 0;
+        completeSuperExplorationDiscovery(previewDiscovery);
+      }
+    }
     if (localPreviewAutoRunDirection < 0) keys.left = true;
     if (localPreviewAutoRunDirection > 0) keys.right = true;
     if (localPreviewRespawn) {
@@ -1811,10 +1933,20 @@
     state.completedAt = game.levelTime;
     game.score += discovery.score;
     game.message = discovery.message;
-    game.messageTimer = 2.2;
+    game.messageTimer = 1.25;
     pilot.callout = discovery.message;
-    pilot.calloutTimer = 1.85;
-    game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 2 : 6);
+    pilot.calloutTimer = 1.1;
+    pilot.completionBanner = {
+      title: discovery.message,
+      reward: discovery.rewardLabel,
+      tier: discovery.rewardTier,
+      timer: discovery.rewardTier === 'large' ? 3.2 : 2.8,
+      maxTimer: discovery.rewardTier === 'large' ? 3.2 : 2.8,
+    };
+    game.cameraShake = Math.max(
+      game.cameraShake,
+      game.reducedShake ? 2 : discovery.rewardTier === 'large' ? 8 : discovery.rewardTier === 'medium-large' ? 6 : 4,
+    );
 
     const centerX = discovery.trigger.x + discovery.trigger.w * 0.5;
     const centerY = discovery.trigger.y + discovery.trigger.h * 0.5;
@@ -1822,45 +1954,69 @@
     spawnConfetti(
       centerX - game.cameraX,
       centerY,
-      game.reducedShake ? 28 : discovery.id === 'cactus-radio-roost' ? 58 : 46,
+      game.reducedShake ? 28 : discovery.rewardTier === 'large' ? 72 : discovery.rewardTier === 'medium-large' ? 56 : 44,
     );
 
-    if (discovery.rewardType === 'taco-cache') {
-      for (let index = 0; index < 7; index += 1) {
-        const fan = index / 6;
+    if (discovery.bonusTacos > 0) {
+      for (let index = 0; index < discovery.bonusTacos; index += 1) {
+        const fan = discovery.bonusTacos === 1 ? 0.5 : index / (discovery.bonusTacos - 1);
         const reward = spawnBonusItem(
           discovery.rewardX,
           discovery.rewardY,
           'taco',
-          -240 + fan * 480,
-          -315 - Math.sin(fan * Math.PI) * 105,
+          -270 + fan * 540,
+          -320 - Math.sin(fan * Math.PI) * (discovery.rewardTier === 'large' ? 150 : 110),
         );
         reward.phase2Pilot = true;
         reward.phase2Discovery = discovery.id;
       }
-    } else {
+    }
+    if (discovery.rewardType !== 'taco-cache') {
       spawnAnchoredExplorationReward(discovery, discovery.rewardType);
     }
+    if (discovery.magnetSeconds) sharedAbilities.activateMagnet(game.abilities, discovery.magnetSeconds);
     state.rewardSpawned = true;
+    state.environmentEnergized = true;
 
     if (!game.reducedShake && discovery.id !== 'salsa-kite-test') spawnFirework();
     playAudio('level.celebrationPulse', {
       position: audioPosition(centerX),
       pitchCents: discovery.id === 'cactus-radio-roost' ? 110 : discovery.id === 'sunset-skyway' ? 55 : 0,
     });
+    if (discovery.rewardTier === 'large') {
+      playAudio('ui.radio', { position: audioPosition(centerX) });
+      playAudio('pinata.jackpotSparkle', { position: audioPosition(centerX), pitchCents: 70 });
+    } else if (discovery.rewardTier === 'medium-large') {
+      playAudio('pinata.jackpotSparkle', { position: audioPosition(centerX), pitchCents: 20 });
+    }
   }
 
-  function updateSuperExplorationPilot() {
+  function updateSuperExplorationPilot(dt) {
     if (!game.superExploration) return;
+    const banner = game.superExploration.completionBanner;
+    if (banner) {
+      banner.timer = Math.max(0, banner.timer - dt);
+      if (banner.timer <= 0) {
+        game.superExploration.completionBanner = null;
+      }
+    }
     for (const discovery of superExplorationPilotPlan) {
       const state = game.superExploration.discoveries[discovery.id];
-      const waypoints = discovery.waypointPlatformIds || [];
-      const currentWaypoint = waypoints.indexOf(player.platform?.id);
-      if (currentWaypoint >= 0 && currentWaypoint <= state.progress) {
-        state.progress = Math.max(state.progress, currentWaypoint + 1);
+      const waypointGroups = discovery.waypointGroups
+        || (discovery.waypointPlatformIds || []).map((platformId) => [platformId]);
+      const activeGroup = waypointGroups[state.progress] || [];
+      if (activeGroup.includes(player.platform?.id)) {
+        const firstLanding = state.progress === 0;
+        state.progress += 1;
         state.revealed = true;
+        state.lastWaypointPlatformId = player.platform.id;
+        if (firstLanding) {
+          game.message = `${discovery.name.toUpperCase()} REACHED!`;
+          game.messageTimer = Math.max(game.messageTimer, 0.9);
+          playAudio('ui.radio', { position: audioPosition(player.x) });
+        }
       }
-      const routeReady = state.progress >= waypoints.length;
+      const routeReady = state.progress >= waypointGroups.length;
       if (!state.completed && routeReady && rectsIntersect(player, discovery.trigger)) {
         completeSuperExplorationDiscovery(discovery);
       }
@@ -2875,7 +3031,7 @@
       return;
     }
 
-    updateSuperExplorationPilot();
+    updateSuperExplorationPilot(dt);
 
     for (const item of level.collectibles) {
       if (!item.collected && item.isDrop && !item.landed) {
@@ -3327,246 +3483,187 @@
   }
 
   function drawCactusRadioRoost(time) {
-    const x = 1060 - game.cameraX;
-    if (x < -190 || x > canvas.width + 190) return;
-    const roost = superExplorationPlatformPlan.find((platform) => platform.id === 'phase2-cactus-radio-roost');
-    const trunkTop = roost.y + 16;
-    const crownY = roost.y + 14;
+    const asset = images.world1_1_super_radio_roost_v2;
+    if (!asset) return;
+    const worldX = 23710;
+    const worldY = 18;
+    const width = 690;
+    const height = 460;
+    const x = worldX - game.cameraX;
+    if (x + width < -80 || x > canvas.width + 80) return;
     const state = phase2DiscoveryState('cactus-radio-roost');
     const energized = Boolean(state?.completed);
     const pulse = phase2CompletionPulse('cactus-radio-roost', time);
-    const cactusGradient = ctx.createLinearGradient(x - 35, roost.y, x + 35, level.groundY);
-    cactusGradient.addColorStop(0, '#79d46c');
-    cactusGradient.addColorStop(0.48, '#3aa85f');
-    cactusGradient.addColorStop(1, '#237354');
+    const routeCharge = energized ? 1 : clamp((state?.progress || 0) / 3, 0, 0.72);
 
     ctx.save();
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.globalAlpha = 0.94;
-    ctx.strokeStyle = '#193f3f';
-    ctx.lineWidth = 42;
-    ctx.beginPath();
-    ctx.moveTo(x, level.groundY + 4);
-    ctx.lineTo(x, trunkTop);
-    ctx.moveTo(x - 4, 305);
-    ctx.bezierCurveTo(x - 68, 313, x - 75, 255, x - 72, 226);
-    ctx.moveTo(x + 5, 257);
-    ctx.bezierCurveTo(x + 62, 263, x + 73, 219, x + 70, 191);
-    ctx.stroke();
-    ctx.strokeStyle = cactusGradient;
-    ctx.lineWidth = 31;
-    ctx.beginPath();
-    ctx.moveTo(x, level.groundY + 4);
-    ctx.lineTo(x, trunkTop);
-    ctx.moveTo(x - 4, 305);
-    ctx.bezierCurveTo(x - 68, 313, x - 75, 255, x - 72, 226);
-    ctx.moveTo(x + 5, 257);
-    ctx.bezierCurveTo(x + 62, 263, x + 73, 219, x + 70, 191);
-    ctx.stroke();
-
-    ctx.strokeStyle = 'rgba(190,244,139,.28)';
-    ctx.lineWidth = 3;
-    for (const rib of [-9, 0, 9]) {
-      ctx.beginPath();
-      ctx.moveTo(x + rib, level.groundY - 10);
-      ctx.quadraticCurveTo(x + rib * 1.35, 325, x + rib * 0.72, trunkTop + 12);
-      ctx.stroke();
+    ctx.globalAlpha = 0.88 + routeCharge * 0.12;
+    if (energized) {
+      ctx.shadowColor = '#65d8ff';
+      ctx.shadowBlur = 10 + pulse * 18;
     }
-
-    ctx.strokeStyle = 'rgba(255,241,166,.48)';
-    ctx.lineWidth = 1.4;
-    for (let spine = 0; spine < 13; spine += 1) {
-      const spineY = 202 + spine * 19;
-      const side = spine % 2 === 0 ? -1 : 1;
-      ctx.beginPath();
-      ctx.moveTo(x + side * 14, spineY);
-      ctx.lineTo(x + side * 22, spineY - 4);
-      ctx.stroke();
-    }
-
-    // The flower crown and tiny radio dish are the only clues before reveal.
-    const flowerColors = ['#ff5f91', '#ffd166', '#65d8ff'];
-    flowerColors.forEach((color, index) => {
-      const angle = time * 0.00035 + index * (Math.PI * 2 / 3);
-      const radius = energized ? 24 + pulse * 8 : 17;
-      ctx.fillStyle = color;
-      ctx.shadowColor = color;
-      ctx.shadowBlur = energized ? 12 + pulse * 12 : 5;
-      ctx.beginPath();
-      ctx.arc(x + Math.cos(angle) * radius, crownY + Math.sin(angle) * 7, energized ? 5.5 : 3.8, 0, Math.PI * 2);
-      ctx.fill();
-    });
+    ctx.drawImage(asset, x, worldY, width, height);
     ctx.shadowBlur = 0;
 
-    ctx.strokeStyle = energized ? '#65d8ff' : 'rgba(255,241,166,.58)';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(x + 43, roost.y - 25, 17, Math.PI * 0.7, Math.PI * 1.9);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(x + 38, roost.y - 13);
-    ctx.lineTo(x + 27, roost.y - 2);
-    ctx.stroke();
-
-    if (!game.reducedShake) {
-      for (let mote = 0; mote < 5; mote += 1) {
-        const moteY = roost.y + 52 - mote * 25 + Math.sin(time * 0.003 + mote) * 7;
-        const moteX = x - 45 + mote * 21 + Math.sin(time * 0.002 + mote * 2) * 5;
-        ctx.fillStyle = mote % 2 ? 'rgba(255,241,166,.72)' : 'rgba(101,216,255,.72)';
+    // Progress powers the cables and meters one landing at a time. Completion
+    // sends a compact signal burst from the antenna without covering hazards.
+    const signalX = 24105 - game.cameraX;
+    const signalY = 74;
+    const signalColors = ['#ffd166', '#ff5f91', '#65d8ff'];
+    const litNodes = energized ? 7 : Math.min(5, (state?.progress || 0) + 1);
+    for (let node = 0; node < 7; node += 1) {
+      const nodeX = x + 146 + node * 68;
+      const nodeY = 326 + Math.sin(node * 1.7) * 18;
+      const lit = node < litNodes;
+      const color = signalColors[node % signalColors.length];
+      ctx.globalAlpha = lit ? 0.72 + routeCharge * 0.28 : 0.22;
+      ctx.fillStyle = color;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = lit ? 8 + routeCharge * 8 : 2;
+      ctx.beginPath();
+      ctx.arc(nodeX, nodeY, lit ? 3.6 : 2.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    if (energized) {
+      ctx.globalAlpha = 0.48 + pulse * 0.34;
+      ctx.strokeStyle = '#fff1a6';
+      ctx.lineWidth = 2.4 + pulse * 1.8;
+      for (let ring = 0; ring < 3; ring += 1) {
         ctx.beginPath();
-        ctx.arc(moteX, moteY, energized ? 3.2 : 2.1, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.arc(signalX, signalY, 24 + ring * 18 + pulse * 8, Math.PI * 1.08, Math.PI * 1.92);
+        ctx.stroke();
       }
     }
     ctx.restore();
   }
 
   function drawSalsaKiteScenery(time) {
-    const finish = superExplorationPlatformPlan.find((platform) => platform.id === 'phase2-salsa-drum-finish');
-    const x = finish.x - game.cameraX;
-    if (x + finish.w < -120 || x > canvas.width + 120) return;
-    const completed = Boolean(phase2DiscoveryState('salsa-kite-test')?.completed);
+    const asset = images.world1_1_super_kite_route_v2;
+    if (!asset) return;
+    const kitePlatforms = level.platforms
+      .filter((platform) => Number.isInteger(platform.phase2KiteIndex))
+      .sort((a, b) => a.phase2KiteIndex - b.phase2KiteIndex);
+    if (!kitePlatforms.length) return;
+    const left = kitePlatforms[0].x - game.cameraX;
+    const right = kitePlatforms[kitePlatforms.length - 1].x
+      + kitePlatforms[kitePlatforms.length - 1].w - game.cameraX;
+    if (right < -140 || left > canvas.width + 140) return;
+    const state = phase2DiscoveryState('salsa-kite-test');
+    const completed = Boolean(state?.completed);
     const pulse = phase2CompletionPulse('salsa-kite-test', time);
+    const sourceWidth = asset.naturalWidth / 5;
 
     ctx.save();
-    // A hand-painted festival scaffold makes the finish ledge feel authored,
-    // while leaving the normal road and its enemies completely unobscured.
-    ctx.strokeStyle = '#6d3b2a';
-    ctx.lineWidth = 10;
-    ctx.beginPath();
-    ctx.moveTo(x + 18, finish.y + 24);
-    ctx.lineTo(x + 34, level.groundY);
-    ctx.moveTo(x + finish.w - 18, finish.y + 24);
-    ctx.lineTo(x + finish.w - 34, level.groundY);
-    ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,209,102,.62)';
-    ctx.lineWidth = 3;
-    for (let braceY = finish.y + 84; braceY < 410; braceY += 62) {
+    // Wind ribbons join five individually painted kite designs. Their sway is
+    // tied to route progress, so landing on each surface visibly wakes the next.
+    ctx.lineCap = 'round';
+    for (let index = 0; index < kitePlatforms.length - 1; index += 1) {
+      const from = kitePlatforms[index];
+      const to = kitePlatforms[index + 1];
+      const active = completed || (state?.progress || 0) > index;
+      const startX = from.x + from.w * 0.72 - game.cameraX;
+      const endX = to.x + to.w * 0.28 - game.cameraX;
+      const startY = from.y - 38;
+      const endY = to.y - 38;
+      ctx.globalAlpha = active ? 0.58 : 0.2;
+      ctx.strokeStyle = index % 2 ? '#ff5f91' : '#65d8ff';
+      ctx.lineWidth = active ? 3 : 1.6;
       ctx.beginPath();
-      ctx.moveTo(x + 24, braceY);
-      ctx.lineTo(x + finish.w - 24, braceY + 28);
-      ctx.moveTo(x + finish.w - 24, braceY);
-      ctx.lineTo(x + 24, braceY + 28);
+      ctx.moveTo(startX, startY);
+      ctx.bezierCurveTo(
+        lerp(startX, endX, 0.35), Math.min(startY, endY) - 42,
+        lerp(startX, endX, 0.68), Math.max(startY, endY) + 28,
+        endX, endY,
+      );
       ctx.stroke();
     }
 
-    const bannerY = finish.y + 52;
-    const bannerGradient = ctx.createLinearGradient(x, bannerY, x + finish.w, bannerY + 52);
-    bannerGradient.addColorStop(0, '#b72d5b');
-    bannerGradient.addColorStop(0.52, '#ff7e45');
-    bannerGradient.addColorStop(1, '#643c87');
-    ctx.fillStyle = bannerGradient;
-    ctx.strokeStyle = '#fff1a6';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.roundRect(x + 12, bannerY, finish.w - 24, 52, 12);
-    ctx.fill();
-    ctx.stroke();
-    drawPhase2WingShoeGlyph(x + finish.w * 0.5, bannerY + 19, 0.7, completed);
-    ctx.fillStyle = '#fff8df';
-    ctx.font = '900 11px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText(completed ? 'KITE CLEARED!' : 'SALSA KITE', x + finish.w * 0.5, bannerY + 43);
-
-    const kite = level.platforms.find((platform) => platform.id === 'phase2-salsa-kite');
-    if (kite) {
-      const kiteX = kite.x - game.cameraX + kite.w * 0.5;
-      ctx.strokeStyle = 'rgba(255,241,166,.55)';
-      ctx.lineWidth = 1.7;
-      ctx.beginPath();
-      ctx.moveTo(kiteX, kite.y + kite.h);
-      for (let knot = 1; knot <= 4; knot += 1) {
-        const knotX = kiteX + Math.sin(time * 0.003 + knot) * (5 + knot * 2);
-        const knotY = kite.y + kite.h + knot * 24;
-        ctx.lineTo(knotX, knotY);
+    kitePlatforms.forEach((platform, index) => {
+      const centerX = platform.x + platform.w * 0.5 - game.cameraX;
+      const active = completed || (state?.progress || 0) > index;
+      const wind = game.reducedShake ? 0 : Math.sin(time * 0.0045 + index * 1.3);
+      const drawWidth = index === 4 ? 142 : 130;
+      const drawHeight = index === 4 ? 216 : 202;
+      ctx.save();
+      ctx.translate(centerX, platform.y - 28);
+      ctx.rotate(wind * (active ? 0.025 : 0.012));
+      if (active) {
+        ctx.shadowColor = index % 2 ? '#ff5f91' : '#65d8ff';
+        ctx.shadowBlur = completed ? 12 + pulse * 12 : 7;
       }
-      ctx.stroke();
-    }
+      ctx.globalAlpha = active ? 1 : 0.82;
+      ctx.drawImage(
+        asset,
+        sourceWidth * index, 0, sourceWidth, asset.naturalHeight,
+        -drawWidth * 0.5, -drawHeight * 0.58, drawWidth, drawHeight,
+      );
+      ctx.restore();
+    });
+
     if (completed) {
-      ctx.strokeStyle = `rgba(101,216,255,${0.42 + pulse * 0.38})`;
-      ctx.lineWidth = 3 + pulse * 2;
+      const finish = kitePlatforms[kitePlatforms.length - 1];
+      const finishX = finish.x + finish.w * 0.5 - game.cameraX;
+      ctx.globalAlpha = 0.52 + pulse * 0.3;
+      ctx.strokeStyle = '#65d8ff';
+      ctx.lineWidth = 2.8 + pulse * 2;
       ctx.beginPath();
-      ctx.arc(x + finish.w * 0.5, finish.y - 10, 38 + pulse * 18, 0, Math.PI * 2);
+      ctx.arc(finishX, finish.y - 22, 48 + pulse * 20, 0, Math.PI * 2);
       ctx.stroke();
     }
     ctx.restore();
   }
 
   function drawSunsetSkyway(time) {
-    const west = superExplorationPlatformPlan.find((platform) => platform.id === 'phase2-skyway-west');
-    const east = superExplorationPlatformPlan.find((platform) => platform.id === 'phase2-skyway-east');
-    const minX = west.x - game.cameraX;
-    const maxX = east.x + east.w - game.cameraX;
-    if (maxX < -100 || minX > canvas.width + 100) return;
-    const completed = Boolean(phase2DiscoveryState('sunset-skyway')?.completed);
+    const asset = images.world1_1_super_skyway_v2;
+    if (!asset) return;
+    const worldX = 15810;
+    const worldY = -18;
+    const width = 1280;
+    const height = 590;
+    const minX = worldX - game.cameraX;
+    if (minX + width < -100 || minX > canvas.width + 100) return;
+    const state = phase2DiscoveryState('sunset-skyway');
+    const completed = Boolean(state?.completed);
     const pulse = phase2CompletionPulse('sunset-skyway', time);
     const skywayPlatforms = superExplorationPlatformPlan.filter((platform) => platform.phase2Discovery === 'sunset-skyway');
 
     ctx.save();
-    for (const [index, platform] of skywayPlatforms.entries()) {
-      const x = platform.x - game.cameraX;
-      const postLeft = x + 24;
-      const postRight = x + platform.w - 24;
-      ctx.strokeStyle = '#653427';
-      ctx.lineWidth = 9;
-      ctx.beginPath();
-      ctx.moveTo(postLeft, platform.y + 20);
-      ctx.lineTo(postLeft + 13, level.groundY);
-      ctx.moveTo(postRight, platform.y + 20);
-      ctx.lineTo(postRight - 13, level.groundY);
-      ctx.stroke();
-      ctx.strokeStyle = 'rgba(255,209,102,.52)';
-      ctx.lineWidth = 2.4;
-      for (let braceY = platform.y + 82; braceY < level.groundY - 45; braceY += 80) {
-        ctx.beginPath();
-        ctx.moveTo(postLeft + 5, braceY);
-        ctx.lineTo(postRight - 5, braceY + 34);
-        ctx.moveTo(postRight - 5, braceY);
-        ctx.lineTo(postLeft + 5, braceY + 34);
-        ctx.stroke();
-      }
-
-      const signY = platform.y + 43;
-      const signHeight = 58;
-      const signGradient = ctx.createLinearGradient(x + 12, signY, x + platform.w - 12, signY + signHeight);
-      signGradient.addColorStop(0, index === 1 ? '#713c91' : '#9f294e');
-      signGradient.addColorStop(0.5, '#d94d52');
-      signGradient.addColorStop(1, index === 2 ? '#226b84' : '#ed7a43');
-      ctx.fillStyle = signGradient;
-      ctx.strokeStyle = completed ? '#fff8df' : '#e8b25b';
-      ctx.lineWidth = completed ? 4 : 3;
-      if (completed) {
-        ctx.shadowColor = index === 1 ? '#ff5f91' : '#65d8ff';
-        ctx.shadowBlur = 12 + pulse * 16;
-      }
-      ctx.beginPath();
-      ctx.roundRect(x + 12, signY, platform.w - 24, signHeight, 12);
-      ctx.fill();
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-      const labels = ['SUNSET', 'SALSA', 'SKYWAY'];
-      ctx.fillStyle = '#fff8df';
-      ctx.font = `900 ${index === 1 ? 18 : 20}px Arial`;
-      ctx.textAlign = 'center';
-      ctx.fillText(labels[index], x + platform.w * 0.5, signY + 36);
-      if (index === 2) drawPhase2WingShoeGlyph(x + platform.w * 0.5, signY + 51, 0.48, completed);
+    ctx.globalAlpha = completed ? 1 : 0.92;
+    if (completed) {
+      ctx.shadowColor = '#ff5f91';
+      ctx.shadowBlur = 8 + pulse * 12;
     }
+    ctx.drawImage(asset, minX, worldY, width, height);
+    ctx.shadowBlur = 0;
 
-    // A readable bulb chain joins the three separate rooftops into one route.
-    for (let bulb = 0; bulb <= 18; bulb += 1) {
-      const t = bulb / 18;
-      const worldX = west.x + west.w * 0.72 + t * (east.x + east.w * 0.28 - (west.x + west.w * 0.72));
-      const y = 176 + Math.sin(t * Math.PI * 2) * 22 + Math.sin(t * Math.PI) * 20;
+    // Each completed waypoint lights the next architectural span. Both middle
+    // branches share a segment number, so taking either choice advances cleanly.
+    for (let bulb = 0; bulb <= 24; bulb += 1) {
+      const t = bulb / 24;
+      const segment = Math.min(4, Math.floor(t * 5));
+      const active = completed || (state?.progress || 0) > segment;
+      const bulbWorldX = 15915 + t * 1060;
+      const y = 194 + Math.sin(t * Math.PI * 4) * 25 - Math.sin(t * Math.PI) * 72;
       const colors = ['#65d8ff', '#ff5f91', '#ffd166'];
       const color = colors[(bulb + Math.floor(time * 0.004)) % colors.length];
       ctx.fillStyle = color;
-      ctx.globalAlpha = completed ? 0.82 + pulse * 0.18 : 0.46;
+      ctx.globalAlpha = active ? 0.78 + pulse * 0.18 : 0.18;
       ctx.shadowColor = color;
-      ctx.shadowBlur = completed ? 10 : 4;
+      ctx.shadowBlur = active ? 8 + pulse * 5 : 2;
       ctx.beginPath();
-      ctx.arc(worldX - game.cameraX, y, completed ? 3.8 : 2.8, 0, Math.PI * 2);
+      ctx.arc(bulbWorldX - game.cameraX, y, active ? 3.6 : 2.2, 0, Math.PI * 2);
       ctx.fill();
+    }
+
+    if (completed) {
+      const finish = skywayPlatforms.find((platform) => platform.id === 'phase2-skyway-east');
+      const finishX = finish.x + finish.w * 0.5 - game.cameraX;
+      ctx.globalAlpha = 0.48 + pulse * 0.28;
+      ctx.strokeStyle = '#fff1a6';
+      ctx.lineWidth = 3 + pulse * 2;
+      ctx.beginPath();
+      ctx.arc(finishX, finish.y - 16, 46 + pulse * 18, 0, Math.PI * 2);
+      ctx.stroke();
     }
     ctx.restore();
   }
@@ -3581,15 +3678,18 @@
     if (!game.superExploration) return;
     ctx.save();
     for (const platform of level.platforms) {
-      if (!platform.phase2Pilot || platform.moving) continue;
+      if (!platform.phase2Pilot) continue;
       const x = platform.x - game.cameraX;
       if (x + platform.w < -40 || x > canvas.width + 40) continue;
       const state = phase2DiscoveryState(platform.phase2Discovery);
-      const active = Boolean(state?.completed);
-      const accent = platform.phase2Style === 'cactus-roost' ? '#63d878'
-        : platform.phase2Style === 'salsa-drum' ? '#ff5f91' : '#65d8ff';
+      const segment = Number.isInteger(platform.phase2Segment)
+        ? platform.phase2Segment
+        : Number.isInteger(platform.phase2KiteIndex) ? platform.phase2KiteIndex : 0;
+      const active = Boolean(state?.completed) || (state?.progress || 0) > segment;
+      const accent = platform.phase2Discovery === 'cactus-radio-roost' ? '#63d878'
+        : platform.phase2Discovery === 'salsa-kite-test' ? '#ff5f91' : '#65d8ff';
       ctx.fillStyle = accent;
-      ctx.globalAlpha = active ? 0.72 + Math.sin(time * 0.008) * 0.12 : 0.35;
+      ctx.globalAlpha = active ? 0.72 + Math.sin(time * 0.008 + segment) * 0.12 : 0.22;
       ctx.shadowColor = accent;
       ctx.shadowBlur = active ? 13 : 5;
       for (let bulb = 16; bulb < platform.w - 10; bulb += 28) {
@@ -3598,6 +3698,63 @@
         ctx.fill();
       }
     }
+    ctx.restore();
+  }
+
+  function drawSuperExplorationCompletionBanner(time) {
+    const banner = game.superExploration?.completionBanner;
+    if (!banner) return;
+    const enter = clamp((banner.maxTimer - banner.timer) / 0.22, 0, 1);
+    const exit = clamp(banner.timer / 0.34, 0, 1);
+    const visibility = Math.min(enter, exit);
+    const width = Math.min(640, canvas.width - 120);
+    const height = banner.tier === 'large' ? 124 : 112;
+    const x = (canvas.width - width) * 0.5;
+    const y = 148 + (game.reducedShake ? 0 : (1 - enter) * -24);
+    const accent = banner.tier === 'large' ? '#ffd166'
+      : banner.tier === 'medium-large' ? '#65d8ff' : '#ff5f91';
+
+    ctx.save();
+    ctx.globalAlpha = visibility;
+    ctx.translate(canvas.width * 0.5, y + height * 0.5);
+    if (!game.reducedShake) {
+      const pop = 0.94 + enter * 0.06 + Math.sin(time * 0.016) * 0.008;
+      ctx.scale(pop, pop);
+    }
+    ctx.translate(-canvas.width * 0.5, -(y + height * 0.5));
+    const panel = ctx.createLinearGradient(x, y, x + width, y + height);
+    panel.addColorStop(0, 'rgba(37,24,54,.96)');
+    panel.addColorStop(0.5, 'rgba(108,41,72,.97)');
+    panel.addColorStop(1, 'rgba(29,72,85,.96)');
+    ctx.fillStyle = panel;
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = banner.tier === 'large' ? 4 : 3;
+    ctx.shadowColor = accent;
+    ctx.shadowBlur = 14 + enter * 12;
+    ctx.beginPath();
+    ctx.roundRect(x, y, width, height, 20);
+    ctx.fill();
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    drawPhase2WingShoeGlyph(x + 46, y + height * 0.5, 0.72, true);
+    ctx.save();
+    ctx.translate(x + width - 46, y + height * 0.5);
+    ctx.scale(-1, 1);
+    drawPhase2WingShoeGlyph(0, 0, 0.72, true);
+    ctx.restore();
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#fff1a6';
+    ctx.font = '900 12px Arial';
+    ctx.fillText('SUPER ROUTE COMPLETE', canvas.width * 0.5, y + 24);
+    ctx.fillStyle = '#fff8df';
+    const titleSize = banner.title.length > 31 ? 25 : 29;
+    ctx.font = `900 ${titleSize}px Arial`;
+    ctx.fillText(banner.title, canvas.width * 0.5, y + 57);
+    ctx.fillStyle = accent;
+    ctx.font = banner.reward.length > 50 ? '900 14px Arial' : '900 16px Arial';
+    ctx.fillText(banner.reward, canvas.width * 0.5, y + (banner.tier === 'large' ? 94 : 88));
     ctx.restore();
   }
 
@@ -3615,51 +3772,23 @@
         ctx.shadowColor = glow;
         ctx.shadowBlur = 12 + pulse * 9;
         if (p.style === 'phase2-kite') {
-          const flutter = Math.sin(game.levelTime * 7 + p.phase) * 3;
-          const centerX = screenX + p.w * 0.5;
-          ctx.fillStyle = '#6f315f';
+          const rail = ctx.createLinearGradient(screenX, p.y, screenX + p.w, p.y + p.h);
+          rail.addColorStop(0, '#76354e');
+          rail.addColorStop(0.48, '#d95b47');
+          rail.addColorStop(1, '#246f83');
+          ctx.fillStyle = rail;
           ctx.strokeStyle = '#fff1a6';
           ctx.lineWidth = 3;
           ctx.beginPath();
-          ctx.moveTo(screenX + 4, p.y + p.h * 0.5);
-          ctx.quadraticCurveTo(screenX + 22, p.y - 9 - flutter, centerX, p.y + 3);
-          ctx.quadraticCurveTo(screenX + p.w - 22, p.y - 9 + flutter, screenX + p.w - 4, p.y + p.h * 0.5);
-          ctx.quadraticCurveTo(screenX + p.w - 28, p.y + p.h + 8, centerX, p.y + p.h - 2);
-          ctx.quadraticCurveTo(screenX + 28, p.y + p.h + 8, screenX + 4, p.y + p.h * 0.5);
-          ctx.closePath();
+          ctx.roundRect(screenX, p.y, p.w, p.h, 9);
           ctx.fill();
           ctx.stroke();
-          const cloth = ctx.createLinearGradient(screenX, p.y, screenX + p.w, p.y + p.h);
-          cloth.addColorStop(0, '#ff5f91');
-          cloth.addColorStop(0.5, '#ff9d4d');
-          cloth.addColorStop(1, '#65d8ff');
-          ctx.globalAlpha = 0.9;
-          ctx.fillStyle = cloth;
-          ctx.beginPath();
-          ctx.moveTo(screenX + 12, p.y + 12);
-          ctx.lineTo(centerX, p.y + 4);
-          ctx.lineTo(screenX + p.w - 12, p.y + 12);
-          ctx.lineTo(centerX, p.y + p.h - 4);
-          ctx.closePath();
-          ctx.fill();
-          ctx.globalAlpha = 1;
           ctx.fillStyle = '#fff8df';
-          ctx.beginPath();
-          ctx.arc(centerX, p.y + p.h * 0.5, 8, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = '#d94d52';
-          ctx.beginPath();
-          ctx.arc(centerX, p.y + p.h * 0.5, 4, 0, Math.PI * 2);
-          ctx.fill();
-          for (const side of [-1, 1]) {
-            ctx.fillStyle = side < 0 ? '#65d8ff' : '#ffd166';
-            ctx.beginPath();
-            ctx.moveTo(centerX + side * 18, p.y + p.h - 2);
-            ctx.lineTo(centerX + side * 31, p.y + p.h + 13 + flutter * side * 0.3);
-            ctx.lineTo(centerX + side * 8, p.y + p.h + 5);
-            ctx.closePath();
-            ctx.fill();
+          ctx.globalAlpha = 0.82;
+          for (let stitch = 14; stitch < p.w - 8; stitch += 28) {
+            ctx.fillRect(screenX + stitch, p.y + 6, 14, 3);
           }
+          ctx.globalAlpha = 1;
         } else if (p.style === 'tray') {
           ctx.fillStyle = '#42566e';
           ctx.beginPath(); ctx.roundRect(screenX, p.y + 4, p.w, p.h - 4, 10); ctx.fill();
@@ -5355,7 +5484,8 @@
       ctx.fillText(`AIRBORNE ×${game.airChain}`, 928, 124);
     }
 
-    if (game.messageTimer > 0 && game.state !== 'celebrating' && game.state !== 'won') {
+    if (game.messageTimer > 0 && game.state !== 'celebrating' && game.state !== 'won'
+      && !game.superExploration?.completionBanner) {
       const pulse = 1 + Math.sin(time * 0.018) * 0.05;
       ctx.save();
       ctx.translate(canvas.width * 0.5, 165);
@@ -5369,6 +5499,7 @@
       ctx.fillText(game.message, 0, 0);
       ctx.restore();
     }
+    drawSuperExplorationCompletionBanner(time);
     drawRadioMessage();
     ctx.restore();
   }
@@ -5541,9 +5672,23 @@
           version: game.superExploration.version,
           scope: game.superExploration.scope,
           bounds: game.superExploration.bounds,
+          protectedRanges: game.superExploration.protectedRanges,
           scriptedZoneSafe: game.superExploration.scriptedZoneSafe,
           normalRouteUnaffected: game.superExploration.normalRouteUnaffected,
           noRequiredSuperTraversal: game.superExploration.noRequiredSuperTraversal,
+          completionBanner: game.superExploration.completionBanner,
+          artAssets: [
+            'world1_1_super_kite_route_v2.webp',
+            'world1_1_super_skyway_v2.webp',
+            'world1_1_super_radio_roost_v2.webp',
+          ],
+          destinationCenters: superExplorationPilotPlan.map((entry) => Math.round(entry.trigger.x + entry.trigger.w * 0.5)),
+          minimumDestinationSpacing: superExplorationPilotPlan
+            .map((entry) => entry.trigger.x + entry.trigger.w * 0.5)
+            .sort((a, b) => a - b)
+            .reduce((minimum, center, index, centers) => (
+              index === 0 ? minimum : Math.min(minimum, center - centers[index - 1])
+            ), Infinity),
           jumpEnvelope: game.superExploration.jumpEnvelope,
           frozenBalance: {
             tacoPowerThreshold: sharedAbilities.definitions.tacoPower.threshold,
@@ -5560,6 +5705,12 @@
             entryRise: entry.entryRise,
             trigger: entry.trigger,
             rewardType: entry.rewardType,
+            rewardTier: entry.rewardTier,
+            rewardLabel: entry.rewardLabel,
+            bonusTacos: entry.bonusTacos,
+            waypointGroups: entry.waypointGroups,
+            intendedSeconds: entry.intendedSeconds,
+            worldPercent: entry.worldPercent,
             ...game.superExploration.discoveries[entry.id],
           })),
           platforms: level.platforms

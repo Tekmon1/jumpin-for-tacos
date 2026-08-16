@@ -392,42 +392,68 @@ test("keeps World 1-1 enemy artwork on a separate slower visual clock", async ()
   assert.equal(context.window.JFT_HERO_CORE.physics.enemyVisualAnimationRate, 1.8);
   assert.match(mainRuntime, /enemy\.anim \+= dt \* heroPhysics\.enemyVisualAnimationRate/);
   assert.match(mainRuntime, /return Math\.floor\(enemy\.anim\) % 4/);
-  assert.match(mainRuntime, /SOURCE_VERSION = 'w1-1-v56-super-exploration-pilot'/);
+  assert.match(mainRuntime, /SOURCE_VERSION = 'w1-1-v57-super-exploration-correction'/);
   assert.match(mainRuntime, /localPreviewAutoRun === 'left'/);
   assert.match(mainRuntime, /localPreviewAutoRunDirection < 0\) keys\.left = true/);
   assert.match(mainRuntime, /function removeOpeningLeadEnemy/);
   assert.match(mainRuntime, /removeOpeningLeadEnemy\(\)/);
   assert.match(mainRuntime, /patrolStartOffset: 420/);
   assert.match(mainHtml, /levels\.js\?v=34/);
-  assert.match(mainHtml, /game\.js\?v=56/);
+  assert.match(mainHtml, /game\.js\?v=57/);
 });
 
-test("keeps the World 1-1 Super exploration pilot optional, bounded, and reward-compatible", async () => {
+test("spaces the corrected World 1-1 Super exploration routes safely with escalating rewards", async () => {
   const runtime = await readFile(new URL("../public/game/game.js", import.meta.url), "utf8");
 
-  assert.match(runtime, /world-1-1-phase2a-v1/);
+  assert.match(runtime, /world-1-1-phase2a-correction-v2/);
   assert.match(runtime, /id: 'cactus-radio-roost'/);
-  assert.match(runtime, /kind: 'concealed-airborne-secret'/);
+  assert.match(runtime, /kind: 'scene-based-zigzag-secret'/);
   assert.match(runtime, /id: 'salsa-kite-test'/);
-  assert.match(runtime, /kind: 'moving-double-jump-challenge'/);
+  assert.match(runtime, /kind: 'moving-double-jump-route'/);
   assert.match(runtime, /id: 'sunset-skyway'/);
-  assert.match(runtime, /kind: 'visible-elevated-route'/);
+  assert.match(runtime, /kind: 'branching-elevated-mini-route'/);
+  assert.match(runtime, /bounds: \{ start: 7420, end: 24310 \}/);
+  assert.match(runtime, /worldPercent: Object\.freeze\(\[22\.4, 26\.2\]\)/);
+  assert.match(runtime, /worldPercent: Object\.freeze\(\[48, 51\.6\]\)/);
+  assert.match(runtime, /worldPercent: Object\.freeze\(\[72, 73\.5\]\)/);
   assert.match(runtime, /normalRouteUnaffected: true/);
   assert.match(runtime, /noRequiredSuperTraversal: true/);
-  assert.match(runtime, /scriptedZoneSafe: superExplorationPilotPlan\.every/);
-  assert.match(runtime, /entryRise: 150/);
-  assert.match(runtime, /entryRise: 165/);
+  assert.match(runtime, /protectedRanges\.every/);
+  assert.match(runtime, /entryRise: 210/);
+  assert.match(runtime, /entryRise: 200/);
   assert.match(runtime, /entryRise: 160/);
+  assert.match(runtime, /waypointGroups: Object\.freeze/);
+  assert.match(runtime, /phase2-skyway-low', 'phase2-skyway-high/);
+  assert.match(runtime, /minimumDestinationSpacing/);
   assert.match(runtime, /bonusReward: true/);
   assert.match(runtime, /phase2PremiumReward: true/);
   assert.match(runtime, /rewardType: 'rainbow'/);
   assert.match(runtime, /rewardType: 'golden'/);
   assert.match(runtime, /rewardType: 'taco-cache'/);
+  assert.match(runtime, /rewardTier: 'medium'/);
+  assert.match(runtime, /rewardTier: 'medium-large'/);
+  assert.match(runtime, /rewardTier: 'large'/);
+  assert.match(runtime, /\+900 SCORE  •  8-TACO FIESTA/);
+  assert.match(runtime, /\+1,500 SCORE  •  10-TACO FIESTA  •  BONUS GOLDEN/);
+  assert.match(runtime, /\+2,400 SCORE  •  14-TACO FIESTA  •  RAINBOW  •  MAGNET/);
+  assert.match(runtime, /function drawSuperExplorationCompletionBanner/);
+  assert.match(runtime, /SUPER ROUTE COMPLETE/);
+  assert.match(runtime, /phase2Complete/);
   assert.match(runtime, /applyWorldOnePilotRemaster\(\);\s+applySuperExplorationPilot\(\);\s+groundCheckpointStations\(\);/);
   const updateStart = runtime.indexOf("function updatePlaying");
-  const discoveryUpdate = runtime.indexOf("updateSuperExplorationPilot();", updateStart);
+  const discoveryUpdate = runtime.indexOf("updateSuperExplorationPilot(dt);", updateStart);
   const collectibleLoop = runtime.indexOf("for (const item of level.collectibles) {", updateStart);
   assert.ok(discoveryUpdate > updateStart && discoveryUpdate < collectibleLoop, "discovery rewards activate before same-frame collection checks");
+
+  const artAssets = [
+    "world1_1_super_kite_route_v2.webp",
+    "world1_1_super_skyway_v2.webp",
+    "world1_1_super_radio_roost_v2.webp",
+  ];
+  for (const filename of artAssets) {
+    assert.match(runtime, new RegExp(filename.replace(".webp", "")));
+    await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
+  }
 });
 
 test("creates same-type enemy packs and recognizes swept stomp contacts", async () => {
@@ -1049,7 +1075,7 @@ test("ships World 1 with authored seamless panorama progressions", async () => {
     assert.match(prototype, new RegExp(filename.replace(".png", "")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(prototypeHtml, /game\.js\?v=56/);
+  assert.match(prototypeHtml, /game\.js\?v=57/);
   assert.match(prototype, /function drawPaintedTerrainSlice/);
   assert.match(prototype, /artStyle: 'goldenCactus'/);
   assert.match(prototype, /function drawTacoTrekkerLayers/);
@@ -1170,7 +1196,7 @@ test("remasters the complete World 1-1 enemy and NPC cast without changing gamep
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /game\.js\?v=56/);
+  assert.match(html, /game\.js\?v=57/);
   assert.match(runtime, /function remasteredEnemyFrame/);
   assert.match(runtime, /function drawRemasteredEnemy/);
   assert.match(runtime, /function drawDesertLocals/);
@@ -1220,7 +1246,7 @@ test("authors the full World 1-1 pilot around purposeful upper routes and metada
   assert.match(runtime, /sharedAbilities\.splatEnemy\(game\.abilities/);
   assert.match(core, /const requestedPlatformId = enemy\.supportPlatformId \|\| enemy\.platformId/);
   assert.match(core, /id === `\$\{requestedPlatformId\}-encore`/);
-  assert.match(html, /game\.js\?v=56/);
+  assert.match(html, /game\.js\?v=57/);
   assert.match(html, /explore layered desert\r?\n\s+routes where risky jumps can lead to bonus powers/);
 });
 
@@ -2032,7 +2058,7 @@ test("loads the shared Phase 3 audio foundation before World 1-1 and resolves ev
 
   const catalogPosition = html.indexOf('src="audio-catalog.js?v=9"');
   const enginePosition = html.indexOf('src="audio-engine.js?v=7"');
-  const runtimePosition = html.indexOf('src="game.js?v=56"');
+  const runtimePosition = html.indexOf('src="game.js?v=57"');
   assert.ok(catalogPosition >= 0, "World 1-1 loads the semantic catalog");
   assert.ok(enginePosition > catalogPosition, "the engine loads after its catalog");
   assert.ok(runtimePosition > enginePosition, "the engine loads before the World 1-1 runtime");
