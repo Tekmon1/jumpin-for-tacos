@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-1-v57-super-exploration-correction';
+  const SOURCE_VERSION = 'w1-1-v58-exploration-payoff';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -219,6 +219,7 @@
     platformOverlapCount: 0,
     checkpointsGrounded: 0,
     superExploration: null,
+    characterTransmission: null,
   };
 
   const physics = {
@@ -384,18 +385,19 @@
       })),
   );
 
-  // Phase 2A remains a World 1-1-only exploration pilot, but the correction
-  // pass spaces its three destinations across the full level. Every entry is
-  // optional, sits over a recoverable normal route, and stays clear of Olivia's
-  // drops and the active taco-truck chase. Entry gates exceed the frozen
-  // 128-unit normal jump envelope while remaining inside Super Taco Hero's
-  // unchanged two-jump envelope.
+  // Phase 2A remains a World 1-1-only exploration pilot. The approved route
+  // art, geometry, spacing, and jump envelopes stay frozen in this payoff pass;
+  // only arrival language, one-shot reactions, and rewards are layered on top.
   const superExplorationPilotPlan = Object.freeze([
     Object.freeze({
       id: 'salsa-kite-test',
       kind: 'moving-double-jump-route',
       name: 'Kite Route',
-      message: 'KITE ROUTE DISCOVERED!',
+      arrivalLabel: 'KITE WINDLINE REACHED',
+      completionTitle: 'WIND FINALE!',
+      bannerEyebrow: 'KITE ROUTE',
+      presentation: 'spectacle',
+      progressAudio: 'collect.airMail',
       score: 900,
       rewardTier: 'medium',
       rewardType: 'taco-cache',
@@ -423,7 +425,11 @@
       id: 'sunset-skyway',
       kind: 'branching-elevated-mini-route',
       name: 'Sunset Salsa Skyway',
-      message: 'SUNSET SALSA SKYWAY DISCOVERED!',
+      arrivalLabel: 'SKYWAY LIGHTS ACTIVATED',
+      completionTitle: 'SKYWAY ONLINE',
+      bannerEyebrow: 'SUNSET SALSA SKYWAY',
+      presentation: 'activation',
+      progressAudio: 'checkpoint.activate',
       score: 1500,
       rewardTier: 'medium-large',
       rewardType: 'golden',
@@ -449,9 +455,13 @@
     }),
     Object.freeze({
       id: 'cactus-radio-roost',
-      kind: 'scene-based-zigzag-secret',
+      kind: 'scene-based-zigzag-destination',
       name: 'Cactus Radio Roost',
-      message: 'CACTUS RADIO ROOST DISCOVERED!',
+      arrivalLabel: 'RADIO SIGNAL FOUND',
+      completionTitle: 'SUNSET RELAY ONLINE!',
+      bannerEyebrow: 'CACTUS RADIO ROOST',
+      presentation: 'character-interaction',
+      progressAudio: 'ui.radio',
       score: 2400,
       rewardTier: 'large',
       rewardType: 'rainbow',
@@ -460,6 +470,7 @@
       rewardX: 24186,
       rewardY: 76,
       rewardLabel: '+2,400 SCORE  •  14-TACO FIESTA  •  RAINBOW  •  MAGNET',
+      transmissionRewardLabel: '+2,400  •  14 TACOS  •  RAINBOW  •  MAGNET',
       trigger: Object.freeze({ x: 24092, y: 62, w: 218, h: 180 }),
       platformIds: Object.freeze([
         'phase2-roost-approach', 'phase2-roost-cable',
@@ -476,6 +487,29 @@
       worldPercent: Object.freeze([72, 73.5]),
     }),
   ]);
+
+  // This is the one genuine hidden discovery in the payoff prototype. It adds
+  // no platform geometry: a curious Super player must jump above and slightly
+  // back from the visible Skyway finish after its lights have been activated.
+  const superExplorationSecretPlan = Object.freeze({
+    id: 'sunset-stash',
+    kind: 'hidden-air-pocket',
+    parentId: 'sunset-skyway',
+    requiredParentProgress: 4,
+    name: 'Sunset Stash',
+    completionTitle: 'SUNSET STASH DISCOVERED!',
+    bannerEyebrow: 'TRUE HIDDEN SECRET',
+    presentation: 'secret',
+    score: 3500,
+    rewardTier: 'secret',
+    rewardTypes: Object.freeze(['golden', 'rainbow']),
+    bonusTacos: 18,
+    rewardX: 17020,
+    rewardY: 54,
+    rewardLabel: '+3,500 SCORE  •  18-TACO CACHE  •  GOLDEN + RAINBOW',
+    trigger: Object.freeze({ x: 16992, y: 18, w: 78, h: 102 }),
+    worldPercent: Object.freeze([51.36, 51.60]),
+  });
 
   const superExplorationPlatformPlan = Object.freeze([
     Object.freeze({
@@ -607,6 +641,12 @@
     && new URLSearchParams(location.search).get('super') === '1';
   const localPreviewExplorationComplete = localPreviewHost
     ? new URLSearchParams(location.search).get('phase2Complete') || ''
+    : '';
+  const localPreviewExplorationReady = localPreviewHost
+    ? new URLSearchParams(location.search).get('phase2Ready') || ''
+    : '';
+  const localPreviewExplorationSecret = localPreviewHost
+    ? new URLSearchParams(location.search).get('phase2Secret') || ''
     : '';
   const localPreviewAutoRun = localPreviewHost
     ? new URLSearchParams(location.search).get('autoRun')
@@ -1152,7 +1192,7 @@
     ];
     const triggerOverlaps = (trigger, start, end) => trigger.x < end && trigger.x + trigger.w > start;
     game.superExploration = {
-      version: 'world-1-1-phase2a-correction-v2',
+      version: 'world-1-1-phase2a-payoff-v3',
       scope: 'world-1-1-only',
       bounds: { start: 7420, end: 24310 },
       protectedRanges,
@@ -1164,6 +1204,7 @@
       callout: '',
       calloutTimer: 0,
       completionBanner: null,
+      interaction: null,
       jumpEnvelope: {
         normalRise,
         secondJumpRise,
@@ -1176,8 +1217,31 @@
         completed: false,
         completedAt: null,
         rewardSpawned: false,
+        rewardSpawnCount: 0,
+        completionCount: 0,
+        activationStarted: false,
+        activationCount: 0,
+        arrivalAcknowledged: false,
+        environmentEnergized: false,
+        spectacleTimer: 0,
+        spectacleMaxTimer: 0,
+        activationSweepTimer: 0,
+        activationSweepMaxTimer: 0,
+        radioPower: 0,
         progress: 0,
       }])),
+      secrets: {
+        [superExplorationSecretPlan.id]: {
+          revealed: false,
+          completed: false,
+          completedAt: null,
+          rewardSpawned: false,
+          rewardSpawnCount: 0,
+          completionCount: 0,
+          revealTimer: 0,
+          revealMaxTimer: 0,
+        },
+      },
     };
   }
 
@@ -1693,6 +1757,7 @@
     game.routeMaxGap = game.routeMaxGap || 0;
     game.platformOverlapCount = game.platformOverlapCount || 0;
     game.checkpointsGrounded = game.checkpointsGrounded || 0;
+    game.characterTransmission = null;
     game.settingsOpen = false;
 
     player.x = 160;
@@ -1808,6 +1873,11 @@
       player.x = clamp(localPreviewStart, 0, game.levelWidth - player.w);
       player.y = localPreviewY > 0 ? clamp(localPreviewY, 0, canvas.height - player.h) : 360;
       game.cameraX = clamp(player.x - canvas.width * 0.42, 0, game.levelWidth - canvas.width);
+      if (localPreviewStart >= zones.showdownEnd) {
+        game.radioFlags.showdown = true;
+        game.cinematicFlags.showdown = true;
+        game.showdownAnnounced = true;
+      }
       if (level.pinata && localPreviewPinataHits > 0) {
         level.pinata.hits = clamp(localPreviewPinataHits, 0, level.pinata.targetHits - 1);
       }
@@ -1823,8 +1893,20 @@
       if (previewDiscovery) {
         const previewState = game.superExploration?.discoveries?.[previewDiscovery.id];
         if (previewState) previewState.progress = previewDiscovery.waypointGroups?.length || 0;
-        completeSuperExplorationDiscovery(previewDiscovery);
+        completeSuperExplorationDiscovery(previewDiscovery, { suppressInteraction: true });
       }
+    }
+    if (localPreviewExplorationReady) {
+      const previewDiscovery = superExplorationPilotPlan.find((entry) => entry.id === localPreviewExplorationReady);
+      const previewState = previewDiscovery
+        ? game.superExploration?.discoveries?.[previewDiscovery.id]
+        : null;
+      if (previewState) previewState.progress = previewDiscovery.waypointGroups?.length || 0;
+    }
+    if (localPreviewExplorationSecret === superExplorationSecretPlan.id) {
+      const skywayState = game.superExploration?.discoveries?.[superExplorationSecretPlan.parentId];
+      if (skywayState) skywayState.progress = superExplorationSecretPlan.requiredParentProgress;
+      completeSuperExplorationDiscovery(superExplorationSecretPlan);
     }
     if (localPreviewAutoRunDirection < 0) keys.left = true;
     if (localPreviewAutoRunDirection > 0) keys.right = true;
@@ -1835,7 +1917,7 @@
       beginRespawn(false, player.x, canvas.height - player.h - 10);
     }
     playLevelMusic();
-    triggerRadio('intro');
+    if (!(localPreviewHost && localPreviewStart > 0)) triggerRadio('intro');
   }
 
   function unlockAudio() {
@@ -1904,11 +1986,11 @@
     return item;
   }
 
-  function spawnAnchoredExplorationReward(discovery, type) {
+  function spawnAnchoredExplorationReward(discovery, type, offsetX = 0, offsetY = 0) {
     const size = type === 'golden' || type === 'rainbow' ? 34 : 24;
     const item = {
-      x: discovery.rewardX,
-      y: discovery.rewardY,
+      x: discovery.rewardX + offsetX,
+      y: discovery.rewardY + offsetY,
       w: size,
       h: size,
       type,
@@ -1923,72 +2005,219 @@
     return item;
   }
 
-  function completeSuperExplorationDiscovery(discovery) {
+  function phase2EntryState(entry) {
     const pilot = game.superExploration;
-    const state = pilot?.discoveries?.[discovery.id];
-    if (!state || state.completed) return;
+    return pilot?.discoveries?.[entry.id] || pilot?.secrets?.[entry.id] || null;
+  }
+
+  function spawnSuperExplorationReward(entry, state) {
+    if (state.rewardSpawned) return;
+    if (entry.bonusTacos > 0) {
+      for (let index = 0; index < entry.bonusTacos; index += 1) {
+        const fan = entry.bonusTacos === 1 ? 0.5 : index / (entry.bonusTacos - 1);
+        const reward = spawnBonusItem(
+          entry.rewardX,
+          entry.rewardY,
+          'taco',
+          -270 + fan * 540,
+          -320 - Math.sin(fan * Math.PI) * (entry.rewardTier === 'secret' ? 185 : entry.rewardTier === 'large' ? 150 : 110),
+        );
+        reward.phase2Pilot = true;
+        reward.phase2Discovery = entry.id;
+      }
+    }
+
+    const rewardTypes = entry.rewardTypes || (entry.rewardType && entry.rewardType !== 'taco-cache' ? [entry.rewardType] : []);
+    rewardTypes.forEach((type, index) => {
+      const spread = rewardTypes.length > 1 ? (index - (rewardTypes.length - 1) * 0.5) * 48 : 0;
+      spawnAnchoredExplorationReward(entry, type, spread, index % 2 ? 8 : 0);
+    });
+    if (entry.magnetSeconds) sharedAbilities.activateMagnet(game.abilities, entry.magnetSeconds);
+    state.rewardSpawned = true;
+    state.rewardSpawnCount = (state.rewardSpawnCount || 0) + 1;
+  }
+
+  function setSuperExplorationCompletionBanner(entry) {
+    const pilot = game.superExploration;
+    const secret = entry.presentation === 'secret';
+    const duration = secret ? 3.4 : entry.rewardTier === 'large' ? 2.5 : 2.15;
+    pilot.completionBanner = {
+      eyebrow: entry.bannerEyebrow,
+      title: entry.completionTitle,
+      reward: entry.rewardLabel,
+      tier: entry.rewardTier,
+      mode: entry.presentation,
+      timer: duration,
+      maxTimer: duration,
+    };
+  }
+
+  function startCharacterTransmission({ id, speaker, channel, message, reward }) {
+    game.characterTransmission = {
+      id,
+      speaker,
+      channel,
+      message,
+      reward,
+      rewardVisible: false,
+      timer: 3.65,
+      maxTimer: 3.65,
+    };
+  }
+
+  function startCactusRadioActivation(discovery, state) {
+    const pilot = game.superExploration;
+    if (!pilot || state.completed || state.activationStarted || pilot.interaction) return false;
+    state.activationStarted = true;
+    state.activationCount = (state.activationCount || 0) + 1;
+    state.radioPower = Math.max(state.radioPower || 0, 0.08);
+    pilot.interaction = {
+      id: discovery.id,
+      elapsed: 0,
+      duration: 1.85,
+      focusDuration: 0.72,
+      focusX: discovery.trigger.x + discovery.trigger.w * 0.5,
+      staticPlayed: false,
+      connected: false,
+      rewardDelivered: false,
+    };
+    player.vx = 0;
+    if (player.grounded) player.vy = 0;
+    keys.jumpQueued = false;
+    player.jumpBuffer = 0;
+    game.radioMessage = '';
+    game.radioTimer = 0;
+    spawnImpactText(discovery.rewardX, discovery.rewardY + 62, 'RELAY POWERING UP', '#65d8ff', 21);
+    playAudio('checkpoint.activate', { position: audioPosition(discovery.rewardX), pitchCents: -90 });
+    return true;
+  }
+
+  function updateCharacterTransmission(dt) {
+    const transmission = game.characterTransmission;
+    if (!transmission) return;
+    transmission.timer = Math.max(0, transmission.timer - dt);
+    if (transmission.timer <= 0) game.characterTransmission = null;
+  }
+
+  function updateSuperExplorationInteraction(dt) {
+    const pilot = game.superExploration;
+    const interaction = pilot?.interaction;
+    if (!interaction) return false;
+    const discovery = superExplorationPilotPlan.find((entry) => entry.id === interaction.id);
+    const state = discovery ? pilot.discoveries[discovery.id] : null;
+    if (!discovery || !state) {
+      pilot.interaction = null;
+      return false;
+    }
+
+    interaction.elapsed = Math.min(interaction.duration, interaction.elapsed + dt);
+    state.radioPower = clamp(interaction.elapsed / 0.62, 0.08, 1);
+    if (!interaction.staticPlayed && interaction.elapsed >= 0.24) {
+      interaction.staticPlayed = true;
+      playAudio('ui.radio', { position: audioPosition(discovery.rewardX), pitchCents: -35 });
+    }
+    if (!interaction.connected && interaction.elapsed >= 0.5) {
+      interaction.connected = true;
+      startCharacterTransmission({
+        id: 'sunset-relay-olivia',
+        speaker: 'OLIVIA',
+        channel: 'SUNSET RELAY • CONNECTED',
+        message: 'Taco Hero! There you are. You brought the Sunset relay back online!',
+        reward: discovery.transmissionRewardLabel || discovery.rewardLabel,
+      });
+      spawnImpactText(discovery.rewardX, discovery.rewardY + 34, 'SIGNAL LOCKED', '#63d878', 22);
+      playAudio('stage.generatorActivate', { position: audioPosition(discovery.rewardX), pitchCents: 45 });
+    }
+    if (!interaction.rewardDelivered && interaction.elapsed >= 1.34) {
+      interaction.rewardDelivered = true;
+      completeSuperExplorationDiscovery(discovery, { fromInteraction: true, suppressBanner: true });
+      if (game.characterTransmission?.id === 'sunset-relay-olivia') {
+        game.characterTransmission.rewardVisible = true;
+      }
+    }
+
+    const focusing = interaction.elapsed < interaction.focusDuration;
+    if (focusing) {
+      player.vx = 0;
+      if (player.grounded) player.vy = 0;
+      const targetCamera = clamp(interaction.focusX - canvas.width * 0.6, 0, game.levelWidth - canvas.width);
+      game.cameraX = lerp(game.cameraX, targetCamera, Math.min(1, dt * 5.2));
+    }
+    if (interaction.elapsed >= interaction.duration) pilot.interaction = null;
+    return focusing;
+  }
+
+  function completeSuperExplorationDiscovery(discovery, options = {}) {
+    const pilot = game.superExploration;
+    const state = phase2EntryState(discovery);
+    if (!state || state.completed) return false;
+    if (discovery.presentation === 'character-interaction' && !options.fromInteraction && !options.suppressInteraction) {
+      return startCactusRadioActivation(discovery, state);
+    }
 
     state.revealed = true;
     state.completed = true;
     state.completedAt = game.levelTime;
+    state.completionCount = (state.completionCount || 0) + 1;
     game.score += discovery.score;
-    game.message = discovery.message;
+    game.message = discovery.completionTitle;
     game.messageTimer = 1.25;
-    pilot.callout = discovery.message;
+    pilot.callout = discovery.completionTitle;
     pilot.calloutTimer = 1.1;
-    pilot.completionBanner = {
-      title: discovery.message,
-      reward: discovery.rewardLabel,
-      tier: discovery.rewardTier,
-      timer: discovery.rewardTier === 'large' ? 3.2 : 2.8,
-      maxTimer: discovery.rewardTier === 'large' ? 3.2 : 2.8,
-    };
+    if (!options.suppressBanner) setSuperExplorationCompletionBanner(discovery);
     game.cameraShake = Math.max(
       game.cameraShake,
-      game.reducedShake ? 2 : discovery.rewardTier === 'large' ? 8 : discovery.rewardTier === 'medium-large' ? 6 : 4,
+      game.reducedShake ? 2 : discovery.rewardTier === 'secret' ? 9 : discovery.rewardTier === 'large' ? 7 : discovery.rewardTier === 'medium-large' ? 5 : 3,
     );
 
     const centerX = discovery.trigger.x + discovery.trigger.w * 0.5;
     const centerY = discovery.trigger.y + discovery.trigger.h * 0.5;
-    spawnImpactText(centerX, Math.max(44, centerY - 34), discovery.name.toUpperCase(), '#fff1a6', 27);
+    const impactLabel = discovery.presentation === 'secret' ? 'STASH OPEN!'
+      : discovery.id === 'cactus-radio-roost' ? 'RELAY ONLINE'
+        : discovery.completionTitle.replace(/!+$/, '');
+    spawnImpactText(centerX, Math.max(44, centerY - 34), impactLabel, '#fff1a6', discovery.rewardTier === 'secret' ? 27 : 25);
     spawnConfetti(
       centerX - game.cameraX,
       centerY,
-      game.reducedShake ? 28 : discovery.rewardTier === 'large' ? 72 : discovery.rewardTier === 'medium-large' ? 56 : 44,
+      game.reducedShake ? 24 : discovery.rewardTier === 'secret' ? 104 : discovery.rewardTier === 'large' ? 62 : discovery.rewardTier === 'medium-large' ? 50 : 42,
     );
-
-    if (discovery.bonusTacos > 0) {
-      for (let index = 0; index < discovery.bonusTacos; index += 1) {
-        const fan = discovery.bonusTacos === 1 ? 0.5 : index / (discovery.bonusTacos - 1);
-        const reward = spawnBonusItem(
-          discovery.rewardX,
-          discovery.rewardY,
-          'taco',
-          -270 + fan * 540,
-          -320 - Math.sin(fan * Math.PI) * (discovery.rewardTier === 'large' ? 150 : 110),
-        );
-        reward.phase2Pilot = true;
-        reward.phase2Discovery = discovery.id;
-      }
-    }
-    if (discovery.rewardType !== 'taco-cache') {
-      spawnAnchoredExplorationReward(discovery, discovery.rewardType);
-    }
-    if (discovery.magnetSeconds) sharedAbilities.activateMagnet(game.abilities, discovery.magnetSeconds);
-    state.rewardSpawned = true;
+    spawnSuperExplorationReward(discovery, state);
     state.environmentEnergized = true;
+    if (discovery.presentation === 'spectacle') {
+      state.spectacleTimer = 2.8;
+      state.spectacleMaxTimer = 2.8;
+    }
+    if (discovery.presentation === 'activation') {
+      state.activationSweepTimer = 2.45;
+      state.activationSweepMaxTimer = 2.45;
+    }
+    if (discovery.presentation === 'secret') {
+      state.revealTimer = 3.4;
+      state.revealMaxTimer = 3.4;
+    }
 
-    if (!game.reducedShake && discovery.id !== 'salsa-kite-test') spawnFirework();
+    if (!game.reducedShake && ['sunset-skyway', 'cactus-radio-roost'].includes(discovery.id)) spawnFirework();
+    if (!game.reducedShake && discovery.presentation === 'secret') {
+      spawnFirework();
+      spawnFirework();
+    }
     playAudio('level.celebrationPulse', {
       position: audioPosition(centerX),
-      pitchCents: discovery.id === 'cactus-radio-roost' ? 110 : discovery.id === 'sunset-skyway' ? 55 : 0,
+      pitchCents: discovery.presentation === 'secret' ? 145 : discovery.id === 'cactus-radio-roost' ? 110 : discovery.id === 'sunset-skyway' ? 55 : 0,
     });
-    if (discovery.rewardTier === 'large') {
-      playAudio('ui.radio', { position: audioPosition(centerX) });
+    if (discovery.presentation === 'spectacle') {
+      playAudio('vehicle.aircraftBoost', { position: audioPosition(centerX), pitchCents: -110 });
+    } else if (discovery.presentation === 'secret') {
+      playAudio('pinata.break', { position: audioPosition(centerX), combo: 4 });
+      playAudio('pinata.jackpotSparkle', { position: audioPosition(centerX), pitchCents: 150 });
+      playAudio('collect.rainbowTaco', { position: audioPosition(centerX), pitchCents: 90 });
+    } else if (discovery.rewardTier === 'large') {
       playAudio('pinata.jackpotSparkle', { position: audioPosition(centerX), pitchCents: 70 });
     } else if (discovery.rewardTier === 'medium-large') {
+      playAudio('checkpoint.activate', { position: audioPosition(centerX), pitchCents: 110 });
       playAudio('pinata.jackpotSparkle', { position: audioPosition(centerX), pitchCents: 20 });
     }
+    return true;
   }
 
   function updateSuperExplorationPilot(dt) {
@@ -2002,6 +2231,8 @@
     }
     for (const discovery of superExplorationPilotPlan) {
       const state = game.superExploration.discoveries[discovery.id];
+      state.spectacleTimer = Math.max(0, (state.spectacleTimer || 0) - dt);
+      state.activationSweepTimer = Math.max(0, (state.activationSweepTimer || 0) - dt);
       const waypointGroups = discovery.waypointGroups
         || (discovery.waypointPlatformIds || []).map((platformId) => [platformId]);
       const activeGroup = waypointGroups[state.progress] || [];
@@ -2010,16 +2241,40 @@
         state.progress += 1;
         state.revealed = true;
         state.lastWaypointPlatformId = player.platform.id;
+        const progressNoun = discovery.id === 'salsa-kite-test' ? 'GUST'
+          : discovery.id === 'sunset-skyway' ? 'LIGHTS' : 'SIGNAL';
+        const progressColor = discovery.id === 'cactus-radio-roost' ? '#63d878'
+          : discovery.id === 'salsa-kite-test' ? '#ff5f91' : '#65d8ff';
+        spawnImpactText(
+          player.x + player.w * 0.5,
+          Math.max(42, player.y - 8),
+          `${progressNoun} ${state.progress}/${waypointGroups.length}`,
+          progressColor,
+          18,
+        );
+        playAudio(discovery.progressAudio, {
+          position: audioPosition(player.x),
+          pitchCents: -80 + state.progress * 62,
+        });
         if (firstLanding) {
-          game.message = `${discovery.name.toUpperCase()} REACHED!`;
+          state.arrivalAcknowledged = true;
+          game.message = discovery.arrivalLabel;
           game.messageTimer = Math.max(game.messageTimer, 0.9);
-          playAudio('ui.radio', { position: audioPosition(player.x) });
         }
       }
       const routeReady = state.progress >= waypointGroups.length;
       if (!state.completed && routeReady && rectsIntersect(player, discovery.trigger)) {
         completeSuperExplorationDiscovery(discovery);
       }
+    }
+
+    const secretState = game.superExploration.secrets[superExplorationSecretPlan.id];
+    secretState.revealTimer = Math.max(0, (secretState.revealTimer || 0) - dt);
+    const parentState = game.superExploration.discoveries[superExplorationSecretPlan.parentId];
+    if (!secretState.completed
+      && parentState.progress >= superExplorationSecretPlan.requiredParentProgress
+      && rectsIntersect(player, superExplorationSecretPlan.trigger)) {
+      completeSuperExplorationDiscovery(superExplorationSecretPlan);
     }
   }
 
@@ -2974,6 +3229,7 @@
     game.truckDropPulse = Math.max(0, game.truckDropPulse - dt);
     game.radioTimer = Math.max(0, game.radioTimer - dt);
     game.cinematicTimer = Math.max(0, game.cinematicTimer - dt);
+    updateCharacterTransmission(dt);
     if (game.stompTimer <= 0) game.stompCombo = 0;
     if (player.grounded && game.airChainTimer <= 0) game.airChain = 0;
     if (level.pinata) level.pinata.wobble = Math.max(0, level.pinata.wobble - dt);
@@ -2984,6 +3240,7 @@
     }
 
     if (sharedAbilities.suspendForTransformation(game.abilities, player)) return;
+    if (updateSuperExplorationInteraction(dt)) return;
 
     if (player.grounded && player.platform) {
       player.x += player.platform.dx || 0;
@@ -3442,6 +3699,10 @@
     return game.superExploration?.discoveries?.[id] || null;
   }
 
+  function phase2SecretState(id) {
+    return game.superExploration?.secrets?.[id] || null;
+  }
+
   function phase2CompletionPulse(id, time) {
     const state = phase2DiscoveryState(id);
     if (!state?.completed) return 0;
@@ -3493,14 +3754,18 @@
     if (x + width < -80 || x > canvas.width + 80) return;
     const state = phase2DiscoveryState('cactus-radio-roost');
     const energized = Boolean(state?.completed);
+    const activationPower = energized ? 1 : clamp(state?.radioPower || 0, 0, 1);
     const pulse = phase2CompletionPulse('cactus-radio-roost', time);
-    const routeCharge = energized ? 1 : clamp((state?.progress || 0) / 3, 0, 0.72);
+    const routeCharge = Math.max(
+      activationPower,
+      energized ? 1 : clamp((state?.progress || 0) / 3, 0, 0.72),
+    );
 
     ctx.save();
     ctx.globalAlpha = 0.88 + routeCharge * 0.12;
-    if (energized) {
+    if (activationPower > 0.1) {
       ctx.shadowColor = '#65d8ff';
-      ctx.shadowBlur = 10 + pulse * 18;
+      ctx.shadowBlur = 6 + activationPower * 8 + pulse * 18;
     }
     ctx.drawImage(asset, x, worldY, width, height);
     ctx.shadowBlur = 0;
@@ -3524,15 +3789,38 @@
       ctx.arc(nodeX, nodeY, lit ? 3.6 : 2.4, 0, Math.PI * 2);
       ctx.fill();
     }
-    if (energized) {
-      ctx.globalAlpha = 0.48 + pulse * 0.34;
+    if (activationPower > 0.12) {
+      ctx.globalAlpha = 0.28 + activationPower * 0.24 + pulse * 0.34;
       ctx.strokeStyle = '#fff1a6';
-      ctx.lineWidth = 2.4 + pulse * 1.8;
+      ctx.lineWidth = 1.8 + activationPower * 0.8 + pulse * 1.8;
       for (let ring = 0; ring < 3; ring += 1) {
         ctx.beginPath();
-        ctx.arc(signalX, signalY, 24 + ring * 18 + pulse * 8, Math.PI * 1.08, Math.PI * 1.92);
+        ctx.arc(signalX, signalY, 24 + ring * 18 + (pulse + activationPower * 0.35) * 8, Math.PI * 1.08, Math.PI * 1.92);
         ctx.stroke();
       }
+
+      // A compact moving sweep and persistent beacon make the relay read as a
+      // changed piece of the world without obscuring the nearby route.
+      const sweep = Math.sin(time * 0.0024) * 0.54 - Math.PI * 0.5;
+      ctx.save();
+      ctx.translate(signalX, signalY + 4);
+      ctx.rotate(sweep);
+      ctx.globalAlpha = 0.18 + activationPower * 0.34;
+      ctx.strokeStyle = '#65d8ff';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(52 + activationPower * 18, 0);
+      ctx.stroke();
+      ctx.restore();
+      const beaconPulse = 0.65 + Math.sin(time * 0.008) * 0.25;
+      ctx.globalAlpha = activationPower * beaconPulse;
+      ctx.fillStyle = energized ? '#63d878' : '#ffd166';
+      ctx.shadowColor = energized ? '#63d878' : '#ffd166';
+      ctx.shadowBlur = 12 + activationPower * 10;
+      ctx.beginPath();
+      ctx.arc(signalX, signalY - 5, 4 + activationPower * 2, 0, Math.PI * 2);
+      ctx.fill();
     }
     ctx.restore();
   }
@@ -3551,6 +3839,9 @@
     const state = phase2DiscoveryState('salsa-kite-test');
     const completed = Boolean(state?.completed);
     const pulse = phase2CompletionPulse('salsa-kite-test', time);
+    const spectacle = state?.spectacleMaxTimer
+      ? clamp(state.spectacleTimer / state.spectacleMaxTimer, 0, 1)
+      : 0;
     const sourceWidth = asset.naturalWidth / 5;
 
     ctx.save();
@@ -3565,14 +3856,14 @@
       const endX = to.x + to.w * 0.28 - game.cameraX;
       const startY = from.y - 38;
       const endY = to.y - 38;
-      ctx.globalAlpha = active ? 0.58 : 0.2;
+      ctx.globalAlpha = active ? 0.58 + spectacle * 0.28 : 0.2;
       ctx.strokeStyle = index % 2 ? '#ff5f91' : '#65d8ff';
-      ctx.lineWidth = active ? 3 : 1.6;
+      ctx.lineWidth = active ? 3 + spectacle * 2.2 : 1.6;
       ctx.beginPath();
       ctx.moveTo(startX, startY);
       ctx.bezierCurveTo(
-        lerp(startX, endX, 0.35), Math.min(startY, endY) - 42,
-        lerp(startX, endX, 0.68), Math.max(startY, endY) + 28,
+        lerp(startX, endX, 0.35), Math.min(startY, endY) - 42 - spectacle * 32,
+        lerp(startX, endX, 0.68), Math.max(startY, endY) + 28 + spectacle * 18,
         endX, endY,
       );
       ctx.stroke();
@@ -3586,7 +3877,11 @@
       const drawHeight = index === 4 ? 216 : 202;
       ctx.save();
       ctx.translate(centerX, platform.y - 28);
-      ctx.rotate(wind * (active ? 0.025 : 0.012));
+      ctx.rotate(wind * (active ? 0.025 + spectacle * 0.065 : 0.012));
+      if (!game.reducedShake && spectacle > 0) {
+        const celebrationScale = 1 + Math.sin(time * 0.012 + index) * spectacle * 0.035;
+        ctx.scale(celebrationScale, celebrationScale);
+      }
       if (active) {
         ctx.shadowColor = index % 2 ? '#ff5f91' : '#65d8ff';
         ctx.shadowBlur = completed ? 12 + pulse * 12 : 7;
@@ -3609,6 +3904,34 @@
       ctx.beginPath();
       ctx.arc(finishX, finish.y - 22, 48 + pulse * 20, 0, Math.PI * 2);
       ctx.stroke();
+
+      if (spectacle > 0) {
+        const reducedMotionScale = game.reducedShake ? 0.35 : 1;
+        ctx.lineCap = 'round';
+        for (let trail = 0; trail < 5; trail += 1) {
+          const phase = time * 0.0035 + trail * 1.35;
+          const trailX = finishX - 250 + trail * 92 + Math.sin(phase) * 22 * reducedMotionScale;
+          const trailY = 98 + trail * 34 + Math.cos(phase * 1.2) * 18 * reducedMotionScale;
+          const color = ['#65d8ff', '#ff5f91', '#ffd166'][trail % 3];
+          ctx.globalAlpha = spectacle * (0.44 + trail * 0.05);
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.moveTo(trailX - 58, trailY + 26);
+          ctx.quadraticCurveTo(trailX - 12, trailY - 28, trailX + 52, trailY + 6);
+          ctx.stroke();
+          ctx.save();
+          ctx.translate(trailX + 52, trailY + 6);
+          ctx.rotate(Math.sin(phase) * 0.22);
+          ctx.fillStyle = color;
+          ctx.strokeStyle = '#fff1a6';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(0, -8); ctx.lineTo(9, 0); ctx.lineTo(0, 8); ctx.lineTo(-9, 0); ctx.closePath();
+          ctx.fill(); ctx.stroke();
+          ctx.restore();
+        }
+      }
     }
     ctx.restore();
   }
@@ -3625,6 +3948,10 @@
     const state = phase2DiscoveryState('sunset-skyway');
     const completed = Boolean(state?.completed);
     const pulse = phase2CompletionPulse('sunset-skyway', time);
+    const activationSweep = state?.activationSweepMaxTimer
+      ? clamp(state.activationSweepTimer / state.activationSweepMaxTimer, 0, 1)
+      : 0;
+    const sweepPosition = 1 - activationSweep;
     const skywayPlatforms = superExplorationPlatformPlan.filter((platform) => platform.phase2Discovery === 'sunset-skyway');
 
     ctx.save();
@@ -3647,11 +3974,14 @@
       const colors = ['#65d8ff', '#ff5f91', '#ffd166'];
       const color = colors[(bulb + Math.floor(time * 0.004)) % colors.length];
       ctx.fillStyle = color;
-      ctx.globalAlpha = active ? 0.78 + pulse * 0.18 : 0.18;
+      const sweepGlow = activationSweep > 0 && Math.abs(t - sweepPosition) < 0.13
+        ? 1 - Math.abs(t - sweepPosition) / 0.13
+        : 0;
+      ctx.globalAlpha = active ? 0.78 + pulse * 0.18 + sweepGlow * 0.2 : 0.18;
       ctx.shadowColor = color;
-      ctx.shadowBlur = active ? 8 + pulse * 5 : 2;
+      ctx.shadowBlur = active ? 8 + pulse * 5 + sweepGlow * 16 : 2;
       ctx.beginPath();
-      ctx.arc(bulbWorldX - game.cameraX, y, active ? 3.6 : 2.2, 0, Math.PI * 2);
+      ctx.arc(bulbWorldX - game.cameraX, y, active ? 3.6 + sweepGlow * 1.8 : 2.2, 0, Math.PI * 2);
       ctx.fill();
     }
 
@@ -3664,7 +3994,113 @@
       ctx.beginPath();
       ctx.arc(finishX, finish.y - 16, 46 + pulse * 18, 0, Math.PI * 2);
       ctx.stroke();
+
+      const signWidth = 122;
+      const signY = finish.y - 96;
+      const signGradient = ctx.createLinearGradient(finishX - signWidth / 2, signY, finishX + signWidth / 2, signY + 32);
+      signGradient.addColorStop(0, 'rgba(35,25,62,.92)');
+      signGradient.addColorStop(1, 'rgba(18,78,92,.92)');
+      ctx.globalAlpha = 0.78 + pulse * 0.16;
+      ctx.fillStyle = signGradient;
+      ctx.strokeStyle = '#65d8ff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(finishX - signWidth / 2, signY, signWidth, 32, 9);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#fff1a6';
+      ctx.font = '900 11px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('SKYWAY ONLINE', finishX, signY + 20);
     }
+    ctx.restore();
+    drawSunsetStash(time);
+  }
+
+  function drawSunsetStash(time) {
+    const secret = phase2SecretState(superExplorationSecretPlan.id);
+    const parent = phase2DiscoveryState(superExplorationSecretPlan.parentId);
+    if (!secret || (!secret.completed && (parent?.progress || 0) < 3)) return;
+    const x = 17030 - game.cameraX;
+    const y = 118;
+    if (x < -90 || x > canvas.width + 90) return;
+    const reveal = secret.revealMaxTimer
+      ? clamp(secret.revealTimer / secret.revealMaxTimer, 0, 1)
+      : 0;
+
+    ctx.save();
+    if (!secret.completed) {
+      // Only a tucked strip of fiesta fringe and an occasional glint hint that
+      // the player can jump above the obvious Skyway finish.
+      const cluePulse = 0.22 + (Math.sin(time * 0.0032) + 1) * 0.1;
+      ctx.globalAlpha = cluePulse;
+      ctx.strokeStyle = '#5f3c52';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x, 18); ctx.lineTo(x, y - 10); ctx.stroke();
+      ['#ff5f91', '#ffd166', '#65d8ff'].forEach((color, index) => {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(x - 14 + index * 10, y - 12);
+        ctx.lineTo(x - 9 + index * 10, y - 2);
+        ctx.lineTo(x - 4 + index * 10, y - 12);
+        ctx.closePath();
+        ctx.fill();
+      });
+      const glint = Math.max(0, Math.sin(time * 0.0027) - 0.72) / 0.28;
+      if (glint > 0) {
+        ctx.globalAlpha = glint * 0.72;
+        ctx.strokeStyle = '#fff1a6';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x, y - 30); ctx.lineTo(x, y - 14); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x - 8, y - 22); ctx.lineTo(x + 8, y - 22); ctx.stroke();
+      }
+      ctx.restore();
+      return;
+    }
+
+    ctx.strokeStyle = 'rgba(72,38,69,.82)';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(x, 10); ctx.lineTo(x, y - 22); ctx.stroke();
+    ctx.translate(x, y);
+    const settle = game.reducedShake ? 0 : Math.sin(time * 0.004) * (0.025 + reveal * 0.08);
+    ctx.rotate(settle);
+    ctx.scale(0.72, 0.72);
+    ctx.shadowColor = '#ffd166';
+    ctx.shadowBlur = 12 + reveal * 18;
+    const stashGradient = ctx.createLinearGradient(-28, -22, 28, 22);
+    stashGradient.addColorStop(0, '#65d8ff');
+    stashGradient.addColorStop(0.48, '#b78cff');
+    stashGradient.addColorStop(1, '#ff5f91');
+    tracePinataBody();
+    ctx.fillStyle = stashGradient;
+    ctx.fill();
+    ctx.strokeStyle = '#4a213f';
+    ctx.lineWidth = 3.2;
+    ctx.stroke();
+    ctx.save();
+    tracePinataBody();
+    ctx.clip();
+    drawPinataFringeBand(-14, 30, '#ff5f91', 0);
+    drawPinataFringeBand(-4, 30, '#ffd166', 3);
+    drawPinataFringeBand(6, 28, '#63d878', 0);
+    drawPinataFringeBand(16, 23, '#65d8ff', 3);
+    ctx.restore();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#fff1a6';
+    ctx.strokeStyle = '#4a213f';
+    ctx.lineWidth = 2.2;
+    tracePinataStar(0, -2, 11, 5.2, -Math.PI / 2);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#d98525';
+    ctx.beginPath(); ctx.arc(0, -2, 3.2, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalAlpha = 0.28 + reveal * 0.42;
+    ctx.strokeStyle = '#fff1a6';
+    ctx.lineWidth = 2 + reveal * 2;
+    ctx.beginPath();
+    ctx.arc(x, y, 38 + reveal * 25, 0, Math.PI * 2);
+    ctx.stroke();
     ctx.restore();
   }
 
@@ -3707,54 +4143,74 @@
     const enter = clamp((banner.maxTimer - banner.timer) / 0.22, 0, 1);
     const exit = clamp(banner.timer / 0.34, 0, 1);
     const visibility = Math.min(enter, exit);
-    const width = Math.min(640, canvas.width - 120);
-    const height = banner.tier === 'large' ? 124 : 112;
+    const secret = banner.mode === 'secret';
+    const width = Math.min(secret ? 700 : 540, canvas.width - (secret ? 72 : 150));
+    const height = secret ? 136 : 92;
     const x = (canvas.width - width) * 0.5;
-    const y = 148 + (game.reducedShake ? 0 : (1 - enter) * -24);
-    const accent = banner.tier === 'large' ? '#ffd166'
-      : banner.tier === 'medium-large' ? '#65d8ff' : '#ff5f91';
+    const y = (secret ? 130 : 156) + (game.reducedShake ? 0 : (1 - enter) * (secret ? -28 : -14));
+    const accent = secret ? '#ffd166'
+      : banner.mode === 'activation' ? '#65d8ff' : '#ff5f91';
 
     ctx.save();
     ctx.globalAlpha = visibility;
     ctx.translate(canvas.width * 0.5, y + height * 0.5);
     if (!game.reducedShake) {
-      const pop = 0.94 + enter * 0.06 + Math.sin(time * 0.016) * 0.008;
+      const pop = (secret ? 0.91 : 0.96) + enter * (secret ? 0.09 : 0.04)
+        + Math.sin(time * 0.016) * (secret ? 0.012 : 0.004);
       ctx.scale(pop, pop);
     }
     ctx.translate(-canvas.width * 0.5, -(y + height * 0.5));
     const panel = ctx.createLinearGradient(x, y, x + width, y + height);
-    panel.addColorStop(0, 'rgba(37,24,54,.96)');
-    panel.addColorStop(0.5, 'rgba(108,41,72,.97)');
-    panel.addColorStop(1, 'rgba(29,72,85,.96)');
+    panel.addColorStop(0, secret ? 'rgba(55,25,66,.98)' : 'rgba(37,24,54,.9)');
+    panel.addColorStop(0.5, secret ? 'rgba(129,54,64,.99)' : 'rgba(84,38,69,.92)');
+    panel.addColorStop(1, secret ? 'rgba(30,84,91,.98)' : 'rgba(29,72,85,.9)');
     ctx.fillStyle = panel;
     ctx.strokeStyle = accent;
-    ctx.lineWidth = banner.tier === 'large' ? 4 : 3;
+    ctx.lineWidth = secret ? 4.5 : 2.5;
     ctx.shadowColor = accent;
-    ctx.shadowBlur = 14 + enter * 12;
+    ctx.shadowBlur = (secret ? 18 : 9) + enter * (secret ? 15 : 7);
     ctx.beginPath();
-    ctx.roundRect(x, y, width, height, 20);
+    ctx.roundRect(x, y, width, height, secret ? 22 : 17);
     ctx.fill();
     ctx.stroke();
     ctx.shadowBlur = 0;
 
-    drawPhase2WingShoeGlyph(x + 46, y + height * 0.5, 0.72, true);
-    ctx.save();
-    ctx.translate(x + width - 46, y + height * 0.5);
-    ctx.scale(-1, 1);
-    drawPhase2WingShoeGlyph(0, 0, 0.72, true);
-    ctx.restore();
+    if (secret) {
+      drawPhase2WingShoeGlyph(x + 48, y + height * 0.5, 0.76, true);
+      ctx.save();
+      ctx.translate(x + width - 48, y + height * 0.5);
+      ctx.scale(-1, 1);
+      drawPhase2WingShoeGlyph(0, 0, 0.76, true);
+      ctx.restore();
+      for (let sparkle = 0; sparkle < 6; sparkle += 1) {
+        const sparkleX = x + 92 + sparkle * ((width - 184) / 5);
+        const sparkleY = y + 16 + Math.sin(time * 0.01 + sparkle) * 4;
+        ctx.fillStyle = ['#ffd166', '#ff5f91', '#65d8ff'][sparkle % 3];
+        ctx.globalAlpha = visibility * (0.55 + (sparkle % 2) * 0.25);
+        ctx.beginPath(); ctx.arc(sparkleX, sparkleY, 2.5, 0, Math.PI * 2); ctx.fill();
+      }
+    } else {
+      ctx.fillStyle = accent;
+      ctx.globalAlpha = visibility * 0.86;
+      for (const side of [-1, 1]) {
+        const iconX = canvas.width * 0.5 + side * (width * 0.5 - 30);
+        ctx.beginPath(); ctx.arc(iconX, y + height * 0.5, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#fff1a6'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(iconX, y + height * 0.5, 13, 0, Math.PI * 2); ctx.stroke();
+      }
+    }
 
     ctx.textAlign = 'center';
     ctx.fillStyle = '#fff1a6';
-    ctx.font = '900 12px Arial';
-    ctx.fillText('SUPER ROUTE COMPLETE', canvas.width * 0.5, y + 24);
+    ctx.font = `900 ${secret ? 13 : 11}px Arial`;
+    ctx.fillText(banner.eyebrow, canvas.width * 0.5, y + (secret ? 25 : 20));
     ctx.fillStyle = '#fff8df';
-    const titleSize = banner.title.length > 31 ? 25 : 29;
+    const titleSize = secret ? (banner.title.length > 27 ? 29 : 33) : (banner.title.length > 25 ? 23 : 27);
     ctx.font = `900 ${titleSize}px Arial`;
-    ctx.fillText(banner.title, canvas.width * 0.5, y + 57);
+    ctx.fillText(banner.title, canvas.width * 0.5, y + (secret ? 67 : 50));
     ctx.fillStyle = accent;
-    ctx.font = banner.reward.length > 50 ? '900 14px Arial' : '900 16px Arial';
-    ctx.fillText(banner.reward, canvas.width * 0.5, y + (banner.tier === 'large' ? 94 : 88));
+    ctx.font = banner.reward.length > 54 ? `900 ${secret ? 14 : 12}px Arial` : `900 ${secret ? 16 : 14}px Arial`;
+    ctx.fillText(banner.reward, canvas.width * 0.5, y + (secret ? 105 : 76));
     ctx.restore();
   }
 
@@ -5342,8 +5798,96 @@
     return lines.slice(0, 2);
   }
 
+  function drawCharacterTransmission(time) {
+    const transmission = game.characterTransmission;
+    if (!transmission) return;
+    const elapsed = transmission.maxTimer - transmission.timer;
+    const fade = clamp(Math.min(elapsed / 0.18, transmission.timer / 0.34), 0, 1);
+    const w = Math.min(520, canvas.width - 40);
+    const h = 112;
+    const x = canvas.width - w - 20;
+    const y = 78;
+    const portraitSize = 76;
+
+    ctx.save();
+    ctx.globalAlpha = fade;
+    if (!game.reducedShake) {
+      const settle = 1 - Math.exp(-elapsed * 12);
+      ctx.translate(0, (1 - settle) * -12);
+    }
+    const panel = ctx.createLinearGradient(x, y, x + w, y + h);
+    panel.addColorStop(0, 'rgba(25,20,48,.97)');
+    panel.addColorStop(0.54, 'rgba(40,38,74,.97)');
+    panel.addColorStop(1, 'rgba(18,78,88,.97)');
+    ctx.fillStyle = panel;
+    ctx.strokeStyle = '#65d8ff';
+    ctx.lineWidth = 3;
+    ctx.shadowColor = '#65d8ff';
+    ctx.shadowBlur = 14;
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 18); ctx.fill(); ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    ctx.save();
+    ctx.beginPath(); ctx.roundRect(x + 11, y + 11, portraitSize, portraitSize, 14); ctx.clip();
+    ctx.fillStyle = '#17142f';
+    ctx.fillRect(x + 11, y + 11, portraitSize, portraitSize);
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(
+      images.taco_truck_checkpoint,
+      825, 210, 280, 280,
+      x + 11, y + 11, portraitSize, portraitSize,
+    );
+    ctx.restore();
+    const portraitRing = ctx.createLinearGradient(x + 10, y + 10, x + 88, y + 88);
+    portraitRing.addColorStop(0, '#ff67ad');
+    portraitRing.addColorStop(0.5, '#ffd166');
+    portraitRing.addColorStop(1, '#65d8ff');
+    ctx.strokeStyle = portraitRing;
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.roundRect(x + 11, y + 11, portraitSize, portraitSize, 14); ctx.stroke();
+
+    // Restrained scanlines and a live signal meter sell the radio connection
+    // while keeping the portrait and dialogue readable on a phone-sized view.
+    ctx.save();
+    ctx.beginPath(); ctx.roundRect(x + 94, y + 8, w - 104, h - 16, 12); ctx.clip();
+    ctx.globalAlpha = fade * 0.09;
+    ctx.fillStyle = '#baf8ff';
+    for (let scanY = y + 12; scanY < y + h - 10; scanY += 6) ctx.fillRect(x + 94, scanY, w - 104, 1);
+    ctx.restore();
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#65d8ff';
+    ctx.font = '900 11px Arial';
+    ctx.fillText(`${transmission.speaker}  •  ${transmission.channel}`, x + 100, y + 22);
+    ctx.fillStyle = '#fff9ef';
+    ctx.font = '800 15px Arial';
+    wrapText(transmission.message, w - 126).forEach((line, index) => {
+      ctx.fillText(line, x + 100, y + 48 + index * 19);
+    });
+
+    const signal = (Math.sin(time * 0.012) + 1) * 0.5;
+    for (let bar = 0; bar < 4; bar += 1) {
+      const active = signal * 4.2 > bar;
+      ctx.fillStyle = active ? '#63d878' : 'rgba(255,255,255,.2)';
+      ctx.fillRect(x + w - 62 + bar * 10, y + 13 - bar * 2, 6, 5 + bar * 2);
+    }
+
+    if (transmission.rewardVisible) {
+      ctx.fillStyle = 'rgba(8,23,35,.6)';
+      ctx.beginPath(); ctx.roundRect(x + 96, y + 78, w - 108, 25, 8); ctx.fill();
+      ctx.fillStyle = '#ffd166';
+      ctx.font = transmission.reward.length > 48 ? '900 11px Arial' : '900 12px Arial';
+      ctx.fillText(`REWARD  •  ${transmission.reward}`, x + 104, y + 95);
+    } else {
+      ctx.fillStyle = '#63d878';
+      ctx.font = '900 10px Arial';
+      ctx.fillText('SIGNAL LOCKED', x + 100, y + 94);
+    }
+    ctx.restore();
+  }
+
   function drawRadioMessage() {
-    if (game.radioTimer <= 0 || !game.radioMessage) return;
+    if (game.characterTransmission || game.radioTimer <= 0 || !game.radioMessage) return;
     const x = 360;
     const y = 82;
     const w = 420;
@@ -5485,7 +6029,7 @@
     }
 
     if (game.messageTimer > 0 && game.state !== 'celebrating' && game.state !== 'won'
-      && !game.superExploration?.completionBanner) {
+      && !game.superExploration?.completionBanner && !game.characterTransmission) {
       const pulse = 1 + Math.sin(time * 0.018) * 0.05;
       ctx.save();
       ctx.translate(canvas.width * 0.5, 165);
@@ -5500,6 +6044,7 @@
       ctx.restore();
     }
     drawSuperExplorationCompletionBanner(time);
+    drawCharacterTransmission(time);
     drawRadioMessage();
     ctx.restore();
   }
@@ -5676,7 +6221,10 @@
           scriptedZoneSafe: game.superExploration.scriptedZoneSafe,
           normalRouteUnaffected: game.superExploration.normalRouteUnaffected,
           noRequiredSuperTraversal: game.superExploration.noRequiredSuperTraversal,
+          approvedGeometryPreserved: true,
           completionBanner: game.superExploration.completionBanner,
+          interaction: game.superExploration.interaction,
+          characterTransmission: game.characterTransmission,
           artAssets: [
             'world1_1_super_kite_route_v2.webp',
             'world1_1_super_skyway_v2.webp',
@@ -5713,6 +6261,18 @@
             worldPercent: entry.worldPercent,
             ...game.superExploration.discoveries[entry.id],
           })),
+          hiddenSecret: {
+            id: superExplorationSecretPlan.id,
+            kind: superExplorationSecretPlan.kind,
+            name: superExplorationSecretPlan.name,
+            parentId: superExplorationSecretPlan.parentId,
+            trigger: superExplorationSecretPlan.trigger,
+            rewardTypes: superExplorationSecretPlan.rewardTypes,
+            rewardTier: superExplorationSecretPlan.rewardTier,
+            rewardLabel: superExplorationSecretPlan.rewardLabel,
+            worldPercent: superExplorationSecretPlan.worldPercent,
+            ...game.superExploration.secrets[superExplorationSecretPlan.id],
+          },
           platforms: level.platforms
             .filter((platform) => platform.phase2Pilot)
             .map((platform) => ({
