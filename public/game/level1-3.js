@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-3-v29-final-visual-polish';
+  const SOURCE_VERSION = 'w1-3-v30-pepper-shaft-reconstruction';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -56,6 +56,7 @@
   ];
   const SHOWDOWN_EXPLORATION_VERSION = 'world-1-3-phase2-v2-polish';
   const SHOWDOWN_VISUAL_POLISH_VERSION = 'world-1-3-phase2-final-polish-v1';
+  const PEPPER_MINE_RECONSTRUCTION_VERSION = 'world-1-3-pepper-shaft-v2';
   const BOSS_TRIGGER_X = 24920;
   const PHASE2_BOSS_BUFFER_X = 24320;
   const showdownExplorationPlan = Object.freeze([
@@ -2867,20 +2868,55 @@
     ctx.restore();
   }
 
+  function drawPepperMineSurfaceReconstruction(image, centerWorldX, bottomY, width, options = {}) {
+    if (!image || !visibleWorldX(centerWorldX - width * .6, width * 1.2, 180)) return;
+    const sourceWidth = image.naturalWidth || image.width;
+    const sourceHeight = image.naturalHeight || image.height;
+    const scale = width / sourceWidth;
+    const height = sourceHeight * scale;
+    const x = centerWorldX - game.cameraX - width * .5;
+    const y = bottomY - height;
+    const upperCut = Math.round(sourceHeight * .66);
+    const foundationStart = Math.round(sourceHeight * .57);
+    const leftFoundationWidth = Math.round(sourceWidth * .46);
+    const drawSlice = (sourceX, sourceY, sourceW, sourceH) => {
+      ctx.drawImage(
+        image,
+        sourceX, sourceY, sourceW, sourceH,
+        x + sourceX * scale, y + sourceY * scale, sourceW * scale, sourceH * scale,
+      );
+    };
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.globalAlpha = options.alpha ?? 1;
+    if (options.glow) {
+      ctx.shadowColor = options.glow;
+      ctx.shadowBlur = options.glowBlur || 16;
+    }
+    // Preserve the approved hoist, pepper, cage, lights, and upper supports.
+    drawSlice(0, 0, sourceWidth, upperCut);
+    // Preserve only the grounded left-side props and footings below the cage.
+    // The former turquoise deck/right foundation is intentionally not drawn:
+    // that space is now the open shaft shown by the reconstruction beneath it.
+    drawSlice(0, foundationStart, leftFoundationWidth, sourceHeight - foundationStart);
+    ctx.restore();
+  }
+
   function drawPepperMineLift(time) {
     const entry = showdownExplorationPlan[0];
     if (!visibleWorldX(entry.routeRange[0], entry.routeRange[1] - entry.routeRange[0], 220)) return;
     const state = showdownExplorationEntryState(entry);
     const active = Boolean(state?.completed);
-    // This visual-only insert sits behind the approved lift. Its broken rails,
-    // descending timbers, and deep void clarify that the cart-side edge is an
-    // open shaft without changing a single collision surface.
-    drawPhase2DestinationAsset(images.world1_3_pepper_mine_shaft_v1, 4982, GROUND_Y + 7, 184, {
-      alpha: .96,
+    // The new shaft is one continuous, visual-only extension of the approved
+    // hoist. Its opening is centered on the existing cage's straight descent
+    // path, while the preserved lower-left slice reads as the safe ledge.
+    drawPhase2DestinationAsset(images.world1_3_pepper_mine_shaft_reconstruction_v2, 4805, canvas.height + 20, 338, {
+      alpha: .98,
       glow: active ? '#ffb347' : null,
       glowBlur: active ? 8 : 0,
     });
-    drawPhase2DestinationAsset(images.world1_3_super_pepper_mine_lift_v1, 4800, GROUND_Y + 2, 420, { glow: active ? '#ffd65a' : null, glowBlur: active ? 16 : 0 });
+    drawPepperMineSurfaceReconstruction(images.world1_3_super_pepper_mine_lift_v1, 4800, GROUND_Y + 2, 420, { glow: active ? '#ffd65a' : null, glowBlur: active ? 16 : 0 });
     const wheelX = 4800 - game.cameraX + 72; const wheelY = 72;
     ctx.save(); ctx.translate(wheelX, wheelY); ctx.rotate(active ? time * .0017 : 0); ctx.strokeStyle = active ? '#65d8ff' : 'rgba(255,214,90,.32)'; ctx.lineWidth = 3; ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = active ? 13 : 0;
     for (let spoke = 0; spoke < 6; spoke += 1) { ctx.rotate(Math.PI / 3); ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(34, 0); ctx.stroke(); }
@@ -4352,7 +4388,18 @@
               gameplayCoordinatesPreserved: true,
             },
             pepperMine: {
-              shaftAsset: 'world1_3_pepper_mine_shaft_v1.webp',
+              reconstructionVersion: PEPPER_MINE_RECONSTRUCTION_VERSION,
+              surfaceAssetPreserved: 'world1_3_super_pepper_mine_lift_v1.webp',
+              shaftAsset: 'world1_3_pepper_mine_shaft_reconstruction_v2.webp',
+              legacyRightShaftRemoved: true,
+              existingCageIsOnlyLift: true,
+              cageDescentCenterX: 4832,
+              shaftGuideCenterX: 4833,
+              cageDescentAlignmentError: 1,
+              falsePlatformRemoved: true,
+              safeLedgeSide: 'left',
+              shaftOpeningUnderCage: true,
+              structureGrounded: true,
               collisionGeometryChanged: false,
               communicatesOpenDrop: true,
             },
@@ -4496,7 +4543,7 @@
     world1_3_exploration_rainbow_taco_v1: 'assets/world1_3_exploration_rainbow_taco_v1.webp',
     world1_3_outlaw_stash_closed_v1: 'assets/world1_3_outlaw_stash_closed_v1.webp',
     world1_3_outlaw_stash_open_v1: 'assets/world1_3_outlaw_stash_open_v1.webp',
-    world1_3_pepper_mine_shaft_v1: 'assets/world1_3_pepper_mine_shaft_v1.webp',
+    world1_3_pepper_mine_shaft_reconstruction_v2: 'assets/world1_3_pepper_mine_shaft_reconstruction_v2.webp',
     world1_1_taco_trekker_olivia_v1: 'assets/world1_1_taco_trekker_olivia_v1.png',
   });
   const imageEntries = Object.entries(imageSources);
