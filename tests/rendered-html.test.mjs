@@ -1196,7 +1196,7 @@ test("ships World 1 with authored seamless panorama progressions", async () => {
     assert.match(showdownForeground, new RegExp(filename.replace(".", "\\.")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(showdownForegroundHtml, /level1-3\.js\?v=31/);
+  assert.match(showdownForegroundHtml, /level1-3\.js\?v=32/);
   assert.match(showdownForeground, /function drawPaintedTerrainSlice/);
   assert.match(showdownForeground, /checkpointArtGroundedByVisibleBaseline: true/);
   assert.match(showdownForeground, /independentCheckpointShadows: true/);
@@ -1467,8 +1467,8 @@ test("remasters the complete World 1-3 showdown enemy, boss, stampede, and NPC c
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /level1-3\.js\?v=31/);
-  assert.match(runtime, /SOURCE_VERSION = 'w1-3-v31-phase2-grounding-polish'/);
+  assert.match(html, /level1-3\.js\?v=32/);
+  assert.match(runtime, /SOURCE_VERSION = 'w1-3-v32-western-wanted-type'/);
   assert.match(runtime, /function remasteredEnemyFrame/);
   assert.match(runtime, /enemyAnimationFrames: 8/);
   assert.match(runtime, /behaviorLinked: true/);
@@ -1505,7 +1505,7 @@ test("authors World 1-3 combat around readable formations, full-platform patrols
   assert.match(runtime, /previousBottom: player\.previousBottom/);
   assert.match(runtime, /previousTargetTop: previousEnemyTop/);
   assert.match(runtime, /player\.y = Math\.min\(player\.y, enemy\.y - player\.h - 1\)/);
-  assert.match(html, /level1-3\.js\?v=31/);
+  assert.match(html, /level1-3\.js\?v=32/);
 });
 
 test("adds World 1-3 Phase 2 exploration before the unchanged El Guacodillo arena", async () => {
@@ -1529,7 +1529,7 @@ test("adds World 1-3 Phase 2 exploration before the unchanged El Guacodillo aren
     assert.match(runtime, new RegExp(filename.replace(/\./g, "\\.")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(html, /level1-3\.js\?v=31/);
+  assert.match(html, /level1-3\.js\?v=32/);
   assert.match(runtime, /SHOWDOWN_EXPLORATION_VERSION = 'world-1-3-phase2-v2-polish'/);
   assert.match(runtime, /SHOWDOWN_VISUAL_POLISH_VERSION = 'world-1-3-phase2-grounding-polish-v2'/);
   assert.match(runtime, /PHASE2_GROUNDING_VERSION = 'world-1-3-grounding-v1'/);
@@ -1561,8 +1561,30 @@ test("adds World 1-3 Phase 2 exploration before the unchanged El Guacodillo aren
   assert.match(runtime, /world1_1_taco_trekker_olivia_v1\.png/);
   assert.match(runtime, /Take this—you’re gonna want some lime/);
   assert.match(runtime, /function drawElGuacadilloWantedPoster/);
-  assert.match(runtime, /ctx\.strokeText\('WANTED'/);
-  assert.match(runtime, /ctx\.strokeText\('EL GUACADILLO'/);
+  assert.match(runtime, /WANTED_POSTER_TYPOGRAPHY_VERSION = 'world-1-3-wanted-western-type-v1'/);
+  assert.match(runtime, /function drawWesternPosterText/);
+  assert.match(runtime, /drawWesternPosterText\('WANTED'/);
+  assert.match(runtime, /drawWesternPosterText\('EL GUACADILLO'/);
+  assert.match(runtime, /face: 'JFT Wanted Rye'/);
+  assert.match(runtime, /face: 'JFT Wanted Stint'/);
+  assert.match(runtime, /preferredSize: 19/);
+  assert.match(runtime, /preferredSize: 16/);
+  assert.match(runtime, /tracking: \.8/);
+  assert.match(runtime, /tracking: \.55/);
+  assert.match(runtime, /maxWidth: 104/);
+  assert.match(runtime, /maxWidth: 108/);
+  assert.match(runtime, /previousTypography: 'Georgia shrink-to-fit'/);
+  assert.match(runtime, /comfortableMargins: true/);
+  assert.match(runtime, /localFontsLoaded: wantedPosterFontsLoaded/);
+  assert.doesNotMatch(runtime, /function setPosterFont/);
+  for (const filename of [
+    'fonts/wanted-poster/rye-regular-latin.woff2',
+    'fonts/wanted-poster/stint-ultra-condensed-regular-latin.woff2',
+    'fonts/wanted-poster/OFL-Rye.txt',
+    'fonts/wanted-poster/OFL-StintUltraCondensed.txt',
+  ]) {
+    await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
+  }
   assert.doesNotMatch(runtime, /3 STOMPS • HUGE EGO/);
   assert.match(runtime, /typographyContained: true/);
   assert.match(runtime, /portraitPreserved: true/);

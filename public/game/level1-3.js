@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-3-v31-phase2-grounding-polish';
+  const SOURCE_VERSION = 'w1-3-v32-western-wanted-type';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -58,6 +58,31 @@
   const SHOWDOWN_VISUAL_POLISH_VERSION = 'world-1-3-phase2-grounding-polish-v2';
   const PEPPER_MINE_RECONSTRUCTION_VERSION = 'world-1-3-pepper-shaft-v2';
   const PHASE2_GROUNDING_VERSION = 'world-1-3-grounding-v1';
+  const WANTED_POSTER_TYPOGRAPHY_VERSION = 'world-1-3-wanted-western-type-v1';
+  const WANTED_POSTER_TYPE = Object.freeze({
+    display: Object.freeze({
+      family: '"JFT Wanted Rye", Georgia, serif',
+      face: 'JFT Wanted Rye',
+      source: 'assets/fonts/wanted-poster/rye-regular-latin.woff2',
+      preferredSize: 19,
+      minimumSize: 17,
+      tracking: .8,
+      maxWidth: 104,
+      baselineOffset: 32,
+      strokeWidth: .8,
+    }),
+    name: Object.freeze({
+      family: '"JFT Wanted Stint", "Arial Narrow", Georgia, serif',
+      face: 'JFT Wanted Stint',
+      source: 'assets/fonts/wanted-poster/stint-ultra-condensed-regular-latin.woff2',
+      preferredSize: 16,
+      minimumSize: 14,
+      tracking: .55,
+      maxWidth: 108,
+      baselineOffset: 115,
+      strokeWidth: .65,
+    }),
+  });
   const PHASE2_STRUCTURE_GROUND_EMBED = 4;
   const PHASE2_STATION_BOTTOM_PADDING = Object.freeze({
     pepperMine: 29,
@@ -257,6 +282,7 @@
   let lastFrame = 0;
   let randomSeed = 0x5A15A12;
   let showdownExplorationGeometryAudit = null;
+  let wantedPosterFontsLoaded = false;
   const params = new URLSearchParams(location.search);
   const qa = ['terminal.local', '127.0.0.1', 'localhost'].includes(location.hostname);
   const previewStart = qa ? Number(params.get('startX') || 0) : 0;
@@ -2986,6 +3012,44 @@
     drawExplorationNameplate(13745, 98, 'SALSA SILO', active ? 'PRESSURE • PERFECT' : 'PRESSURE ARRAY • STANDBY', active ? '#ff6fae' : '#65d8ff', active);
   }
 
+  function fitTrackedPosterText(text, style) {
+    const glyphs = Array.from(text);
+    let size = style.preferredSize;
+    let width = 0;
+    do {
+      ctx.font = `400 ${size}px ${style.family}`;
+      width = glyphs.reduce((total, glyph, index) => (
+        total + ctx.measureText(glyph).width + (index < glyphs.length - 1 ? style.tracking : 0)
+      ), 0);
+      if (width <= style.maxWidth) break;
+      size -= 1;
+    } while (size >= style.minimumSize);
+    return { glyphs, size: Math.max(size, style.minimumSize), width };
+  }
+
+  function drawWesternPosterText(text, y, style) {
+    const layout = fitTrackedPosterText(text, style);
+    ctx.save();
+    ctx.font = `400 ${layout.size}px ${style.family}`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = style.strokeWidth;
+    ctx.strokeStyle = 'rgba(54,29,20,.78)';
+    ctx.fillStyle = '#523021';
+    let cursor = -layout.width * .5;
+    layout.glyphs.forEach((glyph, index) => {
+      // Tiny, deterministic opacity shifts keep the sepia ink physical without
+      // sacrificing the small-scale readability of either Western face.
+      ctx.globalAlpha = .9 + ((index * 3) % 4) * .02;
+      ctx.strokeText(glyph, cursor, y);
+      ctx.fillText(glyph, cursor, y);
+      cursor += ctx.measureText(glyph).width + (index < layout.glyphs.length - 1 ? style.tracking : 0);
+    });
+    ctx.restore();
+    return { size: layout.size, width: Number(layout.width.toFixed(2)), tracking: style.tracking };
+  }
+
   function drawElGuacadilloWantedPoster() {
     const posterX = 19254 - game.cameraX;
     const paperTop = 215;
@@ -3013,26 +3077,12 @@
       ctx.beginPath(); ctx.moveTo(48 - hatch * 27, paperTop + 143); ctx.lineTo(56 - hatch * 27, paperTop + 151); ctx.stroke();
     }
 
-    const setPosterFont = (text, maxWidth, preferredSize, minimumSize) => {
-      let size = preferredSize;
-      do {
-        ctx.font = `900 ${size}px Georgia, serif`;
-        if (ctx.measureText(text).width <= maxWidth) return size;
-        size -= 1;
-      } while (size >= minimumSize);
-      return minimumSize;
-    };
-
-    // Keep the type in the clear parchment area below the ornamental horns.
+    // Rye supplies the bold wood-type headline while Stint Ultra Condensed
+    // keeps the longer name substantial without squeezing or scaling glyphs.
     // The exact portrait asset remains the focal point between the two lines.
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#4c291d';
-    ctx.strokeStyle = 'rgba(246,207,137,.32)';
-    ctx.lineWidth = 1;
-    setPosterFont('WANTED', paperWidth - 34, 17, 13);
-    ctx.strokeText('WANTED', 0, paperTop + 32);
-    ctx.fillText('WANTED', 0, paperTop + 32);
+    drawWesternPosterText('WANTED', paperTop + WANTED_POSTER_TYPE.display.baselineOffset, WANTED_POSTER_TYPE.display);
     ctx.strokeStyle = 'rgba(76,41,29,.42)';
+    ctx.globalAlpha = 1;
     ctx.beginPath(); ctx.moveTo(-49, paperTop + 37); ctx.lineTo(49, paperTop + 37); ctx.stroke();
 
     if (images.world1_3_el_guacodillo_wanted_portrait_v1) {
@@ -3046,14 +3096,7 @@
       ctx.restore();
     }
 
-    ctx.strokeStyle = 'rgba(76,41,29,.42)';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(-49, paperTop + 103); ctx.lineTo(49, paperTop + 103); ctx.stroke();
-    ctx.fillStyle = '#4c291d';
-    ctx.strokeStyle = 'rgba(246,207,137,.28)';
-    setPosterFont('EL GUACADILLO', paperWidth - 28, 10, 8);
-    ctx.strokeText('EL GUACADILLO', 0, paperTop + 111);
-    ctx.fillText('EL GUACADILLO', 0, paperTop + 111);
+    drawWesternPosterText('EL GUACADILLO', paperTop + WANTED_POSTER_TYPE.name.baselineOffset, WANTED_POSTER_TYPE.name);
     ctx.restore();
   }
 
@@ -4437,7 +4480,15 @@
               layout: ['WANTED', 'EL GUACODILLO PORTRAIT', 'EL GUACADILLO'],
               legacyClutterRemoved: true,
               parchmentBounds: { centerX: 19254, top: 215, width: 146, height: 166 },
+              typographyVersion: WANTED_POSTER_TYPOGRAPHY_VERSION,
+              previousTypography: 'Georgia shrink-to-fit',
+              displayFace: WANTED_POSTER_TYPE.display.face,
+              nameFace: WANTED_POSTER_TYPE.name.face,
+              displaySizing: { preferred: WANTED_POSTER_TYPE.display.preferredSize, minimum: WANTED_POSTER_TYPE.display.minimumSize, tracking: WANTED_POSTER_TYPE.display.tracking, maxWidth: WANTED_POSTER_TYPE.display.maxWidth },
+              nameSizing: { preferred: WANTED_POSTER_TYPE.name.preferredSize, minimum: WANTED_POSTER_TYPE.name.minimumSize, tracking: WANTED_POSTER_TYPE.name.tracking, maxWidth: WANTED_POSTER_TYPE.name.maxWidth },
+              localFontsLoaded: wantedPosterFontsLoaded,
               typographyContained: true,
+              comfortableMargins: true,
               portraitPreserved: true,
             },
             rewardArt: {
@@ -4583,6 +4634,21 @@
     });
   }
 
+  async function loadWantedPosterFonts() {
+    if (typeof FontFace !== 'function' || !document.fonts) return false;
+    try {
+      const faces = await Promise.all(Object.values(WANTED_POSTER_TYPE).map(async (style) => {
+        const face = new FontFace(style.face, `url("${style.source}") format("woff2")`, { style: 'normal', weight: '400' });
+        return face.load();
+      }));
+      faces.forEach((face) => document.fonts.add(face));
+      return true;
+    } catch (error) {
+      console.warn('Wanted poster fonts unavailable; using bundled fallback stack.', error);
+      return false;
+    }
+  }
+
   const imageSources = Object.freeze({
     hero: 'assets/taco_hero_sheet.png',
     items: 'assets/items_sheet.png',
@@ -4634,8 +4700,10 @@
   const imageEntries = Object.entries(imageSources);
   Promise.all([
     world1Background.ready,
+    loadWantedPosterFonts(),
     ...imageEntries.map(([, path]) => loadImage(path)),
-  ]).then(([, ...loadedImages]) => {
+  ]).then(([, posterFontsLoaded, ...loadedImages]) => {
+    wantedPosterFontsLoaded = posterFontsLoaded;
     loadedImages.forEach((image, index) => { images[imageEntries[index][0]] = image; });
     loadProgress(); setupInputs(); resetGame(); syncSettings(); updatePersonalBest();
     requestAnimationFrame(frame);
