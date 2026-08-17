@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-1-v55-alternating-super-run';
+  const SOURCE_VERSION = 'w1-1-v58-exploration-payoff';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -97,6 +97,9 @@
     'world1_1_onion_drama_sheet_v1',
     'world1_1_jalapeno_popper_sheet_v1',
     'world1_1_desert_locals_v1',
+    'world1_1_super_kite_route_v2',
+    'world1_1_super_skyway_v2',
+    'world1_1_super_radio_roost_v2',
   ];
   const enemySpriteArt = Object.freeze({
     chili: 'world1_1_chili_bandit_sheet_v1',
@@ -215,6 +218,8 @@
     routeMaxGap: 0,
     platformOverlapCount: 0,
     checkpointsGrounded: 0,
+    superExploration: null,
+    characterTransmission: null,
   };
 
   const physics = {
@@ -380,6 +385,198 @@
       })),
   );
 
+  // Phase 2A remains a World 1-1-only exploration pilot. The approved route
+  // art, geometry, spacing, and jump envelopes stay frozen in this payoff pass;
+  // only arrival language, one-shot reactions, and rewards are layered on top.
+  const superExplorationPilotPlan = Object.freeze([
+    Object.freeze({
+      id: 'salsa-kite-test',
+      kind: 'moving-double-jump-route',
+      name: 'Kite Route',
+      arrivalLabel: 'KITE WINDLINE REACHED',
+      completionTitle: 'WIND FINALE!',
+      bannerEyebrow: 'KITE ROUTE',
+      presentation: 'spectacle',
+      progressAudio: 'collect.airMail',
+      score: 900,
+      rewardTier: 'medium',
+      rewardType: 'taco-cache',
+      bonusTacos: 8,
+      rewardX: 8548,
+      rewardY: 205,
+      rewardLabel: '+900 SCORE  •  8-TACO FIESTA',
+      trigger: Object.freeze({ x: 8458, y: 142, w: 200, h: 158 }),
+      platformIds: Object.freeze([
+        'phase2-kite-launch', 'phase2-kite-gust-one', 'phase2-kite-gust-two',
+        'phase2-kite-gust-three', 'phase2-kite-gold-finish',
+      ]),
+      waypointGroups: Object.freeze([
+        Object.freeze(['phase2-kite-launch']),
+        Object.freeze(['phase2-kite-gust-one']),
+        Object.freeze(['phase2-kite-gust-two']),
+        Object.freeze(['phase2-kite-gust-three']),
+      ]),
+      entryRise: 210,
+      visibleByDefault: true,
+      intendedSeconds: Object.freeze([10, 16]),
+      worldPercent: Object.freeze([22.4, 26.2]),
+    }),
+    Object.freeze({
+      id: 'sunset-skyway',
+      kind: 'branching-elevated-mini-route',
+      name: 'Sunset Salsa Skyway',
+      arrivalLabel: 'SKYWAY LIGHTS ACTIVATED',
+      completionTitle: 'SKYWAY ONLINE',
+      bannerEyebrow: 'SUNSET SALSA SKYWAY',
+      presentation: 'activation',
+      progressAudio: 'checkpoint.activate',
+      score: 1500,
+      rewardTier: 'medium-large',
+      rewardType: 'golden',
+      bonusTacos: 10,
+      rewardX: 16972,
+      rewardY: 120,
+      rewardLabel: '+1,500 SCORE  •  10-TACO FIESTA  •  BONUS GOLDEN',
+      trigger: Object.freeze({ x: 16918, y: 78, w: 162, h: 220 }),
+      platformIds: Object.freeze([
+        'phase2-skyway-start', 'phase2-skyway-west', 'phase2-skyway-low',
+        'phase2-skyway-high', 'phase2-skyway-center', 'phase2-skyway-east',
+      ]),
+      waypointGroups: Object.freeze([
+        Object.freeze(['phase2-skyway-start']),
+        Object.freeze(['phase2-skyway-west']),
+        Object.freeze(['phase2-skyway-low', 'phase2-skyway-high']),
+        Object.freeze(['phase2-skyway-center']),
+      ]),
+      entryRise: 200,
+      visibleByDefault: true,
+      intendedSeconds: Object.freeze([12, 18]),
+      worldPercent: Object.freeze([48, 51.6]),
+    }),
+    Object.freeze({
+      id: 'cactus-radio-roost',
+      kind: 'scene-based-zigzag-destination',
+      name: 'Cactus Radio Roost',
+      arrivalLabel: 'RADIO SIGNAL FOUND',
+      completionTitle: 'SUNSET RELAY ONLINE!',
+      bannerEyebrow: 'CACTUS RADIO ROOST',
+      presentation: 'character-interaction',
+      progressAudio: 'ui.radio',
+      score: 2400,
+      rewardTier: 'large',
+      rewardType: 'rainbow',
+      bonusTacos: 14,
+      magnetSeconds: 12,
+      rewardX: 24186,
+      rewardY: 76,
+      rewardLabel: '+2,400 SCORE  •  14-TACO FIESTA  •  RAINBOW  •  MAGNET',
+      transmissionRewardLabel: '+2,400  •  14 TACOS  •  RAINBOW  •  MAGNET',
+      trigger: Object.freeze({ x: 24092, y: 62, w: 218, h: 180 }),
+      platformIds: Object.freeze([
+        'phase2-roost-approach', 'phase2-roost-cable',
+        'phase2-roost-speaker', 'phase2-roost-main',
+      ]),
+      waypointGroups: Object.freeze([
+        Object.freeze(['phase2-roost-approach']),
+        Object.freeze(['phase2-roost-cable']),
+        Object.freeze(['phase2-roost-speaker']),
+      ]),
+      entryRise: 160,
+      visibleByDefault: true,
+      intendedSeconds: Object.freeze([10, 15]),
+      worldPercent: Object.freeze([72, 73.5]),
+    }),
+  ]);
+
+  // This is the one genuine hidden discovery in the payoff prototype. It adds
+  // no platform geometry: a curious Super player must jump above and slightly
+  // back from the visible Skyway finish after its lights have been activated.
+  const superExplorationSecretPlan = Object.freeze({
+    id: 'sunset-stash',
+    kind: 'hidden-air-pocket',
+    parentId: 'sunset-skyway',
+    requiredParentProgress: 4,
+    name: 'Sunset Stash',
+    completionTitle: 'SUNSET STASH DISCOVERED!',
+    bannerEyebrow: 'TRUE HIDDEN SECRET',
+    presentation: 'secret',
+    score: 3500,
+    rewardTier: 'secret',
+    rewardTypes: Object.freeze(['golden', 'rainbow']),
+    bonusTacos: 18,
+    rewardX: 17020,
+    rewardY: 54,
+    rewardLabel: '+3,500 SCORE  •  18-TACO CACHE  •  GOLDEN + RAINBOW',
+    trigger: Object.freeze({ x: 16992, y: 18, w: 78, h: 102 }),
+    worldPercent: Object.freeze([51.36, 51.60]),
+  });
+
+  const superExplorationPlatformPlan = Object.freeze([
+    Object.freeze({
+      id: 'phase2-kite-launch', x: 7420, y: 250, w: 180, h: 26,
+      phase2Style: 'kite-launch', phase2Discovery: 'salsa-kite-test', phase2KiteIndex: 0, mainRoute: false,
+    }),
+    Object.freeze({
+      id: 'phase2-kite-gust-one', x: 7670, y: 225, w: 160, h: 28,
+      moving: true, axis: 'y', baseX: 7670, baseY: 225, range: 20, speed: 0.8, phase: 0.1,
+      style: 'phase2-kite', phase2Style: 'kite-gust', phase2Discovery: 'salsa-kite-test', phase2KiteIndex: 1, mainRoute: false,
+    }),
+    Object.freeze({
+      id: 'phase2-kite-gust-two', x: 7935, y: 290, w: 165, h: 28,
+      moving: true, axis: 'x', baseX: 7935, baseY: 290, range: 35, speed: 0.9, phase: 1.7,
+      style: 'phase2-kite', phase2Style: 'kite-gust', phase2Discovery: 'salsa-kite-test', phase2KiteIndex: 2, mainRoute: false,
+    }),
+    Object.freeze({
+      id: 'phase2-kite-gust-three', x: 8200, y: 205, w: 155, h: 28,
+      moving: true, axis: 'y', baseX: 8200, baseY: 205, range: 22, speed: 0.75, phase: 3.1,
+      style: 'phase2-kite', phase2Style: 'kite-gust', phase2Discovery: 'salsa-kite-test', phase2KiteIndex: 3, mainRoute: false,
+    }),
+    Object.freeze({
+      id: 'phase2-kite-gold-finish', x: 8450, y: 260, w: 210, h: 26,
+      phase2Style: 'kite-finish', phase2Discovery: 'salsa-kite-test', phase2KiteIndex: 4, mainRoute: false,
+    }),
+    Object.freeze({
+      id: 'phase2-skyway-start', x: 15880, y: 260, w: 185, h: 26,
+      phase2Style: 'skyway-start', phase2Discovery: 'sunset-skyway', phase2Segment: 0, mainRoute: false,
+    }),
+    Object.freeze({
+      id: 'phase2-skyway-west', x: 16145, y: 190, w: 205, h: 26,
+      phase2Style: 'skyway-west', phase2Discovery: 'sunset-skyway', phase2Segment: 1, mainRoute: false,
+    }),
+    Object.freeze({
+      id: 'phase2-skyway-low', x: 16415, y: 345, w: 190, h: 26,
+      phase2Style: 'skyway-low', phase2Discovery: 'sunset-skyway', phase2Segment: 2, mainRoute: false,
+    }),
+    Object.freeze({
+      id: 'phase2-skyway-high', x: 16410, y: 145, w: 185, h: 26,
+      phase2Style: 'skyway-high', phase2Discovery: 'sunset-skyway', phase2Segment: 2, mainRoute: false,
+    }),
+    Object.freeze({
+      id: 'phase2-skyway-center', x: 16665, y: 220, w: 205, h: 26,
+      phase2Style: 'skyway-center', phase2Discovery: 'sunset-skyway', phase2Segment: 3, mainRoute: false,
+    }),
+    Object.freeze({
+      id: 'phase2-skyway-east', x: 16925, y: 175, w: 155, h: 26,
+      phase2Style: 'skyway-east', phase2Discovery: 'sunset-skyway', phase2Segment: 4, mainRoute: false,
+    }),
+    Object.freeze({
+      id: 'phase2-roost-approach', x: 23820, y: 300, w: 180, h: 26,
+      phase2Style: 'roost-approach', phase2Discovery: 'cactus-radio-roost', phase2Segment: 0, mainRoute: false,
+    }),
+    Object.freeze({
+      id: 'phase2-roost-cable', x: 24040, y: 220, w: 155, h: 26,
+      phase2Style: 'roost-cable', phase2Discovery: 'cactus-radio-roost', phase2Segment: 1, mainRoute: false,
+    }),
+    Object.freeze({
+      id: 'phase2-roost-speaker', x: 24235, y: 300, w: 82, h: 26,
+      phase2Style: 'roost-speaker', phase2Discovery: 'cactus-radio-roost', phase2Segment: 2, mainRoute: false,
+    }),
+    Object.freeze({
+      id: 'phase2-roost-main', x: 24092, y: 135, w: 218, h: 26,
+      phase2Style: 'cactus-roost', phase2Discovery: 'cactus-radio-roost', phase2Segment: 3, mainRoute: false,
+    }),
+  ]);
+
   const player = {
     x: 160,
     y: 0,
@@ -442,6 +639,15 @@
     && new URLSearchParams(location.search).get('frenzy') === '1';
   const localPreviewSuper = localPreviewHost
     && new URLSearchParams(location.search).get('super') === '1';
+  const localPreviewExplorationComplete = localPreviewHost
+    ? new URLSearchParams(location.search).get('phase2Complete') || ''
+    : '';
+  const localPreviewExplorationReady = localPreviewHost
+    ? new URLSearchParams(location.search).get('phase2Ready') || ''
+    : '';
+  const localPreviewExplorationSecret = localPreviewHost
+    ? new URLSearchParams(location.search).get('phase2Secret') || ''
+    : '';
   const localPreviewAutoRun = localPreviewHost
     ? new URLSearchParams(location.search).get('autoRun')
     : null;
@@ -897,6 +1103,148 @@
     };
   }
 
+  function applySuperExplorationPilot() {
+    const platforms = superExplorationPlatformPlan.map((spec) => ({
+      ...spec,
+      enemySupport: false,
+      phase2Pilot: true,
+      dx: 0,
+      dy: 0,
+    }));
+    level.platforms.push(...platforms);
+    const platformById = new Map(platforms.map((platform) => [platform.id, platform]));
+
+    const addPilotTaco = (x, y, discoveryId, options = {}) => {
+      const item = {
+        x,
+        y,
+        w: 24,
+        h: 24,
+        type: 'taco',
+        bob: Number(options.bob ?? ((x + y) % 7) * 0.11),
+        collected: false,
+        phase2Pilot: true,
+        phase2Discovery: discoveryId,
+      };
+      if (options.ridePlatformId) {
+        const ridePlatform = platformById.get(options.ridePlatformId);
+        item.ridePlatform = ridePlatform;
+        item.rideOffsetX = options.rideOffsetX;
+        item.rideOffsetY = options.rideOffsetY;
+        item.x = ridePlatform.x + item.rideOffsetX;
+        item.y = ridePlatform.y + item.rideOffsetY;
+      }
+      level.collectibles.push(item);
+    };
+
+    // Kite Route rises out of the existing moving-canyon band. Five separate
+    // kites carry the eye forward, while the road and its original movers stay
+    // available beneath every optional landing.
+    [
+      [7355, 362], [7392, 329], [7442, 278], [7502, 248], [7562, 238],
+      [7855, 245], [8115, 238], [8390, 225], [8488, 208], [8542, 191], [8596, 208],
+    ].forEach(([x, y], index) => addPilotTaco(x, y, 'salsa-kite-test', { bob: index * 0.09 }));
+    [
+      ['phase2-kite-gust-one', [24, 68, 112]],
+      ['phase2-kite-gust-two', [28, 76, 124]],
+      ['phase2-kite-gust-three', [24, 70, 116]],
+    ].forEach(([ridePlatformId, offsets], platformIndex) => {
+      offsets.forEach((rideOffsetX, index) => addPilotTaco(0, 0, 'salsa-kite-test', {
+        ridePlatformId,
+        rideOffsetX,
+        rideOffsetY: -49,
+        bob: platformIndex * 0.27 + index * 0.12,
+      }));
+    });
+
+    // The Skyway trail marks a clear start, two mutually readable middle
+    // branches, a rejoin, and a finish. Its Golden Taco remains a runtime bonus,
+    // so permanent Golden completion totals stay exactly as they were.
+    [
+      [15818, 365], [15858, 330], [15912, 258], [15970, 248],
+      [16065, 236], [16125, 198], [16190, 174], [16252, 174],
+      [16325, 210], [16382, 256],
+      [16438, 258], [16502, 258], [16570, 258],
+      [16434, 105], [16498, 105], [16562, 105],
+      [16630, 178], [16692, 174], [16755, 174], [16820, 164],
+      [16878, 135], [16940, 126], [16998, 126],
+    ].forEach(([x, y], index) => addPilotTaco(x, y, 'sunset-skyway', { bob: index * 0.08 }));
+
+    // The Roost is a compact zigzag scene after the showdown and before the
+    // checkpoint/chase handoff. Losing Super on any step drops Taco Hero back
+    // onto the unchanged road rather than into a scripted or fatal pocket.
+    [
+      [23772, 362], [23812, 332], [23862, 258], [23928, 252],
+      [23992, 225], [24054, 178], [24112, 178], [24172, 206],
+      [24222, 254], [24258, 258], [24292, 258],
+      [24268, 210], [24230, 168], [24188, 104], [24136, 104],
+    ].forEach(([x, y], index) => addPilotTaco(x, y, 'cactus-radio-roost', { bob: index * 0.1 }));
+
+    const normalRise = heroPhysics.normalJumpRise;
+    const secondJumpRise = Math.round(
+      (heroPhysics.superJumpVelocity * heroPhysics.superJumpVelocity) / (2 * heroPhysics.gravity),
+    );
+    const protectedRanges = [
+      [zones.dropStart, zones.dropEnd],
+      [zones.encoreDropStart, zones.encoreDropEnd],
+      [zones.showdownMusicStart - 400, zones.showdownEnd],
+      [zones.chaseRadio, zones.chaseEnd],
+    ];
+    const triggerOverlaps = (trigger, start, end) => trigger.x < end && trigger.x + trigger.w > start;
+    game.superExploration = {
+      version: 'world-1-1-phase2a-payoff-v3',
+      scope: 'world-1-1-only',
+      bounds: { start: 7420, end: 24310 },
+      protectedRanges,
+      scriptedZoneSafe: superExplorationPilotPlan.every((entry) => (
+        protectedRanges.every(([start, end]) => !triggerOverlaps(entry.trigger, start, end))
+      )),
+      normalRouteUnaffected: true,
+      noRequiredSuperTraversal: true,
+      callout: '',
+      calloutTimer: 0,
+      completionBanner: null,
+      interaction: null,
+      jumpEnvelope: {
+        normalRise,
+        secondJumpRise,
+        superCombinedRise: normalRise + secondJumpRise,
+        authoredEntryRises: Object.fromEntries(superExplorationPilotPlan.map((entry) => [entry.id, entry.entryRise])),
+      },
+      platformIds: platforms.map((platform) => platform.id),
+      discoveries: Object.fromEntries(superExplorationPilotPlan.map((entry) => [entry.id, {
+        revealed: entry.visibleByDefault,
+        completed: false,
+        completedAt: null,
+        rewardSpawned: false,
+        rewardSpawnCount: 0,
+        completionCount: 0,
+        activationStarted: false,
+        activationCount: 0,
+        arrivalAcknowledged: false,
+        environmentEnergized: false,
+        spectacleTimer: 0,
+        spectacleMaxTimer: 0,
+        activationSweepTimer: 0,
+        activationSweepMaxTimer: 0,
+        radioPower: 0,
+        progress: 0,
+      }])),
+      secrets: {
+        [superExplorationSecretPlan.id]: {
+          revealed: false,
+          completed: false,
+          completedAt: null,
+          rewardSpawned: false,
+          rewardSpawnCount: 0,
+          completionCount: 0,
+          revealTimer: 0,
+          revealMaxTimer: 0,
+        },
+      },
+    };
+  }
+
   function auditEnemyFormations() {
     const formationOverlapPairs = [];
     const narrowPlatformGroups = [];
@@ -1255,6 +1603,7 @@
       }
     });
     applyWorldOnePilotRemaster();
+    applySuperExplorationPilot();
     groundCheckpointStations();
 
     level.enemies.forEach((enemy, index) => {
@@ -1408,6 +1757,7 @@
     game.routeMaxGap = game.routeMaxGap || 0;
     game.platformOverlapCount = game.platformOverlapCount || 0;
     game.checkpointsGrounded = game.checkpointsGrounded || 0;
+    game.characterTransmission = null;
     game.settingsOpen = false;
 
     player.x = 160;
@@ -1523,6 +1873,11 @@
       player.x = clamp(localPreviewStart, 0, game.levelWidth - player.w);
       player.y = localPreviewY > 0 ? clamp(localPreviewY, 0, canvas.height - player.h) : 360;
       game.cameraX = clamp(player.x - canvas.width * 0.42, 0, game.levelWidth - canvas.width);
+      if (localPreviewStart >= zones.showdownEnd) {
+        game.radioFlags.showdown = true;
+        game.cinematicFlags.showdown = true;
+        game.showdownAnnounced = true;
+      }
       if (level.pinata && localPreviewPinataHits > 0) {
         level.pinata.hits = clamp(localPreviewPinataHits, 0, level.pinata.targetHits - 1);
       }
@@ -1533,6 +1888,26 @@
     }
     if (localPreviewFrenzy) sharedAbilities.activateFrenzy(game.abilities, 5);
     if (localPreviewSuper) sharedAbilities.activateSuper(game.abilities, 'qa-preview', { silent: true });
+    if (localPreviewExplorationComplete) {
+      const previewDiscovery = superExplorationPilotPlan.find((entry) => entry.id === localPreviewExplorationComplete);
+      if (previewDiscovery) {
+        const previewState = game.superExploration?.discoveries?.[previewDiscovery.id];
+        if (previewState) previewState.progress = previewDiscovery.waypointGroups?.length || 0;
+        completeSuperExplorationDiscovery(previewDiscovery, { suppressInteraction: true });
+      }
+    }
+    if (localPreviewExplorationReady) {
+      const previewDiscovery = superExplorationPilotPlan.find((entry) => entry.id === localPreviewExplorationReady);
+      const previewState = previewDiscovery
+        ? game.superExploration?.discoveries?.[previewDiscovery.id]
+        : null;
+      if (previewState) previewState.progress = previewDiscovery.waypointGroups?.length || 0;
+    }
+    if (localPreviewExplorationSecret === superExplorationSecretPlan.id) {
+      const skywayState = game.superExploration?.discoveries?.[superExplorationSecretPlan.parentId];
+      if (skywayState) skywayState.progress = superExplorationSecretPlan.requiredParentProgress;
+      completeSuperExplorationDiscovery(superExplorationSecretPlan);
+    }
     if (localPreviewAutoRunDirection < 0) keys.left = true;
     if (localPreviewAutoRunDirection > 0) keys.right = true;
     if (localPreviewRespawn) {
@@ -1542,7 +1917,7 @@
       beginRespawn(false, player.x, canvas.height - player.h - 10);
     }
     playLevelMusic();
-    triggerRadio('intro');
+    if (!(localPreviewHost && localPreviewStart > 0)) triggerRadio('intro');
   }
 
   function unlockAudio() {
@@ -1592,7 +1967,7 @@
 
   function spawnBonusItem(x, y, type = 'taco', vx = 0, vy = -260) {
     const size = type === 'golden' || type === 'rainbow' ? 34 : type === 'magnet' ? 30 : 24;
-    level.collectibles.push({
+    const item = {
       x,
       y,
       w: size,
@@ -1606,7 +1981,309 @@
       vx,
       vy,
       angle: Math.random() * Math.PI * 2,
+    };
+    level.collectibles.push(item);
+    return item;
+  }
+
+  function spawnAnchoredExplorationReward(discovery, type, offsetX = 0, offsetY = 0) {
+    const size = type === 'golden' || type === 'rainbow' ? 34 : 24;
+    const item = {
+      x: discovery.rewardX + offsetX,
+      y: discovery.rewardY + offsetY,
+      w: size,
+      h: size,
+      type,
+      bob: 0.32,
+      collected: false,
+      bonusReward: true,
+      phase2Pilot: true,
+      phase2Discovery: discovery.id,
+      phase2PremiumReward: true,
+    };
+    level.collectibles.push(item);
+    return item;
+  }
+
+  function phase2EntryState(entry) {
+    const pilot = game.superExploration;
+    return pilot?.discoveries?.[entry.id] || pilot?.secrets?.[entry.id] || null;
+  }
+
+  function spawnSuperExplorationReward(entry, state) {
+    if (state.rewardSpawned) return;
+    if (entry.bonusTacos > 0) {
+      for (let index = 0; index < entry.bonusTacos; index += 1) {
+        const fan = entry.bonusTacos === 1 ? 0.5 : index / (entry.bonusTacos - 1);
+        const reward = spawnBonusItem(
+          entry.rewardX,
+          entry.rewardY,
+          'taco',
+          -270 + fan * 540,
+          -320 - Math.sin(fan * Math.PI) * (entry.rewardTier === 'secret' ? 185 : entry.rewardTier === 'large' ? 150 : 110),
+        );
+        reward.phase2Pilot = true;
+        reward.phase2Discovery = entry.id;
+      }
+    }
+
+    const rewardTypes = entry.rewardTypes || (entry.rewardType && entry.rewardType !== 'taco-cache' ? [entry.rewardType] : []);
+    rewardTypes.forEach((type, index) => {
+      const spread = rewardTypes.length > 1 ? (index - (rewardTypes.length - 1) * 0.5) * 48 : 0;
+      spawnAnchoredExplorationReward(entry, type, spread, index % 2 ? 8 : 0);
     });
+    if (entry.magnetSeconds) sharedAbilities.activateMagnet(game.abilities, entry.magnetSeconds);
+    state.rewardSpawned = true;
+    state.rewardSpawnCount = (state.rewardSpawnCount || 0) + 1;
+  }
+
+  function setSuperExplorationCompletionBanner(entry) {
+    const pilot = game.superExploration;
+    const secret = entry.presentation === 'secret';
+    const duration = secret ? 3.4 : entry.rewardTier === 'large' ? 2.5 : 2.15;
+    pilot.completionBanner = {
+      eyebrow: entry.bannerEyebrow,
+      title: entry.completionTitle,
+      reward: entry.rewardLabel,
+      tier: entry.rewardTier,
+      mode: entry.presentation,
+      timer: duration,
+      maxTimer: duration,
+    };
+  }
+
+  function startCharacterTransmission({ id, speaker, channel, message, reward }) {
+    game.characterTransmission = {
+      id,
+      speaker,
+      channel,
+      message,
+      reward,
+      rewardVisible: false,
+      timer: 3.65,
+      maxTimer: 3.65,
+    };
+  }
+
+  function startCactusRadioActivation(discovery, state) {
+    const pilot = game.superExploration;
+    if (!pilot || state.completed || state.activationStarted || pilot.interaction) return false;
+    state.activationStarted = true;
+    state.activationCount = (state.activationCount || 0) + 1;
+    state.radioPower = Math.max(state.radioPower || 0, 0.08);
+    pilot.interaction = {
+      id: discovery.id,
+      elapsed: 0,
+      duration: 1.85,
+      focusDuration: 0.72,
+      focusX: discovery.trigger.x + discovery.trigger.w * 0.5,
+      staticPlayed: false,
+      connected: false,
+      rewardDelivered: false,
+    };
+    player.vx = 0;
+    if (player.grounded) player.vy = 0;
+    keys.jumpQueued = false;
+    player.jumpBuffer = 0;
+    game.radioMessage = '';
+    game.radioTimer = 0;
+    spawnImpactText(discovery.rewardX, discovery.rewardY + 62, 'RELAY POWERING UP', '#65d8ff', 21);
+    playAudio('checkpoint.activate', { position: audioPosition(discovery.rewardX), pitchCents: -90 });
+    return true;
+  }
+
+  function updateCharacterTransmission(dt) {
+    const transmission = game.characterTransmission;
+    if (!transmission) return;
+    transmission.timer = Math.max(0, transmission.timer - dt);
+    if (transmission.timer <= 0) game.characterTransmission = null;
+  }
+
+  function updateSuperExplorationInteraction(dt) {
+    const pilot = game.superExploration;
+    const interaction = pilot?.interaction;
+    if (!interaction) return false;
+    const discovery = superExplorationPilotPlan.find((entry) => entry.id === interaction.id);
+    const state = discovery ? pilot.discoveries[discovery.id] : null;
+    if (!discovery || !state) {
+      pilot.interaction = null;
+      return false;
+    }
+
+    interaction.elapsed = Math.min(interaction.duration, interaction.elapsed + dt);
+    state.radioPower = clamp(interaction.elapsed / 0.62, 0.08, 1);
+    if (!interaction.staticPlayed && interaction.elapsed >= 0.24) {
+      interaction.staticPlayed = true;
+      playAudio('ui.radio', { position: audioPosition(discovery.rewardX), pitchCents: -35 });
+    }
+    if (!interaction.connected && interaction.elapsed >= 0.5) {
+      interaction.connected = true;
+      startCharacterTransmission({
+        id: 'sunset-relay-olivia',
+        speaker: 'OLIVIA',
+        channel: 'SUNSET RELAY • CONNECTED',
+        message: 'Taco Hero! There you are. You brought the Sunset relay back online!',
+        reward: discovery.transmissionRewardLabel || discovery.rewardLabel,
+      });
+      spawnImpactText(discovery.rewardX, discovery.rewardY + 34, 'SIGNAL LOCKED', '#63d878', 22);
+      playAudio('stage.generatorActivate', { position: audioPosition(discovery.rewardX), pitchCents: 45 });
+    }
+    if (!interaction.rewardDelivered && interaction.elapsed >= 1.34) {
+      interaction.rewardDelivered = true;
+      completeSuperExplorationDiscovery(discovery, { fromInteraction: true, suppressBanner: true });
+      if (game.characterTransmission?.id === 'sunset-relay-olivia') {
+        game.characterTransmission.rewardVisible = true;
+      }
+    }
+
+    const focusing = interaction.elapsed < interaction.focusDuration;
+    if (focusing) {
+      player.vx = 0;
+      if (player.grounded) player.vy = 0;
+      const targetCamera = clamp(interaction.focusX - canvas.width * 0.6, 0, game.levelWidth - canvas.width);
+      game.cameraX = lerp(game.cameraX, targetCamera, Math.min(1, dt * 5.2));
+    }
+    if (interaction.elapsed >= interaction.duration) pilot.interaction = null;
+    return focusing;
+  }
+
+  function completeSuperExplorationDiscovery(discovery, options = {}) {
+    const pilot = game.superExploration;
+    const state = phase2EntryState(discovery);
+    if (!state || state.completed) return false;
+    if (discovery.presentation === 'character-interaction' && !options.fromInteraction && !options.suppressInteraction) {
+      return startCactusRadioActivation(discovery, state);
+    }
+
+    state.revealed = true;
+    state.completed = true;
+    state.completedAt = game.levelTime;
+    state.completionCount = (state.completionCount || 0) + 1;
+    game.score += discovery.score;
+    game.message = discovery.completionTitle;
+    game.messageTimer = 1.25;
+    pilot.callout = discovery.completionTitle;
+    pilot.calloutTimer = 1.1;
+    if (!options.suppressBanner) setSuperExplorationCompletionBanner(discovery);
+    game.cameraShake = Math.max(
+      game.cameraShake,
+      game.reducedShake ? 2 : discovery.rewardTier === 'secret' ? 9 : discovery.rewardTier === 'large' ? 7 : discovery.rewardTier === 'medium-large' ? 5 : 3,
+    );
+
+    const centerX = discovery.trigger.x + discovery.trigger.w * 0.5;
+    const centerY = discovery.trigger.y + discovery.trigger.h * 0.5;
+    const impactLabel = discovery.presentation === 'secret' ? 'STASH OPEN!'
+      : discovery.id === 'cactus-radio-roost' ? 'RELAY ONLINE'
+        : discovery.completionTitle.replace(/!+$/, '');
+    spawnImpactText(centerX, Math.max(44, centerY - 34), impactLabel, '#fff1a6', discovery.rewardTier === 'secret' ? 27 : 25);
+    spawnConfetti(
+      centerX - game.cameraX,
+      centerY,
+      game.reducedShake ? 24 : discovery.rewardTier === 'secret' ? 104 : discovery.rewardTier === 'large' ? 62 : discovery.rewardTier === 'medium-large' ? 50 : 42,
+    );
+    spawnSuperExplorationReward(discovery, state);
+    state.environmentEnergized = true;
+    if (discovery.presentation === 'spectacle') {
+      state.spectacleTimer = 2.8;
+      state.spectacleMaxTimer = 2.8;
+    }
+    if (discovery.presentation === 'activation') {
+      state.activationSweepTimer = 2.45;
+      state.activationSweepMaxTimer = 2.45;
+    }
+    if (discovery.presentation === 'secret') {
+      state.revealTimer = 3.4;
+      state.revealMaxTimer = 3.4;
+    }
+
+    if (!game.reducedShake && ['sunset-skyway', 'cactus-radio-roost'].includes(discovery.id)) spawnFirework();
+    if (!game.reducedShake && discovery.presentation === 'secret') {
+      spawnFirework();
+      spawnFirework();
+    }
+    playAudio('level.celebrationPulse', {
+      position: audioPosition(centerX),
+      pitchCents: discovery.presentation === 'secret' ? 145 : discovery.id === 'cactus-radio-roost' ? 110 : discovery.id === 'sunset-skyway' ? 55 : 0,
+    });
+    if (discovery.presentation === 'spectacle') {
+      playAudio('vehicle.aircraftBoost', { position: audioPosition(centerX), pitchCents: -110 });
+    } else if (discovery.presentation === 'secret') {
+      playAudio('pinata.break', { position: audioPosition(centerX), combo: 4 });
+      playAudio('pinata.jackpotSparkle', { position: audioPosition(centerX), pitchCents: 150 });
+      playAudio('collect.rainbowTaco', { position: audioPosition(centerX), pitchCents: 90 });
+    } else if (discovery.rewardTier === 'large') {
+      playAudio('pinata.jackpotSparkle', { position: audioPosition(centerX), pitchCents: 70 });
+    } else if (discovery.rewardTier === 'medium-large') {
+      playAudio('checkpoint.activate', { position: audioPosition(centerX), pitchCents: 110 });
+      playAudio('pinata.jackpotSparkle', { position: audioPosition(centerX), pitchCents: 20 });
+    }
+    return true;
+  }
+
+  function updateSuperExplorationPilot(dt) {
+    if (!game.superExploration) return;
+    const banner = game.superExploration.completionBanner;
+    if (banner) {
+      banner.timer = Math.max(0, banner.timer - dt);
+      if (banner.timer <= 0) {
+        game.superExploration.completionBanner = null;
+      }
+    }
+    for (const discovery of superExplorationPilotPlan) {
+      const state = game.superExploration.discoveries[discovery.id];
+      state.spectacleTimer = Math.max(0, (state.spectacleTimer || 0) - dt);
+      state.activationSweepTimer = Math.max(0, (state.activationSweepTimer || 0) - dt);
+      const waypointGroups = discovery.waypointGroups
+        || (discovery.waypointPlatformIds || []).map((platformId) => [platformId]);
+      const activeGroup = waypointGroups[state.progress] || [];
+      if (activeGroup.includes(player.platform?.id)) {
+        const firstLanding = state.progress === 0;
+        state.progress += 1;
+        state.revealed = true;
+        state.lastWaypointPlatformId = player.platform.id;
+        const progressNoun = discovery.id === 'salsa-kite-test' ? 'GUST'
+          : discovery.id === 'sunset-skyway' ? 'LIGHTS' : 'SIGNAL';
+        const progressColor = discovery.id === 'cactus-radio-roost' ? '#63d878'
+          : discovery.id === 'salsa-kite-test' ? '#ff5f91' : '#65d8ff';
+        spawnImpactText(
+          player.x + player.w * 0.5,
+          Math.max(42, player.y - 8),
+          `${progressNoun} ${state.progress}/${waypointGroups.length}`,
+          progressColor,
+          18,
+        );
+        playAudio(discovery.progressAudio, {
+          position: audioPosition(player.x),
+          pitchCents: -80 + state.progress * 62,
+        });
+        if (firstLanding) {
+          state.arrivalAcknowledged = true;
+          game.message = discovery.arrivalLabel;
+          game.messageTimer = Math.max(game.messageTimer, 0.9);
+        }
+      }
+      const routeReady = state.progress >= waypointGroups.length;
+      if (!state.completed && routeReady && rectsIntersect(player, discovery.trigger)) {
+        completeSuperExplorationDiscovery(discovery);
+      }
+    }
+
+    const secretState = game.superExploration.secrets[superExplorationSecretPlan.id];
+    secretState.revealTimer = Math.max(0, (secretState.revealTimer || 0) - dt);
+    const parentState = game.superExploration.discoveries[superExplorationSecretPlan.parentId];
+    if (!secretState.completed
+      && parentState.progress >= superExplorationSecretPlan.requiredParentProgress
+      && rectsIntersect(player, superExplorationSecretPlan.trigger)) {
+      completeSuperExplorationDiscovery(superExplorationSecretPlan);
+    }
+  }
+
+  function preserveSuperExplorationCallout(dt) {
+    const pilot = game.superExploration;
+    if (!pilot || pilot.calloutTimer <= 0) return;
+    pilot.calloutTimer = Math.max(0, pilot.calloutTimer - dt);
+    game.message = pilot.callout;
+    game.messageTimer = Math.max(game.messageTimer, pilot.calloutTimer);
   }
 
   function increaseAirChain(label = 'AIRBORNE APPETITE', celebrate = true) {
@@ -2552,6 +3229,7 @@
     game.truckDropPulse = Math.max(0, game.truckDropPulse - dt);
     game.radioTimer = Math.max(0, game.radioTimer - dt);
     game.cinematicTimer = Math.max(0, game.cinematicTimer - dt);
+    updateCharacterTransmission(dt);
     if (game.stompTimer <= 0) game.stompCombo = 0;
     if (player.grounded && game.airChainTimer <= 0) game.airChain = 0;
     if (level.pinata) level.pinata.wobble = Math.max(0, level.pinata.wobble - dt);
@@ -2562,6 +3240,7 @@
     }
 
     if (sharedAbilities.suspendForTransformation(game.abilities, player)) return;
+    if (updateSuperExplorationInteraction(dt)) return;
 
     if (player.grounded && player.platform) {
       player.x += player.platform.dx || 0;
@@ -2609,6 +3288,8 @@
       return;
     }
 
+    updateSuperExplorationPilot(dt);
+
     for (const item of level.collectibles) {
       if (!item.collected && item.isDrop && !item.landed) {
         item.x += item.vx * dt;
@@ -2638,6 +3319,7 @@
 
     updateEnemies(dt, prevY);
     updateCheckpoints();
+    preserveSuperExplorationCallout(dt);
 
     if (player.x > zones.showdownMusicStart - 400) {
       triggerRadio('showdown');
@@ -3013,6 +3695,525 @@
     ctx.restore();
   }
 
+  function phase2DiscoveryState(id) {
+    return game.superExploration?.discoveries?.[id] || null;
+  }
+
+  function phase2SecretState(id) {
+    return game.superExploration?.secrets?.[id] || null;
+  }
+
+  function phase2CompletionPulse(id, time) {
+    const state = phase2DiscoveryState(id);
+    if (!state?.completed) return 0;
+    const age = game.levelTime - state.completedAt;
+    if (age >= 0 && age < 1.25) return Math.sin((age / 1.25) * Math.PI);
+    return 0.18 + (Math.sin(time * 0.006) + 1) * 0.07;
+  }
+
+  function drawPhase2WingShoeGlyph(x, y, scale = 1, energized = false) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+    if (energized) {
+      ctx.shadowColor = '#65d8ff';
+      ctx.shadowBlur = 12;
+    }
+    ctx.fillStyle = '#ff5f91';
+    ctx.strokeStyle = '#fff1a6';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(-13, -4);
+    ctx.quadraticCurveTo(-9, -13, 1, -10);
+    ctx.lineTo(6, -3);
+    ctx.quadraticCurveTo(13, -1, 17, 5);
+    ctx.quadraticCurveTo(8, 10, -11, 7);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#65d8ff';
+    ctx.fillRect(-11, 5, 28, 4);
+    ctx.fillStyle = '#fff8df';
+    for (let feather = 0; feather < 3; feather += 1) {
+      ctx.beginPath();
+      ctx.ellipse(-13 - feather * 4, -7 - feather * 2, 7, 2.8, -0.46, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawCactusRadioRoost(time) {
+    const asset = images.world1_1_super_radio_roost_v2;
+    if (!asset) return;
+    const worldX = 23710;
+    const worldY = 18;
+    const width = 690;
+    const height = 460;
+    const x = worldX - game.cameraX;
+    if (x + width < -80 || x > canvas.width + 80) return;
+    const state = phase2DiscoveryState('cactus-radio-roost');
+    const energized = Boolean(state?.completed);
+    const activationPower = energized ? 1 : clamp(state?.radioPower || 0, 0, 1);
+    const pulse = phase2CompletionPulse('cactus-radio-roost', time);
+    const routeCharge = Math.max(
+      activationPower,
+      energized ? 1 : clamp((state?.progress || 0) / 3, 0, 0.72),
+    );
+
+    ctx.save();
+    ctx.globalAlpha = 0.88 + routeCharge * 0.12;
+    if (activationPower > 0.1) {
+      ctx.shadowColor = '#65d8ff';
+      ctx.shadowBlur = 6 + activationPower * 8 + pulse * 18;
+    }
+    ctx.drawImage(asset, x, worldY, width, height);
+    ctx.shadowBlur = 0;
+
+    // Progress powers the cables and meters one landing at a time. Completion
+    // sends a compact signal burst from the antenna without covering hazards.
+    const signalX = 24105 - game.cameraX;
+    const signalY = 74;
+    const signalColors = ['#ffd166', '#ff5f91', '#65d8ff'];
+    const litNodes = energized ? 7 : Math.min(5, (state?.progress || 0) + 1);
+    for (let node = 0; node < 7; node += 1) {
+      const nodeX = x + 146 + node * 68;
+      const nodeY = 326 + Math.sin(node * 1.7) * 18;
+      const lit = node < litNodes;
+      const color = signalColors[node % signalColors.length];
+      ctx.globalAlpha = lit ? 0.72 + routeCharge * 0.28 : 0.22;
+      ctx.fillStyle = color;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = lit ? 8 + routeCharge * 8 : 2;
+      ctx.beginPath();
+      ctx.arc(nodeX, nodeY, lit ? 3.6 : 2.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    if (activationPower > 0.12) {
+      ctx.globalAlpha = 0.28 + activationPower * 0.24 + pulse * 0.34;
+      ctx.strokeStyle = '#fff1a6';
+      ctx.lineWidth = 1.8 + activationPower * 0.8 + pulse * 1.8;
+      for (let ring = 0; ring < 3; ring += 1) {
+        ctx.beginPath();
+        ctx.arc(signalX, signalY, 24 + ring * 18 + (pulse + activationPower * 0.35) * 8, Math.PI * 1.08, Math.PI * 1.92);
+        ctx.stroke();
+      }
+
+      // A compact moving sweep and persistent beacon make the relay read as a
+      // changed piece of the world without obscuring the nearby route.
+      const sweep = Math.sin(time * 0.0024) * 0.54 - Math.PI * 0.5;
+      ctx.save();
+      ctx.translate(signalX, signalY + 4);
+      ctx.rotate(sweep);
+      ctx.globalAlpha = 0.18 + activationPower * 0.34;
+      ctx.strokeStyle = '#65d8ff';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(52 + activationPower * 18, 0);
+      ctx.stroke();
+      ctx.restore();
+      const beaconPulse = 0.65 + Math.sin(time * 0.008) * 0.25;
+      ctx.globalAlpha = activationPower * beaconPulse;
+      ctx.fillStyle = energized ? '#63d878' : '#ffd166';
+      ctx.shadowColor = energized ? '#63d878' : '#ffd166';
+      ctx.shadowBlur = 12 + activationPower * 10;
+      ctx.beginPath();
+      ctx.arc(signalX, signalY - 5, 4 + activationPower * 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawSalsaKiteScenery(time) {
+    const asset = images.world1_1_super_kite_route_v2;
+    if (!asset) return;
+    const kitePlatforms = level.platforms
+      .filter((platform) => Number.isInteger(platform.phase2KiteIndex))
+      .sort((a, b) => a.phase2KiteIndex - b.phase2KiteIndex);
+    if (!kitePlatforms.length) return;
+    const left = kitePlatforms[0].x - game.cameraX;
+    const right = kitePlatforms[kitePlatforms.length - 1].x
+      + kitePlatforms[kitePlatforms.length - 1].w - game.cameraX;
+    if (right < -140 || left > canvas.width + 140) return;
+    const state = phase2DiscoveryState('salsa-kite-test');
+    const completed = Boolean(state?.completed);
+    const pulse = phase2CompletionPulse('salsa-kite-test', time);
+    const spectacle = state?.spectacleMaxTimer
+      ? clamp(state.spectacleTimer / state.spectacleMaxTimer, 0, 1)
+      : 0;
+    const sourceWidth = asset.naturalWidth / 5;
+
+    ctx.save();
+    // Wind ribbons join five individually painted kite designs. Their sway is
+    // tied to route progress, so landing on each surface visibly wakes the next.
+    ctx.lineCap = 'round';
+    for (let index = 0; index < kitePlatforms.length - 1; index += 1) {
+      const from = kitePlatforms[index];
+      const to = kitePlatforms[index + 1];
+      const active = completed || (state?.progress || 0) > index;
+      const startX = from.x + from.w * 0.72 - game.cameraX;
+      const endX = to.x + to.w * 0.28 - game.cameraX;
+      const startY = from.y - 38;
+      const endY = to.y - 38;
+      ctx.globalAlpha = active ? 0.58 + spectacle * 0.28 : 0.2;
+      ctx.strokeStyle = index % 2 ? '#ff5f91' : '#65d8ff';
+      ctx.lineWidth = active ? 3 + spectacle * 2.2 : 1.6;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.bezierCurveTo(
+        lerp(startX, endX, 0.35), Math.min(startY, endY) - 42 - spectacle * 32,
+        lerp(startX, endX, 0.68), Math.max(startY, endY) + 28 + spectacle * 18,
+        endX, endY,
+      );
+      ctx.stroke();
+    }
+
+    kitePlatforms.forEach((platform, index) => {
+      const centerX = platform.x + platform.w * 0.5 - game.cameraX;
+      const active = completed || (state?.progress || 0) > index;
+      const wind = game.reducedShake ? 0 : Math.sin(time * 0.0045 + index * 1.3);
+      const drawWidth = index === 4 ? 142 : 130;
+      const drawHeight = index === 4 ? 216 : 202;
+      ctx.save();
+      ctx.translate(centerX, platform.y - 28);
+      ctx.rotate(wind * (active ? 0.025 + spectacle * 0.065 : 0.012));
+      if (!game.reducedShake && spectacle > 0) {
+        const celebrationScale = 1 + Math.sin(time * 0.012 + index) * spectacle * 0.035;
+        ctx.scale(celebrationScale, celebrationScale);
+      }
+      if (active) {
+        ctx.shadowColor = index % 2 ? '#ff5f91' : '#65d8ff';
+        ctx.shadowBlur = completed ? 12 + pulse * 12 : 7;
+      }
+      ctx.globalAlpha = active ? 1 : 0.82;
+      ctx.drawImage(
+        asset,
+        sourceWidth * index, 0, sourceWidth, asset.naturalHeight,
+        -drawWidth * 0.5, -drawHeight * 0.58, drawWidth, drawHeight,
+      );
+      ctx.restore();
+    });
+
+    if (completed) {
+      const finish = kitePlatforms[kitePlatforms.length - 1];
+      const finishX = finish.x + finish.w * 0.5 - game.cameraX;
+      ctx.globalAlpha = 0.52 + pulse * 0.3;
+      ctx.strokeStyle = '#65d8ff';
+      ctx.lineWidth = 2.8 + pulse * 2;
+      ctx.beginPath();
+      ctx.arc(finishX, finish.y - 22, 48 + pulse * 20, 0, Math.PI * 2);
+      ctx.stroke();
+
+      if (spectacle > 0) {
+        const reducedMotionScale = game.reducedShake ? 0.35 : 1;
+        ctx.lineCap = 'round';
+        for (let trail = 0; trail < 5; trail += 1) {
+          const phase = time * 0.0035 + trail * 1.35;
+          const trailX = finishX - 250 + trail * 92 + Math.sin(phase) * 22 * reducedMotionScale;
+          const trailY = 98 + trail * 34 + Math.cos(phase * 1.2) * 18 * reducedMotionScale;
+          const color = ['#65d8ff', '#ff5f91', '#ffd166'][trail % 3];
+          ctx.globalAlpha = spectacle * (0.44 + trail * 0.05);
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.moveTo(trailX - 58, trailY + 26);
+          ctx.quadraticCurveTo(trailX - 12, trailY - 28, trailX + 52, trailY + 6);
+          ctx.stroke();
+          ctx.save();
+          ctx.translate(trailX + 52, trailY + 6);
+          ctx.rotate(Math.sin(phase) * 0.22);
+          ctx.fillStyle = color;
+          ctx.strokeStyle = '#fff1a6';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(0, -8); ctx.lineTo(9, 0); ctx.lineTo(0, 8); ctx.lineTo(-9, 0); ctx.closePath();
+          ctx.fill(); ctx.stroke();
+          ctx.restore();
+        }
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawSunsetSkyway(time) {
+    const asset = images.world1_1_super_skyway_v2;
+    if (!asset) return;
+    const worldX = 15810;
+    const worldY = -18;
+    const width = 1280;
+    const height = 590;
+    const minX = worldX - game.cameraX;
+    if (minX + width < -100 || minX > canvas.width + 100) return;
+    const state = phase2DiscoveryState('sunset-skyway');
+    const completed = Boolean(state?.completed);
+    const pulse = phase2CompletionPulse('sunset-skyway', time);
+    const activationSweep = state?.activationSweepMaxTimer
+      ? clamp(state.activationSweepTimer / state.activationSweepMaxTimer, 0, 1)
+      : 0;
+    const sweepPosition = 1 - activationSweep;
+    const skywayPlatforms = superExplorationPlatformPlan.filter((platform) => platform.phase2Discovery === 'sunset-skyway');
+
+    ctx.save();
+    ctx.globalAlpha = completed ? 1 : 0.92;
+    if (completed) {
+      ctx.shadowColor = '#ff5f91';
+      ctx.shadowBlur = 8 + pulse * 12;
+    }
+    ctx.drawImage(asset, minX, worldY, width, height);
+    ctx.shadowBlur = 0;
+
+    // Each completed waypoint lights the next architectural span. Both middle
+    // branches share a segment number, so taking either choice advances cleanly.
+    for (let bulb = 0; bulb <= 24; bulb += 1) {
+      const t = bulb / 24;
+      const segment = Math.min(4, Math.floor(t * 5));
+      const active = completed || (state?.progress || 0) > segment;
+      const bulbWorldX = 15915 + t * 1060;
+      const y = 194 + Math.sin(t * Math.PI * 4) * 25 - Math.sin(t * Math.PI) * 72;
+      const colors = ['#65d8ff', '#ff5f91', '#ffd166'];
+      const color = colors[(bulb + Math.floor(time * 0.004)) % colors.length];
+      ctx.fillStyle = color;
+      const sweepGlow = activationSweep > 0 && Math.abs(t - sweepPosition) < 0.13
+        ? 1 - Math.abs(t - sweepPosition) / 0.13
+        : 0;
+      ctx.globalAlpha = active ? 0.78 + pulse * 0.18 + sweepGlow * 0.2 : 0.18;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = active ? 8 + pulse * 5 + sweepGlow * 16 : 2;
+      ctx.beginPath();
+      ctx.arc(bulbWorldX - game.cameraX, y, active ? 3.6 + sweepGlow * 1.8 : 2.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (completed) {
+      const finish = skywayPlatforms.find((platform) => platform.id === 'phase2-skyway-east');
+      const finishX = finish.x + finish.w * 0.5 - game.cameraX;
+      ctx.globalAlpha = 0.48 + pulse * 0.28;
+      ctx.strokeStyle = '#fff1a6';
+      ctx.lineWidth = 3 + pulse * 2;
+      ctx.beginPath();
+      ctx.arc(finishX, finish.y - 16, 46 + pulse * 18, 0, Math.PI * 2);
+      ctx.stroke();
+
+      const signWidth = 122;
+      const signY = finish.y - 96;
+      const signGradient = ctx.createLinearGradient(finishX - signWidth / 2, signY, finishX + signWidth / 2, signY + 32);
+      signGradient.addColorStop(0, 'rgba(35,25,62,.92)');
+      signGradient.addColorStop(1, 'rgba(18,78,92,.92)');
+      ctx.globalAlpha = 0.78 + pulse * 0.16;
+      ctx.fillStyle = signGradient;
+      ctx.strokeStyle = '#65d8ff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(finishX - signWidth / 2, signY, signWidth, 32, 9);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#fff1a6';
+      ctx.font = '900 11px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('SKYWAY ONLINE', finishX, signY + 20);
+    }
+    ctx.restore();
+    drawSunsetStash(time);
+  }
+
+  function drawSunsetStash(time) {
+    const secret = phase2SecretState(superExplorationSecretPlan.id);
+    const parent = phase2DiscoveryState(superExplorationSecretPlan.parentId);
+    if (!secret || (!secret.completed && (parent?.progress || 0) < 3)) return;
+    const x = 17030 - game.cameraX;
+    const y = 118;
+    if (x < -90 || x > canvas.width + 90) return;
+    const reveal = secret.revealMaxTimer
+      ? clamp(secret.revealTimer / secret.revealMaxTimer, 0, 1)
+      : 0;
+
+    ctx.save();
+    if (!secret.completed) {
+      // Only a tucked strip of fiesta fringe and an occasional glint hint that
+      // the player can jump above the obvious Skyway finish.
+      const cluePulse = 0.22 + (Math.sin(time * 0.0032) + 1) * 0.1;
+      ctx.globalAlpha = cluePulse;
+      ctx.strokeStyle = '#5f3c52';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x, 18); ctx.lineTo(x, y - 10); ctx.stroke();
+      ['#ff5f91', '#ffd166', '#65d8ff'].forEach((color, index) => {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(x - 14 + index * 10, y - 12);
+        ctx.lineTo(x - 9 + index * 10, y - 2);
+        ctx.lineTo(x - 4 + index * 10, y - 12);
+        ctx.closePath();
+        ctx.fill();
+      });
+      const glint = Math.max(0, Math.sin(time * 0.0027) - 0.72) / 0.28;
+      if (glint > 0) {
+        ctx.globalAlpha = glint * 0.72;
+        ctx.strokeStyle = '#fff1a6';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x, y - 30); ctx.lineTo(x, y - 14); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x - 8, y - 22); ctx.lineTo(x + 8, y - 22); ctx.stroke();
+      }
+      ctx.restore();
+      return;
+    }
+
+    ctx.strokeStyle = 'rgba(72,38,69,.82)';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(x, 10); ctx.lineTo(x, y - 22); ctx.stroke();
+    ctx.translate(x, y);
+    const settle = game.reducedShake ? 0 : Math.sin(time * 0.004) * (0.025 + reveal * 0.08);
+    ctx.rotate(settle);
+    ctx.scale(0.72, 0.72);
+    ctx.shadowColor = '#ffd166';
+    ctx.shadowBlur = 12 + reveal * 18;
+    const stashGradient = ctx.createLinearGradient(-28, -22, 28, 22);
+    stashGradient.addColorStop(0, '#65d8ff');
+    stashGradient.addColorStop(0.48, '#b78cff');
+    stashGradient.addColorStop(1, '#ff5f91');
+    tracePinataBody();
+    ctx.fillStyle = stashGradient;
+    ctx.fill();
+    ctx.strokeStyle = '#4a213f';
+    ctx.lineWidth = 3.2;
+    ctx.stroke();
+    ctx.save();
+    tracePinataBody();
+    ctx.clip();
+    drawPinataFringeBand(-14, 30, '#ff5f91', 0);
+    drawPinataFringeBand(-4, 30, '#ffd166', 3);
+    drawPinataFringeBand(6, 28, '#63d878', 0);
+    drawPinataFringeBand(16, 23, '#65d8ff', 3);
+    ctx.restore();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#fff1a6';
+    ctx.strokeStyle = '#4a213f';
+    ctx.lineWidth = 2.2;
+    tracePinataStar(0, -2, 11, 5.2, -Math.PI / 2);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#d98525';
+    ctx.beginPath(); ctx.arc(0, -2, 3.2, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalAlpha = 0.28 + reveal * 0.42;
+    ctx.strokeStyle = '#fff1a6';
+    ctx.lineWidth = 2 + reveal * 2;
+    ctx.beginPath();
+    ctx.arc(x, y, 38 + reveal * 25, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawSuperExplorationBackdrop(time) {
+    drawCactusRadioRoost(time);
+    drawSalsaKiteScenery(time);
+    drawSunsetSkyway(time);
+  }
+
+  function drawSuperExplorationAccents(time) {
+    if (!game.superExploration) return;
+    ctx.save();
+    for (const platform of level.platforms) {
+      if (!platform.phase2Pilot) continue;
+      const x = platform.x - game.cameraX;
+      if (x + platform.w < -40 || x > canvas.width + 40) continue;
+      const state = phase2DiscoveryState(platform.phase2Discovery);
+      const segment = Number.isInteger(platform.phase2Segment)
+        ? platform.phase2Segment
+        : Number.isInteger(platform.phase2KiteIndex) ? platform.phase2KiteIndex : 0;
+      const active = Boolean(state?.completed) || (state?.progress || 0) > segment;
+      const accent = platform.phase2Discovery === 'cactus-radio-roost' ? '#63d878'
+        : platform.phase2Discovery === 'salsa-kite-test' ? '#ff5f91' : '#65d8ff';
+      ctx.fillStyle = accent;
+      ctx.globalAlpha = active ? 0.72 + Math.sin(time * 0.008 + segment) * 0.12 : 0.22;
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = active ? 13 : 5;
+      for (let bulb = 16; bulb < platform.w - 10; bulb += 28) {
+        ctx.beginPath();
+        ctx.arc(x + bulb, platform.y + 5, active ? 3.2 : 2.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawSuperExplorationCompletionBanner(time) {
+    const banner = game.superExploration?.completionBanner;
+    if (!banner) return;
+    const enter = clamp((banner.maxTimer - banner.timer) / 0.22, 0, 1);
+    const exit = clamp(banner.timer / 0.34, 0, 1);
+    const visibility = Math.min(enter, exit);
+    const secret = banner.mode === 'secret';
+    const width = Math.min(secret ? 700 : 540, canvas.width - (secret ? 72 : 150));
+    const height = secret ? 136 : 92;
+    const x = (canvas.width - width) * 0.5;
+    const y = (secret ? 130 : 156) + (game.reducedShake ? 0 : (1 - enter) * (secret ? -28 : -14));
+    const accent = secret ? '#ffd166'
+      : banner.mode === 'activation' ? '#65d8ff' : '#ff5f91';
+
+    ctx.save();
+    ctx.globalAlpha = visibility;
+    ctx.translate(canvas.width * 0.5, y + height * 0.5);
+    if (!game.reducedShake) {
+      const pop = (secret ? 0.91 : 0.96) + enter * (secret ? 0.09 : 0.04)
+        + Math.sin(time * 0.016) * (secret ? 0.012 : 0.004);
+      ctx.scale(pop, pop);
+    }
+    ctx.translate(-canvas.width * 0.5, -(y + height * 0.5));
+    const panel = ctx.createLinearGradient(x, y, x + width, y + height);
+    panel.addColorStop(0, secret ? 'rgba(55,25,66,.98)' : 'rgba(37,24,54,.9)');
+    panel.addColorStop(0.5, secret ? 'rgba(129,54,64,.99)' : 'rgba(84,38,69,.92)');
+    panel.addColorStop(1, secret ? 'rgba(30,84,91,.98)' : 'rgba(29,72,85,.9)');
+    ctx.fillStyle = panel;
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = secret ? 4.5 : 2.5;
+    ctx.shadowColor = accent;
+    ctx.shadowBlur = (secret ? 18 : 9) + enter * (secret ? 15 : 7);
+    ctx.beginPath();
+    ctx.roundRect(x, y, width, height, secret ? 22 : 17);
+    ctx.fill();
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    if (secret) {
+      drawPhase2WingShoeGlyph(x + 48, y + height * 0.5, 0.76, true);
+      ctx.save();
+      ctx.translate(x + width - 48, y + height * 0.5);
+      ctx.scale(-1, 1);
+      drawPhase2WingShoeGlyph(0, 0, 0.76, true);
+      ctx.restore();
+      for (let sparkle = 0; sparkle < 6; sparkle += 1) {
+        const sparkleX = x + 92 + sparkle * ((width - 184) / 5);
+        const sparkleY = y + 16 + Math.sin(time * 0.01 + sparkle) * 4;
+        ctx.fillStyle = ['#ffd166', '#ff5f91', '#65d8ff'][sparkle % 3];
+        ctx.globalAlpha = visibility * (0.55 + (sparkle % 2) * 0.25);
+        ctx.beginPath(); ctx.arc(sparkleX, sparkleY, 2.5, 0, Math.PI * 2); ctx.fill();
+      }
+    } else {
+      ctx.fillStyle = accent;
+      ctx.globalAlpha = visibility * 0.86;
+      for (const side of [-1, 1]) {
+        const iconX = canvas.width * 0.5 + side * (width * 0.5 - 30);
+        ctx.beginPath(); ctx.arc(iconX, y + height * 0.5, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#fff1a6'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(iconX, y + height * 0.5, 13, 0, Math.PI * 2); ctx.stroke();
+      }
+    }
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#fff1a6';
+    ctx.font = `900 ${secret ? 13 : 11}px Arial`;
+    ctx.fillText(banner.eyebrow, canvas.width * 0.5, y + (secret ? 25 : 20));
+    ctx.fillStyle = '#fff8df';
+    const titleSize = secret ? (banner.title.length > 27 ? 29 : 33) : (banner.title.length > 25 ? 23 : 27);
+    ctx.font = `900 ${titleSize}px Arial`;
+    ctx.fillText(banner.title, canvas.width * 0.5, y + (secret ? 67 : 50));
+    ctx.fillStyle = accent;
+    ctx.font = banner.reward.length > 54 ? `900 ${secret ? 14 : 12}px Arial` : `900 ${secret ? 16 : 14}px Arial`;
+    ctx.fillText(banner.reward, canvas.width * 0.5, y + (secret ? 105 : 76));
+    ctx.restore();
+  }
+
   function drawGround() {
     for (const p of level.platforms) {
       const screenX = Math.floor(p.x - game.cameraX);
@@ -3026,7 +4227,25 @@
               : p.axis === 'x' ? '#65d8ff' : '#ff6fae';
         ctx.shadowColor = glow;
         ctx.shadowBlur = 12 + pulse * 9;
-        if (p.style === 'tray') {
+        if (p.style === 'phase2-kite') {
+          const rail = ctx.createLinearGradient(screenX, p.y, screenX + p.w, p.y + p.h);
+          rail.addColorStop(0, '#76354e');
+          rail.addColorStop(0.48, '#d95b47');
+          rail.addColorStop(1, '#246f83');
+          ctx.fillStyle = rail;
+          ctx.strokeStyle = '#fff1a6';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.roundRect(screenX, p.y, p.w, p.h, 9);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = '#fff8df';
+          ctx.globalAlpha = 0.82;
+          for (let stitch = 14; stitch < p.w - 8; stitch += 28) {
+            ctx.fillRect(screenX + stitch, p.y + 6, 14, 3);
+          }
+          ctx.globalAlpha = 1;
+        } else if (p.style === 'tray') {
           ctx.fillStyle = '#42566e';
           ctx.beginPath(); ctx.roundRect(screenX, p.y + 4, p.w, p.h - 4, 10); ctx.fill();
           ctx.fillStyle = '#d9f6ff'; ctx.fillRect(screenX + 12, p.y + 5, p.w - 24, 5);
@@ -3055,10 +4274,12 @@
           ctx.fillStyle = '#ffd166';
           for (let stripe = 10; stripe < p.w - 10; stripe += 28) ctx.fillRect(screenX + stripe, p.y + 13, 14, 5);
         }
-        ctx.fillStyle = '#fff7e8';
-        ctx.font = 'bold 15px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(p.axis === 'x' ? '↔' : '↕', screenX + p.w / 2, p.y + 23);
+        if (p.style !== 'phase2-kite') {
+          ctx.fillStyle = '#fff7e8';
+          ctx.font = 'bold 15px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText(p.axis === 'x' ? '↔' : '↕', screenX + p.w / 2, p.y + 23);
+        }
         ctx.restore();
         continue;
       }
@@ -4577,8 +5798,96 @@
     return lines.slice(0, 2);
   }
 
+  function drawCharacterTransmission(time) {
+    const transmission = game.characterTransmission;
+    if (!transmission) return;
+    const elapsed = transmission.maxTimer - transmission.timer;
+    const fade = clamp(Math.min(elapsed / 0.18, transmission.timer / 0.34), 0, 1);
+    const w = Math.min(520, canvas.width - 40);
+    const h = 112;
+    const x = canvas.width - w - 20;
+    const y = 78;
+    const portraitSize = 76;
+
+    ctx.save();
+    ctx.globalAlpha = fade;
+    if (!game.reducedShake) {
+      const settle = 1 - Math.exp(-elapsed * 12);
+      ctx.translate(0, (1 - settle) * -12);
+    }
+    const panel = ctx.createLinearGradient(x, y, x + w, y + h);
+    panel.addColorStop(0, 'rgba(25,20,48,.97)');
+    panel.addColorStop(0.54, 'rgba(40,38,74,.97)');
+    panel.addColorStop(1, 'rgba(18,78,88,.97)');
+    ctx.fillStyle = panel;
+    ctx.strokeStyle = '#65d8ff';
+    ctx.lineWidth = 3;
+    ctx.shadowColor = '#65d8ff';
+    ctx.shadowBlur = 14;
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, 18); ctx.fill(); ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    ctx.save();
+    ctx.beginPath(); ctx.roundRect(x + 11, y + 11, portraitSize, portraitSize, 14); ctx.clip();
+    ctx.fillStyle = '#17142f';
+    ctx.fillRect(x + 11, y + 11, portraitSize, portraitSize);
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(
+      images.taco_truck_checkpoint,
+      825, 210, 280, 280,
+      x + 11, y + 11, portraitSize, portraitSize,
+    );
+    ctx.restore();
+    const portraitRing = ctx.createLinearGradient(x + 10, y + 10, x + 88, y + 88);
+    portraitRing.addColorStop(0, '#ff67ad');
+    portraitRing.addColorStop(0.5, '#ffd166');
+    portraitRing.addColorStop(1, '#65d8ff');
+    ctx.strokeStyle = portraitRing;
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.roundRect(x + 11, y + 11, portraitSize, portraitSize, 14); ctx.stroke();
+
+    // Restrained scanlines and a live signal meter sell the radio connection
+    // while keeping the portrait and dialogue readable on a phone-sized view.
+    ctx.save();
+    ctx.beginPath(); ctx.roundRect(x + 94, y + 8, w - 104, h - 16, 12); ctx.clip();
+    ctx.globalAlpha = fade * 0.09;
+    ctx.fillStyle = '#baf8ff';
+    for (let scanY = y + 12; scanY < y + h - 10; scanY += 6) ctx.fillRect(x + 94, scanY, w - 104, 1);
+    ctx.restore();
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#65d8ff';
+    ctx.font = '900 11px Arial';
+    ctx.fillText(`${transmission.speaker}  •  ${transmission.channel}`, x + 100, y + 22);
+    ctx.fillStyle = '#fff9ef';
+    ctx.font = '800 15px Arial';
+    wrapText(transmission.message, w - 126).forEach((line, index) => {
+      ctx.fillText(line, x + 100, y + 48 + index * 19);
+    });
+
+    const signal = (Math.sin(time * 0.012) + 1) * 0.5;
+    for (let bar = 0; bar < 4; bar += 1) {
+      const active = signal * 4.2 > bar;
+      ctx.fillStyle = active ? '#63d878' : 'rgba(255,255,255,.2)';
+      ctx.fillRect(x + w - 62 + bar * 10, y + 13 - bar * 2, 6, 5 + bar * 2);
+    }
+
+    if (transmission.rewardVisible) {
+      ctx.fillStyle = 'rgba(8,23,35,.6)';
+      ctx.beginPath(); ctx.roundRect(x + 96, y + 78, w - 108, 25, 8); ctx.fill();
+      ctx.fillStyle = '#ffd166';
+      ctx.font = transmission.reward.length > 48 ? '900 11px Arial' : '900 12px Arial';
+      ctx.fillText(`REWARD  •  ${transmission.reward}`, x + 104, y + 95);
+    } else {
+      ctx.fillStyle = '#63d878';
+      ctx.font = '900 10px Arial';
+      ctx.fillText('SIGNAL LOCKED', x + 100, y + 94);
+    }
+    ctx.restore();
+  }
+
   function drawRadioMessage() {
-    if (game.radioTimer <= 0 || !game.radioMessage) return;
+    if (game.characterTransmission || game.radioTimer <= 0 || !game.radioMessage) return;
     const x = 360;
     const y = 82;
     const w = 420;
@@ -4719,7 +6028,8 @@
       ctx.fillText(`AIRBORNE ×${game.airChain}`, 928, 124);
     }
 
-    if (game.messageTimer > 0 && game.state !== 'celebrating' && game.state !== 'won') {
+    if (game.messageTimer > 0 && game.state !== 'celebrating' && game.state !== 'won'
+      && !game.superExploration?.completionBanner && !game.characterTransmission) {
       const pulse = 1 + Math.sin(time * 0.018) * 0.05;
       ctx.save();
       ctx.translate(canvas.width * 0.5, 165);
@@ -4733,6 +6043,8 @@
       ctx.fillText(game.message, 0, 0);
       ctx.restore();
     }
+    drawSuperExplorationCompletionBanner(time);
+    drawCharacterTransmission(time);
     drawRadioMessage();
     ctx.restore();
   }
@@ -4761,7 +6073,9 @@
     ctx.fillStyle = 'rgba(125, 74, 46, 0.18)';
     ctx.fillRect(0, 438, canvas.width, 10);
 
+    drawSuperExplorationBackdrop(time);
     drawGround();
+    drawSuperExplorationAccents(time);
     drawDesertLocals(time);
     drawCollectibles(time);
     drawTacoTrucks();
@@ -4795,7 +6109,11 @@
         score: game.score,
         collected: game.collected,
         goldenCollected: game.goldenCollected,
-        player: { x: Math.round(player.x), y: Math.round(player.y), vx: Math.round(player.vx), vy: Math.round(player.vy), grounded: player.grounded, collisionWidth: player.w, collisionHeight: player.h },
+        player: {
+          x: Math.round(player.x), y: Math.round(player.y), vx: Math.round(player.vx), vy: Math.round(player.vy),
+          grounded: player.grounded, platformId: player.platform?.id || null,
+          invulnerable: Number(player.invulnerable.toFixed(2)), collisionWidth: player.w, collisionHeight: player.h,
+        },
         heroPhysics,
         superHero: sharedAbilities.snapshot(game.abilities),
         respawn: {
@@ -4895,6 +6213,80 @@
               bonusItem: enemy.rewardProfile?.bonusItem || null,
             })),
         },
+        superExplorationPilot: game.superExploration ? {
+          version: game.superExploration.version,
+          scope: game.superExploration.scope,
+          bounds: game.superExploration.bounds,
+          protectedRanges: game.superExploration.protectedRanges,
+          scriptedZoneSafe: game.superExploration.scriptedZoneSafe,
+          normalRouteUnaffected: game.superExploration.normalRouteUnaffected,
+          noRequiredSuperTraversal: game.superExploration.noRequiredSuperTraversal,
+          approvedGeometryPreserved: true,
+          completionBanner: game.superExploration.completionBanner,
+          interaction: game.superExploration.interaction,
+          characterTransmission: game.characterTransmission,
+          artAssets: [
+            'world1_1_super_kite_route_v2.webp',
+            'world1_1_super_skyway_v2.webp',
+            'world1_1_super_radio_roost_v2.webp',
+          ],
+          destinationCenters: superExplorationPilotPlan.map((entry) => Math.round(entry.trigger.x + entry.trigger.w * 0.5)),
+          minimumDestinationSpacing: superExplorationPilotPlan
+            .map((entry) => entry.trigger.x + entry.trigger.w * 0.5)
+            .sort((a, b) => a - b)
+            .reduce((minimum, center, index, centers) => (
+              index === 0 ? minimum : Math.min(minimum, center - centers[index - 1])
+            ), Infinity),
+          jumpEnvelope: game.superExploration.jumpEnvelope,
+          frozenBalance: {
+            tacoPowerThreshold: sharedAbilities.definitions.tacoPower.threshold,
+            tacoContribution: sharedAbilities.definitions.tacoPower.contributions.taco,
+            premiumContribution: sharedAbilities.definitions.tacoPower.contributions.premiumTaco,
+            normalJumpVelocity: heroPhysics.jumpVelocity,
+            superJumpVelocity: heroPhysics.superJumpVelocity,
+            transformationDuration: sharedAbilities.definitions.superHero.transformationDuration,
+          },
+          discoveries: superExplorationPilotPlan.map((entry) => ({
+            id: entry.id,
+            kind: entry.kind,
+            name: entry.name,
+            entryRise: entry.entryRise,
+            trigger: entry.trigger,
+            rewardType: entry.rewardType,
+            rewardTier: entry.rewardTier,
+            rewardLabel: entry.rewardLabel,
+            bonusTacos: entry.bonusTacos,
+            waypointGroups: entry.waypointGroups,
+            intendedSeconds: entry.intendedSeconds,
+            worldPercent: entry.worldPercent,
+            ...game.superExploration.discoveries[entry.id],
+          })),
+          hiddenSecret: {
+            id: superExplorationSecretPlan.id,
+            kind: superExplorationSecretPlan.kind,
+            name: superExplorationSecretPlan.name,
+            parentId: superExplorationSecretPlan.parentId,
+            trigger: superExplorationSecretPlan.trigger,
+            rewardTypes: superExplorationSecretPlan.rewardTypes,
+            rewardTier: superExplorationSecretPlan.rewardTier,
+            rewardLabel: superExplorationSecretPlan.rewardLabel,
+            worldPercent: superExplorationSecretPlan.worldPercent,
+            ...game.superExploration.secrets[superExplorationSecretPlan.id],
+          },
+          platforms: level.platforms
+            .filter((platform) => platform.phase2Pilot)
+            .map((platform) => ({
+              id: platform.id,
+              x: Math.round(platform.x),
+              y: Math.round(platform.y),
+              w: platform.w,
+              moving: Boolean(platform.moving),
+              discovery: platform.phase2Discovery,
+            })),
+          authoredTacos: level.collectibles.filter((item) => item.phase2Pilot && item.type === 'taco' && !item.bonusReward).length,
+          bonusGoldenRewards: level.collectibles.filter((item) => item.phase2PremiumReward && item.type === 'golden').length,
+          bonusRainbowRewards: level.collectibles.filter((item) => item.phase2PremiumReward && item.type === 'rainbow').length,
+        } : null,
         enemyPatrol: {
           ...(game.enemyPatrolAudit || {}),
           movingSamples: level.enemies
