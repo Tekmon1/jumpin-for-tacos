@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-2-v36-alternating-super-run';
+  const SOURCE_VERSION = 'w1-2-v37-super-exploration';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = true;
@@ -90,6 +90,42 @@
     },
     { id: 'inverted', trigger: 17700, direction: -1, inverted: true, intro: 'WAIT... IS THE PLANE UPSIDE DOWN?!', text: ['INVERTED. TOTALLY NORMAL.', 'TACOS STILL UPRIGHT.'] },
   ];
+  const SKY_EXPLORATION_VERSION = 'world-1-2-phase2-v1';
+  const skyExplorationPlan = Object.freeze([
+    Object.freeze({
+      id: 'propeller-perch', name: 'Propeller Perch', presentation: 'mechanical-activation',
+      arrivalTitle: 'PROPELLER PERCH REACHED', completionTitle: 'PROP SYSTEM ONLINE',
+      rewardLabel: '+1,100 SCORE  •  9-TACO TAILWIND', score: 1100, bonusTacos: 9,
+      trigger: Object.freeze({ x: 7040, y: 30, w: 220, h: 152 }),
+      routeRange: Object.freeze([6200, 7350]), rewardX: 7148, rewardY: 80,
+      waypointCount: 3, worldPercent: Object.freeze([18.5, 21.9]),
+    }),
+    Object.freeze({
+      id: 'sky-banner-run', name: 'Sky Banner Run', presentation: 'fabric-spectacle',
+      arrivalTitle: 'SKY BANNER LINE REACHED', completionTitle: 'BANNERS AT FULL SAIL!',
+      rewardLabel: '+1,800 SCORE  •  12-TACO PARADE', score: 1800, bonusTacos: 12,
+      trigger: Object.freeze({ x: 13040, y: 24, w: 220, h: 154 }),
+      routeRange: Object.freeze([11700, 13270]), rewardX: 13145, rewardY: 78,
+      waypointCount: 5, worldPercent: Object.freeze([34.8, 39.5]),
+    }),
+    Object.freeze({
+      id: 'olivia-flyby-relay', name: 'Olivia’s Flyby Relay', presentation: 'airborne-character',
+      arrivalTitle: 'FLYBY RELAY FOUND', completionTitle: 'AIRBORNE LINK ESTABLISHED',
+      rewardLabel: '+2,800 SCORE  •  14-TACO AIR DROP  •  RAINBOW + MAGNET', score: 2800, bonusTacos: 14,
+      trigger: Object.freeze({ x: 22130, y: 46, w: 230, h: 162 }),
+      routeRange: Object.freeze([21400, 22400]), rewardX: 22245, rewardY: 108,
+      waypointCount: 3, worldPercent: Object.freeze([63.7, 66.7]),
+    }),
+  ]);
+  const cloudCargoSecretPlan = Object.freeze({
+    id: 'cloud-cargo', name: 'Cloud Cargo', presentation: 'true-secret',
+    completionTitle: 'CLOUD CARGO DISCOVERED!',
+    rewardLabel: '+4,200 SCORE  •  22-TACO JACKPOT  •  3 RAINBOW TACOS',
+    score: 4200, bonusTacos: 22,
+    trigger: Object.freeze({ x: 26500, y: 0, w: 220, h: 142 }),
+    routeRange: Object.freeze([25450, 26850]), rewardX: 26608, rewardY: 42,
+    worldPercent: Object.freeze([75.7, 79.9]), requiredAmbushStage: 3,
+  });
   const SKY_COMBAT_END = 22400;
   const skyPilotGroundPlan = Object.freeze([
     { id: 'sky-airfield-chili-pack', anchorX: 920, type: 'chili', count: 2, section: 'airfield', purpose: 'Teach a calm two-stomp runway rhythm after the opening flight.' },
@@ -176,16 +212,19 @@
     flybyCorridorMaxGap: 0, flybyCorridorEnemies: 0, effectsTrimmed: 0, lastCollectSfxAt: -1,
     checkpointsGrounded: 0, airDrop: { spawned: 0, caught: 0 },
     respawnCount: 0, respawnFallbacks: 0, lastRespawnLanding: null, fallSoundPlayed: false,
-    aircraftLoop: null, flybyAircraftLoop: null, ambushAircraftLoop: null, rescuePropellerLoop: null, rescueLoop: null,
+    aircraftLoop: null, flybyAircraftLoop: null, ambushAircraftLoop: null, rescuePropellerLoop: null, rescueLoop: null, explorationAircraftLoop: null,
+    skyExploration: null,
   };
   const world1Background = window.JFT_WORLD1_BACKGROUNDS.create({
     levelId: '1-2', canvas, ctx, worldWidth: WORLD_WIDTH, groundY: GROUND_Y,
   });
   let lastFrame = 0;
   let seed = 0x51A2BEEF;
+  let skyExplorationGeometryAudit = null;
   const params = new URLSearchParams(location.search);
   const qa = ['terminal.local', '127.0.0.1', 'localhost'].includes(location.hostname);
   const previewStart = qa ? Number(params.get('startX') || 0) : 0;
+  const previewStartY = qa && params.has('startY') ? Number(params.get('startY')) : 360;
   const previewAutoRun = qa && params.get('autoRun') === '1';
   const previewEvent = qa ? params.get('event') || '' : '';
   const previewOpeningAt = qa ? Number(params.get('openingAt') || 0) : 0;
@@ -194,6 +233,10 @@
   const previewSuper = qa && params.get('super') === '1';
   const previewRespawn = qa && params.get('respawn') === '1';
   const previewRespawnCheckpoint = qa ? Number(params.get('respawnCheckpoint') || -1) : -1;
+  const previewPhase2Ready = qa ? params.get('phase2Ready') || '' : '';
+  const previewPhase2Complete = qa ? params.get('phase2Complete') || '' : '';
+  const previewPhase2Secret = qa && params.get('phase2Secret') === '1';
+  const previewPowerDown = qa && params.get('powerDown') === '1';
 
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
   const lerp = (a, b, t) => a + (b - a) * t;
@@ -203,6 +246,58 @@
   const currentSection = (x = player.x) => sections.find((section) => x >= section.start && x < section.end) || sections[sections.length - 1];
   const formatTime = (seconds) => `${Math.floor(Math.max(0, seconds) / 60)}:${String(Math.round(Math.max(0, seconds)) % 60).padStart(2, '0')}`;
   const firstFlybyActive = () => Boolean(game.flybys?.[0]?.started && !game.flybys[0].finished);
+
+  function createSkyExplorationState() {
+    return {
+      version: SKY_EXPLORATION_VERSION,
+      scope: 'world-1-2-only',
+      normalRouteUnaffected: true,
+      noRequiredSuperTraversal: true,
+      scriptedZoneSafe: true,
+      completionBanner: null,
+      transmission: null,
+      interaction: null,
+      relayFlyby: null,
+      supplyDrop: null,
+      cameraLift: 0,
+      cameraTargetLift: 0,
+      previewPowerDownTriggered: false,
+      destinations: Object.fromEntries(skyExplorationPlan.map((entry) => [entry.id, {
+        revealed: false,
+        completed: false,
+        completedAt: null,
+        progress: 0,
+        arrivalAcknowledged: false,
+        activationStarted: false,
+        activationCount: 0,
+        completionCount: 0,
+        rewardSpawned: false,
+        rewardSpawnCount: 0,
+        environmentEnergized: false,
+        spectacleTimer: 0,
+        spectacleMaxTimer: 0,
+        power: 0,
+      }])),
+      secret: {
+        revealed: false,
+        completed: false,
+        completedAt: null,
+        progress: 0,
+        arrivalAcknowledged: false,
+        completionCount: 0,
+        rewardSpawned: false,
+        rewardSpawnCount: 0,
+        environmentEnergized: false,
+        revealTimer: 0,
+        revealMaxTimer: 0,
+        crateOpen: 0,
+      },
+    };
+  }
+
+  function skyExplorationEntryState(entry) {
+    return game.skyExploration?.destinations?.[entry.id] || null;
+  }
 
   function syncInputs() {
     keys.left = inputSources.keyboard.left || inputSources.controller.left || inputSources.touch.left.size > 0;
@@ -276,6 +371,84 @@
     }
   }
 
+  function findExplorationAccessBase(targetX) {
+    return world.platforms
+      .filter((platform) => !platform.ground && platform.accessible && !platform.scenicStep)
+      .slice()
+      .sort((a, b) => Math.abs(a.x + a.w / 2 - targetX) - Math.abs(b.x + b.w / 2 - targetX))[0] || null;
+  }
+
+  function markExplorationAccessBase(targetX, discoveryId) {
+    const platform = findExplorationAccessBase(targetX);
+    if (!platform) return null;
+    platform.phase2Pilot = true;
+    platform.phase2AccessBase = true;
+    platform.phase2Discovery = discoveryId;
+    platform.phase2Waypoint = 0;
+    return platform;
+  }
+
+  function addExplorationPlatform(data) {
+    return addPlatform({
+      h: 25,
+      style: 'wing',
+      accessible: true,
+      phase2Pilot: true,
+      phase2New: true,
+      ...data,
+    });
+  }
+
+  function buildSkyExplorationGeometry() {
+    const bases = {
+      'propeller-perch': markExplorationAccessBase(6385, 'propeller-perch'),
+      'sky-banner-run': markExplorationAccessBase(11720, 'sky-banner-run'),
+      'olivia-flyby-relay': markExplorationAccessBase(21440, 'olivia-flyby-relay'),
+      'cloud-cargo': markExplorationAccessBase(25580, 'cloud-cargo'),
+    };
+    const authored = [
+      addExplorationPlatform({ id: 'phase2-propeller-beam', x: 6530, y: 215, w: 170, phase2Discovery: 'propeller-perch', phase2Waypoint: 1, phase2Art: 'propeller-beam' }),
+      addExplorationPlatform({ id: 'phase2-propeller-lift', x: 6785, y: 140, w: 165, moving: true, axis: 'x', range: 22, speed: 1.05, phase: .8, phase2Discovery: 'propeller-perch', phase2Waypoint: 2, phase2Art: 'propeller-lift' }),
+      addExplorationPlatform({ id: 'phase2-propeller-perch', x: 7040, y: 92, w: 220, phase2Discovery: 'propeller-perch', phase2Waypoint: 3, phase2Art: 'propeller-perch' }),
+
+      addExplorationPlatform({ id: 'phase2-banner-rise', x: 11870, y: 214, w: 180, phase2Discovery: 'sky-banner-run', phase2Waypoint: 1, phase2Art: 'banner-sling' }),
+      addExplorationPlatform({ id: 'phase2-banner-glider', x: 12145, y: 138, w: 185, moving: true, axis: 'y', range: 12, speed: .92, phase: 1.7, phase2Discovery: 'sky-banner-run', phase2Waypoint: 2, phase2Art: 'banner-sling' }),
+      addExplorationPlatform({ id: 'phase2-banner-crest', x: 12440, y: 92, w: 200, phase2Discovery: 'sky-banner-run', phase2Waypoint: 3, phase2Art: 'banner-sling' }),
+      addExplorationPlatform({ id: 'phase2-banner-dive', x: 12755, y: 148, w: 185, phase2Discovery: 'sky-banner-run', phase2Waypoint: 4, phase2Art: 'banner-sling' }),
+      addExplorationPlatform({ id: 'phase2-banner-finish', x: 13040, y: 86, w: 220, phase2Discovery: 'sky-banner-run', phase2Waypoint: 5, phase2Art: 'banner-finish' }),
+
+      addExplorationPlatform({ id: 'phase2-relay-approach', x: 21600, y: 218, w: 175, phase2Discovery: 'olivia-flyby-relay', phase2Waypoint: 1, phase2Art: 'relay-beam' }),
+      addExplorationPlatform({ id: 'phase2-relay-guidance', x: 21870, y: 150, w: 170, moving: true, axis: 'x', range: 16, speed: 1.08, phase: 2.2, phase2Discovery: 'olivia-flyby-relay', phase2Waypoint: 2, phase2Art: 'relay-beam' }),
+      addExplorationPlatform({ id: 'phase2-relay-beacon', x: 22130, y: 120, w: 230, phase2Discovery: 'olivia-flyby-relay', phase2Waypoint: 3, phase2Art: 'relay-beacon' }),
+
+      addExplorationPlatform({ id: 'phase2-cargo-clue', x: 25720, y: 210, w: 170, style: 'guac-sign', phase2Discovery: 'cloud-cargo', phase2Waypoint: 1, phase2Art: 'cargo-sling' }),
+      addExplorationPlatform({ id: 'phase2-cargo-hoist', x: 25980, y: 135, w: 165, style: 'guac-sign', moving: true, axis: 'y', range: 15, speed: .88, phase: 1.3, phase2Discovery: 'cloud-cargo', phase2Waypoint: 2, phase2Art: 'cargo-sling' }),
+      addExplorationPlatform({ id: 'phase2-cargo-cloudline', x: 26240, y: 70, w: 180, style: 'guac-sign', phase2Discovery: 'cloud-cargo', phase2Waypoint: 3, phase2Art: 'cargo-sling' }),
+      addExplorationPlatform({ id: 'phase2-cloud-cargo', x: 26500, y: 42, w: 220, style: 'guac-sign', phase2Discovery: 'cloud-cargo', phase2Waypoint: 4, phase2Art: 'cloud-cargo', phase2Hidden: true }),
+    ];
+    const firstWaypoints = Object.fromEntries(authored.filter((platform) => platform.phase2Waypoint === 1).map((platform) => [platform.phase2Discovery, platform]));
+    const entryRises = Object.fromEntries(Object.entries(bases).map(([id, platform]) => [id, platform && firstWaypoints[id] ? Math.round(platform.y - firstWaypoints[id].y) : null]));
+    skyExplorationGeometryAudit = {
+      bases: Object.fromEntries(Object.entries(bases).map(([id, platform]) => [id, platform ? { id: platform.id, x: Math.round(platform.x), y: Math.round(platform.y), w: platform.w } : null])),
+      platforms: authored.map((platform) => ({ id: platform.id, x: platform.x, y: platform.y, w: platform.w, moving: Boolean(platform.moving), discovery: platform.phase2Discovery, waypoint: platform.phase2Waypoint })),
+      highestPlatformY: Math.min(...authored.map((platform) => platform.y - (platform.moving && platform.axis === 'y' ? platform.range : 0))),
+      entryRises,
+      allEntriesRequireSuper: Object.values(entryRises).every((rise) => rise > heroPhysics.normalJumpRise + 1),
+      groundFallbackOpen: true,
+    };
+  }
+
+  function addSkyExplorationTacoTrails() {
+    addArc(6420, 318, 7, 47, 92, { lane: 'phase2-propeller-trail', phase2Pilot: true, phase2Discovery: 'propeller-perch' });
+    addArc(6680, 205, 7, 46, 66, { lane: 'phase2-propeller-trail', phase2Pilot: true, phase2Discovery: 'propeller-perch' });
+    addArc(11785, 318, 9, 48, 112, { lane: 'phase2-banner-trail', phase2Pilot: true, phase2Discovery: 'sky-banner-run' });
+    addArc(12235, 152, 10, 48, 62, { lane: 'phase2-banner-trail', phase2Pilot: true, phase2Discovery: 'sky-banner-run' });
+    addArc(21510, 318, 8, 47, 105, { lane: 'phase2-relay-trail', phase2Pilot: true, phase2Discovery: 'olivia-flyby-relay' });
+    addArc(21835, 194, 7, 46, 58, { lane: 'phase2-relay-trail', phase2Pilot: true, phase2Discovery: 'olivia-flyby-relay' });
+    addArc(25610, 325, 9, 47, 118, { lane: 'phase2-cloud-cargo-clue', phase2Pilot: true, phase2Discovery: 'cloud-cargo', concealedClue: true });
+    addArc(26005, 176, 8, 46, 72, { lane: 'phase2-cloud-cargo-clue', phase2Pilot: true, phase2Discovery: 'cloud-cargo', concealedClue: true });
+  }
+
   function buildWorld() {
     seed = 0x51A2BEEF;
     world.platforms = []; world.collectibles = []; world.enemies = []; world.pinata = null;
@@ -324,6 +497,8 @@
       });
     });
 
+    buildSkyExplorationGeometry();
+
     // A checkpoint only counts as supported when its entire illustrated
     // footprint rests on one ground segment. Any partial support is replaced
     // by a wide foundation so no checkpoint can straddle a terrain seam.
@@ -356,6 +531,7 @@
 
     for (const platform of world.platforms) {
       if (platform.checkpointPad) continue;
+      if (platform.phase2New) continue;
       const gap = platform.ground ? 56 : 46; const count = Math.max(3, Math.floor((platform.w - 52) / gap) + 1);
       addLine(platform.x + 26, platform.y - (platform.ground ? 42 : 40), count, gap, { lane: platform.ground ? 'ground-row' : 'platform-row' });
       if (platform.moving) {
@@ -365,6 +541,7 @@
     world.platforms.filter((platform) => platform.scenicStep && platform.accessBase).forEach((platform) => {
       addArc(platform.x - 26, platform.accessBase.y - 43, 7, 34, 70, { lane: 'scenic-step-arc' });
     });
+    addSkyExplorationTacoTrails();
     const ground = world.platforms.filter((p) => p.ground).sort((a, b) => a.x - b.x);
     for (let i = 0; i < ground.length - 1; i += 1) {
       const from = ground[i]; const to = ground[i + 1]; const gap = to.x - (from.x + from.w);
@@ -434,7 +611,7 @@
     // The sightseeing flyby and late guac/rescue corridors intentionally have
     // no enemies. Any tall ledge that lost its bounce helper is lowered just
     // enough to remain reachable with the shared normal jump.
-    world.platforms.filter((platform) => !platform.ground && !platform.scenicStep).forEach((platform) => {
+    world.platforms.filter((platform) => !platform.ground && !platform.scenicStep && !platform.phase2Pilot).forEach((platform) => {
       const verticalRange = platform.moving && platform.axis === 'y' ? platform.range : 0;
       const requiredRise = GROUND_Y - (platform.y - verticalRange);
       const bounceEnemy = world.enemies.find((enemy) => enemy.targetPlatform === platform || Math.abs(enemy.x - (platform.x + 70)) < 110);
@@ -479,6 +656,7 @@
     game.platformOverlapCount = overlap;
     const normalJumpRise = heroPhysics.normalJumpRise;
     const unreachablePlatforms = elevated.filter((platform) => {
+      if (platform.phase2Pilot) return false;
       const highestY = platform.y - (platform.moving && platform.axis === 'y' ? platform.range : 0);
       if (platform.scenicStep && platform.accessBase) return platform.accessBase.y - highestY > normalJumpRise + 1;
       const requiredRise = GROUND_Y - highestY;
@@ -490,7 +668,7 @@
     game.unreachablePlatformDetails = unreachablePlatforms.map((platform) => ({
       x: Math.round(platform.x), y: Math.round(platform.y), moving: Boolean(platform.moving), scenicStep: Boolean(platform.scenicStep),
     }));
-    const elevatedBySection = sections.slice(1, 5).map((section) => elevated.filter((platform) => platform.x >= section.start && platform.x < section.end).sort((a, b) => a.x - b.x));
+    const elevatedBySection = sections.slice(1, 5).map((section) => elevated.filter((platform) => !platform.phase2Pilot && platform.x >= section.start && platform.x < section.end).sort((a, b) => a.x - b.x));
     game.elevatedMaxGap = Math.round(Math.max(0, ...elevatedBySection.flatMap((platforms) => platforms.slice(1).map((platform, index) => platform.x - (platforms[index].x + platforms[index].w)))));
   }
 
@@ -522,7 +700,7 @@
 
   function findSkyUpperSupport(anchorX) {
     return world.platforms
-      .filter((platform) => !platform.ground && !platform.scenicStep && platform.enemySupport !== false)
+      .filter((platform) => !platform.ground && !platform.scenicStep && !platform.phase2Pilot && platform.enemySupport !== false)
       .filter((platform) => platform.x < SKY_COMBAT_END && platform.x + platform.w > 4600)
       .filter((platform) => !skyPlatformInForbiddenCorridor(platform))
       .sort((a, b) => Math.abs(a.x + a.w / 2 - anchorX) - Math.abs(b.x + b.w / 2 - anchorX))[0] || null;
@@ -611,7 +789,7 @@
   }
 
   function lowerSkyPlatformToNormalJump(platform) {
-    if (!platform || platform.ground || platform.scenicStep) return false;
+    if (!platform || platform.ground || platform.scenicStep || platform.phase2Pilot) return false;
     const verticalRange = platform.moving && platform.axis === 'y' ? platform.range : 0;
     const requiredRise = GROUND_Y - (platform.y - verticalRange);
     if (requiredRise <= heroPhysics.normalJumpRise + 1) return false;
@@ -758,7 +936,7 @@
     // normal jump envelope rather than silently relying on a deleted seed
     // enemy. This keeps every optional platform readable and reachable.
     world.platforms
-      .filter((platform) => !platform.ground && !platform.scenicStep && platform.x < SKY_COMBAT_END)
+      .filter((platform) => !platform.ground && !platform.scenicStep && !platform.phase2Pilot && platform.x < SKY_COMBAT_END)
       .forEach((platform) => {
         const hasHelper = world.enemies.some((enemy) => enemy.targetPlatform === platform);
         if (!hasHelper) lowerSkyPlatformToNormalJump(platform);
@@ -849,11 +1027,13 @@
     if (game.ambushAircraftLoop) audio?.stopLoop(game.ambushAircraftLoop);
     if (game.rescuePropellerLoop) audio?.stopLoop(game.rescuePropellerLoop);
     if (game.rescueLoop) audio?.stopLoop(game.rescueLoop);
+    if (game.explorationAircraftLoop) audio?.stopLoop(game.explorationAircraftLoop);
     game.aircraftLoop = null;
     game.flybyAircraftLoop = null;
     game.ambushAircraftLoop = null;
     game.rescuePropellerLoop = null;
     game.rescueLoop = null;
+    game.explorationAircraftLoop = null;
   }
 
   function syncSettings() {
@@ -895,13 +1075,25 @@
       inputResetCount: 0, lastInputResetReason: 'none', landingRecoveries: 0, controlStallTimer: 0, controllerStateSyncs: 0, controllerStateSequence: 0, controllerQaResetDone: false, effectsTrimmed: 0, lastCollectSfxAt: -1,
       airDrop: { spawned: 0, caught: 0 },
       respawnCount: 0, respawnFallbacks: 0, lastRespawnLanding: null, fallSoundPlayed: false,
-      aircraftLoop: null, flybyAircraftLoop: null, ambushAircraftLoop: null, rescuePropellerLoop: null, rescueLoop: null,
+      aircraftLoop: null, flybyAircraftLoop: null, ambushAircraftLoop: null, rescuePropellerLoop: null, rescueLoop: null, explorationAircraftLoop: null,
+      skyExploration: createSkyExplorationState(),
     });
     const startX = clamp(previewStart || 140, 0, WORLD_WIDTH - 250);
-    Object.assign(player, { x: startX, y: 360, previousY: 360, vx: 0, vy: 0, dir: 1, grounded: false, platform: null, anim: 0, coyote: 0, jumpBuffer: 0, invulnerable: 0, rotation: 0, scale: 1 });
+    const startY = clamp(previewStartY, -80, GROUND_Y - player.h);
+    Object.assign(player, { x: startX, y: startY, previousY: startY, vx: 0, vy: 0, dir: 1, grounded: false, platform: null, anim: 0, coyote: 0, jumpBuffer: 0, invulnerable: 0, rotation: 0, scale: 1 });
     if (previewSuper) {
       sharedAbilities.activateSuper(game.abilities, 'qa-preview', { silent: true });
       game.abilities.transformTimer = 0;
+    }
+    const readyEntry = skyExplorationPlan.find((entry) => entry.id === previewPhase2Ready || entry.id === previewPhase2Complete);
+    if (readyEntry) {
+      const state = skyExplorationEntryState(readyEntry);
+      if (state) { state.revealed = true; state.progress = readyEntry.waypointCount; }
+    }
+    if (previewPhase2Secret) {
+      game.ambush.stage = 3;
+      game.skyExploration.secret.revealed = true;
+      game.skyExploration.secret.progress = 4;
     }
     clearInputs('level-reset');
     if (['pinata', 'pinataKaboom', 'pinataAftershock'].includes(previewEvent) && world.pinata) {
@@ -984,6 +1176,261 @@
   function stopMusic() { allTracks.forEach(silence); game.activeMusic = null; game.musicTransition = null; }
 
   function showMessage(text, duration = 2.2) { game.message = text; game.messageTimer = duration; }
+
+  function skyExplorationStateForEntry(entry) {
+    return entry.id === cloudCargoSecretPlan.id ? game.skyExploration?.secret : skyExplorationEntryState(entry);
+  }
+
+  function spawnSkyExplorationRewards(entry, state) {
+    if (!state || state.rewardSpawned) return false;
+    const secret = entry.id === cloudCargoSecretPlan.id;
+    for (let index = 0; index < entry.bonusTacos; index += 1) {
+      const fan = entry.bonusTacos === 1 ? .5 : index / (entry.bonusTacos - 1);
+      addItem(entry.rewardX - 12, entry.rewardY, 'taco', {
+        bonusReward: true,
+        dynamic: true,
+        explorationReward: true,
+        phase2Pilot: true,
+        phase2Discovery: entry.id,
+        vx: -245 + fan * 490,
+        vy: -300 - Math.sin(fan * Math.PI) * (secret ? 205 : 130) - (index % 3) * 13,
+        angle: index * .67,
+        bounces: 0,
+      });
+    }
+    const rainbowCount = secret ? 3 : entry.id === 'olivia-flyby-relay' ? 1 : 0;
+    for (let index = 0; index < rainbowCount; index += 1) {
+      addItem(entry.rewardX - 38 + index * 38, entry.rewardY + 18 + (index % 2) * 7, 'taco', {
+        bonusReward: true,
+        rainbowReward: true,
+        explorationReward: true,
+        phase2Pilot: true,
+        phase2Discovery: entry.id,
+      });
+    }
+    if (entry.id === 'olivia-flyby-relay') {
+      sharedAbilities.activateMagnet(game.abilities);
+      game.skyExploration.supplyDrop = { spawned: true, count: entry.bonusTacos + rainbowCount, deliveredAt: game.levelTime };
+      playAudio('ability.magnetStart', { position: audioPosition(entry.rewardX), gain: .82 });
+    }
+    state.rewardSpawned = true;
+    state.rewardSpawnCount += 1;
+    return true;
+  }
+
+  function setSkyExplorationBanner(entry) {
+    const secret = entry.id === cloudCargoSecretPlan.id;
+    const duration = secret ? 3.35 : 2.25;
+    game.skyExploration.completionBanner = {
+      eyebrow: secret ? 'TRUE SKY SECRET' : entry.id === 'propeller-perch' ? 'OPTIONAL WIND SYSTEM' : 'OPTIONAL FLIGHT PATH',
+      title: entry.completionTitle,
+      reward: entry.rewardLabel,
+      mode: secret ? 'secret' : entry.presentation,
+      timer: duration,
+      maxTimer: duration,
+    };
+  }
+
+  function beginOliviaFlybyRelay(entry, state) {
+    if (!state || state.completed || state.activationStarted || game.skyExploration.interaction) return false;
+    state.activationStarted = true;
+    state.activationCount += 1;
+    state.power = Math.max(state.power, .06);
+    game.skyExploration.interaction = {
+      id: entry.id,
+      elapsed: 0,
+      duration: 2.45,
+      focusDuration: .66,
+      focusX: entry.trigger.x + entry.trigger.w * .5,
+      powerClickPlayed: false,
+      connected: false,
+      flybyStarted: false,
+      rewardDelivered: false,
+    };
+    player.jumpBuffer = 0;
+    if (player.grounded) { player.vx = 0; player.vy = 0; }
+    impactText(entry.rewardX, entry.rewardY + 38, 'BEACON POWERING UP', '#65d8ff', 20);
+    playAudio('checkpoint.activate', { position: audioPosition(entry.rewardX), pitchCents: -85 });
+    return true;
+  }
+
+  function completeSkyExplorationEntry(entry, options = {}) {
+    const state = skyExplorationStateForEntry(entry);
+    if (!state || state.completed) return false;
+    if (entry.id === 'olivia-flyby-relay' && !options.fromInteraction) return beginOliviaFlybyRelay(entry, state);
+    state.revealed = true;
+    state.completed = true;
+    state.completedAt = game.levelTime;
+    state.completionCount += 1;
+    state.environmentEnergized = true;
+    game.score += entry.score;
+    const secret = entry.id === cloudCargoSecretPlan.id;
+    if (!options.suppressBanner) setSkyExplorationBanner(entry);
+    showMessage(entry.completionTitle, secret ? 2.8 : 1.55);
+    spawnSkyExplorationRewards(entry, state);
+    const screenX = entry.trigger.x + entry.trigger.w * .5 - game.cameraX;
+    const centerY = entry.trigger.y + entry.trigger.h * .5;
+    impactText(entry.rewardX, Math.max(28, entry.rewardY - 14), secret ? 'CARGO JACKPOT!' : entry.id === 'olivia-flyby-relay' ? 'AIR DROP!' : entry.completionTitle.replace(/!+$/, ''), secret ? '#ffd65a' : '#fff1a6', secret ? 29 : 23);
+    spawnConfetti(screenX, centerY, game.reducedShake ? (secret ? 52 : 28) : (secret ? 118 : entry.id === 'sky-banner-run' ? 74 : 54));
+    ['#65d8ff', '#ff6fae', '#ffd65a'].forEach((color, index) => spawnBurst(screenX, centerY - index * 7, color, game.reducedShake ? 12 : secret ? 34 + index * 8 : 18 + index * 4));
+    game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 2 : secret ? 9 : entry.id === 'sky-banner-run' ? 6 : 4);
+    if (entry.id === 'propeller-perch') {
+      state.spectacleTimer = state.spectacleMaxTimer = 2.8;
+      playAudio('vehicle.aircraftBoost', { position: audioPosition(entry.rewardX), pitchCents: -105 });
+      playAudio('level.celebrationPulse', { position: audioPosition(entry.rewardX), pitchCents: -25 });
+    } else if (entry.id === 'sky-banner-run') {
+      state.spectacleTimer = state.spectacleMaxTimer = 3.1;
+      playAudio('vehicle.aircraftDropComplete', { position: audioPosition(entry.rewardX), pitchCents: 55 });
+      playAudio('level.celebrationPulse', { position: audioPosition(entry.rewardX), pitchCents: 70 });
+    } else if (entry.id === 'olivia-flyby-relay') {
+      state.spectacleTimer = state.spectacleMaxTimer = 2.4;
+      playAudio('vehicle.drop', { combo: 4, position: audioPosition(entry.rewardX), pitchCents: 80 });
+      playAudio('collect.rainbowTaco', { position: audioPosition(entry.rewardX), pitchCents: 45 });
+    } else {
+      state.revealTimer = state.revealMaxTimer = 3.35;
+      state.crateOpen = 1;
+      spawnFireworkAt(screenX - 125, Math.max(74, centerY - 60), .9);
+      spawnFireworkAt(screenX + 125, Math.max(70, centerY - 92), 1.05);
+      playAudio('pinata.break', { position: audioPosition(entry.rewardX), combo: 5 });
+      playAudio('pinata.jackpotSparkle', { position: audioPosition(entry.rewardX), pitchCents: 145 });
+      playAudio('collect.rainbowTaco', { position: audioPosition(entry.rewardX), pitchCents: 95 });
+    }
+    return true;
+  }
+
+  function updateOliviaRelayInteraction(dt) {
+    const interaction = game.skyExploration?.interaction;
+    if (!interaction) return false;
+    const entry = skyExplorationPlan.find((candidate) => candidate.id === interaction.id);
+    const state = entry ? skyExplorationEntryState(entry) : null;
+    if (!entry || !state) { game.skyExploration.interaction = null; return false; }
+    interaction.elapsed = Math.min(interaction.duration, interaction.elapsed + dt);
+    state.power = clamp(interaction.elapsed / .62, .06, 1);
+    if (!interaction.powerClickPlayed && interaction.elapsed >= .24) {
+      interaction.powerClickPlayed = true;
+      playAudio('ui.radio', { position: audioPosition(entry.rewardX), pitchCents: 35 });
+    }
+    if (!interaction.connected && interaction.elapsed >= .52) {
+      interaction.connected = true;
+      game.skyExploration.transmission = {
+        speaker: 'OLIVIA', channel: 'AIRBAND 12 • BEACON LOCK',
+        message: 'Taco Hero! I see your beacon—air-drop incoming!',
+        reward: entry.rewardLabel, rewardVisible: false, timer: 3.75, maxTimer: 3.75,
+      };
+      impactText(entry.rewardX, entry.rewardY + 18, 'FLIGHT SIGNAL LOCKED', '#9bef70', 21);
+      playAudio('vehicle.aircraftReady', { position: audioPosition(entry.rewardX), pitchCents: 65 });
+    }
+    if (!interaction.flybyStarted && interaction.elapsed >= .72) {
+      interaction.flybyStarted = true;
+      game.skyExploration.relayFlyby = { timer: 0, duration: 4.65, independent: true, source: 'phase2-relay' };
+      game.explorationAircraftLoop = audio?.startLoop('vehicle.aircraftPropellerIdle', { gain: .12, position: -1, pitchCents: 110 }) || null;
+      playAudio('vehicle.aircraftApproach', { position: -1, variant: 'phase2-relay' });
+    }
+    if (!interaction.rewardDelivered && interaction.elapsed >= 1.28) {
+      interaction.rewardDelivered = true;
+      completeSkyExplorationEntry(entry, { fromInteraction: true, suppressBanner: true });
+      if (game.skyExploration.transmission) game.skyExploration.transmission.rewardVisible = true;
+    }
+    const focusing = interaction.elapsed < interaction.focusDuration;
+    if (focusing) {
+      player.vx *= Math.pow(.0008, dt);
+      if (player.grounded) player.vy = 0;
+      const targetCamera = clamp(interaction.focusX - canvas.width * .58, 0, WORLD_WIDTH - canvas.width);
+      game.cameraX = lerp(game.cameraX, targetCamera, Math.min(1, dt * 5.4));
+    }
+    if (interaction.elapsed >= interaction.duration) game.skyExploration.interaction = null;
+    return focusing;
+  }
+
+  function updateRelayFlyby(dt) {
+    const flyby = game.skyExploration?.relayFlyby;
+    if (!flyby) return;
+    flyby.timer += dt;
+    const progress = clamp(flyby.timer / flyby.duration, 0, 1);
+    const screenX = lerp(-250, canvas.width + 260, smoothstep(progress));
+    const closeness = 1 - smoothstep(Math.abs(screenX - canvas.width * .5) / (canvas.width * .72));
+    audio?.updateLoop?.(game.explorationAircraftLoop, {
+      gain: .12 + closeness * .76,
+      position: clamp(screenX / canvas.width * 2 - 1, -1, 1),
+      pitchCents: lerp(115, -125, smoothstep(progress)),
+      smoothingSeconds: .065,
+    });
+    if (progress >= 1) {
+      stopTrackedLoop('explorationAircraftLoop');
+      playAudio('vehicle.aircraftDepart', { position: 1 });
+      game.skyExploration.relayFlyby = null;
+    }
+  }
+
+  function updateSkyExploration(dt) {
+    const pilot = game.skyExploration;
+    if (!pilot) return;
+    if (pilot.completionBanner) {
+      pilot.completionBanner.timer = Math.max(0, pilot.completionBanner.timer - dt);
+      if (pilot.completionBanner.timer <= 0) pilot.completionBanner = null;
+    }
+    if (pilot.transmission) {
+      pilot.transmission.timer = Math.max(0, pilot.transmission.timer - dt);
+      if (pilot.transmission.timer <= 0) pilot.transmission = null;
+    }
+    for (const entry of skyExplorationPlan) {
+      const state = skyExplorationEntryState(entry);
+      if (!state) continue;
+      state.spectacleTimer = Math.max(0, state.spectacleTimer - dt);
+      const platform = player.platform;
+      if (platform?.phase2Discovery === entry.id) {
+        state.revealed = true;
+        if (!state.arrivalAcknowledged) {
+          state.arrivalAcknowledged = true;
+          showMessage(entry.arrivalTitle, .95);
+          impactText(player.x + player.w * .5, Math.max(30, player.y - 5), 'FLIGHT PATH FOUND', '#65d8ff', 17);
+        }
+        const waypoint = Number(platform.phase2Waypoint) || 0;
+        if (waypoint > state.progress) {
+          state.progress = waypoint;
+          impactText(player.x + player.w * .5, Math.max(30, player.y - 6), entry.id === 'sky-banner-run' ? `BANNER ${waypoint}/${entry.waypointCount}` : entry.id === 'propeller-perch' ? `WIND LINK ${waypoint}/${entry.waypointCount}` : `BEACON LINK ${waypoint}/${entry.waypointCount}`, entry.id === 'sky-banner-run' ? '#ff6fae' : '#65d8ff', 17);
+          playAudio('checkpoint.activate', { position: audioPosition(player.x), pitchCents: -70 + waypoint * 55, gain: .74 });
+        }
+      }
+      if (!state.completed && state.progress >= entry.waypointCount && intersects(player, entry.trigger)) completeSkyExplorationEntry(entry);
+    }
+    const secret = pilot.secret;
+    secret.revealTimer = Math.max(0, secret.revealTimer - dt);
+    if (player.platform?.phase2Discovery === cloudCargoSecretPlan.id) {
+      secret.revealed = true;
+      secret.progress = Math.max(secret.progress, Number(player.platform.phase2Waypoint) || 0);
+      if (!secret.arrivalAcknowledged) {
+        secret.arrivalAcknowledged = true;
+        impactText(player.x + player.w * .5, Math.max(25, player.y - 6), '...WHAT IS BEHIND THAT CLOUD?', '#fff1a6', 17);
+        playAudio('pinata.jackpotSparkle', { position: audioPosition(player.x), pitchCents: -70, gain: .64 });
+      }
+    }
+    if (!secret.completed && secret.progress >= 4 && game.ambush.stage >= cloudCargoSecretPlan.requiredAmbushStage && intersects(player, cloudCargoSecretPlan.trigger)) completeSkyExplorationEntry(cloudCargoSecretPlan);
+    updateOliviaRelayInteraction(dt);
+    updateRelayFlyby(dt);
+
+    if (qa && previewPhase2Complete) {
+      const entry = skyExplorationPlan.find((candidate) => candidate.id === previewPhase2Complete);
+      const state = entry && skyExplorationEntryState(entry);
+      if (entry && state && !state.completed && !state.activationStarted) completeSkyExplorationEntry(entry);
+    }
+    if (qa && previewPhase2Secret && !secret.completed) completeSkyExplorationEntry(cloudCargoSecretPlan);
+    if (qa && previewPowerDown && previewSuper && !pilot.previewPowerDownTriggered && game.levelTime > .2) {
+      pilot.previewPowerDownTriggered = true;
+      hurtPlayer(player.x + 120);
+    }
+  }
+
+  function updateSkyExplorationCamera(dt) {
+    const pilot = game.skyExploration;
+    if (!pilot) return;
+    const inExplorationRange = [...skyExplorationPlan, cloudCargoSecretPlan].some((entry) => player.x >= entry.routeRange[0] - 180 && player.x <= entry.routeRange[1] + 180);
+    const cameraAllowed = game.openingComplete && !game.rescueActive && game.state !== 'celebrating';
+    pilot.cameraTargetLift = cameraAllowed && inExplorationRange ? clamp((265 - player.y) * .54, 0, 118) : 0;
+    if (pilot.interaction) pilot.cameraTargetLift = Math.max(pilot.cameraTargetLift, 88);
+    pilot.cameraLift = lerp(pilot.cameraLift, pilot.cameraTargetLift, Math.min(1, dt * (pilot.cameraTargetLift > pilot.cameraLift ? 5.6 : 4.2)));
+  }
+
   function startGame() {
     unlockAudio(); playAudio('ui.start'); ui.startOverlay.classList.add('hidden'); ui.startOverlay.classList.remove('visible'); game.state = 'playing'; game.startTime = performance.now();
     setMusic(sections[game.sectionIndex].music, true);
@@ -993,6 +1440,10 @@
         game.latestCheckpoint = world.checkpoints[previewRespawnCheckpoint];
       }
       beginRespawn();
+    }
+    if (previewPowerDown && previewSuper && !game.skyExploration.previewPowerDownTriggered) {
+      game.skyExploration.previewPowerDownTriggered = true;
+      hurtPlayer(player.x + 120);
     }
   }
 
@@ -1397,9 +1848,9 @@
     for (const item of world.collectibles) {
       if (item.dynamic && !item.collected) {
         item.x += item.vx * dt; item.y += item.vy * dt; item.vy += 760 * dt; item.angle += dt * 7;
-        if ((item.pinataReward || item.planeDrop) && item.y >= GROUND_Y - item.h - 2 && item.vy > 0) {
+        if ((item.pinataReward || item.planeDrop || item.explorationReward) && item.y >= GROUND_Y - item.h - 2 && item.vy > 0) {
           item.y = GROUND_Y - item.h - 2; item.bounces = (item.bounces || 0) + 1;
-          const maxBounces = item.planeDrop ? 2 : 3;
+          const maxBounces = item.planeDrop ? 2 : item.explorationReward ? 2 : 3;
           if (item.bounces >= maxBounces) { item.dynamic = false; item.vx = 0; item.vy = 0; item.angle = 0; }
           else { item.vy = -Math.max(135, item.vy * .52); item.vx *= .78; }
         } else if (item.y > 525) item.collected = true;
@@ -1718,7 +2169,7 @@
     if (game.state === 'playing' || game.state === 'respawning') { game.levelTime += dt; updateMovingPlatforms(dt); }
     if (game.state === 'respawning') updateRespawn(dt);
     if (game.state === 'playing') {
-      updateOpening(dt); updatePlayer(dt); updateEnemies(dt); updatePinata(dt); updateItems(dt); updateSkyStreak(dt); updateCheckpoints(); updatePlaneEvents(dt);
+      updateOpening(dt); updatePlayer(dt); updateEnemies(dt); updatePinata(dt); updateItems(dt); updateSkyStreak(dt); updateCheckpoints(); updatePlaneEvents(dt); updateSkyExploration(dt);
       world.collectibles.forEach((item) => { if (!item.collected && intersects(player, item)) collectItem(item); });
       const nextSection = Math.max(0, sections.findIndex((section) => player.x >= section.start && player.x < section.end));
       if (nextSection !== game.sectionIndex && !(nextSection === 6 && !game.crashLanded)) {
@@ -1731,6 +2182,7 @@
       }
       maybeFinish();
     } else if (game.state === 'celebrating') updateCelebration(dt);
+    updateSkyExplorationCamera(dt);
     updateParticles(dt);
   }
 
@@ -1778,6 +2230,90 @@
       sourceWidth - sourceCap, 0, sourceCap, sourceHeight,
       screenX + width - destinationCap, y, destinationCap, height,
     );
+  }
+
+  function skyExplorationVisible(entry, padding = 260) {
+    return entry.routeRange[1] >= game.cameraX - padding && entry.routeRange[0] <= game.cameraX + canvas.width + padding;
+  }
+
+  function drawAviationAtlasFixture(frameIndex, worldX, baselineY, height, options = {}) {
+    const frame = checkpointArtFrames[frameIndex];
+    if (!frame || !images.checkpoints) return;
+    const width = height * (frame.sw / frame.sh);
+    const x = worldX - game.cameraX - width * .5;
+    const y = baselineY - height;
+    ctx.save(); ctx.globalAlpha = options.alpha ?? 1;
+    if (options.glow) { ctx.shadowColor = options.glow; ctx.shadowBlur = options.glowBlur || 16; }
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(images.checkpoints, frame.sx, frame.sy, frame.sw, frame.sh, x, y, width, height);
+    ctx.restore();
+  }
+
+  function drawExplorationNameplate(worldX, y, title, subtitle, accent, active = false) {
+    const x = worldX - game.cameraX;
+    const width = Math.min(220, Math.max(145, title.length * 8.1));
+    ctx.save(); ctx.fillStyle = 'rgba(30,27,55,.94)'; ctx.strokeStyle = accent; ctx.lineWidth = active ? 3 : 2; ctx.shadowColor = accent; ctx.shadowBlur = active ? 13 : 5;
+    ctx.beginPath(); ctx.roundRect(x - width * .5, y, width, subtitle ? 42 : 26, 10); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
+    ctx.textAlign = 'center'; ctx.fillStyle = '#fff7dc'; ctx.font = '900 12px Arial'; ctx.fillText(title, x, y + 16);
+    if (subtitle) { ctx.fillStyle = accent; ctx.font = '900 9px Arial'; ctx.fillText(subtitle, x, y + 32); }
+    ctx.restore();
+  }
+
+  function drawPropellerPerch(time) {
+    const entry = skyExplorationPlan[0]; if (!skyExplorationVisible(entry)) return;
+    const state = skyExplorationEntryState(entry); const active = Boolean(state?.completed); const burst = state?.spectacleMaxTimer ? clamp(state.spectacleTimer / state.spectacleMaxTimer, 0, 1) : 0; const power = active ? 1 : Math.max(.12, state?.progress / entry.waypointCount || 0);
+    const centerX = 7148 - game.cameraX; const hubY = 16;
+    ctx.save(); ctx.strokeStyle = '#342842'; ctx.lineWidth = 8; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(7070 - game.cameraX, 92); ctx.lineTo(centerX, hubY + 8); ctx.lineTo(7220 - game.cameraX, 92); ctx.stroke(); ctx.strokeStyle = '#65d8ff'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(7070 - game.cameraX, 91); ctx.lineTo(centerX, hubY + 8); ctx.lineTo(7220 - game.cameraX, 91); ctx.stroke(); ctx.restore();
+    drawAviationAtlasFixture(0, 6616, 215, 104, { alpha: .96, glow: power > .4 ? '#65d8ff' : null, glowBlur: 9 });
+    drawAviationAtlasFixture(5, 7150, 92, 112, { glow: active ? '#ffd65a' : '#65d8ff', glowBlur: active ? 22 : 7 });
+    ctx.save(); ctx.translate(centerX, hubY); ctx.rotate(time * .0025 * (1 + power * 6.5)); ctx.globalAlpha = .74 + power * .26;
+    for (let blade = 0; blade < 4; blade += 1) { ctx.rotate(Math.PI * .5); const gradient = ctx.createLinearGradient(8, 0, 59, 0); gradient.addColorStop(0, '#fff7d9'); gradient.addColorStop(.48, '#65d8ff'); gradient.addColorStop(1, '#ff6fae'); ctx.fillStyle = gradient; ctx.strokeStyle = '#342842'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(7, -7); ctx.quadraticCurveTo(36, -17, 61, -6); ctx.quadraticCurveTo(38, 7, 7, 7); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+    ctx.fillStyle = '#ffd65a'; ctx.strokeStyle = '#342842'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(0, 0, 13, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore();
+    if (active || burst > 0) { ctx.save(); ctx.globalCompositeOperation = 'screen'; ctx.strokeStyle = `rgba(101,216,255,${.22 + burst * .45})`; ctx.lineWidth = 3; for (let trail = 0; trail < 5; trail += 1) { const y = 34 + trail * 20; const reach = 110 + trail * 35 + burst * 80; ctx.beginPath(); ctx.moveTo(centerX - reach, y); ctx.quadraticCurveTo(centerX, y - 15, centerX + reach, y + 2); ctx.stroke(); } ctx.restore(); }
+    drawExplorationNameplate(7150, 104, 'PROPELLER PERCH', active ? 'PROP SYSTEM ONLINE' : 'WIND DRIVE • OFFLINE', active ? '#9bef70' : '#65d8ff', active);
+  }
+
+  function drawSkyBannerRun(time) {
+    const entry = skyExplorationPlan[1]; if (!skyExplorationVisible(entry)) return;
+    const state = skyExplorationEntryState(entry); const active = Boolean(state?.completed); const supports = [11955, 12235, 12540, 12848, 13148]; const baselines = [214, 138, 92, 148, 86]; const colors = ['#65d8ff', '#ff6fae', '#ffd65a', '#9bef70'];
+    ctx.save();
+    supports.forEach((worldX, index) => { const x = worldX - game.cameraX; const top = Math.max(18, baselines[index] - 116); ctx.strokeStyle = '#342842'; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(x, baselines[index]); ctx.lineTo(x, top); ctx.stroke(); ctx.strokeStyle = colors[index % colors.length]; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, baselines[index]); ctx.lineTo(x, top); ctx.stroke(); ctx.fillStyle = active || (state?.progress || 0) > index ? colors[index % colors.length] : '#5d5870'; ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = active ? 14 : 4; ctx.beginPath(); ctx.arc(x, top, 5, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0; });
+    for (let index = 0; index < supports.length - 1; index += 1) { const x1 = supports[index] - game.cameraX; const x2 = supports[index + 1] - game.cameraX; const y1 = Math.max(18, baselines[index] - 103); const y2 = Math.max(18, baselines[index + 1] - 103); const energized = active || (state?.progress || 0) > index; const wave = Math.sin(time * .009 + index * 1.7) * (energized ? 7 : 3); const fabric = ctx.createLinearGradient(x1, y1, x2, y2); fabric.addColorStop(0, colors[index % colors.length]); fabric.addColorStop(.52, '#fff1a6'); fabric.addColorStop(1, colors[(index + 1) % colors.length]); ctx.globalAlpha = energized ? .94 : .54; ctx.fillStyle = fabric; ctx.strokeStyle = '#342842'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.quadraticCurveTo((x1 + x2) * .5, (y1 + y2) * .5 + wave, x2, y2); ctx.lineTo(x2, y2 + 29); ctx.quadraticCurveTo((x1 + x2) * .5, (y1 + y2) * .5 + 24 - wave, x1, y1 + 28); ctx.closePath(); ctx.fill(); ctx.stroke(); if (energized) { ctx.globalAlpha = .75; ctx.strokeStyle = colors[(index + 2) % colors.length]; ctx.lineWidth = 3; for (let ribbon = 0; ribbon < 3; ribbon += 1) { ctx.beginPath(); ctx.moveTo(x2 - 4, y2 + 7 + ribbon * 8); ctx.quadraticCurveTo(x2 + 28, y2 + ribbon * 10 + Math.sin(time * .012 + ribbon) * 8, x2 + 60, y2 + 10 + ribbon * 7); ctx.stroke(); } } }
+    ctx.restore(); drawAviationAtlasFixture(1, 13148, 86, 92, { glow: active ? '#ff6fae' : null, glowBlur: 18 });
+    drawExplorationNameplate(13148, 98, 'SKY BANNER RUN', active ? 'BANNERS AT FULL SAIL' : 'FOLLOW THE WIND LINE', '#ff6fae', active);
+  }
+
+  function drawOliviaRelay(time) {
+    const entry = skyExplorationPlan[2]; if (!skyExplorationVisible(entry)) return;
+    const state = skyExplorationEntryState(entry); const active = Boolean(state?.completed); const power = active ? 1 : state?.power || (state?.progress || 0) / entry.waypointCount * .45; const x = 22245 - game.cameraX;
+    drawAviationAtlasFixture(2, 22245, 120, 154, { glow: power > .35 ? '#65d8ff' : null, glowBlur: 10 + power * 18 });
+    ctx.save(); ctx.translate(x, 8); ctx.globalCompositeOperation = 'screen'; ctx.strokeStyle = `rgba(101,216,255,${.16 + power * .62})`; ctx.lineWidth = 2 + power * 2;
+    for (let ring = 0; ring < 3; ring += 1) { const radius = 20 + ((time * .045 + ring * 32) % 92); ctx.globalAlpha = (.9 - radius / 120) * power; ctx.beginPath(); ctx.arc(0, 0, radius, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke(); }
+    ctx.globalAlpha = 1; ctx.fillStyle = power > .75 ? '#9bef70' : '#ff8d57'; ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 18; ctx.beginPath(); ctx.arc(0, 0, 7 + Math.sin(time * .012) * 2, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    drawExplorationNameplate(22245, 132, 'OLIVIA’S FLYBY RELAY', active ? 'AIRBORNE LINK ESTABLISHED' : 'AVIATION BEACON • STANDBY', active ? '#9bef70' : '#65d8ff', active);
+  }
+
+  function drawCloudCargoSecret(time) {
+    if (!skyExplorationVisible(cloudCargoSecretPlan, 380)) return;
+    const state = game.skyExploration?.secret; const reveal = state?.completed ? 1 : 0; const centerX = 26608 - game.cameraX; const cloudShift = reveal * 82;
+    ctx.save(); ctx.strokeStyle = '#342842'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(centerX - 72, 42); ctx.lineTo(centerX - 48, -4); ctx.moveTo(centerX + 72, 42); ctx.lineTo(centerX + 48, -4); ctx.stroke();
+    const crate = ctx.createLinearGradient(centerX - 58, 0, centerX + 58, 88); crate.addColorStop(0, '#ffd65a'); crate.addColorStop(.45, '#ff8d57'); crate.addColorStop(1, '#b45165'); ctx.fillStyle = crate; ctx.strokeStyle = '#342842'; ctx.lineWidth = 5; ctx.shadowColor = reveal ? '#ffd65a' : 'transparent'; ctx.shadowBlur = reveal ? 24 : 0; ctx.beginPath(); ctx.roundRect(centerX - 58, 1, 116, 72, 10); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0; ctx.strokeStyle = '#fff1a6'; ctx.lineWidth = 5; ctx.strokeRect(centerX - 48, 11, 96, 52); ctx.beginPath(); ctx.moveTo(centerX - 48, 11); ctx.lineTo(centerX + 48, 63); ctx.moveTo(centerX + 48, 11); ctx.lineTo(centerX - 48, 63); ctx.stroke(); ctx.fillStyle = '#342842'; ctx.font = '900 13px Arial'; ctx.textAlign = 'center'; ctx.fillText('OLIVIA AIR CARGO', centerX, 43);
+    const clouds = [{ x: 26478 - game.cameraX - cloudShift, y: 25, r: 54 }, { x: 26535 - game.cameraX - cloudShift, y: 5, r: 69 }, { x: 26662 - game.cameraX + cloudShift, y: 13, r: 70 }, { x: 26728 - game.cameraX + cloudShift, y: 32, r: 52 }];
+    clouds.forEach((cloud, index) => { const glow = ctx.createRadialGradient(cloud.x - 12, cloud.y - 15, 4, cloud.x, cloud.y, cloud.r); glow.addColorStop(0, 'rgba(255,250,229,.98)'); glow.addColorStop(.55, 'rgba(185,235,255,.96)'); glow.addColorStop(1, 'rgba(101,174,213,.82)'); ctx.fillStyle = glow; ctx.strokeStyle = '#4b6e8b'; ctx.lineWidth = 3; ctx.globalAlpha = reveal ? .74 : .98; ctx.beginPath(); ctx.arc(cloud.x, cloud.y, cloud.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); if (!reveal && index === 2) { ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = `rgba(255,214,90,${.55 + Math.sin(time * .012) * .25})`; ctx.beginPath(); ctx.arc(cloud.x - 34, cloud.y + 7, 4, 0, Math.PI * 2); ctx.fill(); ctx.globalCompositeOperation = 'source-over'; } });
+    ctx.restore(); if (state?.completed) drawExplorationNameplate(26608, 88, 'CLOUD CARGO', 'JACKPOT CRATE OPEN', '#ffd65a', true);
+  }
+
+  function drawSkyExplorationBackdrop(time) { drawPropellerPerch(time); drawSkyBannerRun(time); drawOliviaRelay(time); drawCloudCargoSecret(time); }
+
+  function drawSkyExplorationAccents(time) {
+    for (const platform of world.platforms) {
+      if (!platform.phase2Pilot || platform.x + platform.w < game.cameraX - 60 || platform.x > game.cameraX + canvas.width + 60) continue;
+      const state = platform.phase2Discovery === cloudCargoSecretPlan.id ? game.skyExploration?.secret : game.skyExploration?.destinations?.[platform.phase2Discovery]; const active = Boolean(state?.completed) || (state?.progress || 0) >= (platform.phase2Waypoint || 0); const accent = platform.phase2Discovery === 'sky-banner-run' ? '#ff6fae' : platform.phase2Discovery === 'cloud-cargo' ? '#ffd65a' : '#65d8ff'; const x = platform.x - game.cameraX;
+      ctx.save(); ctx.fillStyle = accent; ctx.shadowColor = accent; ctx.shadowBlur = active ? 13 : 4; ctx.globalAlpha = active ? .72 + Math.sin(time * .009 + platform.x) * .16 : .24;
+      for (let bulb = 16; bulb < platform.w - 10; bulb += 29) { ctx.beginPath(); ctx.arc(x + bulb, platform.y + 5, active ? 3.1 : 2.1, 0, Math.PI * 2); ctx.fill(); }
+      if (platform.phase2Art === 'cargo-sling' || platform.phase2Art === 'cloud-cargo') { ctx.strokeStyle = '#fff1a6'; ctx.lineWidth = 2; ctx.setLineDash([8, 6]); ctx.beginPath(); ctx.moveTo(x + 20, platform.y - 8); ctx.lineTo(x + platform.w - 20, platform.y - 8); ctx.stroke(); ctx.setLineDash([]); }
+      ctx.restore();
+    }
   }
 
   function drawPlatform(platform, time) {
@@ -2407,6 +2943,72 @@
     game.impactTexts.forEach((text) => { const x = text.x - game.cameraX; ctx.globalAlpha = clamp(text.life, 0, 1); ctx.textAlign = 'center'; ctx.font = `900 ${text.size || 27}px Arial`; ctx.strokeStyle = '#30203e'; ctx.lineWidth = 6; ctx.strokeText(text.text, x, text.y); ctx.fillStyle = text.color; ctx.fillText(text.text, x, text.y); }); ctx.globalAlpha = 1;
   }
 
+  function drawExplorationRelayFlyby(time) {
+    const flyby = game.skyExploration?.relayFlyby;
+    if (!flyby) return;
+    const progress = clamp(flyby.timer / flyby.duration, 0, 1);
+    const eased = smoothstep(progress);
+    const x = lerp(-250, canvas.width + 260, eased);
+    const y = 104 + Math.sin(time * .006) * 7 - Math.sin(progress * Math.PI) * 30;
+    ctx.save(); ctx.globalCompositeOperation = 'screen'; ctx.strokeStyle = 'rgba(101,216,255,.58)'; ctx.lineWidth = 4;
+    for (let trail = 0; trail < 4; trail += 1) { ctx.globalAlpha = .48 - trail * .08; ctx.beginPath(); ctx.moveTo(x - 118 - trail * 35, y + 12 + trail * 5); ctx.lineTo(x - 58 - trail * 18, y + 9 + trail * 4); ctx.stroke(); }
+    ctx.restore();
+    drawPlaneCell(2, x, y, 235, -.06);
+    ctx.save(); ctx.translate(x + 90, y - 10); ctx.rotate(time * .025); ctx.strokeStyle = '#ffd65a'; ctx.shadowColor = '#ffd65a'; ctx.shadowBlur = 12; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, 16 + Math.sin(time * .014) * 2, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+  }
+
+  function drawOliviaAirbandTransmission(time) {
+    const transmission = game.skyExploration?.transmission;
+    if (!transmission) return;
+    const elapsed = transmission.maxTimer - transmission.timer;
+    const visibility = clamp(Math.min(elapsed / .18, transmission.timer / .32), 0, 1);
+    const compactDisplay = canvas.getBoundingClientRect().width < 520;
+    const width = Math.min(compactDisplay ? 690 : 470, canvas.width - 38);
+    const height = compactDisplay ? 142 : 112;
+    const x = canvas.width - width - 19;
+    const y = 93;
+    const portraitWidth = compactDisplay ? 128 : 108;
+    const portraitHeight = compactDisplay ? 98 : 78;
+    const textX = x + portraitWidth + (compactDisplay ? 34 : 24);
+    ctx.save(); ctx.globalAlpha = visibility;
+    if (!game.reducedShake) ctx.translate((1 - smoothstep(clamp(elapsed / .34, 0, 1))) * 18, 0);
+    const panel = ctx.createLinearGradient(x, y, x + width, y + height); panel.addColorStop(0, 'rgba(25,24,58,.97)'); panel.addColorStop(.52, 'rgba(46,43,82,.97)'); panel.addColorStop(1, 'rgba(21,91,105,.97)');
+    ctx.fillStyle = panel; ctx.strokeStyle = '#65d8ff'; ctx.lineWidth = 3; ctx.shadowColor = '#65d8ff'; ctx.shadowBlur = 14; ctx.beginPath(); ctx.roundRect(x, y, width, height, 18); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
+    ctx.save(); ctx.beginPath(); ctx.roundRect(x + 10, y + 10, portraitWidth, portraitHeight, 13); ctx.clip(); ctx.fillStyle = '#15152f'; ctx.fillRect(x + 10, y + 10, portraitWidth, portraitHeight);
+    const cellW = images.plane.width / 3; const cellH = images.plane.height / 2;
+    ctx.drawImage(images.plane, 0, 0, cellW, cellH, x + 2, y + 4, portraitWidth + 22, portraitHeight + 14); ctx.restore();
+    ctx.strokeStyle = '#ff6fae'; ctx.lineWidth = 3; ctx.beginPath(); ctx.roundRect(x + 10, y + 10, portraitWidth, portraitHeight, 13); ctx.stroke();
+    ctx.textAlign = 'left'; ctx.fillStyle = '#65d8ff'; ctx.font = `900 ${compactDisplay ? 15 : 11}px Arial`; ctx.fillText(`${transmission.speaker} • ${transmission.channel}`, textX, y + (compactDisplay ? 28 : 22));
+    ctx.fillStyle = '#fff8ea'; ctx.font = `800 ${compactDisplay ? 20 : 15}px Arial`; ctx.fillText('“Taco Hero! I see your beacon—', textX, y + (compactDisplay ? 64 : 48)); ctx.fillText('air-drop incoming!”', textX, y + (compactDisplay ? 90 : 68));
+    ctx.fillStyle = transmission.rewardVisible ? '#ffd65a' : '#9bef70'; ctx.font = `900 ${compactDisplay ? 14 : transmission.rewardVisible ? 10 : 11}px Arial`; ctx.fillText(transmission.rewardVisible ? 'REWARD • 14 TACOS • RAINBOW + MAGNET' : 'GUIDANCE LOCK • OLIVIA INBOUND', textX, y + (compactDisplay ? 124 : 94));
+    for (let bar = 0; bar < 5; bar += 1) { const pulse = (Math.sin(time * .012) + 1) * 2.7; ctx.fillStyle = pulse > bar ? '#9bef70' : 'rgba(255,255,255,.2)'; ctx.fillRect(x + width - 68 + bar * 10, y + 14 - bar * 2, 6, 5 + bar * 2); }
+    ctx.restore();
+  }
+
+  function drawSkyExplorationCompletionBanner(time) {
+    const banner = game.skyExploration?.completionBanner;
+    if (!banner) return;
+    const enter = clamp((banner.maxTimer - banner.timer) / .22, 0, 1);
+    const exit = clamp(banner.timer / .34, 0, 1);
+    const visibility = Math.min(enter, exit);
+    const secret = banner.mode === 'secret';
+    const compactDisplay = canvas.getBoundingClientRect().width < 520;
+    const width = Math.min(compactDisplay ? (secret ? 840 : 700) : (secret ? 700 : 545), canvas.width - (compactDisplay ? 48 : secret ? 58 : 130));
+    const height = compactDisplay ? (secret ? 160 : 116) : (secret ? 138 : 94);
+    const x = (canvas.width - width) * .5;
+    const y = compactDisplay ? (secret ? 108 : 126) : secret ? 126 : 145;
+    const accent = secret ? '#ffd65a' : banner.mode === 'fabric-spectacle' ? '#ff6fae' : '#65d8ff';
+    ctx.save(); ctx.globalAlpha = visibility; ctx.translate(canvas.width * .5, y + height * .5);
+    if (!game.reducedShake) { const pop = (secret ? .9 : .96) + enter * (secret ? .1 : .04) + Math.sin(time * .015) * (secret ? .012 : .004); ctx.scale(pop, pop); }
+    ctx.translate(-canvas.width * .5, -(y + height * .5));
+    const panel = ctx.createLinearGradient(x, y, x + width, y + height); panel.addColorStop(0, secret ? 'rgba(51,25,70,.98)' : 'rgba(35,28,62,.94)'); panel.addColorStop(.5, secret ? 'rgba(132,57,67,.99)' : 'rgba(85,42,78,.95)'); panel.addColorStop(1, secret ? 'rgba(27,91,98,.98)' : 'rgba(26,78,90,.94)');
+    ctx.fillStyle = panel; ctx.strokeStyle = accent; ctx.lineWidth = secret ? 5 : 3; ctx.shadowColor = accent; ctx.shadowBlur = secret ? 28 : 14; ctx.beginPath(); ctx.roundRect(x, y, width, height, secret ? 23 : 17); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
+    if (secret) { for (let index = 0; index < 10; index += 1) { const sx = x + 36 + index * (width - 72) / 9; const sy = y + 20 + Math.sin(time * .012 + index) * 6; ctx.fillStyle = ['#ffd65a', '#ff6fae', '#65d8ff'][index % 3]; ctx.save(); ctx.translate(sx, sy); ctx.rotate(index * .7); ctx.fillRect(-6, -2, 12, 4); ctx.fillRect(-2, -6, 4, 12); ctx.restore(); } }
+    ctx.textAlign = 'center'; ctx.fillStyle = '#fff1a6'; ctx.font = `900 ${compactDisplay ? secret ? 17 : 15 : secret ? 13 : 11}px Arial`; ctx.fillText(banner.eyebrow, canvas.width * .5, y + (compactDisplay ? secret ? 31 : 27 : secret ? 28 : 21));
+    ctx.fillStyle = '#fff9ed'; ctx.font = `900 ${compactDisplay ? secret ? 39 : banner.title.length > 25 ? 29 : 33 : secret ? 33 : banner.title.length > 25 ? 23 : 27}px Arial`; ctx.fillText(banner.title, canvas.width * .5, y + (compactDisplay ? secret ? 82 : 65 : secret ? 71 : 52));
+    ctx.fillStyle = accent; ctx.font = `900 ${compactDisplay ? secret ? 19 : 17 : secret ? 15 : 13}px Arial`; ctx.fillText(banner.reward, canvas.width * .5, y + (compactDisplay ? secret ? 127 : 99 : secret ? 109 : 79)); ctx.restore();
+  }
+
   function drawHUD(time) {
     ctx.save(); ctx.fillStyle = 'rgba(32,29,61,.36)'; ctx.strokeStyle = 'rgba(255,226,126,.62)'; ctx.lineWidth = 3; ctx.fillRect(14, 14, 330, 174); ctx.strokeRect(14, 14, 330, 174);
     ctx.fillStyle = '#fff5d2'; ctx.font = '900 22px Arial'; ctx.textAlign = 'left'; ctx.fillText('World 1-2 • Sky-High Rescue', 26, 41); ctx.font = '17px Arial'; ctx.fillText(`Score: ${game.score.toLocaleString()}`, 26, 68); ctx.fillText(`Tacos: ${game.collected}/${game.totalTacos}`, 26, 94); ctx.fillStyle = '#65d8ff'; ctx.font = '900 14px Arial'; ctx.fillText(`✉ AIR MAIL ${game.airMail}/5  •  SKY STREAK ${game.skyStreak.count}`, 26, 118); ctx.fillStyle = '#ffd65a'; ctx.font = '900 14px Arial'; ctx.fillText(`Splats ${game.defeated}  •  Plane ${game.crashLanded ? 'Landed-ish' : game.ambush.stage >= 3 ? 'Guac’d' : 'Airborne'}`, 26, 140);
@@ -2421,11 +3023,17 @@
 
   function draw(time) {
     ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.save(); if (game.cameraShake > 0) { const amount = game.reducedShake ? game.cameraShake * .2 : game.cameraShake; ctx.translate((random() - .5) * amount, (random() - .5) * amount * .6); }
-    drawBackground(time); drawAirfieldCrew(time); drawRescueSpeedFX(time); world.platforms.forEach((p) => drawPlatform(p, time)); world.collectibles.forEach((item) => drawCollectible(item, time)); world.checkpoints.forEach((checkpoint) => drawCheckpoint(checkpoint, time));
-    world.enemies.forEach((enemy) => drawEnemy(enemy, time)); drawPinata(time); drawOpeningPlane(); drawBannerFlyby(time); drawAmbush(time); drawRescuePlane(time); drawCrashSite(time); drawGoal(time); heroCore.drawRespawnFX(ctx, game.respawn, player, game.cameraX, time); drawPlayer(time); drawParticles(); drawPinataBurst(time); ctx.restore(); drawHUD(time);
+    const cameraLift = game.skyExploration?.cameraLift || 0;
+    drawBackground(time); drawRescueSpeedFX(time);
+    ctx.save(); ctx.translate(0, cameraLift);
+    drawSkyExplorationBackdrop(time); drawAirfieldCrew(time); world.platforms.forEach((p) => drawPlatform(p, time)); drawSkyExplorationAccents(time); world.collectibles.forEach((item) => drawCollectible(item, time)); world.checkpoints.forEach((checkpoint) => drawCheckpoint(checkpoint, time));
+    world.enemies.forEach((enemy) => drawEnemy(enemy, time)); drawPinata(time); drawCrashSite(time); drawGoal(time); ctx.restore();
+    drawOpeningPlane(); drawBannerFlyby(time); drawExplorationRelayFlyby(time); drawAmbush(time); drawRescuePlane(time);
+    ctx.save(); ctx.translate(0, cameraLift); heroCore.drawRespawnFX(ctx, game.respawn, player, game.cameraX, time); drawPlayer(time); drawParticles(); drawPinataBurst(time); ctx.restore();
+    ctx.restore(); drawHUD(time); drawSkyExplorationCompletionBanner(time); drawOliviaAirbandTransmission(time);
     if (qa) canvas.dataset.qaState = JSON.stringify({
       sourceVersion: SOURCE_VERSION,
-      state: game.state, player: { x: Math.round(player.x), y: Math.round(player.y), vx: Math.round(player.vx), vy: Math.round(player.vy), grounded: player.grounded },
+      state: game.state, hearts: game.hearts, player: { x: Math.round(player.x), y: Math.round(player.y), vx: Math.round(player.vx), vy: Math.round(player.vy), grounded: player.grounded },
       superHero: { ...sharedAbilities.snapshot(game.abilities), collisionWidth: player.w, collisionHeight: player.h },
       heroPhysics, respawn: {
         active: game.respawn.active,
@@ -2472,6 +3080,51 @@
           localPatrol: Boolean(enemy.localPatrol),
         })),
       },
+      skyExplorationPhase2: game.skyExploration ? {
+        version: game.skyExploration.version,
+        scope: game.skyExploration.scope,
+        normalRouteUnaffected: game.skyExploration.normalRouteUnaffected,
+        noRequiredSuperTraversal: game.skyExploration.noRequiredSuperTraversal,
+        scriptedZoneSafe: game.skyExploration.scriptedZoneSafe,
+        geometry: skyExplorationGeometryAudit,
+        destinationCenters: [...skyExplorationPlan, cloudCargoSecretPlan].map((entry) => Math.round(entry.trigger.x + entry.trigger.w * .5)),
+        minimumDestinationSpacing: [...skyExplorationPlan, cloudCargoSecretPlan].map((entry) => entry.trigger.x + entry.trigger.w * .5).sort((a, b) => a - b).slice(1).reduce((minimum, center, index) => Math.min(minimum, center - [skyExplorationPlan[0], skyExplorationPlan[1], skyExplorationPlan[2], cloudCargoSecretPlan].map((entry) => entry.trigger.x + entry.trigger.w * .5).sort((a, b) => a - b)[index]), Infinity),
+        standardViewportSeparated: [...skyExplorationPlan, cloudCargoSecretPlan].every((entry, index, entries) => entries.every((other, otherIndex) => index === otherIndex || Math.abs((entry.trigger.x + entry.trigger.w * .5) - (other.trigger.x + other.trigger.w * .5)) > canvas.width)),
+        camera: { lift: Number(game.skyExploration.cameraLift.toFixed(2)), targetLift: Number(game.skyExploration.cameraTargetLift.toFixed(2)), maximumLift: 118, backgroundSeamsExposed: false },
+        completionBanner: game.skyExploration.completionBanner,
+        interaction: game.skyExploration.interaction,
+        transmission: game.skyExploration.transmission,
+        relayFlyby: game.skyExploration.relayFlyby,
+        supplyDrop: game.skyExploration.supplyDrop,
+        originalFlybyCount: game.flybys.length,
+        independentRelayFlyby: game.skyExploration.relayFlyby?.independent ?? true,
+        scriptSafeguards: {
+          propellerBeforeFirstFlybyCorridor: skyExplorationPlan[0].routeRange[1] < FIRST_FLYBY_CORRIDOR.start,
+          bannerAfterSafetyCorridor: skyExplorationPlan[1].routeRange[0] > FIRST_FLYBY_CORRIDOR.end,
+          bannerBeforeTacoDropFlyby: skyExplorationPlan[1].routeRange[1] < flybyDefs[1].trigger,
+          relayAfterInvertedFlybyWindow: skyExplorationPlan[2].routeRange[0] > flybyDefs[2].trigger + 3000,
+          relayBeforeAmbushTrigger: skyExplorationPlan[2].routeRange[1] < 22900,
+          cloudCargoBeforeRescueTrigger: cloudCargoSecretPlan.routeRange[1] < 27000,
+          cloudCargoRequiresAmbushStage: cloudCargoSecretPlan.requiredAmbushStage,
+        },
+        completionHierarchy: {
+          visibleRoutes: skyExplorationPlan.map((entry) => entry.completionTitle),
+          trueSecret: cloudCargoSecretPlan.completionTitle,
+          discoveredBannerCount: [...skyExplorationPlan, cloudCargoSecretPlan].filter((entry) => entry.completionTitle.includes('DISCOVERED!')).length,
+        },
+        frozenPhase1Balance: {
+          tacoPowerThreshold: sharedAbilities.definitions.tacoPower.threshold,
+          tacoContribution: sharedAbilities.definitions.tacoPower.contributions.taco,
+          premiumContribution: sharedAbilities.definitions.tacoPower.contributions.premiumTaco,
+          normalJumpVelocity: heroPhysics.jumpVelocity,
+          superJumpVelocity: heroPhysics.superJumpVelocity,
+          collisionWidth: player.w,
+          collisionHeight: player.h,
+        },
+        destinations: skyExplorationPlan.map((entry) => ({ id: entry.id, name: entry.name, presentation: entry.presentation, trigger: entry.trigger, routeRange: entry.routeRange, worldPercent: entry.worldPercent, score: entry.score, bonusTacos: entry.bonusTacos, rewardLabel: entry.rewardLabel, ...game.skyExploration.destinations[entry.id] })),
+        secret: { id: cloudCargoSecretPlan.id, name: cloudCargoSecretPlan.name, presentation: cloudCargoSecretPlan.presentation, trigger: cloudCargoSecretPlan.trigger, routeRange: cloudCargoSecretPlan.routeRange, worldPercent: cloudCargoSecretPlan.worldPercent, score: cloudCargoSecretPlan.score, bonusTacos: cloudCargoSecretPlan.bonusTacos, rewardLabel: cloudCargoSecretPlan.rewardLabel, ...game.skyExploration.secret },
+        rewardItems: world.collectibles.filter((item) => item.explorationReward).map((item) => ({ discovery: item.phase2Discovery, rainbow: Boolean(item.rainbowReward), collected: item.collected, dynamic: Boolean(item.dynamic) })),
+      } : null,
       pinata: world.pinata ? {
         hits: world.pinata.hits, targetHits: world.pinata.targetHits, broken: world.pinata.broken, x: world.pinata.x,
         rewardTacos: world.collectibles.filter((item) => item.pinataReward).length,
