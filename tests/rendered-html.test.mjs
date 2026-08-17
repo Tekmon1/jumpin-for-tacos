@@ -1196,7 +1196,7 @@ test("ships World 1 with authored seamless panorama progressions", async () => {
     assert.match(showdownForeground, new RegExp(filename.replace(".", "\\.")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(showdownForegroundHtml, /level1-3\.js\?v=27/);
+  assert.match(showdownForegroundHtml, /level1-3\.js\?v=28/);
   assert.match(showdownForeground, /function drawPaintedTerrainSlice/);
   assert.match(showdownForeground, /checkpointArtGroundedByVisibleBaseline: true/);
   assert.match(showdownForeground, /independentCheckpointShadows: true/);
@@ -1467,8 +1467,8 @@ test("remasters the complete World 1-3 showdown enemy, boss, stampede, and NPC c
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /level1-3\.js\?v=27/);
-  assert.match(runtime, /SOURCE_VERSION = 'w1-3-v27-alternating-super-run'/);
+  assert.match(html, /level1-3\.js\?v=28/);
+  assert.match(runtime, /SOURCE_VERSION = 'w1-3-v28-super-exploration'/);
   assert.match(runtime, /function remasteredEnemyFrame/);
   assert.match(runtime, /enemyAnimationFrames: 8/);
   assert.match(runtime, /behaviorLinked: true/);
@@ -1505,7 +1505,59 @@ test("authors World 1-3 combat around readable formations, full-platform patrols
   assert.match(runtime, /previousBottom: player\.previousBottom/);
   assert.match(runtime, /previousTargetTop: previousEnemyTop/);
   assert.match(runtime, /player\.y = Math\.min\(player\.y, enemy\.y - player\.h - 1\)/);
-  assert.match(html, /level1-3\.js\?v=27/);
+  assert.match(html, /level1-3\.js\?v=28/);
+});
+
+test("adds World 1-3 Phase 2 exploration before the unchanged El Guacodillo arena", async () => {
+  const runtime = await readFile(new URL("../public/game/level1-3.js", import.meta.url), "utf8");
+  const html = await readFile(new URL("../public/game/level1-3.html", import.meta.url), "utf8");
+  const approvedWorld12 = await readFile(new URL("../public/game/level1-2.js", import.meta.url), "utf8");
+  const art = [
+    "world1_3_super_pepper_mine_lift_v1.webp",
+    "world1_3_super_salsa_silo_v1.webp",
+    "world1_3_super_wanted_tower_v1.webp",
+    "world1_3_super_guac_lookout_v1.webp",
+  ];
+
+  for (const filename of art) {
+    assert.match(runtime, new RegExp(filename.replace(/\./g, "\\.")));
+    await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
+  }
+  assert.match(html, /level1-3\.js\?v=28/);
+  assert.match(runtime, /SHOWDOWN_EXPLORATION_VERSION = 'world-1-3-phase2-v1'/);
+  assert.match(runtime, /id: 'pepper-mine-lift'/);
+  assert.match(runtime, /id: 'salsa-silo'/);
+  assert.match(runtime, /id: 'wanted-tower'/);
+  assert.match(runtime, /id: 'guac-lookout'/);
+  assert.match(runtime, /id: 'outlaw-stash'/);
+  assert.match(runtime, /completionTitle: 'PEPPER LIFT ONLINE'/);
+  assert.match(runtime, /completionTitle: 'SALSA PRESSURE PERFECT!'/);
+  assert.match(runtime, /completionTitle: 'WANTED TOWER LIT'/);
+  assert.match(runtime, /completionTitle: 'GUAC LOOKOUT SECURED'/);
+  assert.match(runtime, /completionTitle: 'OUTLAW STASH DISCOVERED!'/);
+  assert.equal((runtime.match(/completionTitle: '[^']*DISCOVERED!/g) || []).length, 1);
+  assert.match(runtime, /function buildShowdownExplorationGeometry/);
+  assert.match(runtime, /allEntriesRequireSuper/);
+  assert.match(runtime, /groundFallbackOpen: true/);
+  assert.ok(runtime.indexOf("applyShowdownRemaster();") < runtime.indexOf("buildShowdownExplorationGeometry();"));
+  assert.match(runtime, /PHASE2_BOSS_BUFFER_X = 24320/);
+  assert.match(runtime, /phase2EndsBeforeBoss/);
+  assert.match(runtime, /noPhase2PlatformsInArena/);
+  assert.match(runtime, /interactionClearedAtBoss/);
+  assert.match(runtime, /function finishExplorationInteractionForBoss/);
+  assert.match(runtime, /rewardPlatformId: 'phase2-guac-lookout-deck'/);
+  assert.match(runtime, /rewardLanding:/);
+  assert.match(runtime, /horizontallySafe/);
+  assert.match(runtime, /allCompletionCountsAtMostOne/);
+  assert.match(runtime, /allRewardSpawnCountsAtMostOne/);
+  assert.match(runtime, /world1_1_taco_trekker_olivia_v1\.png/);
+  assert.match(runtime, /Take this—you’re gonna want some lime/);
+  assert.match(runtime, /function activateLimeShield/);
+  const hurt = runtime.slice(runtime.indexOf("function hurtPlayer"), runtime.indexOf("function announceSuper"));
+  assert.ok(hurt.indexOf("if (game.limeShield)") < hurt.indexOf("sharedAbilities.absorbDamage"));
+  assert.match(runtime, /damagePriority: 'lime-before-super-before-hearts'/);
+  assert.match(runtime, /frozenPhase1Balance/);
+  assert.match(approvedWorld12, /SOURCE_VERSION = 'w1-2-v38-exploration-polish'/);
 });
 
 test("ships the complete three-level Starlight Taco Carnival world", async () => {

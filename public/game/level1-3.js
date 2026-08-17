@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-3-v27-alternating-super-run';
+  const SOURCE_VERSION = 'w1-3-v28-super-exploration';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -54,6 +54,52 @@
     { x: 22400, name: 'Parade Pit', sign: 'DO NOT TAUNT THE PRODUCE.', radio: 'He practiced his evil laugh all week. Please pretend it is scary.', accent: '#ff6fae', look: 'parade' },
     { x: 24440, name: 'Showdown Gate', sign: 'GUAC PRESSURE: CRITICAL.', radio: 'Olivia here: three openings, three stomps. The hat is structural. Probably.', accent: '#b78cff', look: 'neon' },
   ];
+  const SHOWDOWN_EXPLORATION_VERSION = 'world-1-3-phase2-v1';
+  const BOSS_TRIGGER_X = 24920;
+  const PHASE2_BOSS_BUFFER_X = 24320;
+  const showdownExplorationPlan = Object.freeze([
+    Object.freeze({
+      id: 'pepper-mine-lift', name: 'Pepper Mine Lift', presentation: 'mechanical-activation',
+      arrivalTitle: 'PEPPER MINE LIFT REACHED', completionTitle: 'PEPPER LIFT ONLINE',
+      rewardLabel: '+1,300 SCORE  •  10-TACO ORE HAUL', score: 1300, bonusTacos: 10, rainbowTacos: 0,
+      trigger: Object.freeze({ x: 4680, y: 0, w: 240, h: 176 }),
+      routeRange: Object.freeze([3820, 5040]), rewardX: 4800, rewardY: 72,
+      rewardPlatformId: 'phase2-pepper-lift-deck', waypointCount: 3, worldPercent: Object.freeze([10.7, 14.1]),
+    }),
+    Object.freeze({
+      id: 'salsa-silo', name: 'Salsa Silo', presentation: 'pressure-spectacle',
+      arrivalTitle: 'SALSA SILO CATWALK REACHED', completionTitle: 'SALSA PRESSURE PERFECT!',
+      rewardLabel: '+2,200 SCORE  •  14-TACO PRESSURE BURST', score: 2200, bonusTacos: 14, rainbowTacos: 1,
+      trigger: Object.freeze({ x: 13620, y: 0, w: 250, h: 176 }),
+      routeRange: Object.freeze([12420, 14040]), rewardX: 13745, rewardY: 62,
+      rewardPlatformId: 'phase2-salsa-silo-deck', waypointCount: 5, worldPercent: Object.freeze([34.7, 39.2]),
+    }),
+    Object.freeze({
+      id: 'wanted-tower', name: 'El Guacadillo Wanted Tower', presentation: 'boss-foreshadowing',
+      arrivalTitle: 'WANTED TOWER REACHED', completionTitle: 'WANTED TOWER LIT',
+      rewardLabel: '+1,800 SCORE  •  12-TACO BOUNTY', score: 1800, bonusTacos: 12, rainbowTacos: 0,
+      trigger: Object.freeze({ x: 19140, y: 0, w: 250, h: 168 }),
+      routeRange: Object.freeze([18120, 19880]), rewardX: 19265, rewardY: 58,
+      rewardPlatformId: 'phase2-wanted-tower-deck', waypointCount: 3, worldPercent: Object.freeze([50.6, 55.5]),
+    }),
+    Object.freeze({
+      id: 'guac-lookout', name: 'Guac Lookout', presentation: 'character-preparation',
+      arrivalTitle: 'GUAC LOOKOUT REACHED', completionTitle: 'GUAC LOOKOUT SECURED',
+      rewardLabel: '+2,600 SCORE  •  9 TACOS  •  LIME SHIELD', score: 2600, bonusTacos: 9, rainbowTacos: 1,
+      trigger: Object.freeze({ x: 23920, y: 0, w: 250, h: 176 }),
+      routeRange: Object.freeze([23180, PHASE2_BOSS_BUFFER_X]), rewardX: 24045, rewardY: 60,
+      rewardPlatformId: 'phase2-guac-lookout-deck', waypointCount: 3, worldPercent: Object.freeze([64.7, 67.9]),
+    }),
+  ]);
+  const outlawStashPlan = Object.freeze({
+    id: 'outlaw-stash', name: 'Outlaw Stash', presentation: 'true-secret',
+    completionTitle: 'OUTLAW STASH DISCOVERED!',
+    rewardLabel: '+4,200 SCORE  •  22-TACO JACKPOT  •  3 RAINBOW TACOS',
+    score: 4200, bonusTacos: 22, rainbowTacos: 3,
+    trigger: Object.freeze({ x: 19640, y: 0, w: 230, h: 142 }),
+    routeRange: Object.freeze([19390, 19920]), rewardX: 19755, rewardY: 32,
+    rewardPlatformId: 'phase2-outlaw-stash', waypointCount: 2,
+  });
   const STAMPEDE_CORRIDOR = Object.freeze({ start: 5900, end: 10820 });
   const SHOWDOWN_COMBAT_END = sections[4].start;
   const SHOWDOWN_GROUND_PLAN = Object.freeze([
@@ -132,7 +178,8 @@
     chainCount: 0, chainTimer: 0, bestChain: 0, defeated: 0,
     perfectStomps: 0, goldenSombrero: false, fiestaPower: 0, chainTrailTimer: 0,
     radioQueue: '', radioDelay: 0,
-    abilities: sharedAbilities.createState(),
+    abilities: sharedAbilities.createState(), limeShield: false, activePower: null,
+    showdownExploration: createShowdownExplorationState(),
     stampede: { active: false, done: false, x: 0, speed: 0, nearMissArmed: false, nearMisses: 0, reactionTimer: 0, reactionIndex: -1 },
     bossActive: false, bossHits: 0, bossDefeated: false,
     bossAttackCooldown: 2.2, bossAttackIndex: 0, bossHazards: [], bossIntroTimer: 0, gateUnlockTimer: 0,
@@ -185,9 +232,11 @@
 
   let lastFrame = 0;
   let randomSeed = 0x5A15A12;
+  let showdownExplorationGeometryAudit = null;
   const params = new URLSearchParams(location.search);
   const qa = ['terminal.local', '127.0.0.1', 'localhost'].includes(location.hostname);
   const previewStart = qa ? Number(params.get('startX') || 0) : 0;
+  const previewStartY = qa && params.has('startY') ? Number(params.get('startY')) : 330;
   const previewAutoRun = qa && params.get('autoRun') === '1';
   const previewAutoJump = qa && params.get('autoJump') === '1';
   const previewBossHits = qa ? Number(params.get('bossHits') || 0) : 0;
@@ -199,14 +248,61 @@
   const previewMagnet = qa && params.get('magnet') === '1';
   const previewRespawn = qa && params.get('respawn') === '1';
   const previewRespawnCheckpoint = qa ? Number(params.get('respawnCheckpoint') || -1) : -1;
+  const previewPhase2Ready = qa ? params.get('phase2Ready') || '' : '';
+  const previewPhase2Complete = qa ? params.get('phase2Complete') || '' : '';
+  const previewPhase2Secret = qa && params.get('phase2Secret') === '1';
+  const previewLimeShield = qa && params.get('limeShield') === '1';
+  const previewPowerDown = qa && params.get('powerDown') === '1';
+  const previewForceNormal = qa && params.get('forceNormal') === '1';
+  const previewNoDamage = qa && params.get('noDamage') === '1';
+  const previewCapture = qa && params.get('capture') === '1';
 
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
   const lerp = (a, b, t) => a + (b - a) * t;
+  const smoothstep = (value) => { const t = clamp(value, 0, 1); return t * t * (3 - 2 * t); };
   const intersects = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
   const seeded = () => {
     randomSeed = (randomSeed * 1664525 + 1013904223) >>> 0;
     return randomSeed / 4294967296;
   };
+
+  function createShowdownExplorationState() {
+    return {
+      version: SHOWDOWN_EXPLORATION_VERSION,
+      scope: 'world-1-3-pre-boss-only',
+      normalRouteUnaffected: true,
+      noRequiredSuperTraversal: true,
+      bossArenaGeometryPreserved: true,
+      bossScriptPreserved: true,
+      bossTransitionCleanups: 0,
+      completionBanner: null,
+      interaction: null,
+      transmission: null,
+      cameraLift: 0,
+      cameraTargetLift: 0,
+      previewPowerDownTriggered: false,
+      destinations: Object.fromEntries(showdownExplorationPlan.map((entry) => [entry.id, {
+        revealed: false, completed: false, completedAt: null, progress: 0,
+        arrivalAcknowledged: false, activationStarted: false, activationCount: 0,
+        completionCount: 0, rewardSpawned: false, rewardSpawnCount: 0,
+        rewardSurfaceId: null, environmentEnergized: false,
+        spectacleTimer: 0, spectacleMaxTimer: 0, power: 0,
+      }])),
+      secret: {
+        revealed: false, completed: false, completedAt: null, progress: 0,
+        arrivalAcknowledged: false, completionCount: 0,
+        rewardSpawned: false, rewardSpawnCount: 0, rewardSurfaceId: null,
+        environmentEnergized: false, revealTimer: 0, revealMaxTimer: 0, crateOpen: 0,
+      },
+    };
+  }
+
+  function showdownExplorationEntryState(entry) {
+    if (!game.showdownExploration || !entry) return null;
+    return entry.id === outlawStashPlan.id
+      ? game.showdownExploration.secret
+      : game.showdownExploration.destinations[entry.id] || null;
+  }
 
   function currentSection(x = player.x) {
     return sections.find((section) => x >= section.start && x < section.end) || sections[sections.length - 1];
@@ -276,6 +372,93 @@
       });
       index += 1;
     }
+  }
+
+  function findExplorationAccessBase(targetX) {
+    return world.platforms
+      .filter((platform) => !platform.ground && !platform.secret && !platform.phase2Pilot)
+      .slice()
+      .sort((a, b) => Math.abs(a.x + a.w / 2 - targetX) - Math.abs(b.x + b.w / 2 - targetX))[0] || null;
+  }
+
+  function markExplorationAccessBase(targetX, discoveryId) {
+    const platform = findExplorationAccessBase(targetX);
+    if (!platform) return null;
+    platform.phase2Pilot = true;
+    platform.phase2AccessBase = true;
+    platform.phase2Discovery = discoveryId;
+    platform.phase2Waypoint = 0;
+    return platform;
+  }
+
+  function addExplorationPlatform(data) {
+    return addPlatform({
+      h: 24, accessible: true, phase2Pilot: true, phase2New: true,
+      ...data,
+    });
+  }
+
+  function buildShowdownExplorationGeometry() {
+    const bases = {
+      'pepper-mine-lift': markExplorationAccessBase(3920, 'pepper-mine-lift'),
+      'salsa-silo': markExplorationAccessBase(12380, 'salsa-silo'),
+      'wanted-tower': markExplorationAccessBase(18180, 'wanted-tower'),
+      'guac-lookout': markExplorationAccessBase(23280, 'guac-lookout'),
+    };
+    const authored = [
+      addExplorationPlatform({ id: 'phase2-pepper-mine-beam', x: 4050, y: 142, w: 178, style: 'mesa', phase2Discovery: 'pepper-mine-lift', phase2Waypoint: 1, phase2Art: 'mine-beam' }),
+      addExplorationPlatform({ id: 'phase2-pepper-mine-hoist', x: 4320, y: 74, w: 170, style: 'mesa', moving: true, axis: 'y', range: 14, speed: .92, phase: .8, phase2Discovery: 'pepper-mine-lift', phase2Waypoint: 2, phase2Art: 'mine-hoist' }),
+      addExplorationPlatform({ id: 'phase2-pepper-lift-deck', x: 4680, y: 56, w: 240, style: 'mesa', phase2Discovery: 'pepper-mine-lift', phase2Waypoint: 3, phase2Art: 'mine-deck' }),
+
+      addExplorationPlatform({ id: 'phase2-salsa-pipe-rise', x: 12540, y: 132, w: 180, style: 'awning', phase2Discovery: 'salsa-silo', phase2Waypoint: 1, phase2Art: 'salsa-pipe' }),
+      addExplorationPlatform({ id: 'phase2-salsa-valve', x: 12810, y: 66, w: 175, style: 'awning', moving: true, axis: 'x', range: 16, speed: 1.04, phase: 1.4, phase2Discovery: 'salsa-silo', phase2Waypoint: 2, phase2Art: 'salsa-valve' }),
+      addExplorationPlatform({ id: 'phase2-salsa-catwalk-a', x: 13100, y: 116, w: 185, style: 'awning', phase2Discovery: 'salsa-silo', phase2Waypoint: 3, phase2Art: 'salsa-catwalk' }),
+      addExplorationPlatform({ id: 'phase2-salsa-catwalk-b', x: 13390, y: 62, w: 170, style: 'awning', phase2Discovery: 'salsa-silo', phase2Waypoint: 4, phase2Art: 'salsa-catwalk' }),
+      addExplorationPlatform({ id: 'phase2-salsa-silo-deck', x: 13620, y: 52, w: 250, style: 'awning', phase2Discovery: 'salsa-silo', phase2Waypoint: 5, phase2Art: 'salsa-deck' }),
+
+      addExplorationPlatform({ id: 'phase2-wanted-ladder', x: 18410, y: 144, w: 178, style: 'float', phase2Discovery: 'wanted-tower', phase2Waypoint: 1, phase2Art: 'wanted-ladder' }),
+      addExplorationPlatform({ id: 'phase2-wanted-balcony', x: 18730, y: 72, w: 178, style: 'float', moving: true, axis: 'x', range: 14, speed: .88, phase: 2.1, phase2Discovery: 'wanted-tower', phase2Waypoint: 2, phase2Art: 'wanted-balcony' }),
+      addExplorationPlatform({ id: 'phase2-wanted-tower-deck', x: 19140, y: 52, w: 250, style: 'neon-sign', phase2Discovery: 'wanted-tower', phase2Waypoint: 3, phase2Art: 'wanted-deck' }),
+      addExplorationPlatform({ id: 'phase2-outlaw-clue', x: 19470, y: 96, w: 150, style: 'neon-sign', phase2Discovery: 'outlaw-stash', phase2Waypoint: 1, phase2Art: 'stash-clue', phase2Hidden: true }),
+      addExplorationPlatform({ id: 'phase2-outlaw-stash', x: 19640, y: 18, w: 230, style: 'neon-sign', phase2Discovery: 'outlaw-stash', phase2Waypoint: 2, phase2Art: 'outlaw-stash', phase2Hidden: true }),
+
+      addExplorationPlatform({ id: 'phase2-lookout-ridge', x: 23470, y: 150, w: 178, style: 'neon-sign', phase2Discovery: 'guac-lookout', phase2Waypoint: 1, phase2Art: 'lookout-ridge' }),
+      addExplorationPlatform({ id: 'phase2-lookout-signal', x: 23740, y: 78, w: 172, style: 'neon-sign', moving: true, axis: 'y', range: 12, speed: .9, phase: 2.7, phase2Discovery: 'guac-lookout', phase2Waypoint: 2, phase2Art: 'lookout-signal' }),
+      addExplorationPlatform({ id: 'phase2-guac-lookout-deck', x: 23920, y: 56, w: 250, style: 'neon-sign', phase2Discovery: 'guac-lookout', phase2Waypoint: 3, phase2Art: 'lookout-deck' }),
+      addExplorationPlatform({ id: 'phase2-lookout-descent', x: 24180, y: 190, w: 140, style: 'neon-sign', phase2Pilot: true, phase2Discovery: 'guac-lookout', phase2Waypoint: 3, phase2Art: 'lookout-descent' }),
+    ];
+    const firstWaypoints = Object.fromEntries(authored.filter((platform) => platform.phase2Waypoint === 1 && platform.phase2Discovery !== outlawStashPlan.id).map((platform) => [platform.phase2Discovery, platform]));
+    const entryRises = Object.fromEntries(Object.entries(bases).map(([id, platform]) => [id, platform && firstWaypoints[id] ? Math.round(platform.y - firstWaypoints[id].y) : null]));
+    showdownExplorationGeometryAudit = {
+      bases: Object.fromEntries(Object.entries(bases).map(([id, platform]) => [id, platform ? { id: platform.id, x: Math.round(platform.x), y: Math.round(platform.y), w: platform.w } : null])),
+      platforms: authored.map((platform) => ({ id: platform.id, x: platform.baseX ?? platform.x, y: platform.baseY ?? platform.y, w: platform.w, moving: Boolean(platform.moving), discovery: platform.phase2Discovery, waypoint: platform.phase2Waypoint })),
+      highestPlatformY: Math.min(...authored.map((platform) => platform.y - (platform.moving && platform.axis === 'y' ? platform.range : 0))),
+      entryRises,
+      allEntriesRequireSuper: Object.values(entryRises).every((rise) => Number.isFinite(rise) && rise > heroPhysics.normalJumpRise + 1),
+      groundFallbackOpen: true,
+      maximumAuthoredX: Math.max(...authored.map((platform) => platform.x + platform.w)),
+      bossBuffer: BOSS_ARENA_LEFT - Math.max(...authored.map((platform) => platform.x + platform.w)),
+    };
+  }
+
+  function addShowdownExplorationTacoTrails() {
+    const addTaggedArc = (x, y, count, gap, height, discovery, lane, concealedClue = false) => {
+      for (let index = 0; index < count; index += 1) {
+        const t = count <= 1 ? 0 : index / (count - 1);
+        addItem(x + index * gap, y - Math.sin(t * Math.PI) * height, 'taco', {
+          bob: t * 2.2, phase2Pilot: true, phase2Discovery: discovery, lane, concealedClue,
+        });
+      }
+    };
+    addTaggedArc(3940, 318, 8, 46, 112, 'pepper-mine-lift', 'phase2-pepper-mine-trail');
+    addTaggedArc(4230, 170, 9, 45, 74, 'pepper-mine-lift', 'phase2-pepper-mine-trail');
+    addTaggedArc(12420, 318, 10, 47, 116, 'salsa-silo', 'phase2-salsa-silo-trail');
+    addTaggedArc(12830, 162, 12, 46, 74, 'salsa-silo', 'phase2-salsa-silo-trail');
+    addTaggedArc(18260, 310, 9, 48, 112, 'wanted-tower', 'phase2-wanted-tower-trail');
+    addTaggedArc(18610, 172, 10, 46, 72, 'wanted-tower', 'phase2-wanted-tower-trail');
+    addTaggedArc(19410, 104, 7, 44, 56, 'outlaw-stash', 'phase2-outlaw-stash-clue', true);
+    addTaggedArc(23280, 318, 8, 46, 112, 'guac-lookout', 'phase2-guac-lookout-trail');
+    addTaggedArc(23560, 182, 8, 45, 68, 'guac-lookout', 'phase2-guac-lookout-trail');
   }
 
   function carveGroundRange(start, end) {
@@ -790,6 +973,10 @@
     }
 
     applyShowdownRemaster();
+    // Phase 2 is authored after the combat remaster so its optional Super-only
+    // surfaces never become enemy supports or alter the existing normal route.
+    buildShowdownExplorationGeometry();
+    addShowdownExplorationTacoTrails();
 
     addEnemy(26520, 322, 'boss', world.platforms.find((platform) => platform.arena), {
       boss: true, speed: 82, minX: 25300, maxX: 28200, dir: -1, chargeWindup: 0, chargeTimer: 0,
@@ -803,7 +990,7 @@
     ));
 
     world.platforms.sort((a, b) => a.x - b.x);
-    const elevatedPlatforms = world.platforms.filter((platform) => !platform.ground && !platform.secret);
+    const elevatedPlatforms = world.platforms.filter((platform) => !platform.ground && !platform.secret && !platform.phase2Pilot);
     elevatedPlatforms.forEach((platform) => {
       const verticalRange = platform.moving && platform.axis === 'y' ? platform.range : 0;
       platform.accessMode = GROUND_Y - (platform.y - verticalRange) <= heroPhysics.normalJumpRise + 1 ? 'jump' : 'enemy-bounce';
@@ -830,7 +1017,7 @@
           || enemy.targetPlatforms?.includes(platform.id)
           || enemy.targetPlatforms?.includes(platform.routeId))).length,
     };
-    const elevated = world.platforms.filter((platform) => !platform.ground && !platform.secret);
+    const elevated = world.platforms.filter((platform) => !platform.ground && !platform.secret && !platform.phase2Pilot);
     game.platformOverlapPairs = [];
     elevated.forEach((platform, index) => elevated.slice(index + 1).forEach((other) => {
       const horizontalRange = (value) => value.moving && value.axis === 'x' ? value.range : 0;
@@ -930,7 +1117,8 @@
       chainCount: 0, chainTimer: 0, bestChain: 0, defeated: 0,
       perfectStomps: 0, goldenSombrero: false, fiestaPower: 0, chainTrailTimer: 0,
       radioQueue: '', radioDelay: 0,
-      abilities: sharedAbilities.createState(),
+      abilities: sharedAbilities.createState(), limeShield: false, activePower: null,
+      showdownExploration: createShowdownExplorationState(),
       stampede: { active: false, done: false, x: 0, speed: 0, nearMissArmed: false, nearMisses: 0, reactionTimer: 0, reactionIndex: -1 },
       bossActive: false, bossHits: previewBossHits, bossDefeated: previewBossHits >= 3,
       bossAttackCooldown: 2.2, bossAttackIndex: 0, bossHazards: [], bossIntroTimer: 0, gateUnlockTimer: 0,
@@ -946,19 +1134,33 @@
       respawnCount: 0, respawnFallbacks: 0, lastRespawnLanding: null, fallSoundPlayed: false,
       stampedeLoop: null,
     });
-    const startX = clamp(previewStart || 140, 0, WORLD_WIDTH - 200);
-    Object.assign(player, { x: startX, y: 330, previousY: 330, previousBottom: 372, vx: 0, vy: 0, dir: 1, grounded: false, platform: null, anim: 0, invulnerable: 0, coyote: 0, jumpBuffer: 0, rotation: 0, scale: 1 });
+    const previewEntry = showdownExplorationPlan.find((entry) => entry.id === previewPhase2Ready);
+    const phase2Start = previewPhase2Ready === outlawStashPlan.id
+      ? outlawStashPlan.routeRange[0] - 80
+      : previewEntry ? previewEntry.routeRange[0] - 80 : 0;
+    const startX = clamp(previewStart || phase2Start || 140, 0, WORLD_WIDTH - 200);
+    Object.assign(player, { x: startX, y: previewStartY, previousY: previewStartY, previousBottom: previewStartY + player.h, vx: 0, vy: 0, dir: 1, grounded: false, platform: null, anim: 0, invulnerable: 0, coyote: 0, jumpBuffer: 0, rotation: 0, scale: 1 });
     game.cameraX = clamp(startX - canvas.width * 0.42, 0, WORLD_WIDTH - canvas.width);
     if (game.bossDefeated) {
       const boss = world.enemies.find((enemy) => enemy.boss);
       if (boss) { boss.alive = false; boss.defeated = true; }
     }
     if (previewFrenzy) game.abilities.frenzyTimer = sharedAbilities.definitions.tacoFrenzy.duration;
-    if (previewSuper) {
+    if ((previewSuper || previewPhase2Ready) && !previewForceNormal) {
       sharedAbilities.activateSuper(game.abilities, 'qa-preview', { silent: true });
       game.abilities.transformTimer = 0;
     }
     if (previewMagnet) sharedAbilities.activateMagnet(game.abilities);
+    if (previewLimeShield) activateLimeShield('qa-preview', { silent: true });
+    const readyEntry = showdownExplorationPlan.find((entry) => entry.id === previewPhase2Ready || entry.id === previewPhase2Complete);
+    if (readyEntry) {
+      const state = showdownExplorationEntryState(readyEntry);
+      if (state) { state.revealed = true; state.progress = readyEntry.waypointCount; }
+    }
+    if (previewPhase2Ready === outlawStashPlan.id || previewPhase2Secret) {
+      game.showdownExploration.secret.revealed = true;
+      game.showdownExploration.secret.progress = outlawStashPlan.waypointCount;
+    }
     stopMusic();
     ui.startOverlay.classList.remove('hidden');
     ui.startOverlay.classList.add('visible');
@@ -1216,6 +1418,8 @@
     const sourceX = player.x; const sourceY = Math.min(player.y, canvas.height - player.h - 8); const point = findRespawn(sourceX);
     game.state = 'respawning';
     sharedAbilities.clearForRespawn(game.abilities);
+    game.limeShield = false;
+    game.activePower = null;
     keys.left = false; keys.right = false; keys.jump = false;
     heroCore.beginRespawn(game.respawn, { fromX: sourceX, fromY: sourceY, ...point });
     game.respawnCount += 1;
@@ -1247,9 +1451,33 @@
     }
   }
 
+  function activateLimeShield(source = 'guac-lookout', options = {}) {
+    const alreadyActive = game.limeShield;
+    game.limeShield = true;
+    game.activePower = 'lime';
+    if (!options.silent) {
+      showMessage('LIME SHIELD! EXTRA ZEST FOR THE SHOWDOWN!', 1.8);
+      spawnBurst(player.x - game.cameraX + player.w / 2, player.y + player.h / 2, '#9bef70', game.reducedShake ? 24 : 54);
+      playAudio('ability.limeStart', { position: audioPosition(player.x + player.w / 2), variant: source });
+    }
+    return !alreadyActive;
+  }
+
   function hurtPlayer(fromX) {
-    if (player.invulnerable > 0 || sharedAbilities.isFrenzy(game.abilities) || game.state !== 'playing') return;
+    if (previewNoDamage || player.invulnerable > 0 || sharedAbilities.isFrenzy(game.abilities) || game.state !== 'playing') return;
     const knockbackX = fromX < player.x ? 280 : -280;
+    if (game.limeShield) {
+      game.limeShield = false;
+      game.activePower = null;
+      player.invulnerable = 1.1;
+      player.vx = knockbackX; player.vy = -300;
+      game.chainCount = 0; game.chainTimer = 0;
+      game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 4 : 9);
+      showMessage('LIME SHIELD POPPED! SUPER FORM PROTECTED!', 1.35);
+      spawnBurst(player.x - game.cameraX + player.w / 2, player.y + player.h / 2, '#9bef70', game.reducedShake ? 26 : 58);
+      playAudio('ability.limeBreak', { position: audioPosition(player.x + player.w / 2) });
+      return;
+    }
     if (sharedAbilities.absorbDamage(game.abilities, { position: audioPosition(player.x + player.w / 2) })) {
       player.invulnerable = sharedAbilities.definitions.superHero.damageInvulnerabilityDuration;
       player.vx = knockbackX; player.vy = -300;
@@ -1308,17 +1536,270 @@
     } else {
       const multiplier = 1 + Math.min(5, Math.floor(game.chainCount / 2));
       game.score += (item.bonusReward ? 35 : 10) * multiplier;
-      const superStarted = sharedAbilities.collectTaco(game.abilities, item.bonusReward ? 'premium' : 'taco', { position: audioPosition(item.x + item.w / 2) });
+      const superStarted = previewForceNormal ? false : sharedAbilities.collectTaco(game.abilities, item.bonusReward ? 'premium' : 'taco', { position: audioPosition(item.x + item.w / 2) });
       if (superStarted) {
         if (game.bossCelebrationLock <= 0) {
           announceSuper(item.x);
         }
       }
-      playAudio('collect.taco', { streak: game.chainCount, position: audioPosition(item.x + item.w / 2) });
+      playAudio(item.rainbowReward ? 'collect.rainbowTaco' : 'collect.taco', { streak: game.chainCount, position: audioPosition(item.x + item.w / 2) });
     }
     const color = item.type === 'hotSauce' ? '#ff6f55' : item.type === 'magnet' ? '#65d8ff' : '#ffd65a';
     const burst = item.type === 'sombrero' ? 70 : item.type === 'hotSauce' ? 38 : item.type === 'magnet' ? 32 : 9;
     spawnBurst(item.x - game.cameraX + item.w / 2, item.y + item.h / 2, color, burst);
+  }
+
+  function showdownExplorationRewardSurface(entry) {
+    const platform = world.platforms.find((candidate) => candidate.id === entry.rewardPlatformId);
+    if (!platform) return null;
+    const itemSize = 24;
+    const padding = 14;
+    return {
+      platform, platformId: platform.id, top: platform.y,
+      center: platform.x + platform.w * .5,
+      safeLeft: platform.x + padding,
+      safeRight: platform.x + platform.w - padding - itemSize,
+      width: platform.w,
+    };
+  }
+
+  function spawnShowdownExplorationRewards(entry, state) {
+    if (!state || state.rewardSpawned) return false;
+    const surface = showdownExplorationRewardSurface(entry);
+    if (!surface) return false;
+    const secret = entry.id === outlawStashPlan.id;
+    const rainbowCount = entry.rainbowTacos || 0;
+    const columns = Math.max(1, Math.min(7, entry.bonusTacos));
+    const slotSpacing = columns >= 7 ? 28 : 30;
+    const normalBaseOffset = rainbowCount ? 61 : 31;
+    const launchY = surface.top - (secret ? 46 : 84);
+
+    for (let index = 0; index < entry.bonusTacos; index += 1) {
+      const row = Math.floor(index / columns);
+      const rowStart = row * columns;
+      const rowLength = Math.min(columns, entry.bonusTacos - rowStart);
+      const column = index - rowStart;
+      const targetX = clamp(surface.center - ((rowLength - 1) * slotSpacing + 24) * .5 + column * slotSpacing, surface.safeLeft, surface.safeRight);
+      const targetY = surface.top - normalBaseOffset - row * 27;
+      const delay = index * .024;
+      addItem(surface.center - 12, launchY, 'taco', {
+        bonusReward: true, dynamic: true, explorationReward: true, phase2Pilot: true,
+        phase2Discovery: entry.id,
+        rewardFlight: { elapsed: -delay, duration: .58 + column * .035 + row * .08, startX: surface.center - 12, startY: launchY, targetX, targetY, arc: secret ? 34 + row * 7 : 70 + row * 13, platformId: surface.platformId },
+        rewardLanding: { platformId: surface.platformId, surfaceY: surface.top, targetX, targetY, safeLeft: surface.safeLeft, safeRight: surface.safeRight, settled: false },
+        vx: 0, vy: 0, angle: index * .67, bounces: 0,
+      });
+    }
+    for (let index = 0; index < rainbowCount; index += 1) {
+      const targetX = clamp(surface.center - 12 + (index - (rainbowCount - 1) * .5) * 54, surface.safeLeft, surface.safeRight);
+      const targetY = surface.top - 31;
+      addItem(surface.center - 12, surface.top - (secret ? 48 : 96), 'taco', {
+        bonusReward: true, rainbowReward: true, dynamic: true, explorationReward: true,
+        phase2Pilot: true, phase2Discovery: entry.id,
+        rewardFlight: { elapsed: -(entry.bonusTacos + index) * .024, duration: .72 + index * .08, startX: surface.center - 12, startY: surface.top - (secret ? 48 : 96), targetX, targetY, arc: secret ? 48 + index * 5 : 116 + index * 8, platformId: surface.platformId },
+        rewardLanding: { platformId: surface.platformId, surfaceY: surface.top, targetX, targetY, safeLeft: surface.safeLeft, safeRight: surface.safeRight, settled: false },
+        vx: 0, vy: 0, angle: index * .9, bounces: 0,
+      });
+    }
+    state.rewardSurfaceId = surface.platformId;
+    state.rewardSpawned = true;
+    state.rewardSpawnCount += 1;
+    return true;
+  }
+
+  function setShowdownExplorationBanner(entry) {
+    const secret = entry.id === outlawStashPlan.id;
+    const duration = secret ? 3.35 : 2.15;
+    game.showdownExploration.completionBanner = {
+      eyebrow: secret ? 'TRUE OUTLAW SECRET' : entry.id === 'pepper-mine-lift' ? 'OPTIONAL MINE SYSTEM' : entry.id === 'salsa-silo' ? 'OPTIONAL SALSA MACHINERY' : entry.id === 'wanted-tower' ? 'OPTIONAL OUTLAW LANDMARK' : 'OPTIONAL SHOWDOWN PREP',
+      title: entry.completionTitle,
+      reward: entry.rewardLabel,
+      mode: secret ? 'secret' : entry.presentation,
+      timer: duration, maxTimer: duration,
+    };
+  }
+
+  function beginGuacLookoutInteraction(entry, state) {
+    if (!state || state.completed || state.activationStarted || game.showdownExploration.interaction) return false;
+    state.activationStarted = true;
+    state.activationCount += 1;
+    state.power = Math.max(state.power, .08);
+    game.showdownExploration.interaction = {
+      id: entry.id, elapsed: 0, duration: 2.85, movementFocusDuration: .66, cameraFocusDuration: 1.7,
+      focusX: entry.trigger.x + entry.trigger.w * .5,
+      powerClickPlayed: false, connected: false, rewardDelivered: false,
+    };
+    player.jumpBuffer = 0;
+    if (player.grounded) { player.vx = 0; player.vy = 0; }
+    impactText(entry.rewardX, entry.rewardY + 42, 'LOOKOUT SIGNAL POWERING', '#9bef70', 19);
+    playAudio('checkpoint.activate', { position: audioPosition(entry.rewardX), pitchCents: -45 });
+    return true;
+  }
+
+  function completeShowdownExplorationEntry(entry, options = {}) {
+    const state = showdownExplorationEntryState(entry);
+    if (!state || state.completed) return false;
+    if (entry.id === 'guac-lookout' && !options.fromInteraction) return beginGuacLookoutInteraction(entry, state);
+    state.revealed = true;
+    state.completed = true;
+    state.completedAt = game.levelTime;
+    state.completionCount += 1;
+    state.environmentEnergized = true;
+    game.score += entry.score;
+    const secret = entry.id === outlawStashPlan.id;
+    if (!options.suppressBanner) setShowdownExplorationBanner(entry);
+    spawnShowdownExplorationRewards(entry, state);
+    const screenX = entry.trigger.x + entry.trigger.w * .5 - game.cameraX;
+    const centerY = entry.trigger.y + entry.trigger.h * .5;
+    impactText(entry.rewardX, Math.max(27, entry.rewardY - 10), secret ? 'OUTLAW JACKPOT!' : entry.completionTitle.replace(/!+$/, ''), secret ? '#ffd65a' : '#fff1a6', secret ? 29 : 22);
+    spawnConfetti(screenX, centerY, game.reducedShake ? (secret ? 48 : 24) : (secret ? 112 : entry.id === 'salsa-silo' ? 76 : 48));
+    ['#65d8ff', '#ff6fae', '#ffd65a', '#9bef70'].forEach((color, index) => spawnBurst(screenX, centerY - index * 7, color, game.reducedShake ? 9 : secret ? 26 + index * 5 : 14 + index * 3));
+    game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 2 : secret ? 9 : entry.id === 'salsa-silo' ? 6 : 4);
+    if (entry.id === 'pepper-mine-lift') {
+      state.spectacleTimer = state.spectacleMaxTimer = 2.9;
+      playAudio('movement.churroSpring', { position: audioPosition(entry.rewardX), pitchCents: -140, gain: .68 });
+      playAudio('level.celebrationPulse', { position: audioPosition(entry.rewardX), pitchCents: -35 });
+    } else if (entry.id === 'salsa-silo') {
+      state.spectacleTimer = state.spectacleMaxTimer = 3.25;
+      playAudio('vehicle.aircraftBoost', { position: audioPosition(entry.rewardX), pitchCents: -55, gain: .72 });
+      playAudio('level.celebrationPulse', { position: audioPosition(entry.rewardX), pitchCents: 85 });
+    } else if (entry.id === 'wanted-tower') {
+      state.spectacleTimer = state.spectacleMaxTimer = 2.5;
+      playAudio('checkpoint.activate', { position: audioPosition(entry.rewardX), pitchCents: 80 });
+      playAudio('level.celebrationPulse', { position: audioPosition(entry.rewardX), pitchCents: 15, gain: .72 });
+    } else if (entry.id === 'guac-lookout') {
+      state.spectacleTimer = state.spectacleMaxTimer = 2.7;
+      activateLimeShield('guac-lookout');
+      playAudio('collect.rainbowTaco', { position: audioPosition(entry.rewardX), pitchCents: 35, gain: .72 });
+    } else {
+      state.revealTimer = state.revealMaxTimer = 3.35;
+      state.crateOpen = .01;
+      playAudio('pinata.break', { position: audioPosition(entry.rewardX), combo: 5 });
+      playAudio('pinata.jackpotSparkle', { position: audioPosition(entry.rewardX), pitchCents: 145 });
+      playAudio('collect.rainbowTaco', { position: audioPosition(entry.rewardX), pitchCents: 95 });
+    }
+    return true;
+  }
+
+  function updateGuacLookoutInteraction(dt) {
+    const interaction = game.showdownExploration?.interaction;
+    if (!interaction) return false;
+    const entry = showdownExplorationPlan.find((candidate) => candidate.id === interaction.id);
+    const state = entry ? showdownExplorationEntryState(entry) : null;
+    if (!entry || !state) { game.showdownExploration.interaction = null; return false; }
+    interaction.elapsed = Math.min(interaction.duration, interaction.elapsed + dt);
+    state.power = clamp(interaction.elapsed / .65, .08, 1);
+    if (!interaction.powerClickPlayed && interaction.elapsed >= .24) {
+      interaction.powerClickPlayed = true;
+      playAudio('ui.radio', { position: audioPosition(entry.rewardX), pitchCents: -25 });
+    }
+    if (!interaction.connected && interaction.elapsed >= .56) {
+      interaction.connected = true;
+      game.showdownExploration.transmission = {
+        speaker: 'OLIVIA', channel: 'GUAC LOOKOUT • RIDGE LINK',
+        message: 'Taco Hero, trouble is right over that ridge. Take this—you’re gonna want some lime.',
+        reward: entry.rewardLabel, rewardVisible: false, timer: 3.9, maxTimer: 3.9,
+      };
+      impactText(entry.rewardX, entry.rewardY + 18, 'OLIVIA LINK LOCKED', '#65d8ff', 20);
+      playAudio('vehicle.aircraftReady', { position: audioPosition(entry.rewardX), pitchCents: -15 });
+    }
+    if (!interaction.rewardDelivered && interaction.elapsed >= 1.28) {
+      interaction.rewardDelivered = completeShowdownExplorationEntry(entry, { fromInteraction: true, suppressBanner: true });
+      if (game.showdownExploration.transmission) game.showdownExploration.transmission.rewardVisible = true;
+    }
+    const focusing = interaction.elapsed < interaction.movementFocusDuration;
+    if (focusing) {
+      player.vx *= Math.pow(.001, dt);
+      if (player.grounded) player.vy = 0;
+    }
+    if (interaction.elapsed < interaction.cameraFocusDuration) {
+      const targetCamera = clamp(interaction.focusX - canvas.width * .58, 0, WORLD_WIDTH - canvas.width);
+      game.cameraX = lerp(game.cameraX, targetCamera, Math.min(1, dt * 5.2));
+    }
+    if (interaction.elapsed >= interaction.duration) game.showdownExploration.interaction = null;
+    return focusing;
+  }
+
+  function finishExplorationInteractionForBoss() {
+    const pilot = game.showdownExploration;
+    if (!pilot?.interaction && !pilot?.transmission) return;
+    const lookout = showdownExplorationPlan.find((entry) => entry.id === 'guac-lookout');
+    const state = showdownExplorationEntryState(lookout);
+    if (pilot.interaction && state && !state.completed) completeShowdownExplorationEntry(lookout, { fromInteraction: true, suppressBanner: true });
+    pilot.interaction = null;
+    pilot.transmission = null;
+    pilot.bossTransitionCleanups += 1;
+  }
+
+  function updateShowdownExploration(dt) {
+    const pilot = game.showdownExploration;
+    if (!pilot) return;
+    if (pilot.completionBanner) {
+      pilot.completionBanner.timer = Math.max(0, pilot.completionBanner.timer - dt);
+      if (pilot.completionBanner.timer <= 0) pilot.completionBanner = null;
+    }
+    if (pilot.transmission) {
+      pilot.transmission.timer = Math.max(0, pilot.transmission.timer - dt);
+      if (pilot.transmission.timer <= 0) pilot.transmission = null;
+    }
+    for (const entry of showdownExplorationPlan) {
+      const state = showdownExplorationEntryState(entry);
+      if (!state) continue;
+      state.spectacleTimer = Math.max(0, state.spectacleTimer - dt);
+      if (player.platform?.phase2Discovery === entry.id) {
+        state.revealed = true;
+        if (!state.arrivalAcknowledged) {
+          state.arrivalAcknowledged = true;
+          showMessage(entry.arrivalTitle, .95);
+        }
+        const waypoint = Number(player.platform.phase2Waypoint) || 0;
+        if (waypoint > state.progress) {
+          state.progress = waypoint;
+          if (waypoint < entry.waypointCount) {
+            const label = entry.id === 'pepper-mine-lift' ? `HOIST LINK ${waypoint}/${entry.waypointCount}` : entry.id === 'salsa-silo' ? `PRESSURE VALVE ${waypoint}/${entry.waypointCount}` : entry.id === 'wanted-tower' ? `BOUNTY LIGHT ${waypoint}/${entry.waypointCount}` : `LOOKOUT LINK ${waypoint}/${entry.waypointCount}`;
+            impactText(player.x + player.w * .5, Math.max(28, player.y - 6), label, entry.id === 'guac-lookout' ? '#9bef70' : entry.id === 'wanted-tower' ? '#ff6fae' : '#65d8ff', 16);
+            playAudio('checkpoint.activate', { position: audioPosition(player.x), pitchCents: -80 + waypoint * 48, gain: .7 });
+          }
+        }
+      }
+      if (!state.completed && state.progress >= entry.waypointCount && intersects(player, entry.trigger)) completeShowdownExplorationEntry(entry);
+    }
+    const secret = pilot.secret;
+    secret.revealTimer = Math.max(0, secret.revealTimer - dt);
+    if (secret.completed) secret.crateOpen = Math.min(1, secret.crateOpen + dt * 2.35);
+    if (player.platform?.phase2Discovery === outlawStashPlan.id) {
+      secret.revealed = true;
+      secret.progress = Math.max(secret.progress, Number(player.platform.phase2Waypoint) || 0);
+      if (!secret.arrivalAcknowledged) {
+        secret.arrivalAcknowledged = true;
+        impactText(player.x + player.w * .5, Math.max(24, player.y - 6), '...THAT HATCH WAS NOT ON THE POSTER.', '#fff1a6', 16);
+        playAudio('pinata.jackpotSparkle', { position: audioPosition(player.x), pitchCents: -75, gain: .62 });
+      }
+    }
+    if (!secret.completed && secret.progress >= outlawStashPlan.waypointCount && intersects(player, outlawStashPlan.trigger)) completeShowdownExplorationEntry(outlawStashPlan);
+    updateGuacLookoutInteraction(dt);
+    if (player.x >= PHASE2_BOSS_BUFFER_X) finishExplorationInteractionForBoss();
+    if (qa && previewPhase2Complete) {
+      const entry = showdownExplorationPlan.find((candidate) => candidate.id === previewPhase2Complete);
+      const state = entry && showdownExplorationEntryState(entry);
+      if (entry && state && !state.completed && !state.activationStarted) completeShowdownExplorationEntry(entry);
+    }
+    if (qa && previewPhase2Secret && !secret.completed) completeShowdownExplorationEntry(outlawStashPlan);
+    if (qa && previewPowerDown && !pilot.previewPowerDownTriggered && game.levelTime > .2) {
+      pilot.previewPowerDownTriggered = true;
+      hurtPlayer(player.x + 120);
+    }
+  }
+
+  function updateShowdownExplorationCamera(dt) {
+    const pilot = game.showdownExploration;
+    if (!pilot) return;
+    const entries = [...showdownExplorationPlan, outlawStashPlan];
+    const inExplorationRange = entries.some((entry) => player.x >= entry.routeRange[0] - 160 && player.x <= entry.routeRange[1] + 160);
+    const cameraAllowed = !game.bossActive && game.state === 'playing';
+    pilot.cameraTargetLift = cameraAllowed && inExplorationRange ? clamp((270 - player.y) * .54, 0, 116) : 0;
+    if (pilot.interaction) pilot.cameraTargetLift = Math.max(pilot.cameraTargetLift, 86);
+    pilot.cameraLift = lerp(pilot.cameraLift, pilot.cameraTargetLift, Math.min(1, dt * (pilot.cameraTargetLift > pilot.cameraLift ? 5.5 : 4.4)));
   }
 
   function spawnChainTacos(enemy, amount = 10) {
@@ -1520,7 +2001,7 @@
       });
     }
 
-    const superStarted = sharedAbilities.splatEnemy(game.abilities, { position: audioPosition(enemy.x + enemy.w / 2) });
+    const superStarted = previewForceNormal ? false : sharedAbilities.splatEnemy(game.abilities, { position: audioPosition(enemy.x + enemy.w / 2) });
     if (superStarted) announceSuper(enemy.x);
 
     const nextTarget = stomped && world.enemies
@@ -1853,6 +2334,24 @@
   function updateDynamicItems(dt) {
     for (const item of world.collectibles) {
       if (!item.dynamic || item.collected) continue;
+      if (item.rewardFlight) {
+        const flight = item.rewardFlight;
+        flight.elapsed += dt;
+        if (flight.elapsed < 0) continue;
+        const progress = clamp(flight.elapsed / flight.duration, 0, 1);
+        const eased = smoothstep(progress);
+        item.x = lerp(flight.startX, flight.targetX, eased);
+        item.y = lerp(flight.startY, flight.targetY, eased) - Math.sin(progress * Math.PI) * flight.arc;
+        item.angle = (item.angle || 0) + dt * 8;
+        if (progress >= 1) {
+          item.x = flight.targetX;
+          item.y = flight.targetY;
+          item.vx = 0; item.vy = 0; item.dynamic = false;
+          item.rewardFlight = null;
+          if (item.rewardLanding) item.rewardLanding.settled = true;
+        }
+        continue;
+      }
       item.x += item.vx * dt;
       item.y += item.vy * dt;
       item.vy += 720 * dt;
@@ -1862,7 +2361,7 @@
     if (sharedAbilities.hasMagnet(game.abilities)) {
       const radius = sharedAbilities.definitions.tacoMagnet.radius;
       for (const item of world.collectibles) {
-        if (item.collected || item.type !== 'taco') continue;
+        if (item.collected || item.type !== 'taco' || item.rewardFlight) continue;
         const dx = player.x + player.w / 2 - (item.x + item.w / 2);
         const dy = player.y + player.h / 2 - (item.y + item.h / 2);
         const distance = Math.hypot(dx, dy);
@@ -2076,12 +2575,14 @@
     if (game.state === 'respawning') updateRespawn(dt);
     if (game.state === 'playing') {
       updatePlayer(dt);
+      updateShowdownExploration(dt);
       updateDynamicItems(dt);
       updateEnemies(dt);
       updateBossBattle(dt);
       updateCheckpoints();
       updateStampede(dt);
-      if (!game.bossActive && player.x > 24920) {
+      if (!game.bossActive && player.x > BOSS_TRIGGER_X) {
+        finishExplorationInteractionForBoss();
         game.bossActive = true;
         game.bossIntroTimer = game.bossDefeated || previewBossAttack ? 0 : 2.35;
         game.bossAttackCooldown = previewBossAttack ? 0.08 : 1.45;
@@ -2101,7 +2602,7 @@
       }
 
       for (const item of world.collectibles) {
-        if (!item.collected && intersects(player, item)) collectItem(item);
+        if (!item.collected && !item.rewardFlight && intersects(player, item)) collectItem(item);
       }
 
       const nextSection = Math.max(0, sections.findIndex((section) => player.x >= section.start && player.x < section.end));
@@ -2128,6 +2629,7 @@
       maybeFinish();
     }
     if (game.state === 'celebrating') updateCelebration(dt);
+    updateShowdownExplorationCamera(dt);
     updateParticles(dt);
   }
 
@@ -2335,6 +2837,127 @@
     return images.world1_3_platform_rainbow_v1;
   }
 
+  function drawPhase2DestinationAsset(image, centerWorldX, bottomY, width, options = {}) {
+    if (!image || !visibleWorldX(centerWorldX - width * .6, width * 1.2, 180)) return;
+    const ratio = (image.naturalHeight || image.height) / (image.naturalWidth || image.width);
+    const height = width * ratio;
+    const x = centerWorldX - game.cameraX - width * .5;
+    const y = bottomY - height;
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.globalAlpha = options.alpha ?? 1;
+    if (options.glow) {
+      ctx.shadowColor = options.glow;
+      ctx.shadowBlur = options.glowBlur || 16;
+    }
+    ctx.drawImage(image, x, y, width, height);
+    ctx.restore();
+  }
+
+  function drawExplorationNameplate(worldX, y, title, subtitle, accent, active) {
+    if (!visibleWorldX(worldX - 125, 250, 100)) return;
+    const x = worldX - game.cameraX;
+    ctx.save();
+    ctx.fillStyle = 'rgba(37,21,52,.91)'; ctx.strokeStyle = accent; ctx.lineWidth = active ? 4 : 2;
+    ctx.shadowColor = accent; ctx.shadowBlur = active ? 16 : 5;
+    ctx.beginPath(); ctx.roundRect(x - 122, y, 244, 48, 11); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
+    ctx.textAlign = 'center'; ctx.fillStyle = '#fff8df'; ctx.font = '900 12px Arial'; ctx.fillText(title, x, y + 19);
+    ctx.fillStyle = accent; ctx.font = '900 9px Arial'; ctx.fillText(subtitle, x, y + 36);
+    ctx.restore();
+  }
+
+  function drawPepperMineLift(time) {
+    const entry = showdownExplorationPlan[0];
+    if (!visibleWorldX(entry.routeRange[0], entry.routeRange[1] - entry.routeRange[0], 220)) return;
+    const state = showdownExplorationEntryState(entry);
+    const active = Boolean(state?.completed);
+    drawPhase2DestinationAsset(images.world1_3_super_pepper_mine_lift_v1, 4800, GROUND_Y + 2, 420, { glow: active ? '#ffd65a' : null, glowBlur: active ? 16 : 0 });
+    const wheelX = 4800 - game.cameraX + 72; const wheelY = 72;
+    ctx.save(); ctx.translate(wheelX, wheelY); ctx.rotate(active ? time * .0017 : 0); ctx.strokeStyle = active ? '#65d8ff' : 'rgba(255,214,90,.32)'; ctx.lineWidth = 3; ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = active ? 13 : 0;
+    for (let spoke = 0; spoke < 6; spoke += 1) { ctx.rotate(Math.PI / 3); ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(34, 0); ctx.stroke(); }
+    ctx.beginPath(); ctx.arc(0, 0, 37, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+    if (active && (state?.spectacleTimer || 0) > 0) {
+      const intensity = clamp(state.spectacleTimer / state.spectacleMaxTimer, 0, 1);
+      ctx.save(); ctx.globalCompositeOperation = 'screen'; ctx.strokeStyle = `rgba(255,214,90,${.25 + intensity * .42})`; ctx.lineWidth = 3;
+      for (let trail = 0; trail < 5; trail += 1) { ctx.beginPath(); ctx.arc(4800 - game.cameraX, 150, 48 + ((time * .06 + trail * 38) % 170), Math.PI * 1.05, Math.PI * 1.95); ctx.stroke(); }
+      ctx.restore();
+    }
+    drawExplorationNameplate(4800, 98, 'PEPPER MINE LIFT', active ? 'HOIST DRIVE • ONLINE' : 'HOIST DRIVE • OFFLINE', active ? '#ffd65a' : '#ff8d57', active);
+  }
+
+  function drawSalsaSilo(time) {
+    const entry = showdownExplorationPlan[1];
+    if (!visibleWorldX(entry.routeRange[0], entry.routeRange[1] - entry.routeRange[0], 220)) return;
+    const state = showdownExplorationEntryState(entry); const active = Boolean(state?.completed);
+    drawPhase2DestinationAsset(images.world1_3_super_salsa_silo_v1, 13745, GROUND_Y + 2, 410, { glow: active ? '#ff6fae' : null, glowBlur: active ? 19 : 0 });
+    const gaugeX = 13745 - game.cameraX + 5;
+    ctx.save(); ctx.globalCompositeOperation = 'screen';
+    const pulse = active ? .66 + Math.sin(time * .011) * .2 : .2;
+    ctx.fillStyle = `rgba(255,89,103,${pulse})`; ctx.shadowColor = '#ff6fae'; ctx.shadowBlur = active ? 22 : 8; ctx.fillRect(gaugeX - 8, 190, 16, 112);
+    if (active) {
+      const intensity = clamp((state?.spectacleTimer || 0) / Math.max(.01, state?.spectacleMaxTimer || 1), 0, 1);
+      ['#65d8ff', '#ff6fae', '#ffd65a'].forEach((color, index) => { ctx.strokeStyle = color; ctx.globalAlpha = .25 + intensity * .5; ctx.lineWidth = 7 - index; ctx.beginPath(); ctx.moveTo(gaugeX - 40 + index * 35, 78); ctx.bezierCurveTo(gaugeX - 90 + index * 55, 28 - Math.sin(time * .012 + index) * 18, gaugeX - 80 + index * 70, -18, gaugeX - 25 + index * 35, -54); ctx.stroke(); });
+    }
+    ctx.restore();
+    drawExplorationNameplate(13745, 98, 'SALSA SILO', active ? 'PRESSURE • PERFECT' : 'PRESSURE ARRAY • STANDBY', active ? '#ff6fae' : '#65d8ff', active);
+  }
+
+  function drawWantedTower(time) {
+    const entry = showdownExplorationPlan[2];
+    if (!visibleWorldX(entry.routeRange[0], entry.routeRange[1] - entry.routeRange[0], 220)) return;
+    const state = showdownExplorationEntryState(entry); const active = Boolean(state?.completed);
+    drawPhase2DestinationAsset(images.world1_3_super_wanted_tower_v1, 19265, GROUND_Y + 2, 420, { glow: active ? '#ff6fae' : null, glowBlur: active ? 17 : 0 });
+    const posterX = 19246 - game.cameraX;
+    ctx.save(); ctx.textAlign = 'center'; ctx.rotate(-.012); ctx.strokeStyle = '#5b2a41'; ctx.lineWidth = 4; ctx.fillStyle = '#7c2d3d'; ctx.font = '900 21px Arial'; ctx.strokeText('EL GUACADILLO', posterX, 228); ctx.fillText('EL GUACADILLO', posterX, 228); ctx.font = '900 31px Arial'; ctx.fillStyle = '#d83f3e'; ctx.strokeText('WANTED', posterX, 263); ctx.fillText('WANTED', posterX, 263); ctx.font = '900 11px Arial'; ctx.fillStyle = '#5b2a41'; ctx.fillText('3 STOMPS • HUGE EGO', posterX, 286); ctx.restore();
+    ctx.save(); ctx.globalCompositeOperation = 'screen';
+    for (let bulb = 0; bulb < 10; bulb += 1) { const bx = 19135 - game.cameraX + bulb * 29; ctx.fillStyle = ['#ff6fae', '#65d8ff', '#ffd65a'][bulb % 3]; ctx.globalAlpha = active ? .76 + Math.sin(time * .01 + bulb) * .2 : .23; ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = active ? 12 : 3; ctx.beginPath(); ctx.arc(bx, 115 + Math.sin(bulb) * 5, active ? 4 : 2.5, 0, Math.PI * 2); ctx.fill(); }
+    ctx.restore();
+    drawExplorationNameplate(19265, 98, 'EL GUACADILLO WANTED TOWER', active ? 'BOUNTY LIGHTS • ACTIVE' : 'OUTLAW WATCH • DARK', active ? '#ff6fae' : '#ffd65a', active);
+  }
+
+  function drawOutlawStash(time) {
+    const state = game.showdownExploration?.secret;
+    if (!visibleWorldX(outlawStashPlan.routeRange[0], outlawStashPlan.routeRange[1] - outlawStashPlan.routeRange[0], 180)) return;
+    const x = outlawStashPlan.rewardX - game.cameraX;
+    ctx.save(); ctx.translate(x, 6);
+    const reveal = state?.completed ? 1 : 0;
+    ctx.globalAlpha = reveal ? 1 : .42 + Math.sin(time * .008) * .08;
+    ctx.fillStyle = '#45284f'; ctx.strokeStyle = reveal ? '#ffd65a' : '#6f5a78'; ctx.lineWidth = reveal ? 4 : 2; ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = reveal ? 22 : 5;
+    ctx.beginPath(); ctx.roundRect(-64, 0, 128, 57, 11); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = reveal ? '#ffd65a' : '#887190'; ctx.fillRect(-56, 17, 112, 9); ctx.fillRect(-8, 4, 16, 49);
+    ctx.fillStyle = '#2b1530'; ctx.beginPath(); ctx.arc(0, 29, 6, 0, Math.PI * 2); ctx.fill();
+    if (reveal) { const beam = ctx.createLinearGradient(0, 6, 0, -120); beam.addColorStop(0, 'rgba(255,214,90,.62)'); beam.addColorStop(1, 'rgba(255,214,90,0)'); ctx.fillStyle = beam; ctx.beginPath(); ctx.moveTo(-48, 8); ctx.lineTo(-82, -120); ctx.lineTo(82, -120); ctx.lineTo(48, 8); ctx.closePath(); ctx.fill(); }
+    ctx.restore();
+  }
+
+  function drawGuacLookout(time) {
+    const entry = showdownExplorationPlan[3];
+    if (!visibleWorldX(entry.routeRange[0], entry.routeRange[1] - entry.routeRange[0], 220)) return;
+    const state = showdownExplorationEntryState(entry); const active = Boolean(state?.completed); const power = active ? 1 : state?.power || 0;
+    drawPhase2DestinationAsset(images.world1_3_super_guac_lookout_v1, 24045, GROUND_Y + 2, 430, { glow: power > .4 ? '#9bef70' : null, glowBlur: 10 + power * 15 });
+    const beaconX = 23955 - game.cameraX; const beaconY = 52;
+    ctx.save(); ctx.globalCompositeOperation = 'screen'; ctx.translate(beaconX, beaconY); ctx.rotate(time * .0012); ctx.strokeStyle = `rgba(155,239,112,${.18 + power * .65})`; ctx.lineWidth = 8;
+    ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(-128, -20); ctx.moveTo(8, 0); ctx.lineTo(128, 20); ctx.stroke(); ctx.rotate(Math.PI / 2); ctx.globalAlpha = .5; ctx.beginPath(); ctx.moveTo(-5, 0); ctx.lineTo(-88, -12); ctx.moveTo(5, 0); ctx.lineTo(88, 12); ctx.stroke(); ctx.restore();
+    drawExplorationNameplate(24045, 98, 'GUAC LOOKOUT', active ? 'RIDGE LINK • SECURED' : 'RIDGE LINK • STANDBY', active ? '#9bef70' : '#65d8ff', active);
+  }
+
+  function drawShowdownExplorationBackdrop(time) {
+    drawPepperMineLift(time); drawSalsaSilo(time); drawWantedTower(time); drawOutlawStash(time); drawGuacLookout(time);
+  }
+
+  function drawShowdownExplorationAccents(time) {
+    for (const platform of world.platforms) {
+      if (!platform.phase2Pilot || !visibleWorldX(platform.x, platform.w, 70)) continue;
+      const state = showdownExplorationEntryState(platform.phase2Discovery === outlawStashPlan.id ? outlawStashPlan : showdownExplorationPlan.find((entry) => entry.id === platform.phase2Discovery));
+      const active = Boolean(state?.completed) || (state?.progress || 0) >= (platform.phase2Waypoint || 0);
+      const accent = platform.phase2Discovery === 'guac-lookout' ? '#9bef70' : platform.phase2Discovery === 'salsa-silo' || platform.phase2Discovery === 'wanted-tower' ? '#ff6fae' : platform.phase2Discovery === outlawStashPlan.id ? '#ffd65a' : '#65d8ff';
+      const x = platform.x - game.cameraX;
+      ctx.save(); ctx.fillStyle = accent; ctx.shadowColor = accent; ctx.shadowBlur = active ? 13 : 4; ctx.globalAlpha = active ? .72 + Math.sin(time * .009 + platform.x) * .16 : platform.phase2Hidden ? .2 : .3;
+      for (let bulb = 16; bulb < platform.w - 10; bulb += 29) { ctx.beginPath(); ctx.arc(x + bulb, platform.y + 5, active ? 3.1 : 2.1, 0, Math.PI * 2); ctx.fill(); }
+      ctx.restore();
+    }
+  }
+
   function drawPlatform(platform, time) {
     if (!visibleWorldX(platform.x, platform.w, 90)) return;
     const x = Math.floor(platform.x - game.cameraX);
@@ -2347,6 +2970,7 @@
     const smoothing = ctx.imageSmoothingEnabled;
 
     ctx.save();
+    if (platform.phase2Hidden && !game.showdownExploration?.secret?.completed) ctx.globalAlpha = .58;
     ctx.beginPath();
     ctx.rect(x - 1, artY - 2, platform.w + 2, artHeight + 4);
     ctx.clip();
@@ -2388,7 +3012,14 @@
     ctx.save(); ctx.translate(x + item.w / 2, y + item.h / 2);
     if (item.dynamic) ctx.rotate(item.angle || 0);
     if (item.type === 'taco') {
-      if (item.bonusReward) { ctx.shadowColor = '#ffd65a'; ctx.shadowBlur = 16; }
+      if (item.rainbowReward) {
+        ctx.shadowColor = '#65d8ff'; ctx.shadowBlur = 24;
+        ['#65d8ff', '#ff6fae', '#ffd65a', '#9bef70'].forEach((color, index) => {
+          ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.globalAlpha = .82 - index * .12;
+          ctx.beginPath(); ctx.arc(0, 3, 15 - index * 3, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
+        });
+        ctx.globalAlpha = 1;
+      } else if (item.bonusReward) { ctx.shadowColor = '#ffd65a'; ctx.shadowBlur = 16; }
       ctx.drawImage(images.items, 0, 0, 16, 16, -item.w / 2, -item.h / 2, item.w, item.h);
     } else if (item.type === 'magnet') {
       ctx.shadowColor = '#65d8ff'; ctx.shadowBlur = 20;
@@ -3242,6 +3873,11 @@
     if (player.invulnerable > 0 && Math.floor(player.invulnerable * 12) % 2 === 0) ctx.globalAlpha = 0.45;
     const x = player.x - game.cameraX + player.w / 2;
     const y = player.y + player.h / 2;
+    if (game.limeShield) {
+      ctx.save(); ctx.globalCompositeOperation = 'screen'; ctx.strokeStyle = '#9bef70'; ctx.shadowColor = '#9bef70'; ctx.shadowBlur = 17; ctx.lineWidth = 3;
+      ctx.globalAlpha = .62 + Math.sin(time * .012) * .14; ctx.beginPath(); ctx.ellipse(x, y + 1, 30 + Math.sin(time * .009) * 2, 35, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.globalAlpha = .36; ctx.strokeStyle = '#65d8ff'; ctx.beginPath(); ctx.ellipse(x, y + 1, 36, 28, Math.sin(time * .004) * .2, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+    }
     sharedAbilities.drawHeroEffects(ctx, game.abilities, player, game.cameraX, time, { reducedMotion: game.reducedShake });
     if (game.chainTrailTimer > 0) {
       const trailColors = ['#65d8ff', '#b78cff', '#ff6fae', '#ffd65a', '#8dff9c'];
@@ -3311,6 +3947,57 @@
     ctx.fillStyle = 'rgba(255,255,255,.68)'; ctx.font = '900 9px Arial'; ctx.fillText(`${Math.round(player.x).toLocaleString()} / ${WORLD_WIDTH.toLocaleString()}`, x + width / 2, y + 64);
   }
 
+  function drawShowdownExplorationCompletionBanner(time) {
+    const banner = game.showdownExploration?.completionBanner;
+    if (!banner) return;
+    const enter = clamp((banner.maxTimer - banner.timer) / .22, 0, 1);
+    const exit = clamp(banner.timer / .34, 0, 1);
+    const visibility = Math.min(enter, exit);
+    const secret = banner.mode === 'secret';
+    const compactDisplay = canvas.getBoundingClientRect().width < 520;
+    const width = Math.min(compactDisplay ? (secret ? 840 : 700) : (secret ? 700 : 545), canvas.width - (compactDisplay ? 48 : secret ? 58 : 130));
+    const height = compactDisplay ? (secret ? 160 : 116) : (secret ? 138 : 94);
+    const x = (canvas.width - width) * .5;
+    const y = canvas.height - height - (compactDisplay ? 18 : 28);
+    const accent = secret ? '#ffd65a' : banner.mode === 'pressure-spectacle' || banner.mode === 'boss-foreshadowing' ? '#ff6fae' : banner.mode === 'character-preparation' ? '#9bef70' : '#65d8ff';
+    ctx.save(); ctx.globalAlpha = visibility; ctx.translate(canvas.width * .5, y + height * .5);
+    if (!game.reducedShake) { const pop = (secret ? .9 : .96) + enter * (secret ? .1 : .04) + Math.sin(time * .015) * (secret ? .012 : .004); ctx.scale(pop, pop); }
+    ctx.translate(-canvas.width * .5, -(y + height * .5));
+    const panel = ctx.createLinearGradient(x, y, x + width, y + height); panel.addColorStop(0, secret ? 'rgba(51,25,70,.98)' : 'rgba(43,21,48,.94)'); panel.addColorStop(.5, secret ? 'rgba(132,57,67,.99)' : 'rgba(91,45,76,.95)'); panel.addColorStop(1, secret ? 'rgba(27,91,98,.98)' : 'rgba(29,75,88,.94)');
+    ctx.fillStyle = panel; ctx.strokeStyle = accent; ctx.lineWidth = secret ? 5 : 3; ctx.shadowColor = accent; ctx.shadowBlur = secret ? 28 : 14; ctx.beginPath(); ctx.roundRect(x, y, width, height, secret ? 23 : 17); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
+    if (secret) { for (let index = 0; index < 10; index += 1) { const sx = x + 36 + index * (width - 72) / 9; const sy = y + 20 + Math.sin(time * .012 + index) * 6; ctx.fillStyle = ['#ffd65a', '#ff6fae', '#65d8ff'][index % 3]; ctx.save(); ctx.translate(sx, sy); ctx.rotate(index * .7); ctx.fillRect(-6, -2, 12, 4); ctx.fillRect(-2, -6, 4, 12); ctx.restore(); } }
+    ctx.textAlign = 'center'; ctx.fillStyle = '#fff1a6'; ctx.font = `900 ${compactDisplay ? secret ? 17 : 15 : secret ? 13 : 11}px Arial`; ctx.fillText(banner.eyebrow, canvas.width * .5, y + (compactDisplay ? secret ? 31 : 27 : secret ? 28 : 21));
+    ctx.fillStyle = '#fff9ed'; ctx.font = `900 ${compactDisplay ? secret ? 39 : banner.title.length > 25 ? 29 : 33 : secret ? 33 : banner.title.length > 25 ? 23 : 27}px Arial`; ctx.fillText(banner.title, canvas.width * .5, y + (compactDisplay ? secret ? 82 : 65 : secret ? 71 : 52));
+    ctx.fillStyle = accent; ctx.font = `900 ${compactDisplay ? secret ? 19 : 17 : secret ? 15 : 13}px Arial`; ctx.fillText(banner.reward, canvas.width * .5, y + (compactDisplay ? secret ? 127 : 99 : secret ? 109 : 79)); ctx.restore();
+  }
+
+  function drawOliviaLookoutTransmission(time) {
+    const transmission = game.showdownExploration?.transmission;
+    if (!transmission) return;
+    const elapsed = transmission.maxTimer - transmission.timer;
+    const visibility = clamp(Math.min(elapsed / .18, transmission.timer / .32), 0, 1);
+    const compactDisplay = canvas.getBoundingClientRect().width < 520;
+    const width = Math.min(compactDisplay ? 790 : 560, canvas.width - 38);
+    const height = compactDisplay ? 154 : 124;
+    const x = canvas.width - width - 19;
+    const y = 94;
+    const portraitWidth = compactDisplay ? 138 : 118;
+    const portraitHeight = compactDisplay ? 112 : 94;
+    const textX = x + portraitWidth + (compactDisplay ? 34 : 26);
+    ctx.save(); ctx.globalAlpha = visibility;
+    if (!game.reducedShake) ctx.translate((1 - smoothstep(clamp(elapsed / .34, 0, 1))) * 18, 0);
+    const panel = ctx.createLinearGradient(x, y, x + width, y + height); panel.addColorStop(0, 'rgba(24,20,54,.98)'); panel.addColorStop(.55, 'rgba(50,32,74,.98)'); panel.addColorStop(1, 'rgba(30,91,73,.98)');
+    ctx.fillStyle = panel; ctx.strokeStyle = '#9bef70'; ctx.lineWidth = 3; ctx.shadowColor = '#9bef70'; ctx.shadowBlur = 14; ctx.beginPath(); ctx.roundRect(x, y, width, height, 18); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
+    ctx.save(); ctx.beginPath(); ctx.roundRect(x + 10, y + 10, portraitWidth, portraitHeight, 13); ctx.clip(); ctx.fillStyle = '#15152f'; ctx.fillRect(x + 10, y + 10, portraitWidth, portraitHeight);
+    if (images.world1_1_taco_trekker_olivia_v1) ctx.drawImage(images.world1_1_taco_trekker_olivia_v1, x + 8, y + 6, portraitWidth + 14, portraitHeight + 12); ctx.restore();
+    ctx.strokeStyle = '#65d8ff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.roundRect(x + 10, y + 10, portraitWidth, portraitHeight, 13); ctx.stroke();
+    ctx.textAlign = 'left'; ctx.fillStyle = '#9bef70'; ctx.font = `900 ${compactDisplay ? 15 : 11}px Arial`; ctx.fillText(`${transmission.speaker} • ${transmission.channel}`, textX, y + (compactDisplay ? 28 : 22));
+    ctx.fillStyle = '#fff8ea'; ctx.font = `800 ${compactDisplay ? 19 : 15}px Arial`; ctx.fillText('“Trouble’s right over that ridge.', textX, y + (compactDisplay ? 62 : 50)); ctx.fillText('Take this. You’ll want some lime.”', textX, y + (compactDisplay ? 88 : 72));
+    ctx.fillStyle = transmission.rewardVisible ? '#ffd65a' : '#65d8ff'; ctx.font = `900 ${compactDisplay ? 14 : 11}px Arial`; ctx.fillText(transmission.rewardVisible ? 'REWARD • LIME SHIELD • SHOWDOWN READY' : 'LOOKOUT LINK • OLIVIA CONNECTED', textX, y + (compactDisplay ? 125 : 101));
+    for (let bar = 0; bar < 5; bar += 1) { const pulse = (Math.sin(time * .012) + 1) * 2.7; ctx.fillStyle = pulse > bar ? '#9bef70' : 'rgba(255,255,255,.2)'; ctx.fillRect(x + width - 68 + bar * 10, y + 14 - bar * 2, 6, 5 + bar * 2); }
+    ctx.restore();
+  }
+
   function drawHUD(time) {
     ctx.save();
     if (game.bossFinalFocus > 0) {
@@ -3335,14 +4022,15 @@
     ctx.textAlign = 'right'; ctx.font = '900 15px Arial';
     if (sharedAbilities.isFrenzy(game.abilities)) { ctx.fillStyle = '#65d8ff'; ctx.fillText(`TACO FRENZY ${Math.ceil(game.abilities.frenzyTimer)}s`, 936, 60); }
     if (sharedAbilities.hasMagnet(game.abilities)) { ctx.fillStyle = '#ffd65a'; ctx.fillText(`TACO MAGNET ${Math.ceil(game.abilities.magnetTimer)}s`, 936, 82); }
+    if (game.limeShield) { ctx.fillStyle = '#9bef70'; ctx.fillText('LIME SHIELD • READY', 936, 104); }
     if (game.chainCount > 0) {
       ctx.fillStyle = game.chainCount >= 5 ? '#ff6fae' : '#ffd65a';
       const chainLabel = game.chainCount >= 8 ? `SALSA SUPREMACY ×${game.chainCount}`
         : game.chainCount >= 5 ? `RAINBOW RAMPAGE ×${game.chainCount}`
         : `SPLAT CHAIN ×${game.chainCount}`;
-      ctx.fillText(chainLabel, 936, 104);
+      ctx.fillText(chainLabel, 936, game.limeShield ? 126 : 104);
     }
-    if (game.stampede.active) { ctx.fillStyle = '#ff8d57'; ctx.fillText('GUAC PACK INCOMING!', 936, 126); }
+    if (game.stampede.active) { ctx.fillStyle = '#ff8d57'; ctx.fillText('GUAC PACK INCOMING!', 936, game.limeShield ? 148 : 126); }
     if (game.bossActive && !game.bossDefeated) {
       const cardX = 744; const cardY = 98; const cardW = 202; const cardH = 74;
       ctx.fillStyle = 'rgba(35,16,48,.78)'; ctx.strokeStyle = game.bossHits >= 2 ? '#ff6fae' : '#ffd65a'; ctx.lineWidth = 3;
@@ -3398,8 +4086,12 @@
       ctx.translate((seeded() - 0.5) * shake, (seeded() - 0.5) * shake * 0.55);
     }
     drawBackground(time);
+    const cameraLift = game.showdownExploration?.cameraLift || 0;
+    ctx.save(); ctx.translate(0, cameraLift);
+    drawShowdownExplorationBackdrop(time);
     drawGroundGlow(time);
     for (const platform of world.platforms) drawPlatform(platform, time);
+    drawShowdownExplorationAccents(time);
     drawPads(time);
     for (const item of world.collectibles) drawCollectible(item, time);
     for (const checkpoint of world.checkpoints) drawCheckpoint(checkpoint, time);
@@ -3412,12 +4104,15 @@
     drawPlayer(time);
     drawParticles();
     ctx.restore();
+    ctx.restore();
     drawHUD(time);
+    drawShowdownExplorationCompletionBanner(time);
+    drawOliviaLookoutTransmission(time);
     if (qa) {
       canvas.dataset.qaState = JSON.stringify({
         sourceVersion: SOURCE_VERSION,
         superHero: { ...sharedAbilities.snapshot(game.abilities), collisionWidth: player.w, collisionHeight: player.h },
-        state: game.state, player: {
+        state: game.state, hearts: game.hearts, player: {
           x: Math.round(player.x), y: Math.round(player.y),
           vx: Math.round(player.vx), vy: Math.round(player.vy), grounded: player.grounded,
           platform: player.platform ? {
@@ -3467,6 +4162,65 @@
           ordinaryEnemiesInArena: world.enemies.filter((enemy) => !enemy.boss && enemy.x >= BOSS_ARENA_LEFT && enemy.x <= BOSS_ARENA_RIGHT).length,
         },
         abilities: { ...game.abilities },
+        limeShield: { active: game.limeShield, activePower: game.activePower, damagePriority: 'lime-before-super-before-hearts' },
+        showdownExplorationPhase2: game.showdownExploration ? {
+          version: game.showdownExploration.version,
+          scope: game.showdownExploration.scope,
+          normalRouteUnaffected: game.showdownExploration.normalRouteUnaffected,
+          noRequiredSuperTraversal: game.showdownExploration.noRequiredSuperTraversal,
+          geometry: showdownExplorationGeometryAudit,
+          destinationCenters: showdownExplorationPlan.map((entry) => Math.round(entry.trigger.x + entry.trigger.w * .5)),
+          minimumDestinationSpacing: showdownExplorationPlan.slice().sort((a, b) => a.trigger.x - b.trigger.x).reduce((minimum, entry, index, entries) => index === 0 ? minimum : Math.min(minimum, (entry.trigger.x + entry.trigger.w * .5) - (entries[index - 1].trigger.x + entries[index - 1].trigger.w * .5)), Infinity),
+          standardViewportSeparated: showdownExplorationPlan.every((entry, index, entries) => entries.every((other, otherIndex) => index === otherIndex || Math.abs((entry.trigger.x + entry.trigger.w * .5) - (other.trigger.x + other.trigger.w * .5)) > canvas.width)),
+          camera: { lift: Number(game.showdownExploration.cameraLift.toFixed(2)), targetLift: Number(game.showdownExploration.cameraTargetLift.toFixed(2)), maximumLift: 116, backgroundSeamsExposed: false },
+          completionBanner: game.showdownExploration.completionBanner,
+          interaction: game.showdownExploration.interaction,
+          transmission: game.showdownExploration.transmission,
+          bossSafeguards: {
+            arenaLeft: BOSS_ARENA_LEFT, arenaRight: BOSS_ARENA_RIGHT, triggerX: BOSS_TRIGGER_X,
+            phase2MaximumX: showdownExplorationGeometryAudit?.maximumAuthoredX || null,
+            phase2BossBuffer: showdownExplorationGeometryAudit?.bossBuffer || null,
+            authoredLimitX: PHASE2_BOSS_BUFFER_X,
+            phase2EndsBeforeBoss: Boolean(showdownExplorationGeometryAudit && showdownExplorationGeometryAudit.maximumAuthoredX <= PHASE2_BOSS_BUFFER_X),
+            noPhase2PlatformsInArena: !world.platforms.some((platform) => platform.phase2Pilot && platform.x + platform.w > BOSS_ARENA_LEFT),
+            ordinaryEnemiesInArena: world.enemies.filter((enemy) => !enemy.boss && enemy.x >= BOSS_ARENA_LEFT && enemy.x <= BOSS_ARENA_RIGHT).length,
+            arenaPlatformCount: world.platforms.filter((platform) => platform.arena).length,
+            bossOnlyArenaEnemy: world.enemies.filter((enemy) => enemy.boss && enemy.platform?.arena).length === 1,
+            interactionClearedAtBoss: !game.bossActive || !game.showdownExploration.interaction,
+            transitionCleanups: game.showdownExploration.bossTransitionCleanups,
+          },
+          completionHierarchy: {
+            visibleRoutes: showdownExplorationPlan.map((entry) => entry.completionTitle),
+            trueSecret: outlawStashPlan.completionTitle,
+            discoveredBannerCount: [...showdownExplorationPlan, outlawStashPlan].filter((entry) => entry.completionTitle.includes('DISCOVERED!')).length,
+          },
+          frozenPhase1Balance: {
+            tacoPowerThreshold: sharedAbilities.definitions.tacoPower.threshold,
+            tacoContribution: sharedAbilities.definitions.tacoPower.contributions.taco,
+            premiumContribution: sharedAbilities.definitions.tacoPower.contributions.premiumTaco,
+            normalJumpVelocity: heroPhysics.jumpVelocity,
+            superJumpVelocity: heroPhysics.superJumpVelocity,
+            collisionWidth: player.w, collisionHeight: player.h,
+          },
+          destinations: showdownExplorationPlan.map((entry) => ({ id: entry.id, name: entry.name, presentation: entry.presentation, trigger: entry.trigger, routeRange: entry.routeRange, worldPercent: entry.worldPercent, score: entry.score, bonusTacos: entry.bonusTacos, rewardLabel: entry.rewardLabel, ...game.showdownExploration.destinations[entry.id] })),
+          secret: { id: outlawStashPlan.id, name: outlawStashPlan.name, presentation: outlawStashPlan.presentation, trigger: outlawStashPlan.trigger, routeRange: outlawStashPlan.routeRange, score: outlawStashPlan.score, bonusTacos: outlawStashPlan.bonusTacos, rewardLabel: outlawStashPlan.rewardLabel, ...game.showdownExploration.secret },
+          repeatTriggerProtection: {
+            allCompletionCountsAtMostOne: [...showdownExplorationPlan.map((entry) => game.showdownExploration.destinations[entry.id]), game.showdownExploration.secret].every((state) => state.completionCount <= 1),
+            allRewardSpawnCountsAtMostOne: [...showdownExplorationPlan.map((entry) => game.showdownExploration.destinations[entry.id]), game.showdownExploration.secret].every((state) => state.rewardSpawnCount <= 1),
+          },
+          rewardItems: world.collectibles.filter((item) => item.explorationReward).map((item) => ({
+            discovery: item.phase2Discovery, rainbow: Boolean(item.rainbowReward), collected: item.collected,
+            dynamic: Boolean(item.dynamic), inFlight: Boolean(item.rewardFlight),
+            x: Number(item.x.toFixed(2)), y: Number(item.y.toFixed(2)),
+            platformId: item.rewardLanding?.platformId || null,
+            targetX: item.rewardLanding ? Number(item.rewardLanding.targetX.toFixed(2)) : null,
+            targetY: item.rewardLanding ? Number(item.rewardLanding.targetY.toFixed(2)) : null,
+            surfaceY: item.rewardLanding?.surfaceY ?? null,
+            aboveSurface: item.rewardLanding ? item.y + item.h <= item.rewardLanding.surfaceY + .1 : null,
+            horizontallySafe: item.rewardLanding ? item.rewardLanding.targetX >= item.rewardLanding.safeLeft - .1 && item.rewardLanding.targetX <= item.rewardLanding.safeRight + .1 : null,
+            settled: Boolean(item.rewardLanding?.settled),
+          })),
+        } : null,
         background: world1Background.qaState(),
         foregroundRemaster: {
           version: 1,
@@ -3523,6 +4277,7 @@
         celebrationTime: Number(game.celebrationTime.toFixed(2)),
         fullscreenReady: Boolean(document.fullscreenEnabled || navigator.standalone),
       });
+      if (previewCapture) canvas.dataset.qaFrame = canvas.toDataURL('image/png');
     }
   }
 
@@ -3577,6 +4332,11 @@
     world1_3_checkpoint_parade_v1: 'assets/world1_3_checkpoint_parade_v1.webp',
     world1_3_checkpoint_showdown_v1: 'assets/world1_3_checkpoint_showdown_v1.webp',
     world1_3_checkpoint_fiesta_v1: 'assets/world1_3_checkpoint_fiesta_v1.webp',
+    world1_3_super_pepper_mine_lift_v1: 'assets/world1_3_super_pepper_mine_lift_v1.webp',
+    world1_3_super_salsa_silo_v1: 'assets/world1_3_super_salsa_silo_v1.webp',
+    world1_3_super_wanted_tower_v1: 'assets/world1_3_super_wanted_tower_v1.webp',
+    world1_3_super_guac_lookout_v1: 'assets/world1_3_super_guac_lookout_v1.webp',
+    world1_1_taco_trekker_olivia_v1: 'assets/world1_1_taco_trekker_olivia_v1.png',
   });
   const imageEntries = Object.entries(imageSources);
   Promise.all([
