@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-3-v30-pepper-shaft-reconstruction';
+  const SOURCE_VERSION = 'w1-3-v31-phase2-grounding-polish';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -55,8 +55,30 @@
     { x: 24440, name: 'Showdown Gate', sign: 'GUAC PRESSURE: CRITICAL.', radio: 'Olivia here: three openings, three stomps. The hat is structural. Probably.', accent: '#b78cff', look: 'neon' },
   ];
   const SHOWDOWN_EXPLORATION_VERSION = 'world-1-3-phase2-v2-polish';
-  const SHOWDOWN_VISUAL_POLISH_VERSION = 'world-1-3-phase2-final-polish-v1';
+  const SHOWDOWN_VISUAL_POLISH_VERSION = 'world-1-3-phase2-grounding-polish-v2';
   const PEPPER_MINE_RECONSTRUCTION_VERSION = 'world-1-3-pepper-shaft-v2';
+  const PHASE2_GROUNDING_VERSION = 'world-1-3-grounding-v1';
+  const PHASE2_STRUCTURE_GROUND_EMBED = 4;
+  const PHASE2_STATION_BOTTOM_PADDING = Object.freeze({
+    pepperMine: 29,
+    salsaSilo: 34,
+    wantedTower: 33,
+    guacLookout: 0,
+  });
+  const PHASE2_STATION_EXTRA_EMBED = Object.freeze({
+    pepperMine: 0,
+    salsaSilo: 0,
+    wantedTower: 0,
+    guacLookout: 14,
+  });
+  const OUTLAW_STASH_PRESENTATION = Object.freeze({
+    platformY: 104,
+    previousPlatformY: 18,
+    closedWidth: 76,
+    previousClosedWidth: 118,
+    openWidth: 84,
+    previousOpenWidth: 134,
+  });
   const BOSS_TRIGGER_X = 24920;
   const PHASE2_BOSS_BUFFER_X = 24320;
   const showdownExplorationPlan = Object.freeze([
@@ -422,7 +444,7 @@
       addExplorationPlatform({ id: 'phase2-wanted-balcony', x: 18730, y: 72, w: 178, style: 'float', moving: true, axis: 'x', range: 14, speed: .88, phase: 2.1, phase2Discovery: 'wanted-tower', phase2Waypoint: 2, phase2Art: 'wanted-balcony' }),
       addExplorationPlatform({ id: 'phase2-wanted-tower-deck', x: 19140, y: 52, w: 250, style: 'neon-sign', phase2Discovery: 'wanted-tower', phase2Waypoint: 3, phase2Art: 'wanted-deck' }),
       addExplorationPlatform({ id: 'phase2-outlaw-clue', x: 19470, y: 96, w: 150, style: 'neon-sign', phase2Discovery: 'outlaw-stash', phase2Waypoint: 1, phase2Art: 'stash-clue', phase2Hidden: true }),
-      addExplorationPlatform({ id: 'phase2-outlaw-stash', x: 19640, y: 18, w: 230, style: 'neon-sign', phase2Discovery: 'outlaw-stash', phase2Waypoint: 2, phase2Art: 'outlaw-stash', phase2Hidden: true }),
+      addExplorationPlatform({ id: 'phase2-outlaw-stash', x: 19640, y: OUTLAW_STASH_PRESENTATION.platformY, w: 230, style: 'neon-sign', phase2Discovery: 'outlaw-stash', phase2Waypoint: 2, phase2Art: 'outlaw-stash', phase2Hidden: true }),
 
       addExplorationPlatform({ id: 'phase2-lookout-ridge', x: 23470, y: 150, w: 178, style: 'neon-sign', phase2Discovery: 'guac-lookout', phase2Waypoint: 1, phase2Art: 'lookout-ridge' }),
       addExplorationPlatform({ id: 'phase2-lookout-signal', x: 23740, y: 78, w: 172, style: 'neon-sign', moving: true, axis: 'y', range: 12, speed: .9, phase: 2.7, phase2Discovery: 'guac-lookout', phase2Waypoint: 2, phase2Art: 'lookout-signal' }),
@@ -2856,6 +2878,11 @@
     ctx.restore();
   }
 
+  function groundedPhase2AssetBottom(image, width, sourceBottomPadding = 0, surfaceY = GROUND_Y, extraEmbed = 0) {
+    const sourceWidth = image?.naturalWidth || image?.width || 1254;
+    return surfaceY + PHASE2_STRUCTURE_GROUND_EMBED + extraEmbed + sourceBottomPadding * (width / sourceWidth);
+  }
+
   function drawExplorationNameplate(worldX, y, title, subtitle, accent, active) {
     if (!visibleWorldX(worldX - 125, 250, 100)) return;
     const x = worldX - game.cameraX;
@@ -2916,7 +2943,13 @@
       glow: active ? '#ffb347' : null,
       glowBlur: active ? 8 : 0,
     });
-    drawPepperMineSurfaceReconstruction(images.world1_3_super_pepper_mine_lift_v1, 4800, GROUND_Y + 2, 420, { glow: active ? '#ffd65a' : null, glowBlur: active ? 16 : 0 });
+    drawPepperMineSurfaceReconstruction(
+      images.world1_3_super_pepper_mine_lift_v1,
+      4800,
+      groundedPhase2AssetBottom(images.world1_3_super_pepper_mine_lift_v1, 420, PHASE2_STATION_BOTTOM_PADDING.pepperMine),
+      420,
+      { glow: active ? '#ffd65a' : null, glowBlur: active ? 16 : 0 },
+    );
     const wheelX = 4800 - game.cameraX + 72; const wheelY = 72;
     ctx.save(); ctx.translate(wheelX, wheelY); ctx.rotate(active ? time * .0017 : 0); ctx.strokeStyle = active ? '#65d8ff' : 'rgba(255,214,90,.32)'; ctx.lineWidth = 3; ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = active ? 13 : 0;
     for (let spoke = 0; spoke < 6; spoke += 1) { ctx.rotate(Math.PI / 3); ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(34, 0); ctx.stroke(); }
@@ -2934,7 +2967,13 @@
     const entry = showdownExplorationPlan[1];
     if (!visibleWorldX(entry.routeRange[0], entry.routeRange[1] - entry.routeRange[0], 220)) return;
     const state = showdownExplorationEntryState(entry); const active = Boolean(state?.completed);
-    drawPhase2DestinationAsset(images.world1_3_super_salsa_silo_v1, 13745, GROUND_Y + 2, 410, { glow: active ? '#ff6fae' : null, glowBlur: active ? 19 : 0 });
+    drawPhase2DestinationAsset(
+      images.world1_3_super_salsa_silo_v1,
+      13745,
+      groundedPhase2AssetBottom(images.world1_3_super_salsa_silo_v1, 410, PHASE2_STATION_BOTTOM_PADDING.salsaSilo),
+      410,
+      { glow: active ? '#ff6fae' : null, glowBlur: active ? 19 : 0 },
+    );
     const gaugeX = 13745 - game.cameraX + 5;
     ctx.save(); ctx.globalCompositeOperation = 'screen';
     const pulse = active ? .66 + Math.sin(time * .011) * .2 : .2;
@@ -2974,39 +3013,47 @@
       ctx.beginPath(); ctx.moveTo(48 - hatch * 27, paperTop + 143); ctx.lineTo(56 - hatch * 27, paperTop + 151); ctx.stroke();
     }
 
+    const setPosterFont = (text, maxWidth, preferredSize, minimumSize) => {
+      let size = preferredSize;
+      do {
+        ctx.font = `900 ${size}px Georgia, serif`;
+        if (ctx.measureText(text).width <= maxWidth) return size;
+        size -= 1;
+      } while (size >= minimumSize);
+      return minimumSize;
+    };
+
+    // Keep the type in the clear parchment area below the ornamental horns.
+    // The exact portrait asset remains the focal point between the two lines.
     ctx.textAlign = 'center';
     ctx.fillStyle = '#4c291d';
     ctx.strokeStyle = 'rgba(246,207,137,.32)';
-    ctx.lineWidth = 1.2;
-    ctx.font = '900 20px Georgia, serif';
-    ctx.strokeText('WANTED', 0, 238);
-    ctx.fillText('WANTED', 0, 238);
-    ctx.strokeStyle = 'rgba(76,41,29,.48)';
-    ctx.lineWidth = 1.2;
-    ctx.beginPath(); ctx.moveTo(-55, 244); ctx.lineTo(55, 244); ctx.stroke();
+    ctx.lineWidth = 1;
+    setPosterFont('WANTED', paperWidth - 34, 17, 13);
+    ctx.strokeText('WANTED', 0, paperTop + 32);
+    ctx.fillText('WANTED', 0, paperTop + 32);
+    ctx.strokeStyle = 'rgba(76,41,29,.42)';
+    ctx.beginPath(); ctx.moveTo(-49, paperTop + 37); ctx.lineTo(49, paperTop + 37); ctx.stroke();
 
     if (images.world1_3_el_guacodillo_wanted_portrait_v1) {
       const portrait = images.world1_3_el_guacodillo_wanted_portrait_v1;
-      const portraitWidth = 87;
+      const portraitWidth = 56;
       const portraitHeight = portraitWidth * (portrait.naturalHeight || portrait.height) / (portrait.naturalWidth || portrait.width);
       ctx.save();
       ctx.globalCompositeOperation = 'multiply';
       ctx.globalAlpha = .9;
-      ctx.drawImage(portrait, -portraitWidth * .5, 248, portraitWidth, portraitHeight);
+      ctx.drawImage(portrait, -portraitWidth * .5, paperTop + 39, portraitWidth, portraitHeight);
       ctx.restore();
     }
 
-    ctx.fillStyle = 'rgba(76,41,29,.92)';
-    ctx.beginPath(); ctx.roundRect(-65, 309, 130, 32, 5); ctx.fill();
-    ctx.strokeStyle = 'rgba(247,216,153,.7)';
-    ctx.lineWidth = 1.2;
-    ctx.beginPath(); ctx.moveTo(-60, 307); ctx.lineTo(60, 307); ctx.stroke();
-    ctx.fillStyle = '#f4d79b';
-    ctx.strokeStyle = 'rgba(55,27,20,.68)';
+    ctx.strokeStyle = 'rgba(76,41,29,.42)';
     ctx.lineWidth = 1;
-    ctx.font = '900 15px Georgia, serif';
-    ctx.strokeText('EL GUACADILLO', 0, 331);
-    ctx.fillText('EL GUACADILLO', 0, 331);
+    ctx.beginPath(); ctx.moveTo(-49, paperTop + 103); ctx.lineTo(49, paperTop + 103); ctx.stroke();
+    ctx.fillStyle = '#4c291d';
+    ctx.strokeStyle = 'rgba(246,207,137,.28)';
+    setPosterFont('EL GUACADILLO', paperWidth - 28, 10, 8);
+    ctx.strokeText('EL GUACADILLO', 0, paperTop + 111);
+    ctx.fillText('EL GUACADILLO', 0, paperTop + 111);
     ctx.restore();
   }
 
@@ -3014,7 +3061,13 @@
     const entry = showdownExplorationPlan[2];
     if (!visibleWorldX(entry.routeRange[0], entry.routeRange[1] - entry.routeRange[0], 220)) return;
     const state = showdownExplorationEntryState(entry); const active = Boolean(state?.completed);
-    drawPhase2DestinationAsset(images.world1_3_super_wanted_tower_v1, 19265, GROUND_Y + 2, 420, { glow: active ? '#ff6fae' : null, glowBlur: active ? 17 : 0 });
+    drawPhase2DestinationAsset(
+      images.world1_3_super_wanted_tower_v1,
+      19265,
+      groundedPhase2AssetBottom(images.world1_3_super_wanted_tower_v1, 420, PHASE2_STATION_BOTTOM_PADDING.wantedTower),
+      420,
+      { glow: active ? '#ff6fae' : null, glowBlur: active ? 17 : 0 },
+    );
     drawElGuacadilloWantedPoster();
     ctx.save(); ctx.globalCompositeOperation = 'screen';
     for (let bulb = 0; bulb < 10; bulb += 1) { const bx = 19135 - game.cameraX + bulb * 29; ctx.fillStyle = ['#ff6fae', '#65d8ff', '#ffd65a'][bulb % 3]; ctx.globalAlpha = active ? .76 + Math.sin(time * .01 + bulb) * .2 : .23; ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = active ? 12 : 3; ctx.beginPath(); ctx.arc(bx, 115 + Math.sin(bulb) * 5, active ? 4 : 2.5, 0, Math.PI * 2); ctx.fill(); }
@@ -3027,37 +3080,34 @@
     if (!visibleWorldX(outlawStashPlan.routeRange[0], outlawStashPlan.routeRange[1] - outlawStashPlan.routeRange[0], 180)) return;
     const x = outlawStashPlan.rewardX - game.cameraX;
     const surface = world.platforms.find((platform) => platform.id === outlawStashPlan.rewardPlatformId);
-    // The approved stash platform hugs the top of the camera. Preserve the
-    // original visible footprint by mounting the art downward beneath that
-    // ledge instead of clipping most of a feet-anchored chest above the canvas.
-    const topY = Math.max(5, (surface?.y ?? 18) - 12);
+    const surfaceY = surface?.y ?? OUTLAW_STASH_PRESENTATION.platformY;
     const open = smoothstep(state?.crateOpen || 0);
     const reveal = Boolean(state?.completed);
-    ctx.save(); ctx.translate(x, topY);
+    ctx.save(); ctx.translate(x, surfaceY);
     ctx.globalAlpha = reveal ? .28 + open * .34 : .22;
-    ctx.fillStyle = '#24172f'; ctx.beginPath(); ctx.ellipse(0, 116, 63, 10, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#24172f'; ctx.beginPath(); ctx.ellipse(0, 1, 43, 5, 0, 0, Math.PI * 2); ctx.fill();
     if (reveal) {
-      const glow = ctx.createRadialGradient(0, 55, 10, 0, 55, 112);
+      const glow = ctx.createRadialGradient(0, -40, 8, 0, -40, 82);
       glow.addColorStop(0, `rgba(255,241,166,${.42 + open * .34})`);
       glow.addColorStop(.43, `rgba(255,111,174,${open * .18})`);
       glow.addColorStop(1, 'rgba(255,214,90,0)');
-      ctx.fillStyle = glow; ctx.beginPath(); ctx.ellipse(0, 58, 112, 96, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = glow; ctx.beginPath(); ctx.ellipse(0, -40, 82, 72, 0, 0, Math.PI * 2); ctx.fill();
     }
-    const drawChestFrame = (image, width, alpha, lift = 0) => {
+    const drawChestFrame = (image, width, alpha) => {
       if (!image || alpha <= .001) return;
       const height = width * (image.naturalHeight || image.height) / (image.naturalWidth || image.width);
       ctx.save(); ctx.globalAlpha = alpha; ctx.shadowColor = reveal ? '#ffd65a' : '#6f5a78'; ctx.shadowBlur = reveal ? 12 + open * 17 : 5;
-      ctx.drawImage(image, -width * .5, -lift, width, height); ctx.restore();
+      ctx.drawImage(image, -width * .5, -height, width, height); ctx.restore();
     };
     const closedPulse = reveal ? 1 - open : .82 + Math.sin(time * .008) * .08;
-    drawChestFrame(images.world1_3_outlaw_stash_closed_v1, 118, closedPulse);
-    drawChestFrame(images.world1_3_outlaw_stash_open_v1, 134 * (.92 + open * .08), open, 2 + Math.sin(open * Math.PI) * 4);
+    drawChestFrame(images.world1_3_outlaw_stash_closed_v1, OUTLAW_STASH_PRESENTATION.closedWidth, closedPulse);
+    drawChestFrame(images.world1_3_outlaw_stash_open_v1, OUTLAW_STASH_PRESENTATION.openWidth, open);
     if (reveal) {
       for (let sparkle = 0; sparkle < 7; sparkle += 1) {
         const angle = time * .0015 + sparkle * Math.PI * 2 / 7;
-        const radius = 46 + Math.sin(time * .009 + sparkle) * 8;
+        const radius = 38 + Math.sin(time * .009 + sparkle) * 7;
         ctx.globalAlpha = open * (.5 + sparkle % 2 * .2);
-        drawStar(Math.cos(angle) * radius, 60 + Math.sin(angle) * 32, 3 + sparkle % 3, ['#ffd65a', '#ff6fae', '#65d8ff'][sparkle % 3]);
+        drawStar(Math.cos(angle) * radius, -43 + Math.sin(angle) * 27, 3 + sparkle % 3, ['#ffd65a', '#ff6fae', '#65d8ff'][sparkle % 3]);
       }
     }
     ctx.restore();
@@ -3067,7 +3117,13 @@
     const entry = showdownExplorationPlan[3];
     if (!visibleWorldX(entry.routeRange[0], entry.routeRange[1] - entry.routeRange[0], 220)) return;
     const state = showdownExplorationEntryState(entry); const active = Boolean(state?.completed); const power = active ? 1 : state?.power || 0;
-    drawPhase2DestinationAsset(images.world1_3_super_guac_lookout_v1, 24045, GROUND_Y + 2, 430, { glow: power > .4 ? '#9bef70' : null, glowBlur: 10 + power * 15 });
+    drawPhase2DestinationAsset(
+      images.world1_3_super_guac_lookout_v1,
+      24045,
+      groundedPhase2AssetBottom(images.world1_3_super_guac_lookout_v1, 430, PHASE2_STATION_BOTTOM_PADDING.guacLookout, GROUND_Y, PHASE2_STATION_EXTRA_EMBED.guacLookout),
+      430,
+      { glow: power > .4 ? '#9bef70' : null, glowBlur: 10 + power * 15 },
+    );
     const beaconX = 23955 - game.cameraX; const beaconY = 52;
     ctx.save(); ctx.globalCompositeOperation = 'screen'; ctx.translate(beaconX, beaconY); ctx.rotate(time * .0012); ctx.strokeStyle = `rgba(155,239,112,${.18 + power * .65})`; ctx.lineWidth = 8;
     ctx.beginPath(); ctx.moveTo(-8, 0); ctx.lineTo(-128, -20); ctx.moveTo(8, 0); ctx.lineTo(128, 20); ctx.stroke(); ctx.rotate(Math.PI / 2); ctx.globalAlpha = .5; ctx.beginPath(); ctx.moveTo(-5, 0); ctx.lineTo(-88, -12); ctx.moveTo(5, 0); ctx.lineTo(88, 12); ctx.stroke(); ctx.restore();
@@ -4380,12 +4436,41 @@
               portraitAsset: 'world1_3_el_guacodillo_wanted_portrait_v1.webp',
               layout: ['WANTED', 'EL GUACODILLO PORTRAIT', 'EL GUACADILLO'],
               legacyClutterRemoved: true,
+              parchmentBounds: { centerX: 19254, top: 215, width: 146, height: 166 },
+              typographyContained: true,
+              portraitPreserved: true,
             },
             rewardArt: {
               premiumTaco: 'world1_3_exploration_taco_reward_v1.webp',
               rainbowTaco: 'world1_3_exploration_rainbow_taco_v1.webp',
               stashFrames: ['world1_3_outlaw_stash_closed_v1.webp', 'world1_3_outlaw_stash_open_v1.webp'],
-              gameplayCoordinatesPreserved: true,
+              rewardLogicPreserved: true,
+              rewardSpawnsUseCollisionSurface: true,
+            },
+            grounding: {
+              version: PHASE2_GROUNDING_VERSION,
+              collisionSurfaceY: GROUND_Y,
+              visibleBaseEmbed: PHASE2_STRUCTURE_GROUND_EMBED,
+              sourceBottomPadding: PHASE2_STATION_BOTTOM_PADDING,
+              additionalEmbed: PHASE2_STATION_EXTRA_EMBED,
+              stationsAnchored: ['pepper-mine-lift', 'salsa-silo', 'wanted-tower', 'guac-lookout'],
+              allHeavyStationArtMeetsSurface: true,
+              decorativePropsMoveWithStationArt: true,
+            },
+            outlawStash: {
+              previousPlatformY: OUTLAW_STASH_PRESENTATION.previousPlatformY,
+              platformY: OUTLAW_STASH_PRESENTATION.platformY,
+              previousClosedWidth: OUTLAW_STASH_PRESENTATION.previousClosedWidth,
+              closedWidth: OUTLAW_STASH_PRESENTATION.closedWidth,
+              previousOpenWidth: OUTLAW_STASH_PRESENTATION.previousOpenWidth,
+              openWidth: OUTLAW_STASH_PRESENTATION.openWidth,
+              baseAnchor: 'reward-platform-top',
+              chestAboveSurface: true,
+              openChestTopY: Number((OUTLAW_STASH_PRESENTATION.platformY - OUTLAW_STASH_PRESENTATION.openWidth * 638 / 640).toFixed(2)),
+              normalRewardLaunchY: OUTLAW_STASH_PRESENTATION.platformY - 46,
+              rainbowRewardLaunchY: OUTLAW_STASH_PRESENTATION.platformY - 48,
+              rewardOriginsInsideChest: true,
+              onlyCollisionAdjustment: 'phase2-outlaw-stash:y18-to-y104',
             },
             pepperMine: {
               reconstructionVersion: PEPPER_MINE_RECONSTRUCTION_VERSION,

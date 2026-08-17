@@ -1196,7 +1196,7 @@ test("ships World 1 with authored seamless panorama progressions", async () => {
     assert.match(showdownForeground, new RegExp(filename.replace(".", "\\.")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(showdownForegroundHtml, /level1-3\.js\?v=30/);
+  assert.match(showdownForegroundHtml, /level1-3\.js\?v=31/);
   assert.match(showdownForeground, /function drawPaintedTerrainSlice/);
   assert.match(showdownForeground, /checkpointArtGroundedByVisibleBaseline: true/);
   assert.match(showdownForeground, /independentCheckpointShadows: true/);
@@ -1467,8 +1467,8 @@ test("remasters the complete World 1-3 showdown enemy, boss, stampede, and NPC c
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /level1-3\.js\?v=30/);
-  assert.match(runtime, /SOURCE_VERSION = 'w1-3-v30-pepper-shaft-reconstruction'/);
+  assert.match(html, /level1-3\.js\?v=31/);
+  assert.match(runtime, /SOURCE_VERSION = 'w1-3-v31-phase2-grounding-polish'/);
   assert.match(runtime, /function remasteredEnemyFrame/);
   assert.match(runtime, /enemyAnimationFrames: 8/);
   assert.match(runtime, /behaviorLinked: true/);
@@ -1505,7 +1505,7 @@ test("authors World 1-3 combat around readable formations, full-platform patrols
   assert.match(runtime, /previousBottom: player\.previousBottom/);
   assert.match(runtime, /previousTargetTop: previousEnemyTop/);
   assert.match(runtime, /player\.y = Math\.min\(player\.y, enemy\.y - player\.h - 1\)/);
-  assert.match(html, /level1-3\.js\?v=30/);
+  assert.match(html, /level1-3\.js\?v=31/);
 });
 
 test("adds World 1-3 Phase 2 exploration before the unchanged El Guacodillo arena", async () => {
@@ -1529,9 +1529,10 @@ test("adds World 1-3 Phase 2 exploration before the unchanged El Guacodillo aren
     assert.match(runtime, new RegExp(filename.replace(/\./g, "\\.")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(html, /level1-3\.js\?v=30/);
+  assert.match(html, /level1-3\.js\?v=31/);
   assert.match(runtime, /SHOWDOWN_EXPLORATION_VERSION = 'world-1-3-phase2-v2-polish'/);
-  assert.match(runtime, /SHOWDOWN_VISUAL_POLISH_VERSION = 'world-1-3-phase2-final-polish-v1'/);
+  assert.match(runtime, /SHOWDOWN_VISUAL_POLISH_VERSION = 'world-1-3-phase2-grounding-polish-v2'/);
+  assert.match(runtime, /PHASE2_GROUNDING_VERSION = 'world-1-3-grounding-v1'/);
   assert.match(runtime, /id: 'pepper-mine-lift'/);
   assert.match(runtime, /id: 'salsa-silo'/);
   assert.match(runtime, /id: 'wanted-tower'/);
@@ -1563,9 +1564,21 @@ test("adds World 1-3 Phase 2 exploration before the unchanged El Guacodillo aren
   assert.match(runtime, /ctx\.strokeText\('WANTED'/);
   assert.match(runtime, /ctx\.strokeText\('EL GUACADILLO'/);
   assert.doesNotMatch(runtime, /3 STOMPS • HUGE EGO/);
+  assert.match(runtime, /typographyContained: true/);
+  assert.match(runtime, /portraitPreserved: true/);
+  assert.match(runtime, /function groundedPhase2AssetBottom/);
+  assert.match(runtime, /allHeavyStationArtMeetsSurface: true/);
+  assert.match(runtime, /sourceBottomPadding: PHASE2_STATION_BOTTOM_PADDING/);
+  assert.match(runtime, /platformY: 104/);
+  assert.match(runtime, /closedWidth: 76/);
+  assert.match(runtime, /openWidth: 84/);
+  assert.match(runtime, /baseAnchor: 'reward-platform-top'/);
+  assert.match(runtime, /rewardOriginsInsideChest: true/);
+  assert.match(runtime, /onlyCollisionAdjustment: 'phase2-outlaw-stash:y18-to-y104'/);
+  assert.doesNotMatch(runtime, /mounting the art downward beneath that/);
   assert.match(runtime, /approvedStationGeometryPreserved: true/);
   assert.match(runtime, /bossArenaUntouched: true/);
-  assert.match(runtime, /gameplayCoordinatesPreserved: true/);
+  assert.match(runtime, /rewardLogicPreserved: true/);
   assert.match(runtime, /collisionGeometryChanged: false/);
   assert.match(runtime, /PEPPER_MINE_RECONSTRUCTION_VERSION = 'world-1-3-pepper-shaft-v2'/);
   assert.match(runtime, /function drawPepperMineSurfaceReconstruction/);
