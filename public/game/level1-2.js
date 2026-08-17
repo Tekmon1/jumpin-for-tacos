@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-2-v37-super-exploration';
+  const SOURCE_VERSION = 'w1-2-v38-exploration-polish';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = true;
@@ -90,14 +90,14 @@
     },
     { id: 'inverted', trigger: 17700, direction: -1, inverted: true, intro: 'WAIT... IS THE PLANE UPSIDE DOWN?!', text: ['INVERTED. TOTALLY NORMAL.', 'TACOS STILL UPRIGHT.'] },
   ];
-  const SKY_EXPLORATION_VERSION = 'world-1-2-phase2-v1';
+  const SKY_EXPLORATION_VERSION = 'world-1-2-phase2-v2-polish';
   const skyExplorationPlan = Object.freeze([
     Object.freeze({
       id: 'propeller-perch', name: 'Propeller Perch', presentation: 'mechanical-activation',
       arrivalTitle: 'PROPELLER PERCH REACHED', completionTitle: 'PROP SYSTEM ONLINE',
       rewardLabel: '+1,100 SCORE  •  9-TACO TAILWIND', score: 1100, bonusTacos: 9,
       trigger: Object.freeze({ x: 7040, y: 30, w: 220, h: 152 }),
-      routeRange: Object.freeze([6200, 7350]), rewardX: 7148, rewardY: 80,
+      routeRange: Object.freeze([6200, 7350]), rewardX: 7148, rewardY: 80, rewardPlatformId: 'phase2-propeller-perch',
       waypointCount: 3, worldPercent: Object.freeze([18.5, 21.9]),
     }),
     Object.freeze({
@@ -105,7 +105,7 @@
       arrivalTitle: 'SKY BANNER LINE REACHED', completionTitle: 'BANNERS AT FULL SAIL!',
       rewardLabel: '+1,800 SCORE  •  12-TACO PARADE', score: 1800, bonusTacos: 12,
       trigger: Object.freeze({ x: 13040, y: 24, w: 220, h: 154 }),
-      routeRange: Object.freeze([11700, 13270]), rewardX: 13145, rewardY: 78,
+      routeRange: Object.freeze([11700, 13270]), rewardX: 13145, rewardY: 78, rewardPlatformId: 'phase2-banner-finish',
       waypointCount: 5, worldPercent: Object.freeze([34.8, 39.5]),
     }),
     Object.freeze({
@@ -113,7 +113,7 @@
       arrivalTitle: 'FLYBY RELAY FOUND', completionTitle: 'AIRBORNE LINK ESTABLISHED',
       rewardLabel: '+2,800 SCORE  •  14-TACO AIR DROP  •  RAINBOW + MAGNET', score: 2800, bonusTacos: 14,
       trigger: Object.freeze({ x: 22130, y: 46, w: 230, h: 162 }),
-      routeRange: Object.freeze([21400, 22400]), rewardX: 22245, rewardY: 108,
+      routeRange: Object.freeze([21400, 22400]), rewardX: 22245, rewardY: 108, rewardPlatformId: 'phase2-relay-beacon',
       waypointCount: 3, worldPercent: Object.freeze([63.7, 66.7]),
     }),
   ]);
@@ -123,7 +123,7 @@
     rewardLabel: '+4,200 SCORE  •  22-TACO JACKPOT  •  3 RAINBOW TACOS',
     score: 4200, bonusTacos: 22,
     trigger: Object.freeze({ x: 26500, y: 0, w: 220, h: 142 }),
-    routeRange: Object.freeze([25450, 26850]), rewardX: 26608, rewardY: 42,
+    routeRange: Object.freeze([25450, 26850]), rewardX: 26608, rewardY: 42, rewardPlatformId: 'phase2-cloud-cargo',
     worldPercent: Object.freeze([75.7, 79.9]), requiredAmbushStage: 3,
   });
   const SKY_COMBAT_END = 22400;
@@ -209,7 +209,7 @@
     personalBest: { score: 0, time: 0, runs: 0, medal: '' },
     routeMaxGap: 0, platformOverlapCount: 0, elevatedMaxGap: 0, unreachablePlatforms: 0,
     inputResetCount: 0, lastInputResetReason: 'none', landingRecoveries: 0, controlStallTimer: 0, controllerStateSyncs: 0, controllerStateSequence: 0, controllerQaResetDone: false, tacoOverlapCount: 0, tacoDuplicatesRemoved: 0,
-    flybyCorridorMaxGap: 0, flybyCorridorEnemies: 0, effectsTrimmed: 0, lastCollectSfxAt: -1,
+    flybyCorridorMaxGap: 0, flybyCorridorEnemies: 0, effectsTrimmed: 0, lastCollectSfxAt: -1, previewAutoJumpCooldown: 0,
     checkpointsGrounded: 0, airDrop: { spawned: 0, caught: 0 },
     respawnCount: 0, respawnFallbacks: 0, lastRespawnLanding: null, fallSoundPlayed: false,
     aircraftLoop: null, flybyAircraftLoop: null, ambushAircraftLoop: null, rescuePropellerLoop: null, rescueLoop: null, explorationAircraftLoop: null,
@@ -223,9 +223,15 @@
   let skyExplorationGeometryAudit = null;
   const params = new URLSearchParams(location.search);
   const qa = ['terminal.local', '127.0.0.1', 'localhost'].includes(location.hostname);
+  if (qa && params.has('capture')) {
+    setInterval(() => { canvas.dataset.qaFrame = canvas.toDataURL('image/png'); }, 420);
+  }
   const previewStart = qa ? Number(params.get('startX') || 0) : 0;
   const previewStartY = qa && params.has('startY') ? Number(params.get('startY')) : 360;
   const previewAutoRun = qa && params.get('autoRun') === '1';
+  const previewAutoJump = qa && params.get('autoJump') === '1';
+  const previewForceNormal = qa && params.get('normalOnly') === '1';
+  const previewNoDamage = qa && params.get('noDamage') === '1';
   const previewEvent = qa ? params.get('event') || '' : '';
   const previewOpeningAt = qa ? Number(params.get('openingAt') || 0) : 0;
   const previewSkipOpening = qa && (params.get('skipOpening') === '1' || previewStart > 500 || previewEvent);
@@ -258,6 +264,22 @@
       transmission: null,
       interaction: null,
       relayFlyby: null,
+      relayContinuity: {
+        status: 'idle',
+        pendingOutbound: false,
+        outboundPasses: 0,
+        returnPasses: 0,
+        airDrops: 0,
+        canonicalFlybySignature: null,
+        canonicalPreserved: true,
+        restored: true,
+        ambushQueued: false,
+        ambushDeferredCount: 0,
+        overlapPrevented: true,
+        completedAt: null,
+        ambushReleasedAt: null,
+        expectedAmbushEntry: 'left-to-right',
+      },
       supplyDrop: null,
       cameraLift: 0,
       cameraTargetLift: 0,
@@ -273,6 +295,7 @@
         completionCount: 0,
         rewardSpawned: false,
         rewardSpawnCount: 0,
+        rewardSurfaceId: null,
         environmentEnergized: false,
         spectacleTimer: 0,
         spectacleMaxTimer: 0,
@@ -287,6 +310,7 @@
         completionCount: 0,
         rewardSpawned: false,
         rewardSpawnCount: 0,
+        rewardSurfaceId: null,
         environmentEnergized: false,
         revealTimer: 0,
         revealMaxTimer: 0,
@@ -1072,7 +1096,7 @@
       particles: [], confetti: [], fireworks: [], impactTexts: [], pinataBurst: null, cameraShake: 0, hitStop: 0, celebrationTime: 0, partyBeat: -1, settingsOpen: false,
       splatCombo: 0, splatTimer: 0, bestSplat: 0, respawn: heroCore.createRespawnState(),
       activeMusic: null, musicTransition: null, musicTransitionCount: 0, musicRetargets: 0, musicOverlapRecoveries: 0, maxMusicPlaying: 0,
-      inputResetCount: 0, lastInputResetReason: 'none', landingRecoveries: 0, controlStallTimer: 0, controllerStateSyncs: 0, controllerStateSequence: 0, controllerQaResetDone: false, effectsTrimmed: 0, lastCollectSfxAt: -1,
+      inputResetCount: 0, lastInputResetReason: 'none', landingRecoveries: 0, controlStallTimer: 0, controllerStateSyncs: 0, controllerStateSequence: 0, controllerQaResetDone: false, effectsTrimmed: 0, lastCollectSfxAt: -1, previewAutoJumpCooldown: 0,
       airDrop: { spawned: 0, caught: 0 },
       respawnCount: 0, respawnFallbacks: 0, lastRespawnLanding: null, fallSoundPlayed: false,
       aircraftLoop: null, flybyAircraftLoop: null, ambushAircraftLoop: null, rescuePropellerLoop: null, rescueLoop: null, explorationAircraftLoop: null,
@@ -1181,38 +1205,136 @@
     return entry.id === cloudCargoSecretPlan.id ? game.skyExploration?.secret : skyExplorationEntryState(entry);
   }
 
+  function canonicalFlybySignature() {
+    return JSON.stringify(game.flybys.map((flyby) => ({
+      id: flyby.id,
+      trigger: flyby.trigger,
+      direction: flyby.direction,
+      inverted: Boolean(flyby.inverted),
+      tacoDrop: Boolean(flyby.tacoDrop),
+      started: Boolean(flyby.started),
+      finished: Boolean(flyby.finished),
+      timer: Number(flyby.timer.toFixed(3)),
+      dropsReleased: flyby.dropsReleased,
+    })));
+  }
+
+  function relayExcursionActive() {
+    const exploration = game.skyExploration;
+    if (!exploration) return false;
+    const status = exploration.relayContinuity?.status;
+    return Boolean(
+      exploration.relayFlyby
+      || exploration.relayContinuity?.pendingOutbound
+      || ['powering', 'awaiting-canonical', 'outbound', 'turnaround', 'return'].includes(status),
+    );
+  }
+
+  function skyExplorationRewardSurface(entry) {
+    const platform = world.platforms.find((candidate) => candidate.id === entry.rewardPlatformId);
+    if (!platform) return null;
+    const itemSize = 24;
+    const padding = 14;
+    return {
+      platform,
+      platformId: platform.id,
+      top: platform.y,
+      center: platform.x + platform.w * .5,
+      safeLeft: platform.x + padding,
+      safeRight: platform.x + platform.w - padding - itemSize,
+      width: platform.w,
+    };
+  }
+
   function spawnSkyExplorationRewards(entry, state) {
     if (!state || state.rewardSpawned) return false;
     const secret = entry.id === cloudCargoSecretPlan.id;
+    const surface = skyExplorationRewardSurface(entry);
+    if (!surface) return false;
+    const rainbowCount = secret ? 3 : entry.id === 'olivia-flyby-relay' ? 1 : 0;
+    const columns = Math.max(1, Math.min(8, entry.bonusTacos));
+    const slotSpacing = columns >= 8 ? 24 : 28;
+    const normalBaseOffset = rainbowCount ? 61 : 31;
+    const launchY = surface.top - (secret ? 48 : 88);
+
     for (let index = 0; index < entry.bonusTacos; index += 1) {
-      const fan = entry.bonusTacos === 1 ? .5 : index / (entry.bonusTacos - 1);
-      addItem(entry.rewardX - 12, entry.rewardY, 'taco', {
+      const row = Math.floor(index / columns);
+      const rowStart = row * columns;
+      const rowLength = Math.min(columns, entry.bonusTacos - rowStart);
+      const column = index - rowStart;
+      const targetX = clamp(surface.center - ((rowLength - 1) * slotSpacing + 24) * .5 + column * slotSpacing, surface.safeLeft, surface.safeRight);
+      const targetY = surface.top - normalBaseOffset - row * 27;
+      const delay = index * .022;
+      addItem(surface.center - 12, launchY, 'taco', {
         bonusReward: true,
         dynamic: true,
         explorationReward: true,
         phase2Pilot: true,
         phase2Discovery: entry.id,
-        vx: -245 + fan * 490,
-        vy: -300 - Math.sin(fan * Math.PI) * (secret ? 205 : 130) - (index % 3) * 13,
+        rewardFlight: {
+          elapsed: -delay,
+          duration: .6 + column * .035 + row * .08,
+          startX: surface.center - 12,
+          startY: launchY,
+          targetX,
+          targetY,
+          arc: secret ? 30 + row * 7 : 74 + row * 15,
+          platformId: surface.platformId,
+        },
+        rewardLanding: {
+          platformId: surface.platformId,
+          surfaceY: surface.top,
+          targetX,
+          targetY,
+          safeLeft: surface.safeLeft,
+          safeRight: surface.safeRight,
+          settled: false,
+        },
+        vx: 0,
+        vy: 0,
         angle: index * .67,
         bounces: 0,
       });
     }
-    const rainbowCount = secret ? 3 : entry.id === 'olivia-flyby-relay' ? 1 : 0;
+
     for (let index = 0; index < rainbowCount; index += 1) {
-      addItem(entry.rewardX - 38 + index * 38, entry.rewardY + 18 + (index % 2) * 7, 'taco', {
+      const targetX = clamp(surface.center - 12 + (index - (rainbowCount - 1) * .5) * 54, surface.safeLeft, surface.safeRight);
+      const targetY = surface.top - 31;
+      const rainbowLaunchY = surface.top - (secret ? 48 : 98);
+      addItem(surface.center - 12, rainbowLaunchY, 'taco', {
         bonusReward: true,
         rainbowReward: true,
         explorationReward: true,
         phase2Pilot: true,
         phase2Discovery: entry.id,
+        dynamic: true,
+        rewardFlight: {
+          elapsed: -(entry.bonusTacos + index) * .022,
+          duration: .72 + index * .08,
+          startX: surface.center - 12,
+          startY: rainbowLaunchY,
+          targetX,
+          targetY,
+          arc: secret ? 44 + index * 4 : 122 + index * 10,
+          platformId: surface.platformId,
+        },
+        rewardLanding: {
+          platformId: surface.platformId,
+          surfaceY: surface.top,
+          targetX,
+          targetY,
+          safeLeft: surface.safeLeft,
+          safeRight: surface.safeRight,
+          settled: false,
+        },
       });
     }
     if (entry.id === 'olivia-flyby-relay') {
       sharedAbilities.activateMagnet(game.abilities);
       game.skyExploration.supplyDrop = { spawned: true, count: entry.bonusTacos + rainbowCount, deliveredAt: game.levelTime };
-      playAudio('ability.magnetStart', { position: audioPosition(entry.rewardX), gain: .82 });
+      playAudio('ability.magnetStart', { position: audioPosition(surface.center), gain: .82 });
     }
+    state.rewardSurfaceId = surface.platformId;
     state.rewardSpawned = true;
     state.rewardSpawnCount += 1;
     return true;
@@ -1236,6 +1358,15 @@
     state.activationStarted = true;
     state.activationCount += 1;
     state.power = Math.max(state.power, .06);
+    const continuity = game.skyExploration.relayContinuity;
+    Object.assign(continuity, {
+      status: 'powering',
+      pendingOutbound: false,
+      canonicalFlybySignature: null,
+      canonicalPreserved: true,
+      restored: false,
+      completedAt: null,
+    });
     game.skyExploration.interaction = {
       id: entry.id,
       elapsed: 0,
@@ -1266,7 +1397,6 @@
     game.score += entry.score;
     const secret = entry.id === cloudCargoSecretPlan.id;
     if (!options.suppressBanner) setSkyExplorationBanner(entry);
-    showMessage(entry.completionTitle, secret ? 2.8 : 1.55);
     spawnSkyExplorationRewards(entry, state);
     const screenX = entry.trigger.x + entry.trigger.w * .5 - game.cameraX;
     const centerY = entry.trigger.y + entry.trigger.h * .5;
@@ -1288,7 +1418,7 @@
       playAudio('collect.rainbowTaco', { position: audioPosition(entry.rewardX), pitchCents: 45 });
     } else {
       state.revealTimer = state.revealMaxTimer = 3.35;
-      state.crateOpen = 1;
+      state.crateOpen = .01;
       spawnFireworkAt(screenX - 125, Math.max(74, centerY - 60), .9);
       spawnFireworkAt(screenX + 125, Math.max(70, centerY - 92), 1.05);
       playAudio('pinata.break', { position: audioPosition(entry.rewardX), combo: 5 });
@@ -1321,15 +1451,8 @@
       playAudio('vehicle.aircraftReady', { position: audioPosition(entry.rewardX), pitchCents: 65 });
     }
     if (!interaction.flybyStarted && interaction.elapsed >= .72) {
-      interaction.flybyStarted = true;
-      game.skyExploration.relayFlyby = { timer: 0, duration: 4.65, independent: true, source: 'phase2-relay' };
-      game.explorationAircraftLoop = audio?.startLoop('vehicle.aircraftPropellerIdle', { gain: .12, position: -1, pitchCents: 110 }) || null;
-      playAudio('vehicle.aircraftApproach', { position: -1, variant: 'phase2-relay' });
-    }
-    if (!interaction.rewardDelivered && interaction.elapsed >= 1.28) {
-      interaction.rewardDelivered = true;
-      completeSkyExplorationEntry(entry, { fromInteraction: true, suppressBanner: true });
-      if (game.skyExploration.transmission) game.skyExploration.transmission.rewardVisible = true;
+      game.skyExploration.relayContinuity.pendingOutbound = true;
+      interaction.flybyStarted = startRelayRoundTrip() || Boolean(game.skyExploration.relayFlyby);
     }
     const focusing = interaction.elapsed < interaction.focusDuration;
     if (focusing) {
@@ -1342,23 +1465,95 @@
     return focusing;
   }
 
+  function startRelayRoundTrip() {
+    const exploration = game.skyExploration;
+    const continuity = exploration?.relayContinuity;
+    if (!exploration || !continuity?.pendingOutbound || exploration.relayFlyby) return false;
+    if (!game.flybys.every((flyby) => flyby.finished)) {
+      continuity.status = 'awaiting-canonical';
+      return false;
+    }
+    continuity.canonicalFlybySignature = canonicalFlybySignature();
+    continuity.canonicalPreserved = true;
+    continuity.status = 'outbound';
+    exploration.relayFlyby = {
+      phase: 'outbound',
+      timer: 0,
+      duration: 2.25,
+      turnaroundDuration: .52,
+      independent: true,
+      source: 'phase2-relay-round-trip',
+      rewardDelivered: false,
+    };
+    game.explorationAircraftLoop = audio?.startLoop('vehicle.aircraftPropellerIdle', { gain: .12, position: -1, pitchCents: 110 }) || null;
+    playAudio('vehicle.aircraftApproach', { position: -1, variant: 'phase2-relay-outbound' });
+    return true;
+  }
+
+  function relayFlybyScreenX(flyby) {
+    const duration = flyby.phase === 'turnaround' ? flyby.turnaroundDuration : flyby.duration;
+    const progress = clamp(flyby.timer / duration, 0, 1);
+    if (flyby.phase === 'outbound') return lerp(-250, canvas.width + 260, smoothstep(progress));
+    if (flyby.phase === 'return') return lerp(canvas.width + 260, -250, smoothstep(progress));
+    return canvas.width + 260;
+  }
+
   function updateRelayFlyby(dt) {
-    const flyby = game.skyExploration?.relayFlyby;
-    if (!flyby) return;
+    const exploration = game.skyExploration;
+    const continuity = exploration?.relayContinuity;
+    let flyby = exploration?.relayFlyby;
+    if (!flyby) {
+      startRelayRoundTrip();
+      return;
+    }
     flyby.timer += dt;
-    const progress = clamp(flyby.timer / flyby.duration, 0, 1);
-    const screenX = lerp(-250, canvas.width + 260, smoothstep(progress));
+    const phaseDuration = flyby.phase === 'turnaround' ? flyby.turnaroundDuration : flyby.duration;
+    const progress = clamp(flyby.timer / phaseDuration, 0, 1);
+    const screenX = relayFlybyScreenX(flyby);
     const closeness = 1 - smoothstep(Math.abs(screenX - canvas.width * .5) / (canvas.width * .72));
+    if (continuity?.canonicalFlybySignature) {
+      continuity.canonicalPreserved = continuity.canonicalPreserved && canonicalFlybySignature() === continuity.canonicalFlybySignature;
+    }
     audio?.updateLoop?.(game.explorationAircraftLoop, {
-      gain: .12 + closeness * .76,
+      gain: flyby.phase === 'turnaround' ? .06 : .12 + closeness * .76,
       position: clamp(screenX / canvas.width * 2 - 1, -1, 1),
-      pitchCents: lerp(115, -125, smoothstep(progress)),
+      pitchCents: flyby.phase === 'return' ? lerp(-105, 105, smoothstep(progress)) : lerp(115, -125, smoothstep(progress)),
       smoothingSeconds: .065,
     });
-    if (progress >= 1) {
+
+    if (flyby.phase === 'outbound' && !flyby.rewardDelivered && progress >= .42) {
+      flyby.rewardDelivered = true;
+      const entry = skyExplorationPlan.find((candidate) => candidate.id === 'olivia-flyby-relay');
+      const state = entry ? skyExplorationEntryState(entry) : null;
+      if (entry && state && completeSkyExplorationEntry(entry, { fromInteraction: true, suppressBanner: true })) {
+        continuity.airDrops += 1;
+        if (exploration.interaction) exploration.interaction.rewardDelivered = true;
+        if (exploration.transmission) exploration.transmission.rewardVisible = true;
+      }
+    }
+
+    if (progress < 1) return;
+    if (flyby.phase === 'outbound') {
+      continuity.outboundPasses += 1;
+      continuity.status = 'turnaround';
+      flyby.phase = 'turnaround';
+      flyby.timer = 0;
+      playAudio('vehicle.aircraftDepart', { position: 1, variant: 'phase2-relay-turnaround' });
+    } else if (flyby.phase === 'turnaround') {
+      continuity.status = 'return';
+      flyby.phase = 'return';
+      flyby.timer = 0;
+      playAudio('vehicle.aircraftApproach', { position: 1, variant: 'phase2-relay-return' });
+    } else {
+      continuity.returnPasses += 1;
+      continuity.pendingOutbound = false;
+      continuity.canonicalPreserved = continuity.canonicalPreserved && canonicalFlybySignature() === continuity.canonicalFlybySignature;
+      continuity.restored = continuity.canonicalPreserved;
+      continuity.status = continuity.restored ? 'restored' : 'continuity-error';
+      continuity.completedAt = game.levelTime;
       stopTrackedLoop('explorationAircraftLoop');
-      playAudio('vehicle.aircraftDepart', { position: 1 });
-      game.skyExploration.relayFlyby = null;
+      playAudio('vehicle.aircraftDepart', { position: -1, variant: 'phase2-relay-restored' });
+      exploration.relayFlyby = null;
     }
   }
 
@@ -1383,12 +1578,11 @@
         if (!state.arrivalAcknowledged) {
           state.arrivalAcknowledged = true;
           showMessage(entry.arrivalTitle, .95);
-          impactText(player.x + player.w * .5, Math.max(30, player.y - 5), 'FLIGHT PATH FOUND', '#65d8ff', 17);
         }
         const waypoint = Number(platform.phase2Waypoint) || 0;
         if (waypoint > state.progress) {
           state.progress = waypoint;
-          impactText(player.x + player.w * .5, Math.max(30, player.y - 6), entry.id === 'sky-banner-run' ? `BANNER ${waypoint}/${entry.waypointCount}` : entry.id === 'propeller-perch' ? `WIND LINK ${waypoint}/${entry.waypointCount}` : `BEACON LINK ${waypoint}/${entry.waypointCount}`, entry.id === 'sky-banner-run' ? '#ff6fae' : '#65d8ff', 17);
+          if (waypoint < entry.waypointCount) impactText(player.x + player.w * .5, Math.max(30, player.y - 6), entry.id === 'sky-banner-run' ? `BANNER ${waypoint}/${entry.waypointCount}` : entry.id === 'propeller-perch' ? `WIND LINK ${waypoint}/${entry.waypointCount}` : `BEACON LINK ${waypoint}/${entry.waypointCount}`, entry.id === 'sky-banner-run' ? '#ff6fae' : '#65d8ff', 17);
           playAudio('checkpoint.activate', { position: audioPosition(player.x), pitchCents: -70 + waypoint * 55, gain: .74 });
         }
       }
@@ -1396,6 +1590,7 @@
     }
     const secret = pilot.secret;
     secret.revealTimer = Math.max(0, secret.revealTimer - dt);
+    if (secret.completed) secret.crateOpen = Math.min(1, secret.crateOpen + dt * 2.35);
     if (player.platform?.phase2Discovery === cloudCargoSecretPlan.id) {
       secret.revealed = true;
       secret.progress = Math.max(secret.progress, Number(player.platform.phase2Waypoint) || 0);
@@ -1569,6 +1764,14 @@
     const wasGrounded = player.grounded;
     if (player.grounded) sharedAbilities.land(game.abilities);
     player.jumpBuffer = Math.max(0, player.jumpBuffer - dt); player.coyote = player.grounded ? heroPhysics.coyoteTime : Math.max(0, player.coyote - dt); player.invulnerable = Math.max(0, player.invulnerable - dt);
+    game.previewAutoJumpCooldown = Math.max(0, game.previewAutoJumpCooldown - dt);
+    const supportEdgeDistance = player.platform ? player.platform.x + player.platform.w - (player.x + player.w) : Infinity;
+    const nearestEnemyAhead = world.enemies.reduce((distance, enemy) => enemy.alive && enemy.x >= player.x ? Math.min(distance, enemy.x - (player.x + player.w)) : distance, Infinity);
+    const qaJumpCue = supportEdgeDistance <= 72 || nearestEnemyAhead <= 220;
+    if (previewAutoJump && player.grounded && game.previewAutoJumpCooldown === 0 && qaJumpCue) {
+      player.jumpBuffer = Math.max(player.jumpBuffer, heroPhysics.jumpBufferTime);
+      game.previewAutoJumpCooldown = .28;
+    }
     const autoRun = previewAutoRun || game.rescueActive;
     const manualInput = keys.left && keys.right ? keys.lastDir : keys.right ? 1 : keys.left ? -1 : 0;
     const input = manualInput || (autoRun ? 1 : 0);
@@ -1701,6 +1904,7 @@
   }
 
   function hurtPlayer(fromX) {
+    if (previewNoDamage) return;
     if (player.invulnerable > 0 || sharedAbilities.isFrenzy(game.abilities) || game.state !== 'playing') return;
     const knockbackX = player.x < fromX ? -260 : 260;
     if (sharedAbilities.absorbDamage(game.abilities, { position: audioPosition(player.x + player.w / 2) })) {
@@ -1727,7 +1931,7 @@
       player.vy = -heroPhysics.enemyBounceVelocity;
     }
     const feedback = heroCore.splatFeedback(Math.max(1, game.splatCombo), stomped);
-    const superStarted = sharedAbilities.splatEnemy(game.abilities, { position: audioPosition(enemy.x + enemy.w / 2) });
+    const superStarted = previewForceNormal ? false : sharedAbilities.splatEnemy(game.abilities, { position: audioPosition(enemy.x + enemy.w / 2) });
     if (superStarted) announceSuper(enemy.x);
     spawnBurst(enemy.x - game.cameraX + enemy.w / 2, enemy.y + 12, ['#65d8ff', '#ffd65a', '#ff6fae'][game.defeated % 3], 24);
     impactText(enemy.x + enemy.w / 2, enemy.y - 8, feedback.text, feedback.color, feedback.size);
@@ -1838,7 +2042,7 @@
     game.skyStreak.count += 1; game.skyStreak.best = Math.max(game.skyStreak.best, game.skyStreak.count); game.skyStreak.timer = 2.35; game.skyStreak.decayTimer = .62;
     if ([8, 18, 32].includes(game.skyStreak.count)) { const call = game.skyStreak.count === 8 ? 'TACO TRAIL!' : game.skyStreak.count === 18 ? 'SKY STREAK!' : 'SUPERSONIC SALSA!'; showMessage(call, 1.55); spawnConfetti(item.x - game.cameraX, item.y, 24 + game.skyStreak.count); playAudio('collect.streakMilestone', { combo: game.skyStreak.count, position: audioPosition(item.x) }); }
     if (!item.bonusReward) game.collected += 1; const streakMultiplier = 1 + Math.min(4, Math.floor(game.skyStreak.count / 8)); const multiplier = (sharedAbilities.isFrenzy(game.abilities) ? 3 : 1) * streakMultiplier; game.score += (item.bonusReward ? 35 : 10) * multiplier;
-    const superStarted = sharedAbilities.collectTaco(game.abilities, item.bonusReward ? 'premium' : 'taco', { position: audioPosition(item.x) }); if (superStarted) announceSuper(item.x);
+    const superStarted = previewForceNormal ? false : sharedAbilities.collectTaco(game.abilities, item.bonusReward ? 'premium' : 'taco', { position: audioPosition(item.x) }); if (superStarted) announceSuper(item.x);
     const magnetCascade = sharedAbilities.hasMagnet(game.abilities);
     spawnBurst(item.x - game.cameraX, item.y, '#ffd65a', magnetCascade ? 3 : 7);
     if (!item.rainbowReward) playAudio('collect.taco', { streak: game.skyStreak.count, position: audioPosition(item.x) });
@@ -1846,6 +2050,33 @@
 
   function updateItems(dt) {
     for (const item of world.collectibles) {
+      if (item.rewardFlight && !item.collected) {
+        const flight = item.rewardFlight;
+        flight.elapsed += dt;
+        if (flight.elapsed < 0) continue;
+        const progress = clamp(flight.elapsed / flight.duration, 0, 1);
+        const eased = smoothstep(progress);
+        item.x = lerp(flight.startX, flight.targetX, eased);
+        item.y = lerp(flight.startY, flight.targetY, eased) - Math.sin(progress * Math.PI) * flight.arc;
+        item.angle += dt * (7.5 - progress * 4.2);
+        if (progress >= 1) {
+          const platform = world.platforms.find((candidate) => candidate.id === flight.platformId) || null;
+          item.x = flight.targetX;
+          item.y = flight.targetY;
+          item.vx = 0;
+          item.vy = 0;
+          item.angle = 0;
+          item.dynamic = false;
+          item.rewardFlight = null;
+          if (item.rewardLanding) item.rewardLanding.settled = true;
+          if (platform) {
+            item.ridePlatform = platform;
+            item.rideOffsetX = item.x - platform.x;
+            item.rideOffsetY = item.y - platform.y;
+          }
+        }
+        continue;
+      }
       if (item.dynamic && !item.collected) {
         item.x += item.vx * dt; item.y += item.vy * dt; item.vy += 760 * dt; item.angle += dt * 7;
         if ((item.pinataReward || item.planeDrop || item.explorationReward) && item.y >= GROUND_Y - item.h - 2 && item.vy > 0) {
@@ -1859,7 +2090,7 @@
     if (sharedAbilities.hasMagnet(game.abilities)) {
       const radius = sharedAbilities.definitions.tacoMagnet.radius;
       for (const item of world.collectibles) {
-        if (item.collected || item.type !== 'taco') continue; const dx = player.x + 17 - (item.x + 12); const dy = player.y + 21 - (item.y + 12); const distance = Math.hypot(dx, dy);
+        if (item.collected || item.type !== 'taco' || item.rewardFlight) continue; const dx = player.x + 17 - (item.x + 12); const dy = player.y + 21 - (item.y + 12); const distance = Math.hypot(dx, dy);
         if (distance > radius || distance < 1) continue; const pull = 7 + (1 - distance / radius) * 17; item.x += dx * dt * pull; item.y += dy * dt * pull;
       }
     }
@@ -2075,7 +2306,16 @@
       }
     }
 
-    if (game.ambush.stage === 0 && player.x > 22900 && game.flybys.every((flyby) => flyby.finished)) {
+    const ambushReady = game.ambush.stage === 0 && player.x > 22900 && game.flybys.every((flyby) => flyby.finished);
+    if (ambushReady && relayExcursionActive()) {
+      const continuity = game.skyExploration?.relayContinuity;
+      if (continuity && !continuity.ambushQueued) {
+        continuity.ambushQueued = true;
+        continuity.ambushDeferredCount += 1;
+      }
+    } else if (ambushReady) {
+      const continuity = game.skyExploration?.relayContinuity;
+      if (continuity?.ambushQueued) continuity.ambushReleasedAt = game.levelTime;
       game.ambush.stage = 1; game.ambush.timer = 0; showMessage('UNIDENTIFIED GUAC ACTIVITY AHEAD!', 2.4); setMusic('ambush');
       playAudio('hazard.guacWarning', { position: 1 });
       playAudio('vehicle.aircraftApproach', { position: -1, variant: 'guac-ambush' });
@@ -2170,7 +2410,7 @@
     if (game.state === 'respawning') updateRespawn(dt);
     if (game.state === 'playing') {
       updateOpening(dt); updatePlayer(dt); updateEnemies(dt); updatePinata(dt); updateItems(dt); updateSkyStreak(dt); updateCheckpoints(); updatePlaneEvents(dt); updateSkyExploration(dt);
-      world.collectibles.forEach((item) => { if (!item.collected && intersects(player, item)) collectItem(item); });
+      world.collectibles.forEach((item) => { if (!item.collected && !item.rewardFlight && intersects(player, item)) collectItem(item); });
       const nextSection = Math.max(0, sections.findIndex((section) => player.x >= section.start && player.x < section.end));
       if (nextSection !== game.sectionIndex && !(nextSection === 6 && !game.crashLanded)) {
         game.sectionIndex = nextSection; const section = sections[nextSection]; setMusic(section.music);
@@ -2259,48 +2499,76 @@
     ctx.restore();
   }
 
+  function drawPhase2DestinationAsset(imageAsset, worldCenterX, platformTopY, width, sourcePlatformTopY, options = {}) {
+    if (!imageAsset) return;
+    const sourceWidth = imageAsset.naturalWidth || imageAsset.width;
+    const sourceHeight = imageAsset.naturalHeight || imageAsset.height;
+    const height = width * sourceHeight / sourceWidth;
+    const x = worldCenterX - game.cameraX - width * .5;
+    const y = platformTopY - height * sourcePlatformTopY / sourceHeight;
+    ctx.save();
+    ctx.globalAlpha = options.alpha ?? 1;
+    ctx.imageSmoothingEnabled = true;
+    if (options.glow) {
+      ctx.shadowColor = options.glow;
+      ctx.shadowBlur = options.glowBlur || 16;
+    }
+    ctx.drawImage(imageAsset, x, y, width, height);
+    ctx.restore();
+  }
+
   function drawPropellerPerch(time) {
     const entry = skyExplorationPlan[0]; if (!skyExplorationVisible(entry)) return;
     const state = skyExplorationEntryState(entry); const active = Boolean(state?.completed); const burst = state?.spectacleMaxTimer ? clamp(state.spectacleTimer / state.spectacleMaxTimer, 0, 1) : 0; const power = active ? 1 : Math.max(.12, state?.progress / entry.waypointCount || 0);
-    const centerX = 7148 - game.cameraX; const hubY = 16;
-    ctx.save(); ctx.strokeStyle = '#342842'; ctx.lineWidth = 8; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(7070 - game.cameraX, 92); ctx.lineTo(centerX, hubY + 8); ctx.lineTo(7220 - game.cameraX, 92); ctx.stroke(); ctx.strokeStyle = '#65d8ff'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(7070 - game.cameraX, 91); ctx.lineTo(centerX, hubY + 8); ctx.lineTo(7220 - game.cameraX, 91); ctx.stroke(); ctx.restore();
+    drawPhase2DestinationAsset(images.world1_2_super_propeller_perch_v1, 7150, 92, 278, 584, { glow: active ? '#ffd65a' : null, glowBlur: 11 + burst * 13 });
     drawAviationAtlasFixture(0, 6616, 215, 104, { alpha: .96, glow: power > .4 ? '#65d8ff' : null, glowBlur: 9 });
-    drawAviationAtlasFixture(5, 7150, 92, 112, { glow: active ? '#ffd65a' : '#65d8ff', glowBlur: active ? 22 : 7 });
-    ctx.save(); ctx.translate(centerX, hubY); ctx.rotate(time * .0025 * (1 + power * 6.5)); ctx.globalAlpha = .74 + power * .26;
-    for (let blade = 0; blade < 4; blade += 1) { ctx.rotate(Math.PI * .5); const gradient = ctx.createLinearGradient(8, 0, 59, 0); gradient.addColorStop(0, '#fff7d9'); gradient.addColorStop(.48, '#65d8ff'); gradient.addColorStop(1, '#ff6fae'); ctx.fillStyle = gradient; ctx.strokeStyle = '#342842'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(7, -7); ctx.quadraticCurveTo(36, -17, 61, -6); ctx.quadraticCurveTo(38, 7, 7, 7); ctx.closePath(); ctx.fill(); ctx.stroke(); }
-    ctx.fillStyle = '#ffd65a'; ctx.strokeStyle = '#342842'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(0, 0, 13, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore();
+    const centerX = 7182 - game.cameraX; const hubY = 58;
+    ctx.save(); ctx.translate(centerX, hubY); ctx.rotate(time * .0032 * (1 + power * 6)); ctx.globalCompositeOperation = 'screen'; ctx.globalAlpha = .22 + power * .56;
+    for (let blade = 0; blade < 4; blade += 1) { ctx.rotate(Math.PI * .5); const gradient = ctx.createLinearGradient(8, 0, 39, 0); gradient.addColorStop(0, '#fff7d9'); gradient.addColorStop(.48, '#65d8ff'); gradient.addColorStop(1, '#ff6fae'); ctx.strokeStyle = gradient; ctx.lineWidth = active ? 5 : 3; ctx.beginPath(); ctx.moveTo(10, 0); ctx.quadraticCurveTo(25, -6, 40, 0); ctx.stroke(); }
+    ctx.fillStyle = '#ffd65a'; ctx.shadowColor = '#ffd65a'; ctx.shadowBlur = 14; ctx.beginPath(); ctx.arc(0, 0, 5 + power * 3, 0, Math.PI * 2); ctx.fill(); ctx.restore();
     if (active || burst > 0) { ctx.save(); ctx.globalCompositeOperation = 'screen'; ctx.strokeStyle = `rgba(101,216,255,${.22 + burst * .45})`; ctx.lineWidth = 3; for (let trail = 0; trail < 5; trail += 1) { const y = 34 + trail * 20; const reach = 110 + trail * 35 + burst * 80; ctx.beginPath(); ctx.moveTo(centerX - reach, y); ctx.quadraticCurveTo(centerX, y - 15, centerX + reach, y + 2); ctx.stroke(); } ctx.restore(); }
-    drawExplorationNameplate(7150, 104, 'PROPELLER PERCH', active ? 'PROP SYSTEM ONLINE' : 'WIND DRIVE • OFFLINE', active ? '#9bef70' : '#65d8ff', active);
+    drawExplorationNameplate(7085, 18, 'PROPELLER PERCH', active ? 'PROP SYSTEM ONLINE' : 'WIND DRIVE • OFFLINE', active ? '#9bef70' : '#65d8ff', active);
   }
 
   function drawSkyBannerRun(time) {
     const entry = skyExplorationPlan[1]; if (!skyExplorationVisible(entry)) return;
     const state = skyExplorationEntryState(entry); const active = Boolean(state?.completed); const supports = [11955, 12235, 12540, 12848, 13148]; const baselines = [214, 138, 92, 148, 86]; const colors = ['#65d8ff', '#ff6fae', '#ffd65a', '#9bef70'];
+    drawPhase2DestinationAsset(images.world1_2_super_sky_banner_v1, 13150, 86, 300, 731, { glow: active ? '#ff6fae' : null, glowBlur: 14 });
     ctx.save();
     supports.forEach((worldX, index) => { const x = worldX - game.cameraX; const top = Math.max(18, baselines[index] - 116); ctx.strokeStyle = '#342842'; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(x, baselines[index]); ctx.lineTo(x, top); ctx.stroke(); ctx.strokeStyle = colors[index % colors.length]; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, baselines[index]); ctx.lineTo(x, top); ctx.stroke(); ctx.fillStyle = active || (state?.progress || 0) > index ? colors[index % colors.length] : '#5d5870'; ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = active ? 14 : 4; ctx.beginPath(); ctx.arc(x, top, 5, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0; });
     for (let index = 0; index < supports.length - 1; index += 1) { const x1 = supports[index] - game.cameraX; const x2 = supports[index + 1] - game.cameraX; const y1 = Math.max(18, baselines[index] - 103); const y2 = Math.max(18, baselines[index + 1] - 103); const energized = active || (state?.progress || 0) > index; const wave = Math.sin(time * .009 + index * 1.7) * (energized ? 7 : 3); const fabric = ctx.createLinearGradient(x1, y1, x2, y2); fabric.addColorStop(0, colors[index % colors.length]); fabric.addColorStop(.52, '#fff1a6'); fabric.addColorStop(1, colors[(index + 1) % colors.length]); ctx.globalAlpha = energized ? .94 : .54; ctx.fillStyle = fabric; ctx.strokeStyle = '#342842'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.quadraticCurveTo((x1 + x2) * .5, (y1 + y2) * .5 + wave, x2, y2); ctx.lineTo(x2, y2 + 29); ctx.quadraticCurveTo((x1 + x2) * .5, (y1 + y2) * .5 + 24 - wave, x1, y1 + 28); ctx.closePath(); ctx.fill(); ctx.stroke(); if (energized) { ctx.globalAlpha = .75; ctx.strokeStyle = colors[(index + 2) % colors.length]; ctx.lineWidth = 3; for (let ribbon = 0; ribbon < 3; ribbon += 1) { ctx.beginPath(); ctx.moveTo(x2 - 4, y2 + 7 + ribbon * 8); ctx.quadraticCurveTo(x2 + 28, y2 + ribbon * 10 + Math.sin(time * .012 + ribbon) * 8, x2 + 60, y2 + 10 + ribbon * 7); ctx.stroke(); } } }
-    ctx.restore(); drawAviationAtlasFixture(1, 13148, 86, 92, { glow: active ? '#ff6fae' : null, glowBlur: 18 });
-    drawExplorationNameplate(13148, 98, 'SKY BANNER RUN', active ? 'BANNERS AT FULL SAIL' : 'FOLLOW THE WIND LINE', '#ff6fae', active);
+    ctx.restore();
+    drawExplorationNameplate(13148, 18, 'SKY BANNER RUN', active ? 'BANNERS AT FULL SAIL' : 'FOLLOW THE WIND LINE', '#ff6fae', active);
   }
 
   function drawOliviaRelay(time) {
     const entry = skyExplorationPlan[2]; if (!skyExplorationVisible(entry)) return;
-    const state = skyExplorationEntryState(entry); const active = Boolean(state?.completed); const power = active ? 1 : state?.power || (state?.progress || 0) / entry.waypointCount * .45; const x = 22245 - game.cameraX;
-    drawAviationAtlasFixture(2, 22245, 120, 154, { glow: power > .35 ? '#65d8ff' : null, glowBlur: 10 + power * 18 });
-    ctx.save(); ctx.translate(x, 8); ctx.globalCompositeOperation = 'screen'; ctx.strokeStyle = `rgba(101,216,255,${.16 + power * .62})`; ctx.lineWidth = 2 + power * 2;
+    const state = skyExplorationEntryState(entry); const active = Boolean(state?.completed); const power = active ? 1 : state?.power || (state?.progress || 0) / entry.waypointCount * .45; const x = 22268 - game.cameraX;
+    drawPhase2DestinationAsset(images.world1_2_super_flyby_relay_v1, 22245, 120, 265, 605, { glow: power > .35 ? '#65d8ff' : null, glowBlur: 8 + power * 15 });
+    ctx.save(); ctx.translate(x, 48); ctx.globalCompositeOperation = 'screen'; ctx.strokeStyle = `rgba(101,216,255,${.16 + power * .62})`; ctx.lineWidth = 2 + power * 2;
     for (let ring = 0; ring < 3; ring += 1) { const radius = 20 + ((time * .045 + ring * 32) % 92); ctx.globalAlpha = (.9 - radius / 120) * power; ctx.beginPath(); ctx.arc(0, 0, radius, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke(); }
     ctx.globalAlpha = 1; ctx.fillStyle = power > .75 ? '#9bef70' : '#ff8d57'; ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 18; ctx.beginPath(); ctx.arc(0, 0, 7 + Math.sin(time * .012) * 2, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-    drawExplorationNameplate(22245, 132, 'OLIVIA’S FLYBY RELAY', active ? 'AIRBORNE LINK ESTABLISHED' : 'AVIATION BEACON • STANDBY', active ? '#9bef70' : '#65d8ff', active);
+    drawExplorationNameplate(22172, 18, 'OLIVIA’S FLYBY RELAY', active ? 'AIRBORNE LINK ESTABLISHED' : 'AVIATION BEACON • STANDBY', active ? '#9bef70' : '#65d8ff', active);
   }
 
   function drawCloudCargoSecret(time) {
     if (!skyExplorationVisible(cloudCargoSecretPlan, 380)) return;
-    const state = game.skyExploration?.secret; const reveal = state?.completed ? 1 : 0; const centerX = 26608 - game.cameraX; const cloudShift = reveal * 82;
-    ctx.save(); ctx.strokeStyle = '#342842'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(centerX - 72, 42); ctx.lineTo(centerX - 48, -4); ctx.moveTo(centerX + 72, 42); ctx.lineTo(centerX + 48, -4); ctx.stroke();
-    const crate = ctx.createLinearGradient(centerX - 58, 0, centerX + 58, 88); crate.addColorStop(0, '#ffd65a'); crate.addColorStop(.45, '#ff8d57'); crate.addColorStop(1, '#b45165'); ctx.fillStyle = crate; ctx.strokeStyle = '#342842'; ctx.lineWidth = 5; ctx.shadowColor = reveal ? '#ffd65a' : 'transparent'; ctx.shadowBlur = reveal ? 24 : 0; ctx.beginPath(); ctx.roundRect(centerX - 58, 1, 116, 72, 10); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0; ctx.strokeStyle = '#fff1a6'; ctx.lineWidth = 5; ctx.strokeRect(centerX - 48, 11, 96, 52); ctx.beginPath(); ctx.moveTo(centerX - 48, 11); ctx.lineTo(centerX + 48, 63); ctx.moveTo(centerX + 48, 11); ctx.lineTo(centerX - 48, 63); ctx.stroke(); ctx.fillStyle = '#342842'; ctx.font = '900 13px Arial'; ctx.textAlign = 'center'; ctx.fillText('OLIVIA AIR CARGO', centerX, 43);
-    const clouds = [{ x: 26478 - game.cameraX - cloudShift, y: 25, r: 54 }, { x: 26535 - game.cameraX - cloudShift, y: 5, r: 69 }, { x: 26662 - game.cameraX + cloudShift, y: 13, r: 70 }, { x: 26728 - game.cameraX + cloudShift, y: 32, r: 52 }];
-    clouds.forEach((cloud, index) => { const glow = ctx.createRadialGradient(cloud.x - 12, cloud.y - 15, 4, cloud.x, cloud.y, cloud.r); glow.addColorStop(0, 'rgba(255,250,229,.98)'); glow.addColorStop(.55, 'rgba(185,235,255,.96)'); glow.addColorStop(1, 'rgba(101,174,213,.82)'); ctx.fillStyle = glow; ctx.strokeStyle = '#4b6e8b'; ctx.lineWidth = 3; ctx.globalAlpha = reveal ? .74 : .98; ctx.beginPath(); ctx.arc(cloud.x, cloud.y, cloud.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); if (!reveal && index === 2) { ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = `rgba(255,214,90,${.55 + Math.sin(time * .012) * .25})`; ctx.beginPath(); ctx.arc(cloud.x - 34, cloud.y + 7, 4, 0, Math.PI * 2); ctx.fill(); ctx.globalCompositeOperation = 'source-over'; } });
-    ctx.restore(); if (state?.completed) drawExplorationNameplate(26608, 88, 'CLOUD CARGO', 'JACKPOT CRATE OPEN', '#ffd65a', true);
+    const state = game.skyExploration?.secret; const reveal = state?.completed ? 1 : 0; const centerX = 26608 - game.cameraX;
+    drawPhase2DestinationAsset(images.world1_2_super_cloud_cargo_v1, 26610, 42, 408, 570, { alpha: reveal ? 1 : .9, glow: reveal ? '#ffd65a' : null, glowBlur: 14 + (state?.revealTimer || 0) * 3 });
+    ctx.save();
+    const placardX = centerX - 6; const placardY = -4; const placardWidth = 178;
+    ctx.strokeStyle = reveal ? '#ffd65a' : '#65d8ff'; ctx.fillStyle = 'rgba(23,44,57,.95)'; ctx.lineWidth = reveal ? 4 : 3; ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = reveal ? 16 : 7;
+    ctx.beginPath(); ctx.roundRect(placardX - placardWidth * .5, placardY, placardWidth, 45, 9); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
+    ctx.textAlign = 'center'; ctx.fillStyle = '#fff5d2'; ctx.font = '900 13px Arial'; ctx.fillText(reveal ? 'CLOUD CARGO' : 'OLIVIA AIR CARGO', placardX, placardY + 17);
+    ctx.fillStyle = reveal ? '#ffd65a' : '#65d8ff'; ctx.font = '900 9px Arial'; ctx.fillText(reveal ? 'JACKPOT CRATE OPEN' : 'MANIFEST • CLASSIFIED', placardX, placardY + 34);
+    if (!reveal) {
+      ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = `rgba(255,214,90,${.48 + Math.sin(time * .012) * .24})`; ctx.beginPath(); ctx.arc(centerX + 46, 17, 4, 0, Math.PI * 2); ctx.fill();
+    } else {
+      const open = smoothstep(state?.crateOpen || 0); const crateX = 26653 - game.cameraX; const crateY = 15;
+      ctx.globalCompositeOperation = 'screen'; const beam = ctx.createLinearGradient(crateX, crateY, crateX, crateY - 104); beam.addColorStop(0, `rgba(255,214,90,${.42 + open * .28})`); beam.addColorStop(1, 'rgba(255,214,90,0)'); ctx.fillStyle = beam; ctx.beginPath(); ctx.moveTo(crateX - 31, crateY + 10); ctx.lineTo(crateX - 68, crateY - 104); ctx.lineTo(crateX + 68, crateY - 104); ctx.lineTo(crateX + 31, crateY + 10); ctx.closePath(); ctx.fill();
+      ctx.globalCompositeOperation = 'source-over'; ctx.save(); ctx.translate(crateX - 35, crateY); ctx.rotate(-open * .34); const lid = ctx.createLinearGradient(0, -8, 70, 8); lid.addColorStop(0, '#ffd65a'); lid.addColorStop(.55, '#ff8d57'); lid.addColorStop(1, '#b45165'); ctx.fillStyle = lid; ctx.strokeStyle = '#342842'; ctx.lineWidth = 3; ctx.beginPath(); ctx.roundRect(0, -7, 70, 14, 4); ctx.fill(); ctx.stroke(); ctx.restore();
+    }
+    ctx.restore();
   }
 
   function drawSkyExplorationBackdrop(time) { drawPropellerPerch(time); drawSkyBannerRun(time); drawOliviaRelay(time); drawCloudCargoSecret(time); }
@@ -2945,16 +3213,16 @@
 
   function drawExplorationRelayFlyby(time) {
     const flyby = game.skyExploration?.relayFlyby;
-    if (!flyby) return;
+    if (!flyby || flyby.phase === 'turnaround') return;
     const progress = clamp(flyby.timer / flyby.duration, 0, 1);
-    const eased = smoothstep(progress);
-    const x = lerp(-250, canvas.width + 260, eased);
-    const y = 104 + Math.sin(time * .006) * 7 - Math.sin(progress * Math.PI) * 30;
+    const direction = flyby.phase === 'return' ? -1 : 1;
+    const x = relayFlybyScreenX(flyby);
+    const y = (flyby.phase === 'return' ? 126 : 104) + Math.sin(time * .006) * 7 - Math.sin(progress * Math.PI) * 30;
     ctx.save(); ctx.globalCompositeOperation = 'screen'; ctx.strokeStyle = 'rgba(101,216,255,.58)'; ctx.lineWidth = 4;
-    for (let trail = 0; trail < 4; trail += 1) { ctx.globalAlpha = .48 - trail * .08; ctx.beginPath(); ctx.moveTo(x - 118 - trail * 35, y + 12 + trail * 5); ctx.lineTo(x - 58 - trail * 18, y + 9 + trail * 4); ctx.stroke(); }
+    for (let trail = 0; trail < 4; trail += 1) { ctx.globalAlpha = .48 - trail * .08; ctx.beginPath(); ctx.moveTo(x - direction * (118 + trail * 35), y + 12 + trail * 5); ctx.lineTo(x - direction * (58 + trail * 18), y + 9 + trail * 4); ctx.stroke(); }
     ctx.restore();
-    drawPlaneCell(2, x, y, 235, -.06);
-    ctx.save(); ctx.translate(x + 90, y - 10); ctx.rotate(time * .025); ctx.strokeStyle = '#ffd65a'; ctx.shadowColor = '#ffd65a'; ctx.shadowBlur = 12; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, 16 + Math.sin(time * .014) * 2, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+    drawPlaneCell(2, x, y, 235, -.06 * direction, 1, direction);
+    ctx.save(); ctx.translate(x + direction * 90, y - 10); ctx.rotate(time * .025 * direction); ctx.strokeStyle = '#ffd65a'; ctx.shadowColor = '#ffd65a'; ctx.shadowBlur = 12; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, 16 + Math.sin(time * .014) * 2, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
   }
 
   function drawOliviaAirbandTransmission(time) {
@@ -2996,7 +3264,7 @@
     const width = Math.min(compactDisplay ? (secret ? 840 : 700) : (secret ? 700 : 545), canvas.width - (compactDisplay ? 48 : secret ? 58 : 130));
     const height = compactDisplay ? (secret ? 160 : 116) : (secret ? 138 : 94);
     const x = (canvas.width - width) * .5;
-    const y = compactDisplay ? (secret ? 108 : 126) : secret ? 126 : 145;
+    const y = canvas.height - height - (compactDisplay ? 18 : 28);
     const accent = secret ? '#ffd65a' : banner.mode === 'fabric-spectacle' ? '#ff6fae' : '#65d8ff';
     ctx.save(); ctx.globalAlpha = visibility; ctx.translate(canvas.width * .5, y + height * .5);
     if (!game.reducedShake) { const pop = (secret ? .9 : .96) + enter * (secret ? .1 : .04) + Math.sin(time * .015) * (secret ? .012 : .004); ctx.scale(pop, pop); }
@@ -3051,6 +3319,7 @@
         left: keys.left, right: keys.right, jump: keys.jump, lastDirection: keys.lastDir, resets: game.inputResetCount, lastResetReason: game.lastInputResetReason,
         landingRecoveries: game.landingRecoveries, stallTimer: Number(game.controlStallTimer.toFixed(3)), controllerDirections: { left: inputSources.controller.left, right: inputSources.controller.right },
         controllerStateSyncs: game.controllerStateSyncs, controllerStateSequence: game.controllerStateSequence, controllerQaResetDone: game.controllerQaResetDone,
+        qaAutoJump: previewAutoJump, qaForceNormal: previewForceNormal, qaNoDamage: previewNoDamage, autoJumpCooldown: Number(game.previewAutoJumpCooldown.toFixed(3)),
       },
       firstFlybySafety: { corridor: { ...FIRST_FLYBY_CORRIDOR }, active: firstFlybyActive(), maxGroundGap: game.flybyCorridorMaxGap, enemies: game.flybyCorridorEnemies, magnets: world.collectibles.filter((item) => item.type === 'magnet').map((item) => item.x), particles: game.particles.length, confetti: game.confetti.length, effectsTrimmed: game.effectsTrimmed },
       tacos: game.totalTacos, tacoCoins: world.collectibles.filter((item) => item.type === 'tacoCoin').length, airMail: { collected: game.airMail, total: game.airMailTotal, complete: game.airMailComplete, placed: world.collectibles.filter((item) => item.type === 'airmail').length }, skyStreak: { ...game.skyStreak },
@@ -3095,6 +3364,16 @@
         interaction: game.skyExploration.interaction,
         transmission: game.skyExploration.transmission,
         relayFlyby: game.skyExploration.relayFlyby,
+        relayContinuity: {
+          ...game.skyExploration.relayContinuity,
+          canonicalStateUnchanged: game.skyExploration.relayContinuity.canonicalFlybySignature
+            ? canonicalFlybySignature() === game.skyExploration.relayContinuity.canonicalFlybySignature
+            : true,
+          optionalPlaneOverlap: Boolean(game.skyExploration.relayFlyby && game.ambush.stage > 0),
+          ambushPending: Boolean(game.skyExploration.relayContinuity.ambushQueued && game.ambush.stage === 0),
+          outboundDirection: 'left-to-right',
+          returnDirection: 'right-to-left',
+        },
         supplyDrop: game.skyExploration.supplyDrop,
         originalFlybyCount: game.flybys.length,
         independentRelayFlyby: game.skyExploration.relayFlyby?.independent ?? true,
@@ -3123,7 +3402,22 @@
         },
         destinations: skyExplorationPlan.map((entry) => ({ id: entry.id, name: entry.name, presentation: entry.presentation, trigger: entry.trigger, routeRange: entry.routeRange, worldPercent: entry.worldPercent, score: entry.score, bonusTacos: entry.bonusTacos, rewardLabel: entry.rewardLabel, ...game.skyExploration.destinations[entry.id] })),
         secret: { id: cloudCargoSecretPlan.id, name: cloudCargoSecretPlan.name, presentation: cloudCargoSecretPlan.presentation, trigger: cloudCargoSecretPlan.trigger, routeRange: cloudCargoSecretPlan.routeRange, worldPercent: cloudCargoSecretPlan.worldPercent, score: cloudCargoSecretPlan.score, bonusTacos: cloudCargoSecretPlan.bonusTacos, rewardLabel: cloudCargoSecretPlan.rewardLabel, ...game.skyExploration.secret },
-        rewardItems: world.collectibles.filter((item) => item.explorationReward).map((item) => ({ discovery: item.phase2Discovery, rainbow: Boolean(item.rainbowReward), collected: item.collected, dynamic: Boolean(item.dynamic) })),
+        rewardItems: world.collectibles.filter((item) => item.explorationReward).map((item) => ({
+          discovery: item.phase2Discovery,
+          rainbow: Boolean(item.rainbowReward),
+          collected: item.collected,
+          dynamic: Boolean(item.dynamic),
+          inFlight: Boolean(item.rewardFlight),
+          x: Number(item.x.toFixed(2)),
+          y: Number(item.y.toFixed(2)),
+          platformId: item.rewardLanding?.platformId || null,
+          targetX: item.rewardLanding ? Number(item.rewardLanding.targetX.toFixed(2)) : null,
+          targetY: item.rewardLanding ? Number(item.rewardLanding.targetY.toFixed(2)) : null,
+          surfaceY: item.rewardLanding?.surfaceY ?? null,
+          aboveSurface: item.rewardLanding ? item.y + item.h <= item.rewardLanding.surfaceY + .1 : null,
+          horizontallySafe: item.rewardLanding ? item.rewardLanding.targetX >= item.rewardLanding.safeLeft - .1 && item.rewardLanding.targetX <= item.rewardLanding.safeRight + .1 : null,
+          settled: Boolean(item.rewardLanding?.settled),
+        })),
       } : null,
       pinata: world.pinata ? {
         hits: world.pinata.hits, targetHits: world.pinata.targetHits, broken: world.pinata.broken, x: world.pinata.x,
@@ -3195,6 +3489,8 @@
     loadImage('assets/world1_2_ground_guac_v1.webp'), loadImage('assets/world1_2_ground_rescue_v1.webp'),
     loadImage('assets/world1_2_platform_wing_v1.webp'), loadImage('assets/world1_2_platform_adobe_v1.webp'),
     loadImage('assets/world1_2_platform_guac_v1.webp'),
+    loadImage('assets/world1_2_super_propeller_perch_v1.png'), loadImage('assets/world1_2_super_sky_banner_v1.png'),
+    loadImage('assets/world1_2_super_flyby_relay_v1.png'), loadImage('assets/world1_2_super_cloud_cargo_v1.png'),
   ]).then(([
     , hero, items, plane, checkpoints, crash, fiestaBanner,
     world1_2_tomato_trouble_aviator_sheet_v1, world1_2_onion_drama_aviator_sheet_v1,
@@ -3206,6 +3502,8 @@
     world1_2_ground_guac_v1, world1_2_ground_rescue_v1,
     world1_2_platform_wing_v1, world1_2_platform_adobe_v1,
     world1_2_platform_guac_v1,
+    world1_2_super_propeller_perch_v1, world1_2_super_sky_banner_v1,
+    world1_2_super_flyby_relay_v1, world1_2_super_cloud_cargo_v1,
   ]) => {
     Object.assign(images, {
       hero, items, plane, checkpoints, crash, fiestaBanner,
@@ -3218,6 +3516,8 @@
       world1_2_ground_guac_v1, world1_2_ground_rescue_v1,
       world1_2_platform_wing_v1, world1_2_platform_adobe_v1,
       world1_2_platform_guac_v1,
+      world1_2_super_propeller_perch_v1, world1_2_super_sky_banner_v1,
+      world1_2_super_flyby_relay_v1, world1_2_super_cloud_cargo_v1,
     });
     loadProgress(); setupInputs(); resetGame(); syncSettings(); updatePersonalBest(); requestAnimationFrame(frame);
   }).catch((error) => { console.error('Could not load Sky-High Salsa Rescue assets:', error); ctx.fillStyle = '#fff5d2'; ctx.font = '24px Arial'; ctx.fillText('The sky-rescue artwork could not be loaded.', 40, 70); });

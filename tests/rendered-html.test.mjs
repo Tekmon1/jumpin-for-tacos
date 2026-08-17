@@ -1156,7 +1156,7 @@ test("ships World 1 with authored seamless panorama progressions", async () => {
     assert.match(rescueForeground, new RegExp(filename.replace(".", "\\.")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(rescueForegroundHtml, /level1-2\.js\?v=37/);
+  assert.match(rescueForegroundHtml, /level1-2\.js\?v=38/);
   assert.match(rescueForeground, /function drawPaintedTerrainSlice/);
   assert.match(rescueForeground, /checkpointArtGroundedByVisibleBaseline: true/);
   assert.match(rescueForeground, /independentCheckpointShadows: true/);
@@ -1320,8 +1320,8 @@ test("remasters the complete World 1-2 aviation enemy and NPC cast and restores 
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /level1-2\.js\?v=37/);
-  assert.match(runtime, /SOURCE_VERSION = 'w1-2-v37-super-exploration'/);
+  assert.match(html, /level1-2\.js\?v=38/);
+  assert.match(runtime, /SOURCE_VERSION = 'w1-2-v38-exploration-polish'/);
   assert.match(runtime, /\['terminal\.local', '127\.0\.0\.1', 'localhost'\]\.includes\(location\.hostname\)/);
   assert.match(runtime, /function remasteredEnemyFrame/);
   assert.match(runtime, /function drawCrewMember/);
@@ -1356,15 +1356,26 @@ test("authors the World 1-2 rescue pilot across combat sections without crowding
   assert.match(runtime, /previousBottom: previousPlayerBottom/);
   assert.match(runtime, /previousTargetTop: previousEnemyTop/);
   assert.match(runtime, /player\.y = Math\.min\(player\.y, enemy\.y - player\.h - 1\)/);
-  assert.match(html, /level1-2\.js\?v=37/);
+  assert.match(html, /level1-2\.js\?v=38/);
 });
 
 test("adds four aviation-specific World 1-2 Super exploration payoffs without changing the normal route or plane sequence", async () => {
   const runtime = await readFile(new URL("../public/game/level1-2.js", import.meta.url), "utf8");
   const html = await readFile(new URL("../public/game/level1-2.html", import.meta.url), "utf8");
   const audioCatalog = await readFile(new URL("../public/game/audio-catalog.js", import.meta.url), "utf8");
+  const destinationAssets = [
+    "world1_2_super_propeller_perch_v1.png",
+    "world1_2_super_sky_banner_v1.png",
+    "world1_2_super_flyby_relay_v1.png",
+    "world1_2_super_cloud_cargo_v1.png",
+  ];
 
-  assert.match(runtime, /SKY_EXPLORATION_VERSION = 'world-1-2-phase2-v1'/);
+  for (const filename of destinationAssets) {
+    assert.match(runtime, new RegExp(filename.replace(/\./g, "\\.")));
+    await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
+  }
+
+  assert.match(runtime, /SKY_EXPLORATION_VERSION = 'world-1-2-phase2-v2-polish'/);
   assert.match(runtime, /id: 'propeller-perch'[\s\S]*?routeRange: Object\.freeze\(\[6200, 7350\]\)/);
   assert.match(runtime, /id: 'sky-banner-run'[\s\S]*?routeRange: Object\.freeze\(\[11700, 13270\]\)/);
   assert.match(runtime, /id: 'olivia-flyby-relay'[\s\S]*?routeRange: Object\.freeze\(\[21400, 22400\]\)/);
@@ -1373,14 +1384,45 @@ test("adds four aviation-specific World 1-2 Super exploration payoffs without ch
   assert.match(runtime, /phase2-banner-finish/);
   assert.match(runtime, /phase2-relay-beacon/);
   assert.match(runtime, /phase2-cloud-cargo/);
+  assert.match(runtime, /rewardPlatformId: 'phase2-propeller-perch'/);
+  assert.match(runtime, /rewardPlatformId: 'phase2-banner-finish'/);
+  assert.match(runtime, /rewardPlatformId: 'phase2-relay-beacon'/);
+  assert.match(runtime, /rewardPlatformId: 'phase2-cloud-cargo'/);
+  assert.match(runtime, /function skyExplorationRewardSurface/);
+  assert.match(runtime, /rewardFlight: \{/);
+  assert.match(runtime, /rewardLanding: \{/);
+  assert.match(runtime, /if \(item\.rewardFlight && !item\.collected\)/);
+  assert.match(runtime, /item\.type !== 'taco' \|\| item\.rewardFlight/);
+  assert.match(runtime, /targetY = surface\.top - 31/);
+  assert.match(runtime, /aboveSurface: item\.rewardLanding/);
+  assert.match(runtime, /horizontallySafe: item\.rewardLanding/);
   assert.match(runtime, /function drawPropellerPerch/);
   assert.match(runtime, /function drawSkyBannerRun/);
   assert.match(runtime, /function drawOliviaRelay/);
   assert.match(runtime, /function drawCloudCargoSecret/);
   assert.match(runtime, /function beginOliviaFlybyRelay/);
   assert.match(runtime, /Taco Hero! I see your beacon—air-drop incoming!/);
-  assert.match(runtime, /independent: true, source: 'phase2-relay'/);
+  assert.match(runtime, /source: 'phase2-relay-round-trip'/);
+  assert.match(runtime, /function canonicalFlybySignature/);
+  assert.match(runtime, /function relayExcursionActive/);
+  assert.match(runtime, /function startRelayRoundTrip/);
+  assert.match(runtime, /phase: 'outbound'/);
+  assert.match(runtime, /flyby\.phase = 'turnaround'/);
+  assert.match(runtime, /flyby\.phase = 'return'/);
+  assert.match(runtime, /flyby\.phase === 'return' \? -1 : 1/);
+  assert.match(runtime, /continuity\.outboundPasses \+= 1/);
+  assert.match(runtime, /continuity\.returnPasses \+= 1/);
+  assert.match(runtime, /continuity\.airDrops \+= 1/);
+  assert.match(runtime, /ambushReady && relayExcursionActive\(\)/);
+  assert.match(runtime, /canonicalStateUnchanged:/);
+  assert.match(runtime, /optionalPlaneOverlap:/);
   assert.match(runtime, /originalFlybyCount: game\.flybys\.length/);
+  assert.match(runtime, /const previewAutoJump = qa && params\.get\('autoJump'\) === '1'/);
+  assert.match(runtime, /const previewForceNormal = qa && params\.get\('normalOnly'\) === '1'/);
+  assert.match(runtime, /const previewNoDamage = qa && params\.get\('noDamage'\) === '1'/);
+  assert.match(runtime, /previewForceNormal \? false : sharedAbilities\.splatEnemy/);
+  assert.match(runtime, /previewForceNormal \? false : sharedAbilities\.collectTaco/);
+  assert.match(runtime, /if \(previewNoDamage\) return;/);
   assert.match(runtime, /cloudCargoRequiresAmbushStage: cloudCargoSecretPlan\.requiredAmbushStage/);
   assert.match(runtime, /if \(!state \|\| state\.completed\) return false/);
   assert.match(runtime, /if \(!state \|\| state\.rewardSpawned\) return false/);
@@ -1399,7 +1441,7 @@ test("adds four aviation-specific World 1-2 Super exploration payoffs without ch
   assert.match(runtime, /bonusTacos: 14/);
   assert.match(runtime, /bonusTacos: 22/);
   assert.match(html, /Super Taco Hero reveals high-altitude flight paths/);
-  assert.match(html, /level1-2\.js\?v=37/);
+  assert.match(html, /level1-2\.js\?v=38/);
   assert.doesNotMatch(runtime, /world1_1_/);
   for (const eventId of ["checkpoint.activate", "ui.radio", "vehicle.aircraftApproach", "vehicle.drop", "pinata.break", "pinata.jackpotSparkle"]) {
     assert.match(audioCatalog, new RegExp(`'${eventId.replaceAll(".", "\\.")}'`));
