@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w1-3-v28-super-exploration';
+  const SOURCE_VERSION = 'w1-3-v29-final-visual-polish';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -54,7 +54,8 @@
     { x: 22400, name: 'Parade Pit', sign: 'DO NOT TAUNT THE PRODUCE.', radio: 'He practiced his evil laugh all week. Please pretend it is scary.', accent: '#ff6fae', look: 'parade' },
     { x: 24440, name: 'Showdown Gate', sign: 'GUAC PRESSURE: CRITICAL.', radio: 'Olivia here: three openings, three stomps. The hat is structural. Probably.', accent: '#b78cff', look: 'neon' },
   ];
-  const SHOWDOWN_EXPLORATION_VERSION = 'world-1-3-phase2-v1';
+  const SHOWDOWN_EXPLORATION_VERSION = 'world-1-3-phase2-v2-polish';
+  const SHOWDOWN_VISUAL_POLISH_VERSION = 'world-1-3-phase2-final-polish-v1';
   const BOSS_TRIGGER_X = 24920;
   const PHASE2_BOSS_BUFFER_X = 24320;
   const showdownExplorationPlan = Object.freeze([
@@ -2871,6 +2872,14 @@
     if (!visibleWorldX(entry.routeRange[0], entry.routeRange[1] - entry.routeRange[0], 220)) return;
     const state = showdownExplorationEntryState(entry);
     const active = Boolean(state?.completed);
+    // This visual-only insert sits behind the approved lift. Its broken rails,
+    // descending timbers, and deep void clarify that the cart-side edge is an
+    // open shaft without changing a single collision surface.
+    drawPhase2DestinationAsset(images.world1_3_pepper_mine_shaft_v1, 4982, GROUND_Y + 7, 184, {
+      alpha: .96,
+      glow: active ? '#ffb347' : null,
+      glowBlur: active ? 8 : 0,
+    });
     drawPhase2DestinationAsset(images.world1_3_super_pepper_mine_lift_v1, 4800, GROUND_Y + 2, 420, { glow: active ? '#ffd65a' : null, glowBlur: active ? 16 : 0 });
     const wheelX = 4800 - game.cameraX + 72; const wheelY = 72;
     ctx.save(); ctx.translate(wheelX, wheelY); ctx.rotate(active ? time * .0017 : 0); ctx.strokeStyle = active ? '#65d8ff' : 'rgba(255,214,90,.32)'; ctx.lineWidth = 3; ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = active ? 13 : 0;
@@ -2902,13 +2911,75 @@
     drawExplorationNameplate(13745, 98, 'SALSA SILO', active ? 'PRESSURE • PERFECT' : 'PRESSURE ARRAY • STANDBY', active ? '#ff6fae' : '#65d8ff', active);
   }
 
+  function drawElGuacadilloWantedPoster() {
+    const posterX = 19254 - game.cameraX;
+    const paperTop = 215;
+    const paperWidth = 146;
+    const paperHeight = 166;
+    ctx.save();
+    ctx.translate(posterX, 0);
+    ctx.rotate(-.012);
+    ctx.beginPath();
+    ctx.roundRect(-paperWidth * .5, paperTop, paperWidth, paperHeight, 8);
+    ctx.clip();
+
+    // Faded dust and cross-hatching belong to the physical parchment rather
+    // than reading as another UI panel laid over the tower.
+    ctx.fillStyle = 'rgba(76,43,28,.12)';
+    for (let mark = 0; mark < 19; mark += 1) {
+      const x = -64 + ((mark * 37) % 128);
+      const y = paperTop + 8 + ((mark * 53) % 148);
+      ctx.beginPath(); ctx.ellipse(x, y, 1.2 + mark % 3, .7 + mark % 2, mark * .31, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.strokeStyle = 'rgba(74,39,24,.2)';
+    ctx.lineWidth = 1;
+    for (let hatch = 0; hatch < 5; hatch += 1) {
+      ctx.beginPath(); ctx.moveTo(-66 + hatch * 29, paperTop + 13); ctx.lineTo(-58 + hatch * 29, paperTop + 22); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(48 - hatch * 27, paperTop + 143); ctx.lineTo(56 - hatch * 27, paperTop + 151); ctx.stroke();
+    }
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#4c291d';
+    ctx.strokeStyle = 'rgba(246,207,137,.32)';
+    ctx.lineWidth = 1.2;
+    ctx.font = '900 20px Georgia, serif';
+    ctx.strokeText('WANTED', 0, 238);
+    ctx.fillText('WANTED', 0, 238);
+    ctx.strokeStyle = 'rgba(76,41,29,.48)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(-55, 244); ctx.lineTo(55, 244); ctx.stroke();
+
+    if (images.world1_3_el_guacodillo_wanted_portrait_v1) {
+      const portrait = images.world1_3_el_guacodillo_wanted_portrait_v1;
+      const portraitWidth = 87;
+      const portraitHeight = portraitWidth * (portrait.naturalHeight || portrait.height) / (portrait.naturalWidth || portrait.width);
+      ctx.save();
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.globalAlpha = .9;
+      ctx.drawImage(portrait, -portraitWidth * .5, 248, portraitWidth, portraitHeight);
+      ctx.restore();
+    }
+
+    ctx.fillStyle = 'rgba(76,41,29,.92)';
+    ctx.beginPath(); ctx.roundRect(-65, 309, 130, 32, 5); ctx.fill();
+    ctx.strokeStyle = 'rgba(247,216,153,.7)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(-60, 307); ctx.lineTo(60, 307); ctx.stroke();
+    ctx.fillStyle = '#f4d79b';
+    ctx.strokeStyle = 'rgba(55,27,20,.68)';
+    ctx.lineWidth = 1;
+    ctx.font = '900 15px Georgia, serif';
+    ctx.strokeText('EL GUACADILLO', 0, 331);
+    ctx.fillText('EL GUACADILLO', 0, 331);
+    ctx.restore();
+  }
+
   function drawWantedTower(time) {
     const entry = showdownExplorationPlan[2];
     if (!visibleWorldX(entry.routeRange[0], entry.routeRange[1] - entry.routeRange[0], 220)) return;
     const state = showdownExplorationEntryState(entry); const active = Boolean(state?.completed);
     drawPhase2DestinationAsset(images.world1_3_super_wanted_tower_v1, 19265, GROUND_Y + 2, 420, { glow: active ? '#ff6fae' : null, glowBlur: active ? 17 : 0 });
-    const posterX = 19246 - game.cameraX;
-    ctx.save(); ctx.textAlign = 'center'; ctx.rotate(-.012); ctx.strokeStyle = '#5b2a41'; ctx.lineWidth = 4; ctx.fillStyle = '#7c2d3d'; ctx.font = '900 21px Arial'; ctx.strokeText('EL GUACADILLO', posterX, 228); ctx.fillText('EL GUACADILLO', posterX, 228); ctx.font = '900 31px Arial'; ctx.fillStyle = '#d83f3e'; ctx.strokeText('WANTED', posterX, 263); ctx.fillText('WANTED', posterX, 263); ctx.font = '900 11px Arial'; ctx.fillStyle = '#5b2a41'; ctx.fillText('3 STOMPS • HUGE EGO', posterX, 286); ctx.restore();
+    drawElGuacadilloWantedPoster();
     ctx.save(); ctx.globalCompositeOperation = 'screen';
     for (let bulb = 0; bulb < 10; bulb += 1) { const bx = 19135 - game.cameraX + bulb * 29; ctx.fillStyle = ['#ff6fae', '#65d8ff', '#ffd65a'][bulb % 3]; ctx.globalAlpha = active ? .76 + Math.sin(time * .01 + bulb) * .2 : .23; ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = active ? 12 : 3; ctx.beginPath(); ctx.arc(bx, 115 + Math.sin(bulb) * 5, active ? 4 : 2.5, 0, Math.PI * 2); ctx.fill(); }
     ctx.restore();
@@ -2919,14 +2990,40 @@
     const state = game.showdownExploration?.secret;
     if (!visibleWorldX(outlawStashPlan.routeRange[0], outlawStashPlan.routeRange[1] - outlawStashPlan.routeRange[0], 180)) return;
     const x = outlawStashPlan.rewardX - game.cameraX;
-    ctx.save(); ctx.translate(x, 6);
-    const reveal = state?.completed ? 1 : 0;
-    ctx.globalAlpha = reveal ? 1 : .42 + Math.sin(time * .008) * .08;
-    ctx.fillStyle = '#45284f'; ctx.strokeStyle = reveal ? '#ffd65a' : '#6f5a78'; ctx.lineWidth = reveal ? 4 : 2; ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = reveal ? 22 : 5;
-    ctx.beginPath(); ctx.roundRect(-64, 0, 128, 57, 11); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = reveal ? '#ffd65a' : '#887190'; ctx.fillRect(-56, 17, 112, 9); ctx.fillRect(-8, 4, 16, 49);
-    ctx.fillStyle = '#2b1530'; ctx.beginPath(); ctx.arc(0, 29, 6, 0, Math.PI * 2); ctx.fill();
-    if (reveal) { const beam = ctx.createLinearGradient(0, 6, 0, -120); beam.addColorStop(0, 'rgba(255,214,90,.62)'); beam.addColorStop(1, 'rgba(255,214,90,0)'); ctx.fillStyle = beam; ctx.beginPath(); ctx.moveTo(-48, 8); ctx.lineTo(-82, -120); ctx.lineTo(82, -120); ctx.lineTo(48, 8); ctx.closePath(); ctx.fill(); }
+    const surface = world.platforms.find((platform) => platform.id === outlawStashPlan.rewardPlatformId);
+    // The approved stash platform hugs the top of the camera. Preserve the
+    // original visible footprint by mounting the art downward beneath that
+    // ledge instead of clipping most of a feet-anchored chest above the canvas.
+    const topY = Math.max(5, (surface?.y ?? 18) - 12);
+    const open = smoothstep(state?.crateOpen || 0);
+    const reveal = Boolean(state?.completed);
+    ctx.save(); ctx.translate(x, topY);
+    ctx.globalAlpha = reveal ? .28 + open * .34 : .22;
+    ctx.fillStyle = '#24172f'; ctx.beginPath(); ctx.ellipse(0, 116, 63, 10, 0, 0, Math.PI * 2); ctx.fill();
+    if (reveal) {
+      const glow = ctx.createRadialGradient(0, 55, 10, 0, 55, 112);
+      glow.addColorStop(0, `rgba(255,241,166,${.42 + open * .34})`);
+      glow.addColorStop(.43, `rgba(255,111,174,${open * .18})`);
+      glow.addColorStop(1, 'rgba(255,214,90,0)');
+      ctx.fillStyle = glow; ctx.beginPath(); ctx.ellipse(0, 58, 112, 96, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    const drawChestFrame = (image, width, alpha, lift = 0) => {
+      if (!image || alpha <= .001) return;
+      const height = width * (image.naturalHeight || image.height) / (image.naturalWidth || image.width);
+      ctx.save(); ctx.globalAlpha = alpha; ctx.shadowColor = reveal ? '#ffd65a' : '#6f5a78'; ctx.shadowBlur = reveal ? 12 + open * 17 : 5;
+      ctx.drawImage(image, -width * .5, -lift, width, height); ctx.restore();
+    };
+    const closedPulse = reveal ? 1 - open : .82 + Math.sin(time * .008) * .08;
+    drawChestFrame(images.world1_3_outlaw_stash_closed_v1, 118, closedPulse);
+    drawChestFrame(images.world1_3_outlaw_stash_open_v1, 134 * (.92 + open * .08), open, 2 + Math.sin(open * Math.PI) * 4);
+    if (reveal) {
+      for (let sparkle = 0; sparkle < 7; sparkle += 1) {
+        const angle = time * .0015 + sparkle * Math.PI * 2 / 7;
+        const radius = 46 + Math.sin(time * .009 + sparkle) * 8;
+        ctx.globalAlpha = open * (.5 + sparkle % 2 * .2);
+        drawStar(Math.cos(angle) * radius, 60 + Math.sin(angle) * 32, 3 + sparkle % 3, ['#ffd65a', '#ff6fae', '#65d8ff'][sparkle % 3]);
+      }
+    }
     ctx.restore();
   }
 
@@ -3012,15 +3109,29 @@
     ctx.save(); ctx.translate(x + item.w / 2, y + item.h / 2);
     if (item.dynamic) ctx.rotate(item.angle || 0);
     if (item.type === 'taco') {
-      if (item.rainbowReward) {
-        ctx.shadowColor = '#65d8ff'; ctx.shadowBlur = 24;
-        ['#65d8ff', '#ff6fae', '#ffd65a', '#9bef70'].forEach((color, index) => {
-          ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.globalAlpha = .82 - index * .12;
-          ctx.beginPath(); ctx.arc(0, 3, 15 - index * 3, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
-        });
-        ctx.globalAlpha = 1;
-      } else if (item.bonusReward) { ctx.shadowColor = '#ffd65a'; ctx.shadowBlur = 16; }
-      ctx.drawImage(images.items, 0, 0, 16, 16, -item.w / 2, -item.h / 2, item.w, item.h);
+      const explorationArt = item.explorationReward
+        ? item.rainbowReward
+          ? images.world1_3_exploration_rainbow_taco_v1
+          : images.world1_3_exploration_taco_reward_v1
+        : null;
+      if (explorationArt) {
+        const pulse = 1 + Math.sin(time * .009 + item.bob) * (item.rainbowReward ? .045 : .025);
+        const visualWidth = (item.rainbowReward ? 43 : 34) * pulse;
+        const visualHeight = visualWidth * (explorationArt.naturalHeight || explorationArt.height) / (explorationArt.naturalWidth || explorationArt.width);
+        ctx.shadowColor = item.rainbowReward ? '#65d8ff' : '#ffd65a';
+        ctx.shadowBlur = item.rainbowReward ? 22 : 14;
+        ctx.drawImage(explorationArt, -visualWidth * .5, -visualHeight * .5, visualWidth, visualHeight);
+        if (item.rainbowReward) {
+          ctx.shadowBlur = 0;
+          for (let sparkle = 0; sparkle < 3; sparkle += 1) {
+            const angle = time * .0017 + sparkle * Math.PI * 2 / 3;
+            drawStar(Math.cos(angle) * 25, Math.sin(angle) * 17, 2.4 + sparkle * .45, ['#65d8ff', '#ff6fae', '#ffd65a'][sparkle]);
+          }
+        }
+      } else {
+        if (item.bonusReward) { ctx.shadowColor = '#ffd65a'; ctx.shadowBlur = 16; }
+        ctx.drawImage(images.items, 0, 0, 16, 16, -item.w / 2, -item.h / 2, item.w, item.h);
+      }
     } else if (item.type === 'magnet') {
       ctx.shadowColor = '#65d8ff'; ctx.shadowBlur = 20;
       ctx.strokeStyle = '#fff5c8'; ctx.lineWidth = 7;
@@ -3958,14 +4069,36 @@
     const width = Math.min(compactDisplay ? (secret ? 840 : 700) : (secret ? 700 : 545), canvas.width - (compactDisplay ? 48 : secret ? 58 : 130));
     const height = compactDisplay ? (secret ? 160 : 116) : (secret ? 138 : 94);
     const x = (canvas.width - width) * .5;
-    const y = canvas.height - height - (compactDisplay ? 18 : 28);
+    // On narrow touch layouts the large movement controls occupy the bottom
+    // third of the canvas. Keep the short-lived reward panel fully above them.
+    const y = compactDisplay ? canvas.height - height - 205 : canvas.height - height - 28;
     const accent = secret ? '#ffd65a' : banner.mode === 'pressure-spectacle' || banner.mode === 'boss-foreshadowing' ? '#ff6fae' : banner.mode === 'character-preparation' ? '#9bef70' : '#65d8ff';
     ctx.save(); ctx.globalAlpha = visibility; ctx.translate(canvas.width * .5, y + height * .5);
     if (!game.reducedShake) { const pop = (secret ? .9 : .96) + enter * (secret ? .1 : .04) + Math.sin(time * .015) * (secret ? .012 : .004); ctx.scale(pop, pop); }
     ctx.translate(-canvas.width * .5, -(y + height * .5));
     const panel = ctx.createLinearGradient(x, y, x + width, y + height); panel.addColorStop(0, secret ? 'rgba(51,25,70,.98)' : 'rgba(43,21,48,.94)'); panel.addColorStop(.5, secret ? 'rgba(132,57,67,.99)' : 'rgba(91,45,76,.95)'); panel.addColorStop(1, secret ? 'rgba(27,91,98,.98)' : 'rgba(29,75,88,.94)');
     ctx.fillStyle = panel; ctx.strokeStyle = accent; ctx.lineWidth = secret ? 5 : 3; ctx.shadowColor = accent; ctx.shadowBlur = secret ? 28 : 14; ctx.beginPath(); ctx.roundRect(x, y, width, height, secret ? 23 : 17); ctx.fill(); ctx.stroke(); ctx.shadowBlur = 0;
+    if (secret) {
+      ctx.strokeStyle = 'rgba(255,241,166,.58)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.roundRect(x + 10, y + 10, width - 20, height - 20, 16); ctx.stroke();
+      for (const studX of [x + 20, x + width - 20]) {
+        for (const studY of [y + 20, y + height - 20]) { ctx.fillStyle = '#fff1a6'; ctx.beginPath(); ctx.arc(studX, studY, 3.3, 0, Math.PI * 2); ctx.fill(); }
+      }
+    }
     if (secret) { for (let index = 0; index < 10; index += 1) { const sx = x + 36 + index * (width - 72) / 9; const sy = y + 20 + Math.sin(time * .012 + index) * 6; ctx.fillStyle = ['#ffd65a', '#ff6fae', '#65d8ff'][index % 3]; ctx.save(); ctx.translate(sx, sy); ctx.rotate(index * .7); ctx.fillRect(-6, -2, 12, 4); ctx.fillRect(-2, -6, 4, 12); ctx.restore(); } }
+    const bannerRewardArt = secret ? images.world1_3_exploration_rainbow_taco_v1 : images.world1_3_exploration_taco_reward_v1;
+    if (bannerRewardArt) {
+      const iconWidth = compactDisplay ? (secret ? 66 : 48) : (secret ? 54 : 39);
+      const iconHeight = iconWidth * (bannerRewardArt.naturalHeight || bannerRewardArt.height) / (bannerRewardArt.naturalWidth || bannerRewardArt.width);
+      const inset = compactDisplay ? 50 : secret ? 46 : 35;
+      for (const direction of [-1, 1]) {
+        ctx.save();
+        ctx.translate(canvas.width * .5 + direction * (width * .5 - inset), y + height * .56);
+        ctx.rotate(direction * (.08 + Math.sin(time * .008) * .025));
+        ctx.shadowColor = accent; ctx.shadowBlur = secret ? 18 : 10;
+        ctx.drawImage(bannerRewardArt, -iconWidth * .5, -iconHeight * .5, iconWidth, iconHeight);
+        ctx.restore();
+      }
+    }
     ctx.textAlign = 'center'; ctx.fillStyle = '#fff1a6'; ctx.font = `900 ${compactDisplay ? secret ? 17 : 15 : secret ? 13 : 11}px Arial`; ctx.fillText(banner.eyebrow, canvas.width * .5, y + (compactDisplay ? secret ? 31 : 27 : secret ? 28 : 21));
     ctx.fillStyle = '#fff9ed'; ctx.font = `900 ${compactDisplay ? secret ? 39 : banner.title.length > 25 ? 29 : 33 : secret ? 33 : banner.title.length > 25 ? 23 : 27}px Arial`; ctx.fillText(banner.title, canvas.width * .5, y + (compactDisplay ? secret ? 82 : 65 : secret ? 71 : 52));
     ctx.fillStyle = accent; ctx.font = `900 ${compactDisplay ? secret ? 19 : 17 : secret ? 15 : 13}px Arial`; ctx.fillText(banner.reward, canvas.width * .5, y + (compactDisplay ? secret ? 127 : 99 : secret ? 109 : 79)); ctx.restore();
@@ -4202,6 +4335,28 @@
             superJumpVelocity: heroPhysics.superJumpVelocity,
             collisionWidth: player.w, collisionHeight: player.h,
           },
+          visualPolish: {
+            version: SHOWDOWN_VISUAL_POLISH_VERSION,
+            approvedStationGeometryPreserved: true,
+            bossArenaUntouched: true,
+            wantedPoster: {
+              towerAssetPreserved: 'world1_3_super_wanted_tower_v1.webp',
+              portraitAsset: 'world1_3_el_guacodillo_wanted_portrait_v1.webp',
+              layout: ['WANTED', 'EL GUACODILLO PORTRAIT', 'EL GUACADILLO'],
+              legacyClutterRemoved: true,
+            },
+            rewardArt: {
+              premiumTaco: 'world1_3_exploration_taco_reward_v1.webp',
+              rainbowTaco: 'world1_3_exploration_rainbow_taco_v1.webp',
+              stashFrames: ['world1_3_outlaw_stash_closed_v1.webp', 'world1_3_outlaw_stash_open_v1.webp'],
+              gameplayCoordinatesPreserved: true,
+            },
+            pepperMine: {
+              shaftAsset: 'world1_3_pepper_mine_shaft_v1.webp',
+              collisionGeometryChanged: false,
+              communicatesOpenDrop: true,
+            },
+          },
           destinations: showdownExplorationPlan.map((entry) => ({ id: entry.id, name: entry.name, presentation: entry.presentation, trigger: entry.trigger, routeRange: entry.routeRange, worldPercent: entry.worldPercent, score: entry.score, bonusTacos: entry.bonusTacos, rewardLabel: entry.rewardLabel, ...game.showdownExploration.destinations[entry.id] })),
           secret: { id: outlawStashPlan.id, name: outlawStashPlan.name, presentation: outlawStashPlan.presentation, trigger: outlawStashPlan.trigger, routeRange: outlawStashPlan.routeRange, score: outlawStashPlan.score, bonusTacos: outlawStashPlan.bonusTacos, rewardLabel: outlawStashPlan.rewardLabel, ...game.showdownExploration.secret },
           repeatTriggerProtection: {
@@ -4336,6 +4491,12 @@
     world1_3_super_salsa_silo_v1: 'assets/world1_3_super_salsa_silo_v1.webp',
     world1_3_super_wanted_tower_v1: 'assets/world1_3_super_wanted_tower_v1.webp',
     world1_3_super_guac_lookout_v1: 'assets/world1_3_super_guac_lookout_v1.webp',
+    world1_3_el_guacodillo_wanted_portrait_v1: 'assets/world1_3_el_guacodillo_wanted_portrait_v1.webp',
+    world1_3_exploration_taco_reward_v1: 'assets/world1_3_exploration_taco_reward_v1.webp',
+    world1_3_exploration_rainbow_taco_v1: 'assets/world1_3_exploration_rainbow_taco_v1.webp',
+    world1_3_outlaw_stash_closed_v1: 'assets/world1_3_outlaw_stash_closed_v1.webp',
+    world1_3_outlaw_stash_open_v1: 'assets/world1_3_outlaw_stash_open_v1.webp',
+    world1_3_pepper_mine_shaft_v1: 'assets/world1_3_pepper_mine_shaft_v1.webp',
     world1_1_taco_trekker_olivia_v1: 'assets/world1_1_taco_trekker_olivia_v1.png',
   });
   const imageEntries = Object.entries(imageSources);

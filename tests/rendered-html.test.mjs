@@ -1196,7 +1196,7 @@ test("ships World 1 with authored seamless panorama progressions", async () => {
     assert.match(showdownForeground, new RegExp(filename.replace(".", "\\.")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(showdownForegroundHtml, /level1-3\.js\?v=28/);
+  assert.match(showdownForegroundHtml, /level1-3\.js\?v=29/);
   assert.match(showdownForeground, /function drawPaintedTerrainSlice/);
   assert.match(showdownForeground, /checkpointArtGroundedByVisibleBaseline: true/);
   assert.match(showdownForeground, /independentCheckpointShadows: true/);
@@ -1467,8 +1467,8 @@ test("remasters the complete World 1-3 showdown enemy, boss, stampede, and NPC c
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /level1-3\.js\?v=28/);
-  assert.match(runtime, /SOURCE_VERSION = 'w1-3-v28-super-exploration'/);
+  assert.match(html, /level1-3\.js\?v=29/);
+  assert.match(runtime, /SOURCE_VERSION = 'w1-3-v29-final-visual-polish'/);
   assert.match(runtime, /function remasteredEnemyFrame/);
   assert.match(runtime, /enemyAnimationFrames: 8/);
   assert.match(runtime, /behaviorLinked: true/);
@@ -1505,7 +1505,7 @@ test("authors World 1-3 combat around readable formations, full-platform patrols
   assert.match(runtime, /previousBottom: player\.previousBottom/);
   assert.match(runtime, /previousTargetTop: previousEnemyTop/);
   assert.match(runtime, /player\.y = Math\.min\(player\.y, enemy\.y - player\.h - 1\)/);
-  assert.match(html, /level1-3\.js\?v=28/);
+  assert.match(html, /level1-3\.js\?v=29/);
 });
 
 test("adds World 1-3 Phase 2 exploration before the unchanged El Guacodillo arena", async () => {
@@ -1517,14 +1517,21 @@ test("adds World 1-3 Phase 2 exploration before the unchanged El Guacodillo aren
     "world1_3_super_salsa_silo_v1.webp",
     "world1_3_super_wanted_tower_v1.webp",
     "world1_3_super_guac_lookout_v1.webp",
+    "world1_3_el_guacodillo_wanted_portrait_v1.webp",
+    "world1_3_exploration_taco_reward_v1.webp",
+    "world1_3_exploration_rainbow_taco_v1.webp",
+    "world1_3_outlaw_stash_closed_v1.webp",
+    "world1_3_outlaw_stash_open_v1.webp",
+    "world1_3_pepper_mine_shaft_v1.webp",
   ];
 
   for (const filename of art) {
     assert.match(runtime, new RegExp(filename.replace(/\./g, "\\.")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
-  assert.match(html, /level1-3\.js\?v=28/);
-  assert.match(runtime, /SHOWDOWN_EXPLORATION_VERSION = 'world-1-3-phase2-v1'/);
+  assert.match(html, /level1-3\.js\?v=29/);
+  assert.match(runtime, /SHOWDOWN_EXPLORATION_VERSION = 'world-1-3-phase2-v2-polish'/);
+  assert.match(runtime, /SHOWDOWN_VISUAL_POLISH_VERSION = 'world-1-3-phase2-final-polish-v1'/);
   assert.match(runtime, /id: 'pepper-mine-lift'/);
   assert.match(runtime, /id: 'salsa-silo'/);
   assert.match(runtime, /id: 'wanted-tower'/);
@@ -1552,6 +1559,15 @@ test("adds World 1-3 Phase 2 exploration before the unchanged El Guacodillo aren
   assert.match(runtime, /allRewardSpawnCountsAtMostOne/);
   assert.match(runtime, /world1_1_taco_trekker_olivia_v1\.png/);
   assert.match(runtime, /Take this—you’re gonna want some lime/);
+  assert.match(runtime, /function drawElGuacadilloWantedPoster/);
+  assert.match(runtime, /ctx\.strokeText\('WANTED'/);
+  assert.match(runtime, /ctx\.strokeText\('EL GUACADILLO'/);
+  assert.doesNotMatch(runtime, /3 STOMPS • HUGE EGO/);
+  assert.match(runtime, /approvedStationGeometryPreserved: true/);
+  assert.match(runtime, /bossArenaUntouched: true/);
+  assert.match(runtime, /gameplayCoordinatesPreserved: true/);
+  assert.match(runtime, /collisionGeometryChanged: false/);
+  assert.match(runtime, /compactDisplay \? canvas\.height - height - 205/);
   assert.match(runtime, /function activateLimeShield/);
   const hurt = runtime.slice(runtime.indexOf("function hurtPlayer"), runtime.indexOf("function announceSuper"));
   assert.ok(hurt.indexOf("if (game.limeShield)") < hurt.indexOf("sharedAbilities.absorbDamage"));
