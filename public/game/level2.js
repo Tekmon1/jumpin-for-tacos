@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w2-1-v32-phase2-exploration';
+  const SOURCE_VERSION = 'w2-1-v33-wavewatch-surf-repair';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -46,6 +46,7 @@
     launcherYOffset: -122,
   });
   const SURF_OLIVIA_VISUAL = Object.freeze({ width: 210, height: 140, leftOffset: -3, baselineOffset: -33 });
+  const OLIVIA_SMALL_WAVE_VISUAL = Object.freeze({ frame: 4, width: 276, height: 92, leftOffset: -36, baselineOffset: -7 });
   const sections = [
     { id: 'shore', name: 'Shimmering Shores', start: 0, end: 7000, music: 'shore', accent: '#ffe17f' },
     { id: 'canopy', name: 'Palm Canopy', start: 7000, end: 14500, music: 'canopy', accent: '#55e6a5' },
@@ -116,6 +117,33 @@
     waterfall: Object.freeze({ x: 14730, y: -160, w: 827, h: 620, image: 'phase2Waterfall' }),
     shipwreck: Object.freeze({ x: 21800, y: -100, w: 840, h: 560, image: 'phase2Shipwreck' }),
     wavewatch: Object.freeze({ x: 23580, y: -260, w: 1080, h: 720, image: 'phase2Wavewatch' }),
+  });
+  const WAVEWATCH_CHARACTER_LAYOUT = Object.freeze({
+    originalCompositeScale: 1080 / 1536,
+    deckY: 235,
+    nameplateY: 260,
+    dialogueY: 360,
+    compactDialogueY: 150,
+    robert: Object.freeze({
+      source: Object.freeze({ x: 438, y: 174, w: 392, h: 544 }),
+      sourceScale: .232,
+      x: 23992,
+      height: 126,
+      dialogueAnchorX: 24053,
+      masks: Object.freeze([
+        Object.freeze([[442, 176], [566, 169], [601, 240], [592, 690], [566, 716], [467, 708], [453, 648], [456, 300]]),
+        Object.freeze([[615, 204], [696, 199], [747, 225], [774, 260], [788, 315], [823, 342], [828, 411], [802, 470], [767, 488], [760, 556], [758, 684], [741, 716], [686, 716], [670, 689], [659, 538], [620, 513], [590, 470], [579, 391], [597, 300]]),
+      ]),
+    }),
+    corky: Object.freeze({
+      source: Object.freeze({ x: 776, y: 425, w: 292, h: 294 }),
+      sourceScale: .245,
+      x: 24102,
+      height: 72,
+      masks: Object.freeze([
+        Object.freeze([[811, 431], [880, 425], [930, 448], [954, 492], [956, 548], [1002, 593], [1062, 628], [1070, 679], [1041, 710], [940, 706], [908, 675], [886, 710], [811, 708], [790, 675], [782, 590], [786, 492]]),
+      ]),
+    }),
   });
 
   const tracks = {
@@ -2667,6 +2695,57 @@
     ctx.restore();
   }
 
+  function traceWavewatchPolygon(points, mapPoint) {
+    points.forEach(([sourceX, sourceY], index) => {
+      const [x, y] = mapPoint(sourceX, sourceY);
+      if (index === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.closePath();
+  }
+
+  function drawWavewatchCharacter(image, character) {
+    const source = character.source;
+    const height = character.height;
+    const width = source.w * (height / source.h);
+    const x = character.x - game.cameraX;
+    const y = WAVEWATCH_CHARACTER_LAYOUT.deckY - height;
+    const mapPoint = (sourceX, sourceY) => [
+      x + (sourceX - source.x) * (width / source.w),
+      y + (sourceY - source.y) * (height / source.h),
+    ];
+
+    ctx.save();
+    ctx.beginPath();
+    character.masks.forEach((polygon) => traceWavewatchPolygon(polygon, mapPoint));
+    ctx.clip();
+    ctx.drawImage(image, source.x, source.y, source.w, source.h, x, y, width, height);
+    ctx.restore();
+  }
+
+  function drawWavewatchBackdrop(image, placement) {
+    const placementX = placement.x - game.cameraX;
+    const sourceToPlacement = (sourceX, sourceY) => [
+      placementX + sourceX * (placement.w / image.width),
+      placement.y + sourceY * (placement.h / image.height),
+    ];
+
+    // The approved station art was authored as one transparent composite. Mask
+    // only the original character silhouettes so the lookout remains at its
+    // approved size, then re-use those exact pixels at character-scale sizes.
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(placementX, placement.y, placement.w, placement.h);
+    WAVEWATCH_CHARACTER_LAYOUT.robert.masks.forEach((polygon) => traceWavewatchPolygon(polygon, sourceToPlacement));
+    WAVEWATCH_CHARACTER_LAYOUT.corky.masks.forEach((polygon) => traceWavewatchPolygon(polygon, sourceToPlacement));
+    ctx.clip('evenodd');
+    ctx.drawImage(image, placementX, placement.y, placement.w, placement.h);
+    ctx.restore();
+
+    drawWavewatchCharacter(image, WAVEWATCH_CHARACTER_LAYOUT.robert);
+    drawWavewatchCharacter(image, WAVEWATCH_CHARACTER_LAYOUT.corky);
+  }
+
   function drawCoveExplorationBackdrop() {
     ctx.save();
     ctx.imageSmoothingEnabled = true;
@@ -2674,7 +2753,8 @@
       if (!visibleWorldX(placement.x, placement.w, 180)) return;
       const image = images[placement.image];
       if (!image) return;
-      ctx.drawImage(image, placement.x - game.cameraX, placement.y, placement.w, placement.h);
+      if (placement.image === 'phase2Wavewatch') drawWavewatchBackdrop(image, placement);
+      else ctx.drawImage(image, placement.x - game.cameraX, placement.y, placement.w, placement.h);
     });
     ctx.restore();
   }
@@ -2713,7 +2793,7 @@
     drawCoveExplorationNameplate(8386, 54, 'COCONUT CROWN CANOPY', canopy.completed ? 'COCONUT CASCADE • FLOWING' : 'FOLLOW THE CROWN', canopy.completed ? '#ffe17f' : '#55e6a5', canopy.completed);
     drawCoveExplorationNameplate(15095, 28, 'WATERFALL WALL', waterfall.completed ? 'CREST ROUTE • CLEARED' : 'CLIMB THE SPRAY', waterfall.completed ? '#ffe17f' : '#63e7ff', waterfall.completed);
     drawCoveExplorationNameplate(22445, 72, 'SHIPWRECK MAST RUN', shipwreck.completed ? 'RIGGING • SECURED' : 'CLIMB THE RIGGING', shipwreck.completed ? '#ffe17f' : '#ff718f', shipwreck.completed);
-    drawCoveExplorationNameplate(24205, 166, 'WAVEWATCH LOOKOUT', wavewatch.completed ? 'ENDLESS SUMMER • ALWAYS' : 'THE SWELL LOOKS GOOD', wavewatch.completed ? '#ffe17f' : '#63e7ff', wavewatch.completed);
+    if (!exploration.dialogue) drawCoveExplorationNameplate(24205, WAVEWATCH_CHARACTER_LAYOUT.nameplateY, 'WAVEWATCH LOOKOUT', wavewatch.completed ? 'ENDLESS SUMMER • ALWAYS' : 'THE SWELL LOOKS GOOD', wavewatch.completed ? '#ffe17f' : '#63e7ff', wavewatch.completed);
 
     if (visibleWorldX(7900, 930, 120) && canopy.environmentEnergized) {
       const intensity = canopy.spectacleMaxTimer ? clamp(canopy.spectacleTimer / canopy.spectacleMaxTimer, 0, 1) : 0;
@@ -3442,9 +3522,23 @@
     const surf = game.surf;
     if (surf.phase === 'olivia-intro') {
       const x = surf.oliviaX - game.cameraX;
-      const y = game.tideY - SURF_OLIVIA_VISUAL.height + SURF_OLIVIA_VISUAL.baselineOffset + Math.sin(time * .008) * 4;
+      const bob = Math.sin(time * .008) * 4;
+      const y = game.tideY - SURF_OLIVIA_VISUAL.height + SURF_OLIVIA_VISUAL.baselineOffset + bob;
+      const waveY = game.tideY - OLIVIA_SMALL_WAVE_VISUAL.height + OLIVIA_SMALL_WAVE_VISUAL.baselineOffset + bob;
       ctx.save();
       ctx.shadowColor = '#63e7ff'; ctx.shadowBlur = 18;
+      // Keep Olivia at the approved 210x140 mounted scale. The original
+      // combined sprite's water strip became too small to read after that scale
+      // standardization, so restore support with the existing low-wave atlas
+      // cell behind her board rather than resizing Olivia or changing timing.
+      drawWaveCell(
+        OLIVIA_SMALL_WAVE_VISUAL.frame,
+        x + OLIVIA_SMALL_WAVE_VISUAL.leftOffset,
+        waveY,
+        OLIVIA_SMALL_WAVE_VISUAL.width,
+        OLIVIA_SMALL_WAVE_VISUAL.height,
+        .96,
+      );
       drawSurfCell(0, x + SURF_OLIVIA_VISUAL.leftOffset, y, SURF_OLIVIA_VISUAL.width, SURF_OLIVIA_VISUAL.height);
       ctx.restore();
       roundedPanel(x + 13, y - 4, 178, 35, 13, 'rgba(5,31,52,.92)', '#ffe17f', 3);
@@ -3800,12 +3894,13 @@
     const elapsed = dialogue.maxTimer - dialogue.timer;
     const visibility = clamp(Math.min(elapsed / .2, dialogue.timer / .34), 0, 1);
     const compact = canvas.getBoundingClientRect().width < 520;
-    const width = Math.min(compact ? 820 : 610, canvas.width - 42);
-    const height = compact ? 146 : 126;
-    const worldAnchorX = 24210 - game.cameraX;
-    const x = clamp(worldAnchorX - width * .52, 21, canvas.width - width - 21);
-    const y = compact ? 174 : 158;
+    const width = Math.min(compact ? 620 : 610, canvas.width - 42);
+    const height = compact ? 150 : 126;
+    const worldAnchorX = WAVEWATCH_CHARACTER_LAYOUT.robert.dialogueAnchorX - game.cameraX;
+    const x = compact ? canvas.width - width - 22 : clamp(worldAnchorX - width * .52, 21, canvas.width - width - 21);
+    const y = compact ? WAVEWATCH_CHARACTER_LAYOUT.compactDialogueY : WAVEWATCH_CHARACTER_LAYOUT.dialogueY;
     const tailX = clamp(worldAnchorX, x + 54, x + width - 54);
+    const tailTargetY = WAVEWATCH_CHARACTER_LAYOUT.deckY + (game.coveExploration?.cameraLift || 0) - 74;
     ctx.save();
     ctx.globalAlpha = visibility;
     if (!game.reducedShake) ctx.translate(0, (1 - smoothstep(clamp(elapsed / .34, 0, 1))) * 14);
@@ -3822,18 +3917,28 @@
     ctx.shadowBlur = 0;
     ctx.fillStyle = panel;
     ctx.strokeStyle = '#63e7ff';
-    ctx.beginPath(); ctx.moveTo(tailX - 18, y + height - 2); ctx.lineTo(tailX + 10, y + height + 24); ctx.lineTo(tailX + 24, y + height - 2); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.beginPath();
+    if (compact) {
+      ctx.moveTo(x + 2, y + 58);
+      ctx.lineTo(worldAnchorX + 12, tailTargetY);
+      ctx.lineTo(x + 2, y + 88);
+    } else {
+      ctx.moveTo(tailX - 18, y + 2);
+      ctx.lineTo(tailX + 10, y - 24);
+      ctx.lineTo(tailX + 24, y + 2);
+    }
+    ctx.closePath(); ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#ffe17f';
     ctx.textAlign = 'left';
-    ctx.font = `900 ${compact ? 17 : 14}px Arial`;
-    ctx.fillText(`${dialogue.speaker} • WAVEWATCH  /  ${dialogue.companion} • GOOD DOG`, x + 26, y + 29);
+    ctx.font = `900 ${compact ? 15 : 14}px Arial`;
+    ctx.fillText(`${dialogue.speaker} • WAVEWATCH  /  ${dialogue.companion} • GOOD DOG`, x + 26, y + (compact ? 32 : 29));
     ctx.fillStyle = '#fff8dc';
     ctx.font = `900 ${compact ? 25 : 23}px Arial`;
-    ctx.fillText('“Ready for an endless summer', x + 26, y + (compact ? 69 : 64));
-    ctx.fillText('of tasty waves and tacos?”', x + 26, y + (compact ? 101 : 94));
+    ctx.fillText('“Ready for an endless summer', x + 26, y + (compact ? 72 : 64));
+    ctx.fillText('of tasty waves and tacos?”', x + 26, y + (compact ? 104 : 94));
     ctx.fillStyle = '#63e7ff';
     ctx.font = `900 ${compact ? 14 : 12}px Arial`;
-    ctx.fillText(dialogue.reward, x + 26, y + (compact ? 130 : 116));
+    ctx.fillText(dialogue.reward, x + 26, y + (compact ? 136 : 116));
     for (let wave = 0; wave < 4; wave += 1) {
       const wx = x + width - 112 + wave * 20;
       const wy = y + 31 + Math.sin(time * .012 + wave) * 5;
@@ -3917,6 +4022,7 @@
           checkpointHeight: visualScale.olivia.standingHeight,
           catamaranWidths: [CATAMARAN_VISUAL.activeWidth, CATAMARAN_VISUAL.escapeWidth],
           surfIntroSize: [SURF_OLIVIA_VISUAL.width, SURF_OLIVIA_VISUAL.height],
+          oliviaSmallWave: { ...OLIVIA_SMALL_WAVE_VISUAL, art: 'islandWave', zOrder: 'behind-olivia', timingPreserved: true },
           fiestaHeight: visualScale.olivia.standingHeight,
           gameplayGeometryPreserved: true,
         },
@@ -3977,6 +4083,19 @@
             corky: { breed: 'golden retriever', coat: 'golden-brown', calmFriendly: true, groundedNaturally: true },
             exactDialogue: ROBERT_WAVEWATCH_DIALOGUE,
             respectfulTone: true,
+            scaleCorrection: {
+              originalCompositeScale: WAVEWATCH_CHARACTER_LAYOUT.originalCompositeScale,
+              robertSourceScale: WAVEWATCH_CHARACTER_LAYOUT.robert.sourceScale,
+              robertVisualHeight: WAVEWATCH_CHARACTER_LAYOUT.robert.height,
+              corkySourceScale: WAVEWATCH_CHARACTER_LAYOUT.corky.sourceScale,
+              corkyVisualHeight: WAVEWATCH_CHARACTER_LAYOUT.corky.height,
+              heroRenderHeight: visualScale.heroRenderHeight,
+              deckY: WAVEWATCH_CHARACTER_LAYOUT.deckY,
+              dialoguePlacement: 'below-deck-desktop-right-side-mobile-with-robert-tail',
+              independentScales: true,
+              approvedArtworkReused: true,
+              collisionGeometryPreserved: true,
+            },
           },
           destinations: coveExplorationPlan.map((entry) => ({
             id: entry.id, name: entry.name, presentation: entry.presentation,

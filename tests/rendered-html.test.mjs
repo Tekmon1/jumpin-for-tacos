@@ -1937,8 +1937,8 @@ test("remasters World 2-1 art while preserving collision geometry and widening s
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /level2\.js\?v=32/);
-  assert.match(runtime, /SOURCE_VERSION = 'w2-1-v32-phase2-exploration'/);
+  assert.match(html, /level2\.js\?v=33/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-1-v33-wavewatch-surf-repair'/);
   assert.match(runtime, /encounterAudit: game\.world2EncounterAudit/);
   assert.match(runtime, /const ENVIRONMENT_TRANSITION_WIDTH = 1600/);
   assert.match(runtime, /const ENVIRONMENT_PANORAMA_CROP = 0\.9/);
@@ -1989,7 +1989,7 @@ test("adds four distinct World 2-1 Super exploration experiences, one true grott
     "world2_1_phase2_wavewatch_robert_corky_v1.webp",
   ];
 
-  assert.match(html, /level2\.js\?v=32/);
+  assert.match(html, /level2\.js\?v=33/);
   assert.match(runtime, /COVE_EXPLORATION_VERSION = 'world-2-1-phase2-v1'/);
   for (const filename of phase2Assets) {
     assert.match(runtime, new RegExp(filename.replace(".", "\\.")));
@@ -2036,6 +2036,21 @@ test("adds four distinct World 2-1 Super exploration experiences, one true grott
   assert.match(runtime, /ROBERT_WAVEWATCH_DIALOGUE = 'Ready for an endless summer of tasty waves and tacos\?'/);
   assert.match(runtime, /longBrownHair: true, brownMustache: true, beard: false, uprightSurfboard: true/);
   assert.match(runtime, /breed: 'golden retriever', coat: 'golden-brown', calmFriendly: true, groundedNaturally: true/);
+  assert.match(runtime, /originalCompositeScale: 1080 \/ 1536/);
+  assert.match(runtime, /sourceScale: \.232/);
+  assert.match(runtime, /sourceScale: \.245/);
+  assert.match(runtime, /height: 126/);
+  assert.match(runtime, /height: 72/);
+  assert.match(runtime, /nameplateY: 260/);
+  assert.match(runtime, /dialogueY: 360/);
+  assert.match(runtime, /compactDialogueY: 150/);
+  assert.match(runtime, /const width = Math\.min\(compact \? 620 : 610/);
+  assert.match(runtime, /ctx\.lineTo\(worldAnchorX \+ 12, tailTargetY\)/);
+  assert.match(runtime, /if \(!exploration\.dialogue\) drawCoveExplorationNameplate\(24205/);
+  assert.match(runtime, /function drawWavewatchBackdrop/);
+  assert.match(runtime, /if \(placement\.image === 'phase2Wavewatch'\) drawWavewatchBackdrop/);
+  assert.match(runtime, /worldAnchorX = WAVEWATCH_CHARACTER_LAYOUT\.robert\.dialogueAnchorX/);
+  assert.match(runtime, /dialoguePlacement: 'below-deck-desktop-right-side-mobile-with-robert-tail'/);
   assert.match(runtime, /function drawRobertWavewatchDialogue/);
   assert.match(runtime, /dialogue\.companion\} • GOOD DOG/);
   assert.match(runtime, /respectfulTone: true/);
@@ -2054,6 +2069,19 @@ test("adds four distinct World 2-1 Super exploration experiences, one true grott
   assert.match(runtime, /if \(action === 'jump'\) \{/);
   assert.match(runtime, /const previewNormalOnly = previewHost/);
   assert.match(runtime, /const previewNoDamage = previewHost/);
+});
+
+test("restores Olivia's readable pre-big-wave support without resizing Olivia or changing the big wave", async () => {
+  const runtime = await readFile(new URL("../public/game/level2.js", import.meta.url), "utf8");
+
+  assert.match(runtime, /SURF_OLIVIA_VISUAL = Object\.freeze\(\{ width: 210, height: 140, leftOffset: -3, baselineOffset: -33 \}\)/);
+  assert.match(runtime, /OLIVIA_SMALL_WAVE_VISUAL = Object\.freeze\(\{ frame: 4, width: 276, height: 92, leftOffset: -36, baselineOffset: -7 \}\)/);
+  assert.match(runtime, /drawWaveCell\([\s\S]*?OLIVIA_SMALL_WAVE_VISUAL\.frame[\s\S]*?drawSurfCell\(0/);
+  assert.match(runtime, /art: 'islandWave', zOrder: 'behind-olivia', timingPreserved: true/);
+  assert.match(runtime, /const activeFrames = \[0, 1, 2, 1\]/);
+  assert.match(runtime, /const spriteW = crashing \? 620 : 566/);
+  assert.match(runtime, /const spriteH = crashing \? 620 : 566/);
+  assert.match(runtime, /drawWaveCell\(frame, spriteX, spriteY, spriteW, spriteH\)/);
 });
 
 test("ships the 36,000-unit island route, premium vehicles, and playable surf finale", async () => {
