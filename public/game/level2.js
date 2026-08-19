@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w2-1-v31-alternating-super-run';
+  const SOURCE_VERSION = 'w2-1-v32-phase2-exploration';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -59,6 +59,64 @@
     { x: 23600, name: 'Lighthouse Landing', look: 'lighthouse', sign: 'BIG WAVE AHEAD. ACT NATURAL!', accent: '#63e7ff' },
     { x: 34650, name: 'Moonlight Mooring', look: 'moon', sign: 'THE VIBES HAVE PEAKED!', accent: '#c69cff' },
   ];
+  const COVE_EXPLORATION_VERSION = 'world-2-1-phase2-v1';
+  const ROBERT_WAVEWATCH_DIALOGUE = 'Ready for an endless summer of tasty waves and tacos?';
+  const CATAMARAN_DROP_CORRIDOR = Object.freeze({ start: 17180, end: 21240 });
+  const SURF_SCRIPT_START = 24820;
+  const coveExplorationPlan = Object.freeze([
+    Object.freeze({
+      id: 'coconut-crown-canopy', name: 'Coconut Crown Canopy', presentation: 'organic-spectacle',
+      arrivalTitle: 'COCONUT CROWN CANOPY REACHED', completionTitle: 'COCONUT CASCADE!',
+      rewardLabel: '+1,500 SCORE  •  9-TACO CANOPY BURST', score: 1500, bonusTacos: 9,
+      trigger: Object.freeze({ x: 8285, y: -24, w: 190, h: 92 }),
+      routeRange: Object.freeze([7900, 8830]), rewardX: 8360, rewardY: 70,
+      rewardPlatformId: 'phase2-canopy-upper', waypointCount: 4,
+      worldPercent: Object.freeze([21.9, 24.5]),
+    }),
+    Object.freeze({
+      id: 'waterfall-wall', name: 'Waterfall Wall', presentation: 'natural-ascent',
+      arrivalTitle: 'WATERFALL WALL ROUTE FOUND', completionTitle: 'WATERFALL CRESTED',
+      rewardLabel: '+1,800 SCORE  •  10-TACO SPRAY', score: 1800, bonusTacos: 10,
+      trigger: Object.freeze({ x: 15022, y: -106, w: 188, h: 104 }),
+      routeRange: Object.freeze([14720, 15590]), rewardX: 15055, rewardY: 58,
+      rewardPlatformId: 'phase2-waterfall-mid', waypointCount: 3,
+      worldPercent: Object.freeze([40.9, 43.3]),
+    }),
+    Object.freeze({
+      id: 'shipwreck-mast-run', name: 'Shipwreck Mast Run', presentation: 'rigging-spectacle',
+      arrivalTitle: 'SHIPWRECK RIGGING REACHED', completionTitle: 'MAST RUN SECURED!',
+      rewardLabel: '+2,200 SCORE  •  12-TACO TREASURE ARC', score: 2200, bonusTacos: 12,
+      trigger: Object.freeze({ x: 22382, y: -26, w: 158, h: 102 }),
+      routeRange: Object.freeze([21790, 22650]), rewardX: 22302, rewardY: 52,
+      rewardPlatformId: 'phase2-shipwreck-upper', waypointCount: 4,
+      worldPercent: Object.freeze([60.5, 62.9]),
+    }),
+    Object.freeze({
+      id: 'wavewatch-lookout', name: 'Wavewatch Lookout', presentation: 'tribute-character',
+      arrivalTitle: 'WAVEWATCH LOOKOUT REACHED', completionTitle: 'ENDLESS SUMMER LOOKOUT',
+      rewardLabel: '+2,600 SCORE  •  11-TACO SUNSET SET', score: 2600, bonusTacos: 11,
+      trigger: Object.freeze({ x: 24108, y: 166, w: 300, h: 116 }),
+      routeRange: Object.freeze([23650, 24660]), rewardX: 24225, rewardY: 222,
+      rewardPlatformId: 'phase2-wavewatch-deck', waypointCount: 2,
+      worldPercent: Object.freeze([65.7, 68.5]),
+    }),
+  ]);
+  const secretGrottoPlan = Object.freeze({
+    id: 'secret-grotto', name: 'Secret Grotto', presentation: 'true-secret',
+    completionTitle: 'SECRET GROTTO DISCOVERED!',
+    rewardLabel: '+4,800 SCORE  •  18-TACO JACKPOT  •  2 RAINBOW TACOS',
+    score: 4800, bonusTacos: 18,
+    trigger: Object.freeze({ x: 15238, y: 74, w: 198, h: 148 }),
+    routeRange: Object.freeze([14720, 15590]), rewardX: 15332, rewardY: 126,
+    rewardPlatformId: 'phase2-secret-grotto', waypointCount: 1,
+    worldPercent: Object.freeze([42.3, 43.2]), requiredParentProgress: 3,
+  });
+  const coveExplorationArt = Object.freeze({
+    canopy: Object.freeze({ x: 7900, y: -190, w: 930, h: 620, image: 'phase2Canopy' }),
+    waterfall: Object.freeze({ x: 14730, y: -160, w: 827, h: 620, image: 'phase2Waterfall' }),
+    shipwreck: Object.freeze({ x: 21800, y: -100, w: 840, h: 560, image: 'phase2Shipwreck' }),
+    wavewatch: Object.freeze({ x: 23580, y: -260, w: 1080, h: 720, image: 'phase2Wavewatch' }),
+  });
 
   const tracks = {
     shore: document.getElementById('musicIslandShore'),
@@ -157,6 +215,8 @@
     environmentRemasterReady: false, foregroundRemasterReady: false,
     decorativeMidgroundRemoved: false,
     world2EncounterAudit: null,
+    coveExploration: null,
+    coveExplorationGeometryAudit: null,
   };
 
   let vehicleLoopHandle = null;
@@ -165,12 +225,19 @@
   const params = new URLSearchParams(location.search);
   const previewHost = ['terminal.local', 'localhost', '127.0.0.1'].includes(location.hostname);
   const previewStart = previewHost ? Number(params.get('startX') || 0) : 0;
+  const previewStartY = previewHost && params.has('startY') ? Number(params.get('startY')) : 330;
   const previewAutoRun = previewHost && params.get('autoRun') === '1';
   const previewAutoJump = previewHost && params.get('autoJump') === '1';
   const previewFastCelebrate = previewHost && params.get('fastCelebrate') === '1';
   const previewSuper = previewHost && params.get('super') === '1';
   const previewRespawn = previewHost && params.get('respawn') === '1';
   const previewRespawnCheckpoint = previewHost ? Number(params.get('respawnCheckpoint') || -1) : -1;
+  const previewPhase2Ready = previewHost ? params.get('phase2Ready') || '' : '';
+  const previewPhase2Complete = previewHost ? params.get('phase2Complete') || '' : '';
+  const previewPhase2Secret = previewHost && params.get('phase2Secret') === '1';
+  const previewPowerDown = previewHost && params.get('powerDown') === '1';
+  const previewNormalOnly = previewHost && params.get('normalOnly') === '1';
+  const previewNoDamage = previewHost && params.get('noDamage') === '1';
 
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
   const lerp = (a, b, t) => a + (b - a) * t;
@@ -235,6 +302,57 @@
   function formatTime(totalSeconds) {
     const seconds = Math.max(0, Math.round(totalSeconds));
     return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+  }
+
+  function createCoveExplorationState() {
+    return {
+      version: COVE_EXPLORATION_VERSION,
+      scope: 'world-2-1-only',
+      normalRouteUnaffected: true,
+      noRequiredSuperTraversal: true,
+      phase1BalanceFrozen: true,
+      completionBanner: null,
+      dialogue: null,
+      cameraLift: 0,
+      cameraTargetLift: 0,
+      previewPowerDownTriggered: false,
+      destinations: Object.fromEntries(coveExplorationPlan.map((entry) => [entry.id, {
+        revealed: false,
+        completed: false,
+        completedAt: null,
+        progress: 0,
+        arrivalAcknowledged: false,
+        completionCount: 0,
+        rewardSpawned: false,
+        rewardSpawnCount: 0,
+        rewardSurfaceId: null,
+        environmentEnergized: false,
+        spectacleTimer: 0,
+        spectacleMaxTimer: 0,
+      }])),
+      secret: {
+        revealed: false,
+        completed: false,
+        completedAt: null,
+        progress: 0,
+        arrivalAcknowledged: false,
+        completionCount: 0,
+        rewardSpawned: false,
+        rewardSpawnCount: 0,
+        rewardSurfaceId: null,
+        environmentEnergized: false,
+        spectacleTimer: 0,
+        spectacleMaxTimer: 0,
+        reveal: 0,
+      },
+    };
+  }
+
+  function coveExplorationStateForEntry(entry) {
+    if (!game.coveExploration || !entry) return null;
+    return entry.id === secretGrottoPlan.id
+      ? game.coveExploration.secret
+      : game.coveExploration.destinations[entry.id];
   }
 
   function addPlatform(data) {
@@ -395,6 +513,83 @@
     });
   }
 
+  function addCoveExplorationPlatform(data) {
+    return addPlatform({
+      h: 24,
+      optional: true,
+      mainRoute: false,
+      phase2ArtSurface: true,
+      phase2Escape: 'drop-to-main-route',
+      ...data,
+    });
+  }
+
+  function buildCoveExplorationGeometry() {
+    const phase2Platforms = [
+      addCoveExplorationPlatform({ id: 'phase2-canopy-entry', x: 8110, y: 282, w: 392, style: 'leaf', phase2Discovery: 'coconut-crown-canopy', phase2Waypoint: 1, superEntry: true }),
+      addCoveExplorationPlatform({ id: 'phase2-canopy-mid', x: 8150, y: 182, w: 465, style: 'leaf', phase2Discovery: 'coconut-crown-canopy', phase2Waypoint: 2 }),
+      addCoveExplorationPlatform({ id: 'phase2-canopy-upper', x: 8154, y: 100, w: 440, style: 'leaf', phase2Discovery: 'coconut-crown-canopy', phase2Waypoint: 3 }),
+      addCoveExplorationPlatform({ id: 'phase2-canopy-crown', x: 8290, y: 18, w: 190, style: 'leaf', phase2Discovery: 'coconut-crown-canopy', phase2Waypoint: 4 }),
+
+      addCoveExplorationPlatform({ id: 'phase2-waterfall-entry', x: 14882, y: 245, w: 208, style: 'temple', phase2Discovery: 'waterfall-wall', phase2Waypoint: 1, superEntry: true }),
+      addCoveExplorationPlatform({ id: 'phase2-waterfall-mid', x: 14965, y: 92, w: 190, style: 'temple', phase2Discovery: 'waterfall-wall', phase2Waypoint: 2 }),
+      addCoveExplorationPlatform({ id: 'phase2-waterfall-crest', x: 15028, y: -35, w: 178, style: 'temple', phase2Discovery: 'waterfall-wall', phase2Waypoint: 3 }),
+      addCoveExplorationPlatform({ id: 'phase2-secret-grotto', x: 15245, y: 138, w: 188, style: 'temple', phase2Discovery: 'secret-grotto', phase2Waypoint: 1, hiddenSecretSurface: true }),
+
+      addCoveExplorationPlatform({ id: 'phase2-shipwreck-entry', x: 22040, y: 258, w: 220, style: 'temple', phase2Discovery: 'shipwreck-mast-run', phase2Waypoint: 1, superEntry: true }),
+      addCoveExplorationPlatform({ id: 'phase2-shipwreck-mid', x: 22120, y: 165, w: 210, style: 'temple', phase2Discovery: 'shipwreck-mast-run', phase2Waypoint: 2 }),
+      addCoveExplorationPlatform({ id: 'phase2-shipwreck-upper', x: 22198, y: 57, w: 190, style: 'temple', phase2Discovery: 'shipwreck-mast-run', phase2Waypoint: 3 }),
+      addCoveExplorationPlatform({ id: 'phase2-shipwreck-crows-nest', x: 22388, y: 10, w: 150, style: 'temple', phase2Discovery: 'shipwreck-mast-run', phase2Waypoint: 4 }),
+
+      addCoveExplorationPlatform({ id: 'phase2-wavewatch-entry', x: 23770, y: 286, w: 180, style: 'temple', phase2Discovery: 'wavewatch-lookout', phase2Waypoint: 1, superEntry: true }),
+      addCoveExplorationPlatform({ id: 'phase2-wavewatch-deck', x: 23950, y: 235, w: 540, style: 'temple', phase2Discovery: 'wavewatch-lookout', phase2Waypoint: 2 }),
+    ];
+
+    const guideLayout = [
+      ['coconut-crown-canopy', ['phase2-canopy-entry', 'phase2-canopy-mid', 'phase2-canopy-upper', 'phase2-canopy-crown']],
+      ['waterfall-wall', ['phase2-waterfall-entry', 'phase2-waterfall-mid', 'phase2-waterfall-crest']],
+      ['shipwreck-mast-run', ['phase2-shipwreck-entry', 'phase2-shipwreck-mid', 'phase2-shipwreck-upper', 'phase2-shipwreck-crows-nest']],
+      ['wavewatch-lookout', ['phase2-wavewatch-entry', 'phase2-wavewatch-deck']],
+    ];
+    guideLayout.forEach(([discovery, ids]) => ids.forEach((id, platformIndex) => {
+      const platform = phase2Platforms.find((candidate) => candidate.id === id);
+      if (!platform) return;
+      const count = platform.w >= 300 ? 4 : 2;
+      const gap = Math.min(48, (platform.w - 44) / Math.max(1, count - 1));
+      const startX = platform.x + (platform.w - (count - 1) * gap - 24) * 0.5;
+      for (let index = 0; index < count; index += 1) {
+        addItem(startX + index * gap, platform.y - 43, 'taco', {
+          bonusReward: true,
+          phase2Guide: true,
+          phase2Discovery: discovery,
+          bob: platformIndex * .7 + index * .32,
+        });
+      }
+    }));
+    addItem(15215, 117, 'taco', { bonusReward: true, phase2Guide: true, phase2SecretClue: true, bob: 2.8 });
+
+    const entryRises = Object.fromEntries(coveExplorationPlan.map((entry) => {
+      const entryPlatform = phase2Platforms.find((platform) => platform.phase2Discovery === entry.id && platform.superEntry);
+      return [entry.id, entryPlatform ? GROUND_Y - entryPlatform.y : null];
+    }));
+    const centers = coveExplorationPlan.map((entry) => entry.trigger.x + entry.trigger.w * .5).sort((a, b) => a - b);
+    game.coveExplorationGeometryAudit = {
+      version: COVE_EXPLORATION_VERSION,
+      phase2PlatformCount: phase2Platforms.length,
+      phase2PlatformIds: phase2Platforms.map((platform) => platform.id),
+      entryRises,
+      allEntriesRequireSuper: Object.values(entryRises).every((rise) => Number.isFinite(rise) && rise > heroPhysics.normalJumpRise + 1),
+      minimumDestinationSpacing: centers.slice(1).reduce((minimum, center, index) => Math.min(minimum, center - centers[index]), Infinity),
+      standardViewportSeparated: centers.slice(1).every((center, index) => center - centers[index] > canvas.width),
+      allOptional: phase2Platforms.every((platform) => platform.optional && !platform.mainRoute),
+      allDropRecoverable: phase2Platforms.every((platform) => platform.phase2Escape === 'drop-to-main-route'),
+      catamaranCorridorUntouched: coveExplorationPlan.every((entry) => entry.routeRange[1] < CATAMARAN_DROP_CORRIDOR.start || entry.routeRange[0] > CATAMARAN_DROP_CORRIDOR.end),
+      surfTriggerUntouched: coveExplorationPlan.find((entry) => entry.id === 'wavewatch-lookout').routeRange[1] < SURF_SCRIPT_START,
+      cameraMaximumLift: 182,
+      backgroundSeamsExposed: false,
+    };
+  }
+
   function buildWorld() {
     randomSeed = 0xC0C0A;
     world.platforms = [];
@@ -439,8 +634,12 @@
     ];
 
     addUpperRoute(sections[0], 'surfboard', 420, 430);
-    addUpperRoute(sections[1], 'leaf', 360, 420);
-    addUpperRoute(sections[2], 'temple', 330, 460, 16300, 22100);
+    addUpperRoute(sections[1], 'leaf', 360, 420, 7900, 8830);
+    // World 2-1 Phase 2 replaces the old generic Tidal Temple upper strips
+    // with authored waterfall, shipwreck, and lookout landmarks. The lower
+    // route and Olivia's protected catamaran corridor remain unchanged.
+    addUpperRoute(sections[2], 'temple', 330, 460, 14450, 24700);
+    buildCoveExplorationGeometry();
 
     const secretRewards = [
       [1070, 166], [5100, 154], [8750, 142], [12150, 160],
@@ -725,6 +924,7 @@
       respawnCount: 0, respawnFallbacks: 0, lastRespawnLanding: null,
       activeMusic: null, musicTransition: null,
       musicTransitionCount: 0, musicOverlapRecoveries: 0, maxMusicPlaying: 0,
+      coveExploration: createCoveExplorationState(),
     });
     Object.assign(player, { x: 140, y: 380, vx: 0, vy: 0, dir: 1, grounded: false, platform: null, anim: 0, invulnerable: 0, coyote: 0, jumpBuffer: 0, rotation: 0, scale: 1 });
     if (previewSuper) {
@@ -823,8 +1023,27 @@
     game.startTime = performance.now();
     if (previewStart > 0) {
       player.x = clamp(previewStart, 0, WORLD_WIDTH - player.w);
-      player.y = 330;
+      player.y = previewStartY;
       game.cameraX = clamp(player.x - canvas.width * 0.42, 0, WORLD_WIDTH - canvas.width);
+    }
+    if (previewPhase2Ready) {
+      const entry = coveExplorationPlan.find((candidate) => candidate.id === previewPhase2Ready)
+        || (previewPhase2Ready === secretGrottoPlan.id ? secretGrottoPlan : null);
+      if (entry) {
+        const routePlatforms = world.platforms
+          .filter((platform) => platform.phase2Discovery === entry.id)
+          .sort((a, b) => (a.phase2Waypoint || 0) - (b.phase2Waypoint || 0));
+        const platform = routePlatforms.at(-1);
+        if (platform) {
+          player.x = platform.x + Math.min(28, platform.w * .25);
+          player.y = platform.y - player.h;
+          player.grounded = true;
+          player.platform = platform;
+          const state = coveExplorationStateForEntry(entry);
+          if (state) state.progress = Math.max(0, (platform.phase2Waypoint || 1) - 1);
+          game.cameraX = clamp(player.x - canvas.width * .42, 0, WORLD_WIDTH - canvas.width);
+        }
+      }
     }
     if (previewAutoRun) keys.right = true;
     unlockAudio();
@@ -866,6 +1085,21 @@
       if (['ArrowLeft', 'KeyA'].includes(event.code)) keys.left = false;
       if (['ArrowRight', 'KeyD'].includes(event.code)) keys.right = false;
       if (['Space', 'ArrowUp', 'KeyW'].includes(event.code)) keys.jump = false;
+    });
+    window.addEventListener('jft:controlleraction', (event) => {
+      const { action, pressed } = event.detail || {};
+      if (action === 'left') keys.left = Boolean(pressed);
+      if (action === 'right') keys.right = Boolean(pressed);
+      if (action === 'jump') {
+        if (pressed) queueJump();
+        else keys.jump = false;
+      }
+    });
+    window.addEventListener('jft:controllerstate', (event) => {
+      const detail = event.detail || {};
+      if (detail.connected === false) return;
+      keys.left = Boolean(detail.left);
+      keys.right = Boolean(detail.right);
     });
     document.querySelectorAll('.touch-btn').forEach((button) => {
       const kind = button.dataset.input;
@@ -1020,6 +1254,7 @@
   }
 
   function hurtPlayer(fromX) {
+    if (previewNoDamage) return;
     if (player.invulnerable > 0 || sharedAbilities.isFrenzy(game.abilities) || game.state !== 'playing') return;
     if (game.limeShield) {
       game.limeShield = false;
@@ -1090,7 +1325,7 @@
     const points = { taco: 10, golden: 350, rainbow: 600, lime: 120, pepper: 120, shell: 120, coconut: 120 }[item.type] || 10;
     game.score += points * multiplier;
     if (['taco', 'golden', 'rainbow'].includes(item.type)) {
-      const superStarted = sharedAbilities.collectTaco(game.abilities, item.type, { position: audioPosition(item.x + item.w / 2) });
+      const superStarted = previewNormalOnly ? false : sharedAbilities.collectTaco(game.abilities, item.type, { position: audioPosition(item.x + item.w / 2) });
       if (superStarted) announceSuper(item.x);
     }
     if (item.type === 'golden') {
@@ -1127,7 +1362,7 @@
       game.bestSplat = Math.max(game.bestSplat, game.splatCombo);
     }
     game.score += 180 * Math.max(1, game.splatCombo);
-    const superStarted = sharedAbilities.splatEnemy(game.abilities, { position: audioPosition(enemy.x + enemy.w / 2) });
+    const superStarted = previewNormalOnly ? false : sharedAbilities.splatEnemy(game.abilities, { position: audioPosition(enemy.x + enemy.w / 2) });
     if (superStarted) announceSuper(enemy.x);
     if (stomped) player.vy = -heroPhysics.enemyBounceVelocity;
     game.hitStop = 0.045;
@@ -1436,9 +1671,270 @@
     }
   }
 
+  function coveExplorationRewardSurface(entry) {
+    const platform = world.platforms.find((candidate) => candidate.id === entry.rewardPlatformId);
+    if (!platform) return null;
+    const itemSize = 24;
+    const padding = 14;
+    return {
+      platform,
+      platformId: platform.id,
+      top: platform.y,
+      center: platform.x + platform.w * .5,
+      safeLeft: platform.x + padding,
+      safeRight: platform.x + platform.w - padding - itemSize,
+    };
+  }
+
+  function spawnCoveExplorationRewards(entry, state) {
+    if (!state || state.rewardSpawned) return false;
+    const surface = coveExplorationRewardSurface(entry);
+    if (!surface) return false;
+    const secret = entry.id === secretGrottoPlan.id;
+    const rainbowCount = secret ? 2 : 0;
+    const columns = Math.max(1, Math.min(8, entry.bonusTacos));
+    const slotSpacing = columns >= 8 ? 24 : 28;
+    const launchX = entry.rewardX - 12;
+    const launchY = entry.rewardY;
+    for (let index = 0; index < entry.bonusTacos; index += 1) {
+      const row = Math.floor(index / columns);
+      const rowStart = row * columns;
+      const rowLength = Math.min(columns, entry.bonusTacos - rowStart);
+      const column = index - rowStart;
+      const targetX = clamp(surface.center - ((rowLength - 1) * slotSpacing + 24) * .5 + column * slotSpacing, surface.safeLeft, surface.safeRight);
+      const targetY = surface.top - 31 - row * 27;
+      addItem(launchX, launchY, 'taco', {
+        bonusReward: true,
+        dynamic: true,
+        explorationReward: true,
+        phase2Discovery: entry.id,
+        rewardFlight: {
+          elapsed: -index * .024,
+          duration: .58 + column * .035 + row * .08,
+          startX: launchX,
+          startY: launchY,
+          targetX,
+          targetY,
+          arc: secret ? 52 + row * 8 : 82 + row * 13,
+          platformId: surface.platformId,
+        },
+        rewardLanding: {
+          platformId: surface.platformId,
+          surfaceY: surface.top,
+          targetX,
+          targetY,
+          safeLeft: surface.safeLeft,
+          safeRight: surface.safeRight,
+          settled: false,
+        },
+        vx: 0,
+        vy: 0,
+        angle: index * .58,
+      });
+    }
+    for (let index = 0; index < rainbowCount; index += 1) {
+      const targetX = clamp(surface.center - 16 + (index - .5) * 56, surface.safeLeft, surface.safeRight);
+      const targetY = surface.top - 36;
+      addItem(launchX, launchY, 'rainbow', {
+        bonusReward: true,
+        dynamic: true,
+        rainbowReward: true,
+        explorationReward: true,
+        phase2Discovery: entry.id,
+        rewardFlight: {
+          elapsed: -(entry.bonusTacos + index) * .024,
+          duration: .82 + index * .1,
+          startX: launchX,
+          startY: launchY,
+          targetX,
+          targetY,
+          arc: 116 + index * 14,
+          platformId: surface.platformId,
+        },
+        rewardLanding: {
+          platformId: surface.platformId,
+          surfaceY: surface.top,
+          targetX,
+          targetY,
+          safeLeft: surface.safeLeft,
+          safeRight: surface.safeRight,
+          settled: false,
+        },
+        vx: 0,
+        vy: 0,
+        angle: index * .8,
+      });
+    }
+    state.rewardSurfaceId = surface.platformId;
+    state.rewardSpawned = true;
+    state.rewardSpawnCount += 1;
+    return true;
+  }
+
+  function setCoveExplorationBanner(entry) {
+    const secret = entry.id === secretGrottoPlan.id;
+    const duration = secret ? 3.45 : 2.25;
+    game.coveExploration.completionBanner = {
+      eyebrow: secret ? 'TRUE COVE SECRET' : entry.id === 'coconut-crown-canopy' ? 'OPTIONAL CANOPY SPECTACLE' : entry.id === 'shipwreck-mast-run' ? 'OPTIONAL RIGGING RUN' : 'OPTIONAL ISLAND ROUTE',
+      title: entry.completionTitle,
+      reward: entry.rewardLabel,
+      mode: secret ? 'secret' : entry.presentation,
+      timer: duration,
+      maxTimer: duration,
+    };
+  }
+
+  function completeCoveExplorationEntry(entry) {
+    const state = coveExplorationStateForEntry(entry);
+    if (!state || state.completed) return false;
+    state.revealed = true;
+    state.completed = true;
+    state.completedAt = game.levelTime;
+    state.completionCount += 1;
+    state.environmentEnergized = true;
+    state.spectacleTimer = state.spectacleMaxTimer = entry.id === secretGrottoPlan.id ? 3.6 : 2.9;
+    game.score += entry.score;
+    spawnCoveExplorationRewards(entry, state);
+    if (entry.id !== 'wavewatch-lookout') setCoveExplorationBanner(entry);
+
+    const secret = entry.id === secretGrottoPlan.id;
+    const screenX = entry.trigger.x + entry.trigger.w * .5 - game.cameraX;
+    const centerY = entry.trigger.y + entry.trigger.h * .5;
+    const label = secret ? 'GROTTO JACKPOT!' : entry.id === 'wavewatch-lookout' ? 'ROBERT & CORKY • WAVEWATCH' : entry.completionTitle.replace(/!+$/, '');
+    impactText(entry.rewardX, Math.max(-10, entry.rewardY - 16), label, secret ? '#ffe17f' : entry.id === 'wavewatch-lookout' ? '#63e7ff' : '#fff4bd', secret ? 30 : 22);
+    spawnConfetti(screenX, Math.max(30, centerY), game.reducedShake ? (secret ? 50 : 26) : (secret ? 118 : entry.id === 'coconut-crown-canopy' ? 78 : 58));
+    ['#63e7ff', '#ff718f', '#ffe17f'].forEach((color, index) => spawnBurst(screenX, Math.max(28, centerY - index * 8), color, game.reducedShake ? 10 : secret ? 34 + index * 7 : 18 + index * 3));
+    game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 2 : secret ? 9 : 4);
+
+    if (entry.id === 'coconut-crown-canopy') {
+      playAudio('ability.coconutBounce', { position: audioPosition(entry.rewardX), pitchCents: -110, gain: .82 });
+      playAudio('level.celebrationPulse', { position: audioPosition(entry.rewardX), pitchCents: 45 });
+    } else if (entry.id === 'waterfall-wall') {
+      playAudio('surf.obstacleClear', { position: audioPosition(entry.rewardX), pitchCents: 30 });
+      playAudio('checkpoint.activate', { position: audioPosition(entry.rewardX), pitchCents: 85, gain: .84 });
+    } else if (entry.id === 'shipwreck-mast-run') {
+      playAudio('vehicle.drop', { vehicleType: 'catamaran', position: audioPosition(entry.rewardX), pitchCents: -35 });
+      playAudio('level.celebrationPulse', { position: audioPosition(entry.rewardX), pitchCents: 90 });
+    } else if (entry.id === 'wavewatch-lookout') {
+      game.coveExploration.dialogue = {
+        speaker: 'ROBERT',
+        companion: 'CORKY',
+        message: ROBERT_WAVEWATCH_DIALOGUE,
+        reward: entry.rewardLabel,
+        timer: 5.2,
+        maxTimer: 5.2,
+      };
+      playAudio('surf.oliviaPass', { position: audioPosition(entry.rewardX), pitchCents: -80, gain: .72 });
+      playAudio('level.celebrationPulse', { position: audioPosition(entry.rewardX), pitchCents: 20, gain: .8 });
+    } else {
+      state.reveal = .01;
+      spawnFirework();
+      spawnFirework();
+      playAudio('pinata.break', { position: audioPosition(entry.rewardX), combo: 5 });
+      playAudio('pinata.jackpotSparkle', { position: audioPosition(entry.rewardX), pitchCents: 130 });
+      playAudio('collect.rainbowTaco', { position: audioPosition(entry.rewardX), pitchCents: 90 });
+    }
+    return true;
+  }
+
+  function updateCoveExploration(dt) {
+    const exploration = game.coveExploration;
+    if (!exploration) return;
+    if (exploration.completionBanner) {
+      exploration.completionBanner.timer = Math.max(0, exploration.completionBanner.timer - dt);
+      if (exploration.completionBanner.timer <= 0) exploration.completionBanner = null;
+    }
+    if (exploration.dialogue) {
+      exploration.dialogue.timer = Math.max(0, exploration.dialogue.timer - dt);
+      if (exploration.dialogue.timer <= 0) exploration.dialogue = null;
+    }
+    for (const entry of coveExplorationPlan) {
+      const state = coveExplorationStateForEntry(entry);
+      if (!state) continue;
+      state.spectacleTimer = Math.max(0, state.spectacleTimer - dt);
+      if (player.platform?.phase2Discovery === entry.id) {
+        state.revealed = true;
+        if (!state.arrivalAcknowledged) {
+          state.arrivalAcknowledged = true;
+          showMessage(entry.arrivalTitle, 1.05);
+        }
+        const waypoint = Number(player.platform.phase2Waypoint) || 0;
+        if (waypoint > state.progress) {
+          state.progress = waypoint;
+          if (waypoint < entry.waypointCount) {
+            const prefix = entry.id === 'coconut-crown-canopy' ? 'CANOPY' : entry.id === 'waterfall-wall' ? 'WATERFALL' : entry.id === 'shipwreck-mast-run' ? 'RIGGING' : 'LOOKOUT';
+            impactText(player.x + player.w * .5, Math.max(-12, player.y - 7), `${prefix} ${waypoint}/${entry.waypointCount}`, entry.id === 'shipwreck-mast-run' ? '#ff718f' : '#63e7ff', 17);
+            playAudio('checkpoint.activate', { position: audioPosition(player.x), pitchCents: -80 + waypoint * 48, gain: .66 });
+          }
+        }
+      }
+      if (!state.completed && state.progress >= entry.waypointCount && intersects(player, entry.trigger)) completeCoveExplorationEntry(entry);
+    }
+
+    const secret = exploration.secret;
+    secret.spectacleTimer = Math.max(0, secret.spectacleTimer - dt);
+    if (secret.completed) secret.reveal = Math.min(1, secret.reveal + dt * 2.1);
+    if (player.platform?.phase2Discovery === secretGrottoPlan.id) {
+      const parent = exploration.destinations['waterfall-wall'];
+      secret.revealed = true;
+      secret.progress = Math.max(secret.progress, Number(player.platform.phase2Waypoint) || 0);
+      if (!secret.arrivalAcknowledged) {
+        secret.arrivalAcknowledged = true;
+        impactText(player.x + player.w * .5, Math.max(22, player.y - 8), '...BEHIND THE WATER?', '#fff4bd', 18);
+        playAudio('pinata.jackpotSparkle', { position: audioPosition(player.x), pitchCents: -90, gain: .58 });
+      }
+      if (!secret.completed && parent.progress >= secretGrottoPlan.requiredParentProgress && secret.progress >= secretGrottoPlan.waypointCount && intersects(player, secretGrottoPlan.trigger)) completeCoveExplorationEntry(secretGrottoPlan);
+    }
+
+    if (previewHost && previewPhase2Complete) {
+      const entry = coveExplorationPlan.find((candidate) => candidate.id === previewPhase2Complete);
+      const state = coveExplorationStateForEntry(entry);
+      if (entry && state && !state.completed) completeCoveExplorationEntry(entry);
+    }
+    if (previewHost && previewPhase2Secret && !secret.completed) {
+      exploration.destinations['waterfall-wall'].progress = secretGrottoPlan.requiredParentProgress;
+      completeCoveExplorationEntry(secretGrottoPlan);
+    }
+    if (previewHost && previewPowerDown && previewSuper && !exploration.previewPowerDownTriggered && game.levelTime > .25) {
+      exploration.previewPowerDownTriggered = true;
+      hurtPlayer(player.x + 120);
+    }
+  }
+
+  function updateCoveExplorationCamera(dt) {
+    const exploration = game.coveExploration;
+    if (!exploration) return;
+    const entries = [...coveExplorationPlan, secretGrottoPlan];
+    const inExplorationRange = entries.some((entry) => player.x >= entry.routeRange[0] - 160 && player.x <= entry.routeRange[1] + 160);
+    const scriptedSurf = game.surf.phase === 'riding' || game.surf.phase === 'landing';
+    const cameraAllowed = game.state !== 'celebrating' && !scriptedSurf && game.boat.state !== 'active';
+    exploration.cameraTargetLift = cameraAllowed && inExplorationRange ? clamp((286 - player.y) * .62, 0, 182) : 0;
+    if (exploration.dialogue) exploration.cameraTargetLift = Math.max(exploration.cameraTargetLift, 118);
+    exploration.cameraLift = lerp(exploration.cameraLift, exploration.cameraTargetLift, Math.min(1, dt * (exploration.cameraTargetLift > exploration.cameraLift ? 5.8 : 4.2)));
+  }
+
   function updateDynamicItems(dt) {
     for (const item of world.collectibles) {
       if (!item.dynamic || item.collected) continue;
+      if (item.rewardFlight) {
+        const flight = item.rewardFlight;
+        flight.elapsed += dt;
+        if (flight.elapsed < 0) continue;
+        const progress = clamp(flight.elapsed / flight.duration, 0, 1);
+        const eased = smoothstep(progress);
+        item.x = lerp(flight.startX, flight.targetX, eased);
+        item.y = lerp(flight.startY, flight.targetY, eased) - Math.sin(progress * Math.PI) * flight.arc;
+        item.angle = (item.angle || 0) + dt * 8;
+        if (progress >= 1) {
+          item.x = flight.targetX;
+          item.y = flight.targetY;
+          item.angle = 0;
+          item.rewardFlight = null;
+          item.dynamic = false;
+          if (item.rewardLanding) item.rewardLanding.settled = true;
+        }
+        continue;
+      }
       item.x += item.vx * dt;
       item.y += item.vy * dt;
       item.vy += 720 * dt;
@@ -1462,6 +1958,7 @@
 
     const surfing = game.surf.phase === 'riding';
     const surfLanding = game.surf.phase === 'landing';
+    if (previewAutoRun) keys.right = true;
     const acceleration = player.grounded ? 1250 : 780;
     const maxSpeed = surfing || surfLanding ? 430 : game.pepperTimer > 0 ? 385 : 255;
     if (keys.left && !surfing && !surfLanding) { player.vx -= acceleration * dt; player.dir = -1; }
@@ -1472,14 +1969,7 @@
     player.vx = clamp(player.vx, -maxSpeed, maxSpeed);
 
     if (previewAutoJump && player.grounded) {
-      const lookAhead = player.x + player.w + 82;
-      const supportedAhead = world.platforms.some((platform) => (
-        platform.y >= player.y + player.h - 24
-        && platform.y <= player.y + player.h + 96
-        && lookAhead >= platform.x
-        && lookAhead <= platform.x + platform.w
-      ));
-      if (!supportedAhead) queueJump();
+      queueJump();
     }
 
     if (player.jumpBuffer > 0 && player.coyote > 0) {
@@ -1615,12 +2105,14 @@
       updateDynamicItems(dt);
       updateEnemies(dt);
       updateCheckpoints();
+      updateCoveExploration(dt);
       updateWaveChase(dt);
       updateBoat(dt);
       updateCoconutCannons(dt);
 
       for (const item of world.collectibles) {
         if (item.collected) continue;
+        if (item.rewardFlight) continue;
         if (sharedAbilities.hasMagnet(game.abilities) && !['lime', 'pepper', 'shell', 'coconut'].includes(item.type)) {
           const dx = player.x + player.w / 2 - (item.x + item.w / 2);
           const dy = player.y + player.h / 2 - (item.y + item.h / 2);
@@ -1645,6 +2137,7 @@
       maybeFinish();
     }
     if (game.state === 'celebrating') updateCelebration(dt);
+    updateCoveExplorationCamera(dt);
     updateParticles(dt);
   }
 
@@ -2074,6 +2567,9 @@
 
   function drawPlatform(platform, time) {
     if (!visibleWorldX(platform.x, platform.w, 80)) return;
+    // Phase 2 collisions sit exactly on painted landmark shelves. Keeping
+    // their collision rectangles invisible avoids duplicate/false platforms.
+    if (platform.phase2ArtSurface) return;
     const x = Math.floor(platform.x - game.cameraX);
     const y = Math.floor(platform.y);
     const width = platform.w;
@@ -2167,6 +2663,142 @@
     if (platform.moving) {
       ctx.fillStyle = 'rgba(255,255,255,.78)'; const pulse = 3 + Math.sin(time * 0.008 + platform.phase) * 1.5;
       for (const markerX of [x + 12, x + width - 12]) { ctx.shadowColor = '#fff'; ctx.shadowBlur = 8; ctx.beginPath(); ctx.arc(markerX, y + height / 2, pulse, 0, Math.PI * 2); ctx.fill(); }
+    }
+    ctx.restore();
+  }
+
+  function drawCoveExplorationBackdrop() {
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    Object.values(coveExplorationArt).forEach((placement) => {
+      if (!visibleWorldX(placement.x, placement.w, 180)) return;
+      const image = images[placement.image];
+      if (!image) return;
+      ctx.drawImage(image, placement.x - game.cameraX, placement.y, placement.w, placement.h);
+    });
+    ctx.restore();
+  }
+
+  function drawCoveExplorationNameplate(worldX, y, title, subtitle, accent, active) {
+    if (!visibleWorldX(worldX - 150, 300, 80)) return;
+    const x = worldX - game.cameraX;
+    const width = 286;
+    const panel = ctx.createLinearGradient(x - width * .5, y, x + width * .5, y + 52);
+    panel.addColorStop(0, 'rgba(6,35,50,.88)');
+    panel.addColorStop(1, active ? 'rgba(24,91,85,.93)' : 'rgba(20,58,72,.84)');
+    ctx.save();
+    ctx.shadowColor = accent;
+    ctx.shadowBlur = active ? 17 : 8;
+    roundedPanel(x - width * .5, y, width, 52, 15, panel, accent, active ? 3 : 2);
+    ctx.shadowBlur = 0;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#fff8dc';
+    ctx.font = '900 14px Arial';
+    ctx.fillText(title, x, y + 21);
+    ctx.fillStyle = accent;
+    ctx.font = '900 10px Arial';
+    ctx.fillText(subtitle, x, y + 39);
+    ctx.restore();
+  }
+
+  function drawCoveExplorationAccents(time) {
+    const exploration = game.coveExploration;
+    if (!exploration) return;
+    const canopy = exploration.destinations['coconut-crown-canopy'];
+    const waterfall = exploration.destinations['waterfall-wall'];
+    const shipwreck = exploration.destinations['shipwreck-mast-run'];
+    const wavewatch = exploration.destinations['wavewatch-lookout'];
+    const secret = exploration.secret;
+
+    drawCoveExplorationNameplate(8386, 54, 'COCONUT CROWN CANOPY', canopy.completed ? 'COCONUT CASCADE • FLOWING' : 'FOLLOW THE CROWN', canopy.completed ? '#ffe17f' : '#55e6a5', canopy.completed);
+    drawCoveExplorationNameplate(15095, 28, 'WATERFALL WALL', waterfall.completed ? 'CREST ROUTE • CLEARED' : 'CLIMB THE SPRAY', waterfall.completed ? '#ffe17f' : '#63e7ff', waterfall.completed);
+    drawCoveExplorationNameplate(22445, 72, 'SHIPWRECK MAST RUN', shipwreck.completed ? 'RIGGING • SECURED' : 'CLIMB THE RIGGING', shipwreck.completed ? '#ffe17f' : '#ff718f', shipwreck.completed);
+    drawCoveExplorationNameplate(24205, 166, 'WAVEWATCH LOOKOUT', wavewatch.completed ? 'ENDLESS SUMMER • ALWAYS' : 'THE SWELL LOOKS GOOD', wavewatch.completed ? '#ffe17f' : '#63e7ff', wavewatch.completed);
+
+    if (visibleWorldX(7900, 930, 120) && canopy.environmentEnergized) {
+      const intensity = canopy.spectacleMaxTimer ? clamp(canopy.spectacleTimer / canopy.spectacleMaxTimer, 0, 1) : 0;
+      ctx.save();
+      for (let index = 0; index < 8; index += 1) {
+        const cycle = (time * .00042 + index * .137) % 1;
+        const x = 8360 - game.cameraX + Math.sin(cycle * Math.PI * 3 + index) * (54 + index * 4);
+        const y = 34 + cycle * 330;
+        ctx.globalAlpha = .34 + intensity * .58;
+        ctx.fillStyle = '#9b633e';
+        ctx.strokeStyle = '#ffe17f';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(x, y, 7 + (index % 2), 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      }
+      ctx.globalAlpha = .35 + intensity * .4;
+      ctx.strokeStyle = '#b8fff5';
+      ctx.lineWidth = 2;
+      for (let line = 0; line < 4; line += 1) {
+        ctx.beginPath();
+        ctx.moveTo(8040 - game.cameraX, 82 + line * 65);
+        ctx.bezierCurveTo(8210 - game.cameraX, 48 + line * 60, 8510 - game.cameraX, 110 + line * 64, 8730 - game.cameraX, 70 + line * 66);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    if (visibleWorldX(14730, 827, 120)) {
+      const veilAlpha = secret.completed ? .1 : .25;
+      const curtain = ctx.createLinearGradient(15145 - game.cameraX, 0, 15375 - game.cameraX, 0);
+      curtain.addColorStop(0, 'rgba(184,255,245,0)');
+      curtain.addColorStop(.45, `rgba(99,231,255,${veilAlpha})`);
+      curtain.addColorStop(.75, `rgba(216,255,247,${veilAlpha * .9})`);
+      curtain.addColorStop(1, 'rgba(99,231,255,0)');
+      ctx.save();
+      ctx.fillStyle = curtain;
+      ctx.fillRect(15140 - game.cameraX, 16, 250, 220);
+      ctx.strokeStyle = `rgba(221,255,250,${.28 + Math.sin(time * .01) * .06})`;
+      ctx.lineWidth = 2;
+      for (let line = 0; line < 5; line += 1) {
+        const x = 15172 - game.cameraX + line * 40;
+        ctx.beginPath();
+        ctx.moveTo(x, 28);
+        ctx.bezierCurveTo(x - 10, 86, x + 12, 142, x - 4, 220);
+        ctx.stroke();
+      }
+      const glint = .35 + Math.max(0, Math.sin(time * .008)) * .65;
+      ctx.globalAlpha = secret.completed ? 1 : glint * .72;
+      drawStar(15320 - game.cameraX, 125, secret.completed ? 8 : 4.5, secret.completed ? '#ffe17f' : '#fff4bd');
+      ctx.restore();
+    }
+
+    if (visibleWorldX(21800, 840, 120) && shipwreck.environmentEnergized) {
+      const spin = time * .0024;
+      ctx.save();
+      ctx.translate(22440 - game.cameraX, 206);
+      ctx.rotate(spin);
+      ctx.strokeStyle = '#ffe17f';
+      ctx.shadowColor = '#ff718f';
+      ctx.shadowBlur = 12;
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(0, 0, 17, 0, Math.PI * 2); ctx.stroke();
+      for (let spoke = 0; spoke < 6; spoke += 1) { ctx.rotate(Math.PI / 3); ctx.beginPath(); ctx.moveTo(5, 0); ctx.lineTo(15, 0); ctx.stroke(); }
+      ctx.restore();
+    }
+
+    if (visibleWorldX(23580, 1080, 120) && wavewatch.environmentEnergized) {
+      ctx.save();
+      for (let index = 0; index < 7; index += 1) {
+        const angle = time * .0012 + index * Math.PI * 2 / 7;
+        drawStar(24210 - game.cameraX + Math.cos(angle) * (150 + index * 5), 215 + Math.sin(angle * 1.4) * 58, 2.5 + index % 3, index % 2 ? '#ffe17f' : '#63e7ff');
+      }
+      ctx.restore();
+    }
+  }
+
+  function drawCoveExplorationForeground(time) {
+    if (!visibleWorldX(15120, 300, 80) || player.x < 15110 || player.x > 15480) return;
+    const secret = game.coveExploration?.secret;
+    const alpha = secret?.completed ? .08 : .16;
+    ctx.save();
+    ctx.strokeStyle = `rgba(206,255,250,${alpha})`;
+    ctx.lineWidth = 6;
+    for (let line = 0; line < 4; line += 1) {
+      const x = 15168 - game.cameraX + line * 48 + Math.sin(time * .008 + line) * 4;
+      ctx.beginPath(); ctx.moveTo(x, 18); ctx.bezierCurveTo(x + 7, 88, x - 8, 160, x + 3, 232); ctx.stroke();
     }
     ctx.restore();
   }
@@ -3113,6 +3745,105 @@
     ctx.restore();
   }
 
+  function drawCoveExplorationCompletionBanner(time) {
+    const banner = game.coveExploration?.completionBanner;
+    if (!banner) return;
+    const enter = clamp((banner.maxTimer - banner.timer) / .22, 0, 1);
+    const exit = clamp(banner.timer / .34, 0, 1);
+    const visibility = Math.min(enter, exit);
+    const secret = banner.mode === 'secret';
+    const compact = canvas.getBoundingClientRect().width < 520;
+    const width = Math.min(secret ? (compact ? 850 : 700) : (compact ? 720 : 560), canvas.width - (compact ? 42 : 110));
+    const height = secret ? (compact ? 158 : 138) : (compact ? 116 : 98);
+    const x = (canvas.width - width) * .5;
+    const y = canvas.height - height - 24;
+    const accent = secret ? '#ffe17f' : banner.mode === 'rigging-spectacle' ? '#ff718f' : banner.mode === 'organic-spectacle' ? '#55e6a5' : '#63e7ff';
+    ctx.save();
+    ctx.globalAlpha = visibility;
+    ctx.translate(canvas.width * .5, y + height * .5);
+    if (!game.reducedShake) {
+      const pop = (secret ? .9 : .96) + enter * (secret ? .1 : .04) + Math.sin(time * .014) * (secret ? .01 : .003);
+      ctx.scale(pop, pop);
+    }
+    ctx.translate(-canvas.width * .5, -(y + height * .5));
+    const panel = ctx.createLinearGradient(x, y, x + width, y + height);
+    panel.addColorStop(0, secret ? 'rgba(29,67,72,.98)' : 'rgba(6,43,56,.94)');
+    panel.addColorStop(.5, secret ? 'rgba(117,56,73,.99)' : 'rgba(29,83,84,.96)');
+    panel.addColorStop(1, secret ? 'rgba(57,36,84,.98)' : 'rgba(43,52,90,.94)');
+    ctx.shadowColor = accent;
+    ctx.shadowBlur = secret ? 28 : 14;
+    roundedPanel(x, y, width, height, secret ? 23 : 17, panel, accent, secret ? 5 : 3);
+    ctx.shadowBlur = 0;
+    if (secret) {
+      for (let index = 0; index < 12; index += 1) {
+        const sx = x + 34 + index * (width - 68) / 11;
+        const sy = y + 18 + Math.sin(time * .013 + index) * 5;
+        drawStar(sx, sy, 2.4 + index % 2, ['#ffe17f', '#ff718f', '#63e7ff'][index % 3]);
+      }
+    }
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#fff4bd';
+    ctx.font = `900 ${compact ? secret ? 17 : 15 : secret ? 13 : 11}px Arial`;
+    ctx.fillText(banner.eyebrow, canvas.width * .5, y + (secret ? 29 : 22));
+    ctx.fillStyle = '#fff8dc';
+    ctx.font = `900 ${compact ? secret ? 38 : 31 : secret ? 33 : 27}px Arial`;
+    ctx.fillText(banner.title, canvas.width * .5, y + (secret ? (compact ? 81 : 72) : (compact ? 64 : 55)));
+    ctx.fillStyle = accent;
+    ctx.font = `900 ${compact ? secret ? 18 : 16 : secret ? 15 : 13}px Arial`;
+    ctx.fillText(banner.reward, canvas.width * .5, y + (secret ? (compact ? 126 : 111) : (compact ? 98 : 82)));
+    ctx.restore();
+  }
+
+  function drawRobertWavewatchDialogue(time) {
+    const dialogue = game.coveExploration?.dialogue;
+    if (!dialogue) return;
+    const elapsed = dialogue.maxTimer - dialogue.timer;
+    const visibility = clamp(Math.min(elapsed / .2, dialogue.timer / .34), 0, 1);
+    const compact = canvas.getBoundingClientRect().width < 520;
+    const width = Math.min(compact ? 820 : 610, canvas.width - 42);
+    const height = compact ? 146 : 126;
+    const worldAnchorX = 24210 - game.cameraX;
+    const x = clamp(worldAnchorX - width * .52, 21, canvas.width - width - 21);
+    const y = compact ? 174 : 158;
+    const tailX = clamp(worldAnchorX, x + 54, x + width - 54);
+    ctx.save();
+    ctx.globalAlpha = visibility;
+    if (!game.reducedShake) ctx.translate(0, (1 - smoothstep(clamp(elapsed / .34, 0, 1))) * 14);
+    const panel = ctx.createLinearGradient(x, y, x + width, y + height);
+    panel.addColorStop(0, 'rgba(5,48,62,.97)');
+    panel.addColorStop(.56, 'rgba(25,87,89,.98)');
+    panel.addColorStop(1, 'rgba(70,48,87,.97)');
+    ctx.fillStyle = panel;
+    ctx.strokeStyle = '#63e7ff';
+    ctx.lineWidth = 4;
+    ctx.shadowColor = '#63e7ff';
+    ctx.shadowBlur = 18;
+    ctx.beginPath(); ctx.roundRect(x, y, width, height, 22); ctx.fill(); ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = panel;
+    ctx.strokeStyle = '#63e7ff';
+    ctx.beginPath(); ctx.moveTo(tailX - 18, y + height - 2); ctx.lineTo(tailX + 10, y + height + 24); ctx.lineTo(tailX + 24, y + height - 2); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ffe17f';
+    ctx.textAlign = 'left';
+    ctx.font = `900 ${compact ? 17 : 14}px Arial`;
+    ctx.fillText(`${dialogue.speaker} • WAVEWATCH  /  ${dialogue.companion} • GOOD DOG`, x + 26, y + 29);
+    ctx.fillStyle = '#fff8dc';
+    ctx.font = `900 ${compact ? 25 : 23}px Arial`;
+    ctx.fillText('“Ready for an endless summer', x + 26, y + (compact ? 69 : 64));
+    ctx.fillText('of tasty waves and tacos?”', x + 26, y + (compact ? 101 : 94));
+    ctx.fillStyle = '#63e7ff';
+    ctx.font = `900 ${compact ? 14 : 12}px Arial`;
+    ctx.fillText(dialogue.reward, x + 26, y + (compact ? 130 : 116));
+    for (let wave = 0; wave < 4; wave += 1) {
+      const wx = x + width - 112 + wave * 20;
+      const wy = y + 31 + Math.sin(time * .012 + wave) * 5;
+      ctx.strokeStyle = wave % 2 ? '#ffe17f' : '#63e7ff';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(wx, wy, 9, Math.PI, Math.PI * 2); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   function draw(time) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
@@ -3121,9 +3852,14 @@
       ctx.translate((seeded() - 0.5) * shake, (seeded() - 0.5) * shake * 0.55);
     }
     drawBackground(time);
+    const cameraLift = game.coveExploration?.cameraLift || 0;
+    ctx.save();
+    ctx.translate(0, cameraLift);
     drawHazardSurface(time);
+    drawCoveExplorationBackdrop(time);
     drawCatamaran(time);
     for (const platform of world.platforms) drawPlatform(platform, time);
+    drawCoveExplorationAccents(time);
     for (const item of world.collectibles) drawCollectible(item, time);
     for (const checkpoint of world.checkpoints) drawCheckpoint(checkpoint, time);
     drawWaveChase(time);
@@ -3136,9 +3872,13 @@
       vanish: '#63e7ff', vanishRing: '#ffe17f', landingRing: 'rgba(99, 231, 255, .86)',
     });
     drawPlayer(time);
+    drawCoveExplorationForeground(time);
     drawParticles();
     ctx.restore();
+    ctx.restore();
     drawHUD(time);
+    drawCoveExplorationCompletionBanner(time);
+    drawRobertWavewatchDialogue(time);
     if (previewHost) {
       canvas.dataset.qaState = JSON.stringify({
         sourceVersion: SOURCE_VERSION,
@@ -3187,6 +3927,90 @@
           artReady: Boolean(images.islandWave),
         },
         surf: { phase: game.surf.phase, boardMounted: game.surf.boardMounted, clearedObstacles: game.surf.clearedObstacles, obstacles: world.surfObstacles.length },
+        coveExplorationPhase2: game.coveExploration ? {
+          version: game.coveExploration.version,
+          scope: game.coveExploration.scope,
+          normalRouteUnaffected: game.coveExploration.normalRouteUnaffected,
+          noRequiredSuperTraversal: game.coveExploration.noRequiredSuperTraversal,
+          phase1BalanceFrozen: game.coveExploration.phase1BalanceFrozen,
+          geometry: game.coveExplorationGeometryAudit,
+          destinationCenters: coveExplorationPlan.map((entry) => Math.round(entry.trigger.x + entry.trigger.w * .5)),
+          completionBanner: game.coveExploration.completionBanner,
+          dialogue: game.coveExploration.dialogue,
+          camera: {
+            lift: Number(game.coveExploration.cameraLift.toFixed(2)),
+            targetLift: Number(game.coveExploration.cameraTargetLift.toFixed(2)),
+            maximumLift: 182,
+            backgroundSeamsExposed: false,
+          },
+          scriptSafeguards: {
+            catamaranDropCorridor: CATAMARAN_DROP_CORRIDOR,
+            allDestinationsOutsideCatamaranCorridor: coveExplorationPlan.every((entry) => entry.routeRange[1] < CATAMARAN_DROP_CORRIDOR.start || entry.routeRange[0] > CATAMARAN_DROP_CORRIDOR.end),
+            wavewatchBeforeSurfTrigger: coveExplorationPlan.find((entry) => entry.id === 'wavewatch-lookout').routeRange[1] < SURF_SCRIPT_START,
+            surfTrigger: SURF_SCRIPT_START,
+            checkpointXs: checkpoints.map((checkpoint) => checkpoint.x),
+            phase2SurfacesOnMainRoute: world.platforms.filter((platform) => platform.phase2Discovery && platform.mainRoute).length,
+          },
+          completionHierarchy: {
+            visibleRoutes: coveExplorationPlan.map((entry) => entry.completionTitle),
+            trueSecret: secretGrottoPlan.completionTitle,
+            discoveredBannerCount: [...coveExplorationPlan, secretGrottoPlan].filter((entry) => entry.completionTitle.includes('DISCOVERED!')).length,
+          },
+          frozenPhase1Balance: {
+            tacoPowerThreshold: sharedAbilities.definitions.tacoPower.threshold,
+            tacoContribution: sharedAbilities.definitions.tacoPower.contributions.taco,
+            premiumContribution: sharedAbilities.definitions.tacoPower.contributions.premiumTaco,
+            normalJumpVelocity: heroPhysics.jumpVelocity,
+            superJumpVelocity: heroPhysics.superJumpVelocity,
+            collisionWidth: player.w,
+            collisionHeight: player.h,
+          },
+          art: {
+            ready: Boolean(images.phase2Canopy && images.phase2Waterfall && images.phase2Shipwreck && images.phase2Wavewatch),
+            placements: coveExplorationArt,
+            collisionSurfacesInvisible: true,
+            generatedArtIsDecorativeOnly: true,
+          },
+          tribute: {
+            location: 'Wavewatch Lookout',
+            robert: { caucasian: true, longBrownHair: true, brownMustache: true, beard: false, uprightSurfboard: true },
+            corky: { breed: 'golden retriever', coat: 'golden-brown', calmFriendly: true, groundedNaturally: true },
+            exactDialogue: ROBERT_WAVEWATCH_DIALOGUE,
+            respectfulTone: true,
+          },
+          destinations: coveExplorationPlan.map((entry) => ({
+            id: entry.id, name: entry.name, presentation: entry.presentation,
+            trigger: entry.trigger, routeRange: entry.routeRange, worldPercent: entry.worldPercent,
+            score: entry.score, bonusTacos: entry.bonusTacos, rewardLabel: entry.rewardLabel,
+            ...game.coveExploration.destinations[entry.id],
+          })),
+          secret: {
+            id: secretGrottoPlan.id, name: secretGrottoPlan.name,
+            presentation: secretGrottoPlan.presentation, trigger: secretGrottoPlan.trigger,
+            routeRange: secretGrottoPlan.routeRange, worldPercent: secretGrottoPlan.worldPercent,
+            score: secretGrottoPlan.score, bonusTacos: secretGrottoPlan.bonusTacos,
+            rewardLabel: secretGrottoPlan.rewardLabel, requiredParentProgress: secretGrottoPlan.requiredParentProgress,
+            ...game.coveExploration.secret,
+          },
+          repeatTriggerProtection: {
+            allCompletionCountsAtMostOne: [...coveExplorationPlan.map((entry) => game.coveExploration.destinations[entry.id]), game.coveExploration.secret].every((state) => state.completionCount <= 1),
+            allRewardSpawnCountsAtMostOne: [...coveExplorationPlan.map((entry) => game.coveExploration.destinations[entry.id]), game.coveExploration.secret].every((state) => state.rewardSpawnCount <= 1),
+          },
+          rewardItems: world.collectibles.filter((item) => item.explorationReward).map((item) => ({
+            discovery: item.phase2Discovery,
+            rainbow: Boolean(item.rainbowReward),
+            collected: item.collected,
+            dynamic: Boolean(item.dynamic),
+            inFlight: Boolean(item.rewardFlight),
+            platformId: item.rewardLanding?.platformId || null,
+            targetX: item.rewardLanding ? Number(item.rewardLanding.targetX.toFixed(2)) : null,
+            targetY: item.rewardLanding ? Number(item.rewardLanding.targetY.toFixed(2)) : null,
+            surfaceY: item.rewardLanding?.surfaceY ?? null,
+            aboveSurface: item.rewardLanding ? item.y + item.h <= item.rewardLanding.surfaceY + .1 : null,
+            horizontallySafe: item.rewardLanding ? item.rewardLanding.targetX >= item.rewardLanding.safeLeft - .1 && item.rewardLanding.targetX <= item.rewardLanding.safeRight + .1 : null,
+            settled: Boolean(item.rewardLanding?.settled),
+          })),
+        } : null,
         cannonballs: game.cannonballs.length,
         worldWidth: WORLD_WIDTH,
         backgroundBlend: game.backgroundBlend,
@@ -3280,6 +4104,10 @@
     catamaranLayerBase: 'assets/world2_1_catamaran_arm_layer_base_v1.webp',
     catamaranEscape: 'assets/world2_1_catamaran_escape_v1.webp',
     enemyCast: 'assets/world2_1_enemy_cast_v1.png',
+    phase2Canopy: 'assets/world2_1_phase2_coconut_crown_canopy_v1.webp',
+    phase2Waterfall: 'assets/world2_1_phase2_waterfall_grotto_v1.webp',
+    phase2Shipwreck: 'assets/world2_1_phase2_shipwreck_mast_v1.webp',
+    phase2Wavewatch: 'assets/world2_1_phase2_wavewatch_robert_corky_v1.webp',
   };
 
   Promise.all(Object.entries(imageAssets).map(([key, path]) => loadImage(path).then((image) => [key, image]))).then((entries) => {

@@ -1937,8 +1937,8 @@ test("remasters World 2-1 art while preserving collision geometry and widening s
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
   }
 
-  assert.match(html, /level2\.js\?v=31/);
-  assert.match(runtime, /SOURCE_VERSION = 'w2-1-v31-alternating-super-run'/);
+  assert.match(html, /level2\.js\?v=32/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-1-v32-phase2-exploration'/);
   assert.match(runtime, /encounterAudit: game\.world2EncounterAudit/);
   assert.match(runtime, /const ENVIRONMENT_TRANSITION_WIDTH = 1600/);
   assert.match(runtime, /const ENVIRONMENT_PANORAMA_CROP = 0\.9/);
@@ -1977,6 +1977,83 @@ test("remasters World 2-1 art while preserving collision geometry and widening s
   assert.match(runtime, /surfaceKind: 'tidal-temple-ledge'/);
   assert.match(runtime, /catamaranDropCorridor/);
   assert.match(runtime, /enemiesInCatamaranDropCorridor/);
+});
+
+test("adds four distinct World 2-1 Super exploration experiences, one true grotto secret, and the Robert and Corky tribute", async () => {
+  const runtime = await readFile(new URL("../public/game/level2.js", import.meta.url), "utf8");
+  const html = await readFile(new URL("../public/game/level2.html", import.meta.url), "utf8");
+  const phase2Assets = [
+    "world2_1_phase2_coconut_crown_canopy_v1.webp",
+    "world2_1_phase2_waterfall_grotto_v1.webp",
+    "world2_1_phase2_shipwreck_mast_v1.webp",
+    "world2_1_phase2_wavewatch_robert_corky_v1.webp",
+  ];
+
+  assert.match(html, /level2\.js\?v=32/);
+  assert.match(runtime, /COVE_EXPLORATION_VERSION = 'world-2-1-phase2-v1'/);
+  for (const filename of phase2Assets) {
+    assert.match(runtime, new RegExp(filename.replace(".", "\\.")));
+    await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
+  }
+
+  for (const destination of [
+    "id: 'coconut-crown-canopy'",
+    "id: 'waterfall-wall'",
+    "id: 'shipwreck-mast-run'",
+    "id: 'wavewatch-lookout'",
+    "id: 'secret-grotto'",
+  ]) assert.ok(runtime.includes(destination), `includes ${destination}`);
+
+  assert.match(runtime, /completionTitle: 'COCONUT CASCADE!'/);
+  assert.match(runtime, /completionTitle: 'WATERFALL CRESTED'/);
+  assert.match(runtime, /completionTitle: 'MAST RUN SECURED!'/);
+  assert.match(runtime, /completionTitle: 'ENDLESS SUMMER LOOKOUT'/);
+  assert.match(runtime, /completionTitle: 'SECRET GROTTO DISCOVERED!'/);
+  assert.equal((runtime.match(/completionTitle: '[^']*DISCOVERED!'/g) || []).length, 1, "only the concealed grotto uses the major discovery language");
+  assert.match(runtime, /presentation: 'organic-spectacle'/);
+  assert.match(runtime, /presentation: 'natural-ascent'/);
+  assert.match(runtime, /presentation: 'rigging-spectacle'/);
+  assert.match(runtime, /presentation: 'tribute-character'/);
+  assert.match(runtime, /presentation: 'true-secret'/);
+
+  assert.match(runtime, /id: 'phase2-canopy-entry', x: 8110, y: 282, w: 392/);
+  assert.match(runtime, /id: 'phase2-waterfall-entry', x: 14882, y: 245, w: 208/);
+  assert.match(runtime, /id: 'phase2-shipwreck-entry', x: 22040, y: 258, w: 220/);
+  assert.match(runtime, /id: 'phase2-wavewatch-entry', x: 23770, y: 286, w: 180/);
+  assert.match(runtime, /allEntriesRequireSuper/);
+  assert.match(runtime, /allDropRecoverable/);
+  assert.match(runtime, /normalRouteUnaffected: true/);
+  assert.match(runtime, /noRequiredSuperTraversal: true/);
+  assert.match(runtime, /phase2ArtSurface: true/);
+  assert.match(runtime, /if \(platform\.phase2ArtSurface\) return/);
+
+  assert.match(runtime, /CATAMARAN_DROP_CORRIDOR = Object\.freeze\(\{ start: 17180, end: 21240 \}\)/);
+  assert.match(runtime, /SURF_SCRIPT_START = 24820/);
+  assert.match(runtime, /catamaranCorridorUntouched/);
+  assert.match(runtime, /wavewatchBeforeSurfTrigger/);
+  assert.match(runtime, /scriptedSurf = game\.surf\.phase === 'riding' \|\| game\.surf\.phase === 'landing'/);
+
+  assert.match(runtime, /ROBERT_WAVEWATCH_DIALOGUE = 'Ready for an endless summer of tasty waves and tacos\?'/);
+  assert.match(runtime, /longBrownHair: true, brownMustache: true, beard: false, uprightSurfboard: true/);
+  assert.match(runtime, /breed: 'golden retriever', coat: 'golden-brown', calmFriendly: true, groundedNaturally: true/);
+  assert.match(runtime, /function drawRobertWavewatchDialogue/);
+  assert.match(runtime, /dialogue\.companion\} • GOOD DOG/);
+  assert.match(runtime, /respectfulTone: true/);
+
+  assert.match(runtime, /function spawnCoveExplorationRewards/);
+  assert.match(runtime, /if \(!state \|\| state\.rewardSpawned\) return false/);
+  assert.match(runtime, /if \(!state \|\| state\.completed\) return false/);
+  assert.match(runtime, /allCompletionCountsAtMostOne/);
+  assert.match(runtime, /allRewardSpawnCountsAtMostOne/);
+  assert.match(runtime, /rewardFlight/);
+  assert.match(runtime, /phase1BalanceFrozen: true/);
+  assert.match(runtime, /tacoPowerThreshold: sharedAbilities\.definitions\.tacoPower\.threshold/);
+  assert.match(runtime, /superJumpVelocity: heroPhysics\.superJumpVelocity/);
+  assert.match(runtime, /window\.addEventListener\('jft:controlleraction'/);
+  assert.match(runtime, /window\.addEventListener\('jft:controllerstate'/);
+  assert.match(runtime, /if \(action === 'jump'\) \{/);
+  assert.match(runtime, /const previewNormalOnly = previewHost/);
+  assert.match(runtime, /const previewNoDamage = previewHost/);
 });
 
 test("ships the 36,000-unit island route, premium vehicles, and playable surf finale", async () => {
