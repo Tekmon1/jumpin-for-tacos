@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const SOURCE_VERSION = 'w2-3-v23-station-remaster-feedback-fiend';
+  const SOURCE_VERSION = 'w2-3-v24-grounded-marquee-architecture';
 
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
@@ -86,21 +86,31 @@
   ];
   const BASS_STACK_LAUNCH_VELOCITY = 600;
   const BASS_STACK_BEAT_SECONDS = 1.34;
+  const MARQUEE_STRUCTURE = Object.freeze({
+    centerX: 4720,
+    bottomY: GROUND_Y + 3,
+    drawWidth: 616,
+    drawHeight: 456,
+    externalTowerX: 3170,
+    liftRailX: 3490,
+    coreTowerX: 4460,
+  });
   const WORLD23_PHASE2_STATIONS = Object.freeze([
     Object.freeze({
       id: 'marquee', name: 'Neon Marquee Climb', completion: 'MARQUEE ONLINE',
-      start: 2520, end: 5100, accent: '#50e7ff', score: 3200, energy: 4,
-      traversal: 'structural-climb-moving-venue-architecture',
-      trigger: Object.freeze({ x: 4740, y: 30, w: 250, h: 116 }),
-      reward: Object.freeze({ x: 4630, y: 52, count: 10, rainbowEvery: 4 }),
+      start: 2520, end: 5150, accent: '#50e7ff', score: 3200, energy: 4,
+      traversal: 'grounded-ticket-roof-lift-diagonal-catwalk-suspended-deck-double-jump-sign-back-control-deck',
+      trigger: Object.freeze({ x: 4760, y: 8, w: 325, h: 116 }),
+      reward: Object.freeze({ x: 4765, y: 38, count: 10, columns: 10, rainbowEvery: 4 }),
       platforms: Object.freeze([
-        Object.freeze({ x: 2640, y: 344, w: 360, kind: 'marquee-ticket-roof' }),
-        Object.freeze({ x: 3060, y: 240, w: 168, kind: 'marquee-side-truss' }),
-        Object.freeze({ x: 3330, y: 222, w: 246, kind: 'marquee-moving-sign', moving: true, axis: 'x', range: 78, speed: .72, phase: .35 }),
-        Object.freeze({ x: 3670, y: 304, w: 312, kind: 'marquee-maintenance-ledge' }),
-        Object.freeze({ x: 4070, y: 214, w: 172, kind: 'marquee-light-lift', moving: true, axis: 'y', range: 28, speed: .88, phase: 1.1 }),
-        Object.freeze({ x: 4320, y: 154, w: 338, kind: 'marquee-back-catwalk' }),
-        Object.freeze({ x: 4670, y: 94, w: 350, kind: 'marquee-summit', summit: true }),
+        Object.freeze({ x: 2670, y: 352, w: 420, kind: 'marquee-ticket-booth-awning', routeShape: 'grounded-entry-roof' }),
+        Object.freeze({ x: 3170, y: 318, w: 250, kind: 'marquee-lower-side-truss', routeShape: 'short-diagonal-transfer' }),
+        Object.freeze({ x: 3490, y: 342, w: 190, kind: 'marquee-service-lift', routeShape: 'vertical-service-lift', moving: true, axis: 'y', range: 78, speed: .54, phase: 0 }),
+        Object.freeze({ x: 3750, y: 242, w: 330, kind: 'marquee-diagonal-catwalk', routeShape: 'diagonal-maintenance-run' }),
+        Object.freeze({ x: 4190, y: 294, w: 260, kind: 'marquee-suspended-light-deck', routeShape: 'short-horizontal-transfer' }),
+        Object.freeze({ x: 4630, y: 174, w: 245, kind: 'marquee-opposite-tower-ledge', routeShape: 'super-double-jump-gap' }),
+        Object.freeze({ x: 4770, y: 124, w: 270, kind: 'marquee-sign-back-walkway', routeShape: 'sign-side-climb' }),
+        Object.freeze({ x: 4700, y: 68, w: 410, kind: 'marquee-upper-control-deck', routeShape: 'final-activation-landing', summit: true }),
       ]),
     }),
     Object.freeze({
@@ -803,6 +813,7 @@
           upper: true,
           phase2StationId: station.id,
           phase2Style: definition.kind,
+          phase2RouteShape: definition.routeShape || null,
           phase2Summit: Boolean(definition.summit),
           phase2Secret: Boolean(definition.secret),
           bassPad: Boolean(definition.bassPad),
@@ -863,8 +874,21 @@
           verticalSpread: Math.max(...station.platforms.map((platform) => platform.y))
             - Math.min(...station.platforms.map((platform) => platform.y)),
           ySequence: station.platforms.map((platform) => platform.y),
+          routeShapes: station.platforms.map((platform) => platform.routeShape || null),
         },
       ])),
+      marqueeArchitecture: {
+        groundedFootings: true,
+        groundedTicketBooth: true,
+        supportTowers: 3,
+        crossBracing: true,
+        tensionCables: true,
+        collisionMatchedCustomSurfaces: true,
+        genericPlatformBaseSuppressed: true,
+        serviceLiftRange: 156,
+        majorSuperGap: 180,
+        safeDropToMainRoute: true,
+      },
       catamaranIsolation: {
         stationEnd: world23Phase2Station('lagoon')?.end || 0,
         catamaranStart: 22800,
@@ -2142,7 +2166,7 @@
   function spawnWorld23Phase2Reward(station) {
     if (!station || station.rewardSpawned) return;
     station.rewardSpawned = true;
-    const columns = Math.min(9, station.reward.count);
+    const columns = Math.min(station.reward.columns || 9, station.reward.count);
     for (let index = 0; index < station.reward.count; index += 1) {
       const column = index % columns;
       const row = Math.floor(index / columns);
@@ -3551,29 +3575,123 @@
     ctx.save();
     const style = platform.phase2Style;
     if (style.startsWith('marquee')) {
-      const booth = style === 'marquee-ticket-roof';
-      if (booth) {
-        const awning = ctx.createLinearGradient(0, platform.y + 5, 0, platform.y + 52);
-        awning.addColorStop(0, '#ffcf68'); awning.addColorStop(1, '#9a315f');
-        roundedRect(x + 8, platform.y + 7, platform.w - 16, 48, 7, awning, '#fff1b8', 3);
-        for (let stripe = 0; stripe < 8; stripe += 1) {
-          ctx.fillStyle = stripe % 2 ? 'rgba(80,231,255,.7)' : 'rgba(255,79,172,.72)';
-          ctx.fillRect(x + 18 + stripe * (platform.w - 36) / 8, platform.y + 12, (platform.w - 36) / 16, 32);
+      const active = station?.completed || (station?.progress || 0) > .62;
+      const deck = ctx.createLinearGradient(0, platform.y, 0, platform.y + 30);
+      deck.addColorStop(0, '#596278');
+      deck.addColorStop(.24, '#25243a');
+      deck.addColorStop(1, '#111426');
+      const drawDeck = (inset = 0, depth = 24, edge = accent) => {
+        roundedRect(x + inset, platform.y, platform.w - inset * 2, depth, 4, deck, '#0d1020', 4);
+        ctx.strokeStyle = edge;
+        ctx.globalAlpha = .9;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.moveTo(x + inset + 5, platform.y + 2); ctx.lineTo(x + platform.w - inset - 5, platform.y + 2); ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = 'rgba(176,188,207,.32)';
+        ctx.lineWidth = 1.5;
+        for (let grate = x + inset + 11; grate < x + platform.w - inset - 8; grate += 18) {
+          ctx.beginPath(); ctx.moveTo(grate, platform.y + 6); ctx.lineTo(grate + 7, platform.y + depth - 5); ctx.stroke();
         }
-      } else {
-        drawPhase2Truss(x + 7, platform.y + 8, platform.w - 14, 42, accent);
-      }
-      if (style.includes('moving-sign')) {
-        roundedRect(x + 28, platform.y + 14, platform.w - 56, 34, 8, '#24143e', '#ff4fac', 3);
-        ctx.fillStyle = '#fff3cc'; ctx.font = '900 9px Arial'; ctx.textAlign = 'center';
-        ctx.fillText('TONIGHT • NEON NECKTIES', x + platform.w / 2, platform.y + 35);
-      }
-      for (let bulb = x + 18; bulb < x + platform.w - 12; bulb += 32) {
-        ctx.fillStyle = station?.completed || (bulb - x) / platform.w < (station?.progress || 0)
-          ? (Math.floor((bulb - x) / 32) % 2 ? '#ff4fac' : '#50e7ff') : 'rgba(255,255,255,.25)';
-        ctx.shadowColor = ctx.fillStyle;
-        ctx.shadowBlur = station?.completed ? 10 : 3;
-        ctx.beginPath(); ctx.arc(bulb, platform.y + 12, 3.5, 0, Math.PI * 2); ctx.fill();
+        for (let bolt = x + inset + 18; bolt < x + platform.w - inset - 8; bolt += 42) {
+          ctx.fillStyle = active ? (Math.floor((bolt - x) / 42) % 2 ? '#ff4fac' : '#50e7ff') : '#7c718a';
+          ctx.shadowColor = ctx.fillStyle;
+          ctx.shadowBlur = active ? 7 : 0;
+          ctx.beginPath(); ctx.arc(bolt, platform.y + 12, 2.4, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.shadowBlur = 0;
+      };
+
+      if (style === 'marquee-ticket-booth-awning') {
+        const awning = ctx.createLinearGradient(0, platform.y, 0, platform.y + 48);
+        awning.addColorStop(0, '#ffe073'); awning.addColorStop(.36, '#ff7d73'); awning.addColorStop(1, '#6e244f');
+        roundedRect(x + 3, platform.y, platform.w - 6, 46, 8, awning, '#fff1bd', 3);
+        for (let stripe = 0; stripe < 10; stripe += 1) {
+          ctx.fillStyle = stripe % 2 ? 'rgba(80,231,255,.72)' : 'rgba(255,79,172,.74)';
+          ctx.beginPath();
+          const stripeX = x + 15 + stripe * (platform.w - 30) / 10;
+          ctx.moveTo(stripeX, platform.y + 5);
+          ctx.lineTo(stripeX + 18, platform.y + 5);
+          ctx.lineTo(stripeX + 10, platform.y + 39);
+          ctx.lineTo(stripeX - 8, platform.y + 39);
+          ctx.closePath(); ctx.fill();
+        }
+        ctx.fillStyle = '#1c1733'; ctx.font = '900 9px Arial'; ctx.textAlign = 'center';
+        ctx.fillText('GATE A • BOX OFFICE ROOF', x + platform.w / 2, platform.y + 31);
+        ctx.strokeStyle = '#ffcf68'; ctx.lineWidth = 5;
+        ctx.beginPath(); ctx.moveTo(x + 32, platform.y + 45); ctx.lineTo(x + 58, platform.y + 82);
+        ctx.moveTo(x + platform.w - 32, platform.y + 45); ctx.lineTo(x + platform.w - 58, platform.y + 82); ctx.stroke();
+      } else if (style === 'marquee-lower-side-truss') {
+        drawDeck(0, 22);
+        drawPhase2Truss(x + 5, platform.y + 20, platform.w - 10, 54, '#ff4fac');
+        ctx.fillStyle = '#fff1bd'; ctx.font = '900 8px Arial'; ctx.textAlign = 'center';
+        ctx.fillText('LOWER TRUSS • LIFT ACCESS', x + platform.w / 2, platform.y + 50);
+      } else if (style === 'marquee-service-lift') {
+        ctx.strokeStyle = '#6d7690'; ctx.lineWidth = 5;
+        ctx.strokeRect(x + 9, platform.y + 3, platform.w - 18, 66);
+        ctx.strokeStyle = '#ff4fac'; ctx.lineWidth = 2;
+        for (let rail = x + 22; rail < x + platform.w - 8; rail += 31) {
+          ctx.beginPath(); ctx.moveTo(rail, platform.y + 7); ctx.lineTo(rail, platform.y + 64); ctx.stroke();
+        }
+        drawDeck(0, 23, '#ffd65a');
+        roundedRect(x + platform.w / 2 - 48, platform.y + 32, 96, 23, 5, '#201a35', '#ffd65a', 2);
+        ctx.fillStyle = '#fff1bd'; ctx.font = '900 8px Arial'; ctx.textAlign = 'center';
+        ctx.fillText('SERVICE LIFT', x + platform.w / 2, platform.y + 48);
+        const direction = Math.cos(game.levelTime * platform.speed + platform.phase) < 0 ? '▲' : '▼';
+        ctx.fillStyle = '#50e7ff'; ctx.font = '900 12px Arial';
+        ctx.fillText(direction, x + platform.w - 24, platform.y + 51);
+      } else if (style === 'marquee-diagonal-catwalk') {
+        drawDeck(0, 23);
+        ctx.strokeStyle = '#b780ff'; ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(x + 8, platform.y + 22); ctx.lineTo(x + platform.w - 18, platform.y + 82);
+        ctx.moveTo(x + 70, platform.y + 22); ctx.lineTo(x + platform.w - 80, platform.y + 82);
+        ctx.stroke();
+        ctx.strokeStyle = '#30354b'; ctx.lineWidth = 7;
+        ctx.beginPath(); ctx.moveTo(x + 14, platform.y + 75); ctx.lineTo(x + platform.w - 12, platform.y + 22); ctx.stroke();
+        ctx.fillStyle = '#fff1bd'; ctx.font = '900 8px Arial'; ctx.textAlign = 'center';
+        ctx.fillText('MAINTENANCE CATWALK', x + platform.w / 2, platform.y + 48);
+      } else if (style === 'marquee-suspended-light-deck') {
+        ctx.strokeStyle = '#d4b277'; ctx.lineWidth = 3;
+        for (const cableX of [x + 30, x + platform.w - 30]) {
+          ctx.beginPath(); ctx.moveTo(cableX, platform.y - 92); ctx.lineTo(cableX, platform.y); ctx.stroke();
+        }
+        drawDeck(0, 25, '#ff4fac');
+        for (let lamp = 0; lamp < 3; lamp += 1) {
+          const lampX = x + 54 + lamp * 76;
+          ctx.fillStyle = lamp % 2 ? '#50e7ff' : '#ffd65a';
+          ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 12;
+          ctx.beginPath(); ctx.arc(lampX, platform.y + 38, 8, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.shadowBlur = 0;
+      } else if (style === 'marquee-opposite-tower-ledge') {
+        drawDeck(0, 26, '#ffd65a');
+        ctx.strokeStyle = '#31364b'; ctx.lineWidth = 8;
+        ctx.beginPath(); ctx.moveTo(x + 18, platform.y + 25); ctx.lineTo(x + 58, platform.y + 83);
+        ctx.moveTo(x + platform.w - 18, platform.y + 25); ctx.lineTo(x + platform.w - 58, platform.y + 83); ctx.stroke();
+        ctx.fillStyle = '#ff4fac'; ctx.font = '900 8px Arial'; ctx.textAlign = 'center';
+        ctx.fillText('TOWER B • SIGN ACCESS', x + platform.w / 2, platform.y + 51);
+      } else if (style === 'marquee-sign-back-walkway') {
+        drawDeck(0, 22, '#ff4fac');
+        ctx.strokeStyle = '#657089'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(x + 10, platform.y); ctx.lineTo(x + 10, platform.y - 31);
+        ctx.lineTo(x + platform.w - 10, platform.y - 31); ctx.lineTo(x + platform.w - 10, platform.y); ctx.stroke();
+        ctx.strokeStyle = 'rgba(80,231,255,.65)';
+        for (let brace = x + 20; brace < x + platform.w - 20; brace += 45) {
+          ctx.beginPath(); ctx.moveTo(brace, platform.y - 29); ctx.lineTo(brace + 24, platform.y - 2); ctx.stroke();
+        }
+      } else if (style === 'marquee-upper-control-deck') {
+        drawDeck(0, 25, '#ffd65a');
+        roundedRect(x + 24, platform.y + 27, 132, 54, 7, '#1b1b31', '#50e7ff', 3);
+        for (let meter = 0; meter < 7; meter += 1) {
+          const lit = station?.completed || meter / 7 < (station?.progress || 0);
+          ctx.fillStyle = lit ? ['#50e7ff', '#ff4fac', '#ffd65a'][meter % 3] : '#464056';
+          ctx.fillRect(x + 39 + meter * 15, platform.y + 41, 8, 18 - meter % 2 * 5);
+        }
+        ctx.fillStyle = '#fff1bd'; ctx.font = '900 8px Arial'; ctx.textAlign = 'left';
+        ctx.fillText('MARQUEE POWER', x + 31, platform.y + 73);
+        ctx.strokeStyle = '#6d7690'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(x + 178, platform.y + 24); ctx.lineTo(x + 178, platform.y - 27);
+        ctx.lineTo(x + platform.w - 12, platform.y - 27); ctx.lineTo(x + platform.w - 12, platform.y + 24); ctx.stroke();
       }
     } else if (style.startsWith('rooftop')) {
       if (style.includes('bass-pad')) {
@@ -3667,6 +3785,10 @@
   function drawPlatform(platform, time) {
     const x = platform.x - game.cameraX;
     if (x + platform.w < -100 || x > canvas.width + 100) return;
+    if (platform.phase2StationId === 'marquee') {
+      drawPhase2PlatformFacade(platform, time);
+      return;
+    }
     if (drawRemasteredPlatform(platform, time)) {
       drawPhase2PlatformFacade(platform, time);
       return;
@@ -4156,6 +4278,138 @@
     return station.end - game.cameraX > -padding && station.start - game.cameraX < canvas.width + padding;
   }
 
+  function drawWorld23MarqueeBackplate(station, time) {
+    if (!phase2StationInView(station, 620)) return;
+    const activation = station.completed ? 1 : clamp(station.progress, 0, .74);
+    const toScreen = (worldX) => worldX - game.cameraX;
+    ctx.save();
+
+    // Grounded box office: the roof is the first collision surface while the
+    // booth body, posts, and steel footings visibly continue to the terrain.
+    const boothX = toScreen(2670);
+    const boothBodyY = 390;
+    const boothGradient = ctx.createLinearGradient(0, boothBodyY, 0, GROUND_Y + 8);
+    boothGradient.addColorStop(0, '#71365b'); boothGradient.addColorStop(1, '#241d38');
+    roundedRect(boothX + 30, boothBodyY, 360, GROUND_Y - boothBodyY + 8, 8, boothGradient, '#ffcf68', 3);
+    roundedRect(boothX + 66, boothBodyY + 16, 110, 44, 7, '#16263c', '#50e7ff', 3);
+    roundedRect(boothX + 244, boothBodyY + 16, 110, 44, 7, '#16263c', '#ff4fac', 3);
+    ctx.fillStyle = '#fff1bd'; ctx.font = '900 8px Arial'; ctx.textAlign = 'center';
+    ctx.fillText('TICKETS', boothX + 121, boothBodyY + 43);
+    ctx.fillText('VENUE PASS', boothX + 299, boothBodyY + 43);
+    ctx.fillStyle = '#151526';
+    ctx.fillRect(boothX + 19, GROUND_Y - 8, 52, 18);
+    ctx.fillRect(boothX + 349, GROUND_Y - 8, 52, 18);
+    ctx.strokeStyle = '#ffd65a'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(boothX + 44, boothBodyY); ctx.lineTo(boothX + 44, GROUND_Y);
+    ctx.moveTo(boothX + 376, boothBodyY); ctx.lineTo(boothX + 376, GROUND_Y); ctx.stroke();
+
+    // Three independently footed structures support the route before it joins
+    // the authored marquee core. The trusses and cables remain decorative so
+    // Normal Taco Hero can pass beneath them on the unchanged main route.
+    const drawSupportTower = (x, top, width, bottom, towerAccent) => {
+      const steel = ctx.createLinearGradient(x, 0, x + width, 0);
+      steel.addColorStop(0, 'rgba(12,15,29,.92)');
+      steel.addColorStop(.48, 'rgba(62,66,86,.78)');
+      steel.addColorStop(1, 'rgba(10,13,25,.94)');
+      roundedRect(x, top, width, bottom - top, 4, steel, '#090b16', 5);
+      ctx.strokeStyle = '#8c91a1'; ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(x + 16, top + 4); ctx.lineTo(x + 16, bottom - 4);
+      ctx.moveTo(x + width - 16, top + 4); ctx.lineTo(x + width - 16, bottom - 4);
+      ctx.stroke();
+      for (let braceY = top + 10; braceY < bottom - 28; braceY += 54) {
+        const segmentBottom = Math.min(bottom - 8, braceY + 48);
+        ctx.strokeStyle = '#292d40'; ctx.lineWidth = 9;
+        ctx.beginPath();
+        ctx.moveTo(x + 17, braceY); ctx.lineTo(x + width - 17, segmentBottom);
+        ctx.moveTo(x + width - 17, braceY); ctx.lineTo(x + 17, segmentBottom);
+        ctx.stroke();
+        ctx.strokeStyle = towerAccent; ctx.globalAlpha = .72; ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(x + 17, braceY); ctx.lineTo(x + width - 17, segmentBottom);
+        ctx.moveTo(x + width - 17, braceY); ctx.lineTo(x + 17, segmentBottom);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#ffd65a';
+        for (const boltX of [x + 17, x + width - 17]) {
+          ctx.beginPath(); ctx.arc(boltX, braceY, 2.4, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      roundedRect(x + width * .38, top + 18, width * .24, bottom - top - 36, 5, '#152338', towerAccent, 2);
+      ctx.fillStyle = towerAccent; ctx.shadowColor = towerAccent; ctx.shadowBlur = 9;
+      for (let lampY = top + 34; lampY < bottom - 18; lampY += 74) {
+        ctx.beginPath(); ctx.arc(x + width / 2, lampY, 3.5, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+    };
+    const towerX = toScreen(MARQUEE_STRUCTURE.externalTowerX);
+    drawSupportTower(towerX, 104, 176, GROUND_Y, '#ff4fac');
+    const liftRailX = toScreen(MARQUEE_STRUCTURE.liftRailX);
+    drawSupportTower(liftRailX - 16, 142, 222, GROUND_Y, '#50e7ff');
+    for (const footingX of [towerX - 10, towerX + 148, liftRailX - 27, liftRailX + 176]) {
+      roundedRect(footingX, GROUND_Y - 14, 48, 24, 4, '#171727', '#8e859a', 3);
+      ctx.fillStyle = '#ffd65a';
+      ctx.beginPath(); ctx.arc(footingX + 12, GROUND_Y - 4, 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(footingX + 36, GROUND_Y - 4, 2.5, 0, Math.PI * 2); ctx.fill();
+    }
+
+    const connectorX = towerX + 120;
+    const connectorRight = toScreen(MARQUEE_STRUCTURE.coreTowerX);
+    const connectorSteel = ctx.createLinearGradient(0, 184, 0, 226);
+    connectorSteel.addColorStop(0, 'rgba(80,86,108,.9)');
+    connectorSteel.addColorStop(1, 'rgba(15,18,34,.95)');
+    roundedRect(connectorX, 184, connectorRight - connectorX + 44, 42, 3, connectorSteel, '#171727', 4);
+    drawPhase2Truss(connectorX, 184, connectorRight - connectorX + 44, 42, '#b780ff');
+    drawPhase2Truss(liftRailX + 184, 214, 104, 36, '#50e7ff');
+    ctx.strokeStyle = '#d6b778'; ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(towerX + 20, 110); ctx.lineTo(liftRailX + 172, 185);
+    ctx.moveTo(liftRailX + 194, 151); ctx.lineTo(connectorRight + 12, 185);
+    ctx.moveTo(liftRailX + 22, 145); ctx.lineTo(toScreen(4190) + 30, 294);
+    ctx.moveTo(connectorRight + 5, 184); ctx.lineTo(toScreen(4450) - 30, 294);
+    ctx.stroke();
+
+    // Fixed lift rails, pulley, and cable make the moving service deck legible
+    // even when the platform is at the top or bottom of its slow cycle.
+    ctx.strokeStyle = '#747d91'; ctx.lineWidth = 7;
+    ctx.beginPath(); ctx.moveTo(liftRailX + 24, 174); ctx.lineTo(liftRailX + 24, 430);
+    ctx.moveTo(liftRailX + 166, 174); ctx.lineTo(liftRailX + 166, 430); ctx.stroke();
+    ctx.strokeStyle = '#171727'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(liftRailX + 95, 171); ctx.lineTo(liftRailX + 95, 430); ctx.stroke();
+    ctx.fillStyle = '#ffd65a'; ctx.strokeStyle = '#171727'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(liftRailX + 95, 170, 18, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+    // The dedicated alpha asset preserves the approved marquee face while
+    // adding two grounded core towers, booths, stairs, cross-bracing, and a
+    // real upper maintenance system around the final traversal pieces.
+    if (images.marqueeStructure) {
+      const imageX = toScreen(MARQUEE_STRUCTURE.centerX) - MARQUEE_STRUCTURE.drawWidth / 2;
+      const imageY = MARQUEE_STRUCTURE.bottomY - MARQUEE_STRUCTURE.drawHeight;
+      ctx.globalAlpha = .98;
+      ctx.drawImage(
+        images.marqueeStructure,
+        0, 0, images.marqueeStructure.width, images.marqueeStructure.height,
+        imageX, imageY, MARQUEE_STRUCTURE.drawWidth, MARQUEE_STRUCTURE.drawHeight,
+      );
+      ctx.globalAlpha = 1;
+    }
+
+    // Support and entrance lights energize progressively before the exact
+    // letter sequence finishes in drawWorld23NeonMarquee.
+    const lightPositions = [
+      [2820, 384], [3010, 384], [3200, 290], [3560, 196],
+      [3860, 203], [4200, 203], [4470, 174], [4960, 174],
+    ];
+    lightPositions.forEach(([worldX, y], index) => {
+      const lit = station.completed || index / lightPositions.length < activation;
+      ctx.fillStyle = lit ? ['#50e7ff', '#ff4fac', '#ffd65a'][index % 3] : '#403a50';
+      ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = lit ? 12 + Math.sin(time * .007 + index) * 2 : 0;
+      ctx.beginPath(); ctx.arc(toScreen(worldX), y, lit ? 5 : 3.5, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
   function drawWorld23Landmark(cellIndex, worldCenterX, bottomY, targetWidth, alpha = 1) {
     if (!images.world23Landmarks) return false;
     const bounds = images.world23LandmarkBounds?.[cellIndex];
@@ -4176,20 +4430,18 @@
 
   function drawWorld23NeonMarquee(station, time) {
     if (!phase2StationInView(station, 520)) return;
-    drawWorld23Landmark(0, 4775, GROUND_Y + 3, 660, .96);
-    const x = 4485 - game.cameraX;
-    const y = 35;
-    const width = 580;
+    const x = 4571 - game.cameraX;
+    const y = 95;
+    const width = 300;
     const activation = station.completed ? 1 : clamp(station.progress * .86, .08, .7);
     ctx.save();
-    drawPhase2Truss(x - 20, 8, width + 40, 78, '#50e7ff');
     ctx.shadowColor = '#50e7ff';
-    ctx.shadowBlur = station.completed ? 35 : 9;
-    roundedRect(x, y, width, 76, 18, 'rgba(17,9,45,.94)', '#50e7ff', 4);
+    ctx.shadowBlur = station.completed ? 28 : 7;
+    roundedRect(x, y, width, 67, 17, 'rgba(45,24,38,.18)', station.completed ? '#fff4c5' : 'rgba(80,231,255,.58)', 2.5);
     const title = 'NEON NECKTIES';
-    ctx.font = '900 27px Arial';
+    ctx.font = '900 18px Arial';
     ctx.textAlign = 'center';
-    const letterWidth = 25;
+    const letterWidth = 15.5;
     const startX = x + width / 2 - title.length * letterWidth / 2 + letterWidth / 2;
     const activeLetters = station.completed ? title.length : Math.floor(title.length * activation);
     [...title].forEach((letter, index) => {
@@ -4197,17 +4449,17 @@
       const active = index < activeLetters;
       ctx.fillStyle = active ? ['#ff4fac', '#50e7ff', '#ffd65a'][index % 3] : 'rgba(255,255,255,.18)';
       ctx.shadowColor = ctx.fillStyle;
-      ctx.shadowBlur = active ? 12 + Math.sin(time * .008 + index) * 3 : 0;
-      ctx.fillText(letter, startX + index * letterWidth, y + 46);
+      ctx.shadowBlur = active ? 10 + Math.sin(time * .008 + index) * 2 : 0;
+      ctx.fillText(letter, startX + index * letterWidth, y + 35);
     });
     ctx.shadowBlur = 0;
     ctx.fillStyle = station.completed ? '#fff8dc' : 'rgba(255,255,255,.52)';
-    ctx.font = '900 9px Arial';
-    ctx.fillText(station.completed ? 'ENTRANCE POWERED • SHOWTIME READY' : 'VENUE POWER • PARTIAL', x + width / 2, y + 65);
-    for (let bulb = 0; bulb < 28; bulb += 1) {
-      const lit = station.completed || bulb / 28 < activation;
+    ctx.font = '900 7px Arial';
+    ctx.fillText(station.completed ? 'ENTRANCE POWERED • SHOWTIME READY' : 'VENUE POWER • PARTIAL', x + width / 2, y + 54);
+    for (let bulb = 0; bulb < 18; bulb += 1) {
+      const lit = station.completed || bulb / 18 < activation;
       ctx.fillStyle = lit ? (bulb % 2 ? '#ff4fac' : '#ffd65a') : '#463b60';
-      ctx.beginPath(); ctx.arc(x + 16 + bulb * 20.2, y + 8, lit ? 3.2 : 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 14 + bulb * 16, y + 8, lit ? 2.6 : 2, 0, Math.PI * 2); ctx.fill();
     }
     ctx.restore();
   }
@@ -5231,6 +5483,9 @@
 
   function drawHUD(time) {
     ctx.save();
+    const marqueeHudGhost = game.state === 'playing'
+      && player.x >= 2520 && player.x <= 5150 && player.y < 210;
+    if (marqueeHudGhost) ctx.globalAlpha = .28;
     roundedRect(18, 16, 330, 124, 16, 'rgba(20,10,48,.62)', 'rgba(80,231,255,.42)');
     ctx.fillStyle = '#fff5cf';
     ctx.font = '900 19px Arial';
@@ -5271,6 +5526,7 @@
       ctx.fillStyle = '#fff'; ctx.font = '900 10px Arial';
       ctx.fillText(`${formatTime(game.concert.timer)} / 3:07`, 554, 82);
     }
+    ctx.globalAlpha = 1;
     if (game.state !== 'concert' && game.boss.phase !== 'dormant' && game.boss.phase !== 'cleared') {
       const bossColor = game.boss.phase === 'vulnerable' ? '#fff170' : game.boss.defeated ? '#a4f766' : '#ff4fac';
       roundedRect(735, 84, 207, 48, 14, 'rgba(20,10,48,.76)', bossColor, 3);
@@ -5535,6 +5791,8 @@
 
   function drawWorld(time) {
     drawBackground(time);
+    const marquee = world23Phase2Station('marquee');
+    if (marquee && !game.phase2.preShowHidden) drawWorld23MarqueeBackplate(marquee, time);
     for (const platform of world.platforms) drawPlatform(platform, time);
     drawWorld23Phase2Destinations(time);
     drawOpeningScene(time);
@@ -5818,6 +6076,19 @@
           bassBeatSeconds: BASS_STACK_BEAT_SECONDS,
           safeDropToMainRoute: true,
           repeatProtected: world.phase2Stations.every((station) => typeof station.completed === 'boolean'),
+          marqueeServiceLift: (() => {
+            const lift = world.platforms.find((platform) => platform.phase2Style === 'marquee-service-lift');
+            return lift ? {
+              y: Math.round(lift.y),
+              baseY: lift.baseY,
+              minY: lift.baseY - lift.range,
+              maxY: lift.baseY + lift.range,
+              range: lift.range * 2,
+              axis: lift.axis,
+              moving: lift.moving,
+              carryingPlayer: player.platform?.id === lift.id,
+            } : null;
+          })(),
         },
         boss: {
           name: 'THE FEEDBACK FIEND',
@@ -5928,6 +6199,8 @@
           premiumTambourine: Boolean(images.tacoTambourine),
           premiumPreShowBand: Boolean(images.preShowBand),
           preShowBandAlphaRemoved: images.preShowBandAlphaRemoved || 0,
+          premiumGroundedMarqueeStructure: Boolean(images.marqueeStructure),
+          marqueeStructureUsesTrueAlpha: true,
           premiumPhase2Landmarks: Boolean(images.world23Landmarks),
           landmarkAlphaRemoved: images.landmarkAlphaRemoved || 0,
           premiumFeedbackFiend: Boolean(images.feedbackFiend),
@@ -6134,6 +6407,7 @@
     loadImage('assets/world2_3_terrain_atlas_v1.webp'),
     loadImage('assets/world2_3_checkpoint_stations_v1.webp'),
     loadImage('assets/world2_1_catamaran_arm_layer_base_v1.webp'),
+    loadImage('assets/world2_3_marquee_structure_v3.webp'),
     loadImage('assets/world2_3_preshow_landmarks_v2.webp'),
     loadImage('assets/world2_3_feedback_fiend_v1.webp'),
   ]).then(([
@@ -6144,7 +6418,7 @@
     environmentSoundcheck, environmentBeach, environmentRooftops,
     environmentStampede, environmentLagoon, environmentPowerup, environmentVictory,
     terrainRemaster, checkpointStations, catamaranRemasterBase,
-    world23LandmarksRaw, feedbackFiendArt,
+    marqueeStructureArt, world23LandmarksRaw, feedbackFiendArt,
   ]) => {
     images.hero = hero;
     images.items = items;
@@ -6174,6 +6448,7 @@
     images.terrainRemaster = terrainRemaster;
     images.checkpointStations = checkpointStations;
     images.catamaranRemasterBase = catamaranRemasterBase;
+    images.marqueeStructure = marqueeStructureArt;
     images.world23Landmarks = prepareWorld23LandmarkSheet(world23LandmarksRaw);
     images.feedbackFiend = feedbackFiendArt;
     if (images.feedbackFiend) {
