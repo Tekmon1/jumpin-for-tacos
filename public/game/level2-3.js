@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const SOURCE_VERSION = 'w2-3-v21-alternating-super-run';
+  const SOURCE_VERSION = 'w2-3-v22-neon-neckties-preshow';
 
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
@@ -80,6 +80,85 @@
     { id: 'powerup', name: 'Power Up the Stage', start: 28000, end: 33000, music: 'powerup', accent: '#b780ff' },
     { id: 'victory', name: 'Golden Ticket Victory Dash', start: 33000, end: WORLD_WIDTH, music: 'powerup', accent: '#ffd65a' },
   ];
+  const BASS_STACK_LAUNCH_VELOCITY = 600;
+  const BASS_STACK_BEAT_SECONDS = 1.34;
+  const WORLD23_PHASE2_STATIONS = Object.freeze([
+    Object.freeze({
+      id: 'marquee', name: 'Neon Marquee Climb', completion: 'MARQUEE ONLINE',
+      start: 3120, end: 4620, accent: '#50e7ff', score: 2500, energy: 3,
+      trigger: Object.freeze({ x: 4310, y: 42, w: 220, h: 102 }),
+      reward: Object.freeze({ x: 4310, y: 58, count: 8, rainbowEvery: 4 }),
+      platforms: Object.freeze([
+        Object.freeze({ x: 3220, y: 330, w: 190, kind: 'marquee-support' }),
+        Object.freeze({ x: 3465, y: 274, w: 184, kind: 'marquee-light' }),
+        Object.freeze({ x: 3700, y: 218, w: 184, kind: 'marquee-support' }),
+        Object.freeze({ x: 3935, y: 162, w: 210, kind: 'marquee-light' }),
+        Object.freeze({ x: 4200, y: 104, w: 360, kind: 'marquee-summit', summit: true }),
+      ]),
+    }),
+    Object.freeze({
+      id: 'bass', name: 'Bass Stack Bounce', completion: 'SOUNDCHECK COMPLETE',
+      start: 11750, end: 13600, accent: '#a4f766', score: 3500, energy: 5,
+      trigger: Object.freeze({ x: 13170, y: 52, w: 240, h: 104 }),
+      reward: Object.freeze({ x: 13090, y: 62, count: 10, rainbowEvery: 3 }),
+      platforms: Object.freeze([
+        Object.freeze({ x: 11840, y: 330, w: 206, kind: 'bass-case' }),
+        Object.freeze({ x: 12095, y: 272, w: 500, kind: 'soundcheck-deck' }),
+        Object.freeze({ x: 12370, y: 216, w: 224, kind: 'amp-rack' }),
+        Object.freeze({ x: 12650, y: 160, w: 244, kind: 'bass-pad', bassPad: true }),
+        Object.freeze({ x: 12950, y: 112, w: 480, kind: 'master-rack', summit: true }),
+      ]),
+      characters: Object.freeze([2, 4]),
+      dialogueX: 12345,
+      dialogue: 'ONE MORE TIME. MAKE IT SHAKE.',
+    }),
+    Object.freeze({
+      id: 'spotlight', name: 'Spotlight Rig Run', completion: 'LIGHTS READY',
+      start: 22720, end: 24600, accent: '#ff4fac', score: 3000, energy: 4,
+      trigger: Object.freeze({ x: 24050, y: 46, w: 280, h: 110 }),
+      reward: Object.freeze({ x: 24000, y: 58, count: 9, rainbowEvery: 4 }),
+      platforms: Object.freeze([
+        Object.freeze({ x: 22800, y: 330, w: 198, kind: 'lighting-truss' }),
+        Object.freeze({ x: 23055, y: 272, w: 196, kind: 'spotlight-support' }),
+        Object.freeze({ x: 23310, y: 216, w: 210, kind: 'lighting-truss' }),
+        Object.freeze({ x: 23580, y: 160, w: 226, kind: 'spotlight-support' }),
+        Object.freeze({ x: 23870, y: 108, w: 500, kind: 'lighting-control', summit: true }),
+      ]),
+      characters: Object.freeze([1]),
+      dialogueX: 23415,
+      dialogue: 'TRY THE PINK ONE!',
+    }),
+    Object.freeze({
+      id: 'backstage', name: 'Backstage Catwalk', completion: 'BACKSTAGE READY',
+      start: 32460, end: 33920, accent: '#ffd65a', score: 1800, energy: 2,
+      trigger: Object.freeze({ x: 33670, y: 46, w: 220, h: 110 }),
+      reward: Object.freeze({ x: 33670, y: 62, count: 6, rainbowEvery: 3 }),
+      platforms: Object.freeze([
+        Object.freeze({ x: 32520, y: 330, w: 210, kind: 'road-case' }),
+        Object.freeze({ x: 32780, y: 274, w: 210, kind: 'backstage-catwalk' }),
+        Object.freeze({ x: 33040, y: 218, w: 218, kind: 'backstage-catwalk' }),
+        Object.freeze({ x: 33310, y: 162, w: 226, kind: 'costume-rack' }),
+        Object.freeze({ x: 33590, y: 108, w: 330, kind: 'backstage-prep', summit: true }),
+      ]),
+      characters: Object.freeze([3]),
+      dialogueX: 33145,
+      dialogue: 'ALMOST SHOWTIME.',
+    }),
+    Object.freeze({
+      id: 'encore', name: 'Encore Stash', completion: 'ENCORE STASH DISCOVERED!',
+      start: 33920, end: 34380, accent: '#fff170', score: 12000, energy: 10,
+      secret: true,
+      trigger: Object.freeze({ x: 34020, y: 22, w: 300, h: 116 }),
+      reward: Object.freeze({ x: 33990, y: 36, count: 18, rainbowEvery: 2 }),
+      platforms: Object.freeze([
+        Object.freeze({ x: 34010, y: 88, w: 330, kind: 'encore-stash', summit: true, secret: true }),
+      ]),
+    }),
+  ]);
+  const WORLD23_PHASE2_VISIBLE_IDS = Object.freeze(['marquee', 'bass', 'spotlight', 'backstage']);
+  const WORLD23_PHASE2_PROTECTED_RANGES = Object.freeze(
+    WORLD23_PHASE2_STATIONS.map((station) => Object.freeze({ start: station.start, end: station.end })),
+  );
   const environmentImageKeys = Object.freeze({
     soundcheck: 'environmentSoundcheck',
     beach: 'environmentBeach',
@@ -270,7 +349,21 @@
     shirt: ['#ff4fac', '#50e7ff', '#a4f766', '#ffd65a', '#b780ff', '#ff835c'][(column * 2 + rowIndex) % 6],
     hair: ['#2b1a2c', '#6c3827', '#171d35', '#9a562e', '#332022', '#d9a24f'][(column + rowIndex * 3) % 6],
   })));
-  const world = { platforms: [], tacos: [], enemies: [], checkpoints: [], generators: [], generatorDefenses: [], fans: [], bandCameos: [] };
+  const world = {
+    platforms: [], tacos: [], enemies: [], checkpoints: [], generators: [], generatorDefenses: [],
+    fans: [], bandCameos: [], phase2Stations: [], bassPads: [],
+  };
+
+  function createWorld23Phase2State() {
+    return {
+      toast: null,
+      secretBanner: null,
+      groundCameoSeen: false,
+      preShowHidden: false,
+      completedIds: [],
+      concertFallbackSystems: [],
+    };
+  }
   const player = {
     x: 130, y: 370, w: 36, h: 44, vx: 0, vy: 0, dir: 1, grounded: false,
     platform: null, coyote: 0, jumpBuffer: 0, invulnerable: 0, rotation: 0, scale: 1,
@@ -301,12 +394,14 @@
       platforms: [], chorusTacos: [], chorusVolleys: new Set(), cannonFlash: 0,
       controlRecoveries: 0, lastSafeX: 110, lastSafeY: 390,
       bowDone: false, songReady: false, entryReason: null, entryDecision: null,
+      venueSystems: null,
     },
     personalBest: { score: 0, time: 0, energy: 0, runs: 0 },
     routeMaxGap: 0,
     respawnCount: 0, respawnFallbacks: 0, lastRespawnLanding: null,
     platformOverlapCount: 0,
     generatorDefenseAudit: null,
+    phase2: createWorld23Phase2State(),
   };
 
   let roadsterLoopHandle = null;
@@ -344,6 +439,7 @@
     ? Number(params.get('splats')) : Number.NaN;
   const previewGenerators = qaMode && params.has('generators')
     ? Number(params.get('generators')) : Number.NaN;
+  const previewPhase2Complete = qaMode ? String(params.get('phase2Complete') || '') : '';
 
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
   const lerp = (a, b, t) => a + (b - a) * t;
@@ -578,6 +674,12 @@
       const pattern = world23RoutePatterns[section.id];
       if (!pattern) return;
       for (let base = section.start + 680, group = 0; base < section.end - 1100; base += 1460, group += 1) {
+        const groupStart = base + Math.min(...pattern.map((definition) => definition.dx));
+        const groupEnd = base + Math.max(...pattern.map((definition) => definition.dx + definition.w));
+        const reservedForPhase2 = WORLD23_PHASE2_PROTECTED_RANGES.some((range) => (
+          groupStart < range.end && groupEnd > range.start
+        ));
+        if (reservedForPhase2) continue;
         const routeGroupId = `${section.id}-route-${group + 1}`;
         const groupPlatforms = pattern.map((definition, routeIndex) => {
           const platform = addPlatform(
@@ -642,6 +744,73 @@
       optionalElevatedRoute: true,
     };
     return authoredPlatforms;
+  }
+
+  function buildWorld23Phase2Exploration() {
+    world.phase2Stations = WORLD23_PHASE2_STATIONS.map((definition) => ({
+      ...definition,
+      completed: false,
+      activatedAt: 0,
+      progress: 0,
+      dialogueTimer: 0,
+      dialoguePlayed: false,
+      rewardSpawned: false,
+      platformIds: [],
+    }));
+    world.bassPads.length = 0;
+
+    world.phase2Stations.forEach((station) => {
+      station.platforms.forEach((definition, index) => {
+        const platform = addPlatform(definition.x, definition.y, definition.w, `phase2-${definition.kind}`, {
+          id: `phase2-${station.id}-${index + 1}`,
+          h: definition.secret ? 30 : 26,
+          upper: true,
+          phase2StationId: station.id,
+          phase2Style: definition.kind,
+          phase2Summit: Boolean(definition.summit),
+          phase2Secret: Boolean(definition.secret),
+          bassPad: Boolean(definition.bassPad),
+          enemySupport: false,
+        });
+        station.platformIds.push(platform.id);
+        if (platform.bassPad) {
+          platform.lastLaunchCycle = -1;
+          world.bassPads.push(platform);
+        }
+        if (!definition.secret) {
+          const tacoCount = Math.max(2, Math.min(4, Math.floor((platform.w - 34) / 54)));
+          addLine(
+            platform.x + Math.max(22, (platform.w - (tacoCount - 1) * 44) / 2),
+            platform.y - 43,
+            tacoCount,
+            44,
+          );
+        }
+      });
+    });
+
+    // One small shimmer leads curious players beyond the obvious catwalk. It
+    // previews the hidden jump without drawing a secret banner over the route.
+    addTaco(33958, 58, 'rainbow', { phase2Clue: 'encore-stash' });
+    game.world23Phase2Audit = {
+      sourceVersion: SOURCE_VERSION,
+      visibleDestinations: WORLD23_PHASE2_VISIBLE_IDS.length,
+      hiddenSecrets: world.phase2Stations.filter((station) => station.secret).length,
+      stationIds: world.phase2Stations.map((station) => station.id),
+      approximatePlacement: Object.fromEntries(world.phase2Stations.map((station) => [
+        station.id,
+        Number(((station.start + station.end) / 2 / WORLD_WIDTH).toFixed(3)),
+      ])),
+      majorViewportSeparation: [
+        WORLD23_PHASE2_STATIONS[1].start - WORLD23_PHASE2_STATIONS[0].end,
+        WORLD23_PHASE2_STATIONS[2].start - WORLD23_PHASE2_STATIONS[1].end,
+        WORLD23_PHASE2_STATIONS[3].start - WORLD23_PHASE2_STATIONS[2].end,
+      ],
+      safeDropToMainRoute: true,
+      normalRouteRequired: false,
+      secretBannerReservedFor: 'encore',
+      casualRoster: ['NOVA', 'JET', 'MILO', 'ARMAN', 'REX'],
+    };
   }
 
   function world23GroundSupport(anchorX) {
@@ -864,8 +1033,10 @@
       { id: 'rhythm-tower', x: 32200, y: 316, color: '#b780ff', name: 'RHYTHM TOWER', activated: false, defenseState: 'armed' },
     ];
     world.bandCameos = [
-      { x: 4700, member: 0 }, { x: 9100, member: 1 }, { x: 13700, member: 2 },
-      { x: 20500, member: 4 }, { x: 26200, member: 3 },
+      {
+        x: 4700, member: 0, casual: true, grounded: false,
+        activity: 'carrying-microphone-case', dialogue: 'SEE YOU AT THE SHOW!',
+      },
     ];
 
     // A guaranteed lower route. Gaps remain below the shared jump contract.
@@ -927,6 +1098,7 @@
     // continuous and forgiving; these authored risers, canopies, rooftops,
     // speaker stacks, and lagoon leaves carry the risk-reward taco trail.
     buildWorld23AuthoredRoutes();
+    buildWorld23Phase2Exploration();
 
     // Organized continuous taco guidance along the entire playable route.
     for (let x = 190; x < WORLD_WIDTH - 120; x += 44) {
@@ -1137,6 +1309,7 @@
       settingsOpen: false, respawn: heroCore.createRespawnState(), generators: 0,
       activeMusic: null, musicTransition: null,
       musicTransitionCount: 0, musicOverlapRecoveries: 0, maxMusicPlaying: 0,
+      phase2: createWorld23Phase2State(),
       opening: {
         timer: 0, phase: 'loading', carX: OPENING_ROADSTER_X + 38,
         dustTimer: 0, finished: false,
@@ -1151,7 +1324,7 @@
         platforms: [], chorusTacos: [], chorusVolleys: new Set(), cannonFlash: 0,
         controlRecoveries: 0, lastSafeX: 110, lastSafeY: 390,
         bowDone: false, songReady: false, skipped: false, skippedAt: 0,
-        entryReason: null, entryDecision: null,
+        entryReason: null, entryDecision: null, venueSystems: null,
       },
       respawnCount: 0, respawnFallbacks: 0, lastRespawnLanding: null,
     });
@@ -1317,6 +1490,7 @@
     unlockAudio();
     playAudio('ui.start');
     if (previewConcert) {
+      applyWorld23Phase2PreviewState();
       player.x = 34420;
       player.y = 350;
       game.cameraX = WORLD_WIDTH - canvas.width;
@@ -1353,6 +1527,7 @@
       game.opening.finished = game.opening.phase === 'finished';
     }
     game.pinata.hits = previewPinataHits;
+    applyWorld23Phase2PreviewState();
     if (previewRespawn) {
       if (previewRespawnCheckpoint >= 0 && world.checkpoints[previewRespawnCheckpoint]) {
         game.latestCheckpoint = world.checkpoints[previewRespawnCheckpoint];
@@ -1873,6 +2048,150 @@
     }
   }
 
+  function world23Phase2Station(id) {
+    return world.phase2Stations.find((station) => station.id === id) || null;
+  }
+
+  function spawnWorld23Phase2Reward(station) {
+    if (!station || station.rewardSpawned) return;
+    station.rewardSpawned = true;
+    const columns = Math.min(9, station.reward.count);
+    for (let index = 0; index < station.reward.count; index += 1) {
+      const column = index % columns;
+      const row = Math.floor(index / columns);
+      const type = index % station.reward.rainbowEvery === station.reward.rainbowEvery - 1
+        ? 'rainbow' : 'taco';
+      addTaco(
+        station.reward.x + column * 34,
+        station.reward.y - row * 34 - Math.sin(column / Math.max(1, columns - 1) * Math.PI) * 18,
+        type,
+        { phase2Reward: station.id, bonus: true },
+      );
+    }
+  }
+
+  function completeWorld23Phase2Station(station, { silent = false } = {}) {
+    if (!station || station.completed) return false;
+    station.completed = true;
+    station.activatedAt = game.levelTime;
+    station.progress = 1;
+    if (station.dialogue && !station.dialoguePlayed) {
+      station.dialoguePlayed = true;
+      station.dialogueTimer = 3.2;
+    }
+    if (!game.phase2.completedIds.includes(station.id)) game.phase2.completedIds.push(station.id);
+    game.score += station.score;
+    game.energy = clamp(game.energy + station.energy, 0, 100);
+
+    if (station.secret) {
+      game.phase2.secretBanner = {
+        title: 'ENCORE STASH', subtitle: 'DISCOVERED!', timer: 3.35,
+      };
+      game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 5 : 13);
+    } else {
+      game.phase2.toast = {
+        title: station.completion,
+        subtitle: station.id === 'marquee' ? 'VENUE ENTRANCE POWERED'
+          : station.id === 'bass' ? 'RHYTHM SECTION LOCKED IN'
+            : station.id === 'spotlight' ? 'FULL LIGHTING PROGRAM ARMED'
+              : 'QUIET PRE-SHOW ACCESS COMPLETE',
+        color: station.accent,
+        timer: 2.75,
+      };
+    }
+
+    if (!silent) {
+      spawnWorld23Phase2Reward(station);
+      const screenX = station.trigger.x + station.trigger.w / 2 - game.cameraX;
+      spawnConfetti(screenX, station.trigger.y + 80, station.secret
+        ? (game.reducedShake ? 95 : 210) : (game.reducedShake ? 28 : 58));
+      spawnBurst(screenX, station.trigger.y + 74, station.accent, station.secret
+        ? (game.reducedShake ? 24 : 56) : (game.reducedShake ? 10 : 22));
+      const eventId = {
+        marquee: 'concert.start',
+        bass: 'concert.start',
+        spotlight: 'concert.tambourineAccent',
+        backstage: 'checkpoint.activate',
+        encore: 'concert.start',
+      }[station.id];
+      playAudio(eventId, { position: audioPosition(station.trigger.x), station: station.id });
+      if (station.secret) {
+        showMessage('ENCORE STASH DISCOVERED!', 3.2);
+        spawnFireworks(game.reducedShake ? 5 : 10);
+      }
+    }
+    return true;
+  }
+
+  function applyWorld23Phase2PreviewState() {
+    if (!previewPhase2Complete) return;
+    const requested = previewPhase2Complete === 'all'
+      ? new Set(world.phase2Stations.map((station) => station.id))
+      : new Set(previewPhase2Complete.split(',').map((id) => id.trim()).filter(Boolean));
+    world.phase2Stations.forEach((station) => {
+      if (requested.has(station.id)) completeWorld23Phase2Station(station, { silent: true });
+    });
+    game.phase2.toast = null;
+    game.phase2.secretBanner = null;
+  }
+
+  function updateWorld23BassStack() {
+    const station = world23Phase2Station('bass');
+    if (!station) return;
+    const beatPosition = game.levelTime / BASS_STACK_BEAT_SECONDS;
+    const beatCycle = Math.floor(beatPosition);
+    const beatPhase = beatPosition - beatCycle;
+    station.beatCycle = beatCycle;
+    station.beatPhase = beatPhase;
+    if (!player.grounded || !player.platform?.bassPad || beatPhase > .31) return;
+    const pad = player.platform;
+    if (pad.lastLaunchCycle === beatCycle) return;
+    pad.lastLaunchCycle = beatCycle;
+    player.vy = -BASS_STACK_LAUNCH_VELOCITY;
+    player.grounded = false;
+    player.platform = null;
+    const screenX = pad.x + pad.w / 2 - game.cameraX;
+    spawnBurst(screenX, pad.y + 8, '#a4f766', game.reducedShake ? 10 : 22);
+    game.impactTexts.push({ x: screenX, y: pad.y - 25, text: 'WHUMM!', color: '#a4f766', life: .85 });
+    game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 2 : 5);
+    playAudio('concert.tambourineAccent', { position: audioPosition(pad.x + pad.w / 2), bassLaunch: true });
+  }
+
+  function updateWorld23Phase2(dt) {
+    if (game.phase2.toast) {
+      game.phase2.toast.timer = Math.max(0, game.phase2.toast.timer - dt);
+      if (game.phase2.toast.timer <= 0) game.phase2.toast = null;
+    }
+    if (game.phase2.secretBanner) {
+      game.phase2.secretBanner.timer = Math.max(0, game.phase2.secretBanner.timer - dt);
+      if (game.phase2.secretBanner.timer <= 0) game.phase2.secretBanner = null;
+    }
+    world.phase2Stations.forEach((station) => {
+      station.dialogueTimer = Math.max(0, station.dialogueTimer - dt);
+      if (!station.completed) {
+        station.progress = Math.max(
+          station.progress,
+          clamp((player.x - station.start) / Math.max(1, station.end - station.start), 0, 1),
+        );
+        if (station.dialogue && !station.dialoguePlayed
+          && Math.abs(player.x + player.w / 2 - station.dialogueX) < 300) {
+          station.dialoguePlayed = true;
+          station.dialogueTimer = 3.2;
+        }
+        if (intersects(player, station.trigger)) completeWorld23Phase2Station(station);
+      }
+    });
+    const groundCameo = world.bandCameos[0];
+    if (groundCameo) {
+      groundCameo.dialogueTimer = Math.max(0, (groundCameo.dialogueTimer || 0) - dt);
+      if (!game.phase2.groundCameoSeen && Math.abs(player.x - groundCameo.x) < 210) {
+        game.phase2.groundCameoSeen = true;
+        groundCameo.dialogueTimer = 3.1;
+      }
+    }
+    updateWorld23BassStack();
+  }
+
   function updatePinata(dt) {
     const pinata = game.pinata;
     if (pinata.exploded) {
@@ -2147,6 +2466,22 @@
       game.score,
       getConcertEntryStatus(),
     );
+    const exploredSystems = WORLD23_PHASE2_VISIBLE_IDS.filter((id) => world23Phase2Station(id)?.completed);
+    const fallbackSystems = WORLD23_PHASE2_VISIBLE_IDS.filter((id) => !exploredSystems.includes(id));
+    game.concert.venueSystems = {
+      ready: true,
+      exploredSystems,
+      fallbackSystems,
+      automaticConcertFallback: fallbackSystems.length > 0,
+      marquee: true,
+      sound: true,
+      lights: true,
+      backstage: true,
+    };
+    game.phase2.concertFallbackSystems = [...fallbackSystems];
+    game.phase2.preShowHidden = true;
+    world.phase2Stations.forEach((station) => { station.dialogueTimer = 0; });
+    world.bandCameos.forEach((cameo) => { cameo.dialogueTimer = 0; });
     stopRoadsterLoop();
     stopCatamaranLoop();
     game.state = 'concert';
@@ -2333,6 +2668,7 @@
     updateOpeningScene(dt);
     updateMovingPlatforms();
     updatePlayer(dt);
+    updateWorld23Phase2(dt);
     updateEnemies(dt);
     updateCollectibles(dt);
     updateCheckpoints();
@@ -2847,10 +3183,120 @@
     return true;
   }
 
+  function drawPhase2Truss(x, y, width, height, accent) {
+    ctx.save();
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#19152f';
+    ctx.lineWidth = 8;
+    ctx.strokeRect(x, y, width, height);
+    ctx.strokeStyle = accent;
+    ctx.globalAlpha = .72;
+    ctx.lineWidth = 2.5;
+    for (let offset = 0; offset < width; offset += 46) {
+      ctx.beginPath();
+      ctx.moveTo(x + offset, y + 2);
+      ctx.lineTo(x + Math.min(width, offset + 46), y + height - 2);
+      ctx.moveTo(x + Math.min(width, offset + 46), y + 2);
+      ctx.lineTo(x + offset, y + height - 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawPhase2SpeakerCabinet(x, y, width, height, pulse, accent) {
+    ctx.save();
+    roundedRect(x, y, width, height, 10, '#151427', '#554c71', 3);
+    const coneRows = height > 82 ? 2 : 1;
+    for (let row = 0; row < coneRows; row += 1) {
+      const radius = Math.min(width * .29, height / coneRows * .31) * (1 + pulse * .08);
+      const cy = y + (row + .5) * height / coneRows;
+      const cx = x + width / 2;
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = 6 + pulse * 14;
+      ctx.fillStyle = '#25213d';
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = pulse > .35 ? accent : '#4a4563';
+      ctx.beginPath(); ctx.arc(cx, cy, radius * .28, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#ffd65a';
+    ctx.beginPath(); ctx.arc(x + width - 10, y + 10, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawPhase2PlatformFacade(platform, time) {
+    if (!platform.phase2Style) return;
+    const x = platform.x - game.cameraX;
+    const station = world23Phase2Station(platform.phase2StationId);
+    const accent = station?.accent || '#50e7ff';
+    const beatPhase = station?.beatPhase ?? ((game.levelTime / BASS_STACK_BEAT_SECONDS) % 1);
+    const pulse = platform.bassPad ? 1 - smoothStep(clamp(beatPhase / .32, 0, 1)) : .14;
+    ctx.save();
+    if (platform.phase2Style.startsWith('marquee')) {
+      drawPhase2Truss(x + 7, platform.y + 8, platform.w - 14, 42, accent);
+      for (let bulb = x + 18; bulb < x + platform.w - 12; bulb += 32) {
+        ctx.fillStyle = station?.completed || (bulb - x) / platform.w < (station?.progress || 0)
+          ? (Math.floor((bulb - x) / 32) % 2 ? '#ff4fac' : '#50e7ff') : 'rgba(255,255,255,.25)';
+        ctx.shadowColor = ctx.fillStyle;
+        ctx.shadowBlur = station?.completed ? 10 : 3;
+        ctx.beginPath(); ctx.arc(bulb, platform.y + 13, 3.5, 0, Math.PI * 2); ctx.fill();
+      }
+    } else if (['bass-case', 'bass-pad', 'amp-rack', 'soundcheck-deck', 'master-rack'].includes(platform.phase2Style)) {
+      const cabinetHeight = ['soundcheck-deck', 'master-rack'].includes(platform.phase2Style) ? 44 : platform.bassPad ? 92 : 64;
+      const cabinetWidth = Math.min(platform.w - 16, platform.bassPad ? 118 : 154);
+      drawPhase2SpeakerCabinet(
+        x + (platform.w - cabinetWidth) / 2,
+        platform.y + 8,
+        cabinetWidth,
+        cabinetHeight,
+        pulse,
+        accent,
+      );
+      if (['amp-rack', 'soundcheck-deck', 'master-rack'].includes(platform.phase2Style)) {
+        const active = station?.completed ? 8 : Math.max(2, Math.floor((station?.progress || 0) * 8));
+        for (let meter = 0; meter < 8; meter += 1) {
+          ctx.fillStyle = meter < active ? (meter % 2 ? '#ff4fac' : '#a4f766') : 'rgba(255,255,255,.16)';
+          ctx.fillRect(x + 24 + meter * 19, platform.y + 16, 11, 5);
+        }
+      }
+    } else if (['lighting-truss', 'spotlight-support', 'lighting-control'].includes(platform.phase2Style)) {
+      drawPhase2Truss(x + 5, platform.y + 8, platform.w - 10, 40, accent);
+      for (let fixture = x + 28; fixture < x + platform.w - 18; fixture += 62) {
+        ctx.fillStyle = '#25203e';
+        ctx.strokeStyle = accent;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.roundRect(fixture - 13, platform.y + 34, 26, 19, 7); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = station?.completed ? accent : 'rgba(255,255,255,.22)';
+        ctx.beginPath(); ctx.arc(fixture, platform.y + 48, 6, 0, Math.PI * 2); ctx.fill();
+      }
+    } else if (['road-case', 'backstage-catwalk', 'costume-rack', 'backstage-prep', 'encore-stash'].includes(platform.phase2Style)) {
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 3;
+      ctx.fillStyle = platform.phase2Secret ? '#34234e' : '#25223c';
+      ctx.beginPath(); ctx.roundRect(x + 4, platform.y + 8, platform.w - 8, platform.phase2Secret ? 64 : 42, 7); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,.38)';
+      for (let brace = x + 24; brace < x + platform.w - 12; brace += 68) {
+        ctx.beginPath(); ctx.moveTo(brace, platform.y + 10); ctx.lineTo(brace + 28, platform.y + 48); ctx.stroke();
+      }
+      if (platform.phase2Secret) {
+        ctx.fillStyle = '#fff170';
+        ctx.font = '900 10px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(station?.completed ? 'ENCORE CACHE OPEN' : 'NN TOUR • CASE 23', x + platform.w / 2, platform.y + 36);
+      }
+    }
+    ctx.restore();
+  }
+
   function drawPlatform(platform, time) {
     const x = platform.x - game.cameraX;
     if (x + platform.w < -100 || x > canvas.width + 100) return;
-    if (drawRemasteredPlatform(platform, time)) return;
+    if (drawRemasteredPlatform(platform, time)) {
+      drawPhase2PlatformFacade(platform, time);
+      return;
+    }
     const section = currentSection(platform.x);
     const palette = {
       soundcheck: ['#6b9d62', '#315b50'], beach: ['#f2cf77', '#a75d58'],
@@ -2894,6 +3340,7 @@
       }
       ctx.restore();
     }
+    drawPhase2PlatformFacade(platform, time);
   }
 
   function drawTaco(item, time, camera = game.cameraX) {
@@ -3156,6 +3603,52 @@
     ctx.restore();
   }
 
+  function drawPhase2SpeechBubble(worldX, worldY, text, accent) {
+    const screenX = worldX - game.cameraX;
+    if (screenX < -260 || screenX > canvas.width + 260) return;
+    ctx.save();
+    ctx.font = '900 11px Arial';
+    ctx.textAlign = 'center';
+    const width = clamp(ctx.measureText(text).width + 34, 132, 250);
+    const left = clamp(screenX - width / 2, 12, canvas.width - width - 12);
+    roundedRect(left, worldY, width, 40, 14, 'rgba(22,10,52,.94)', accent, 3);
+    ctx.fillStyle = 'rgba(22,10,52,.94)';
+    ctx.beginPath();
+    const tailX = clamp(screenX, left + 26, left + width - 26);
+    ctx.moveTo(tailX - 8, worldY + 38);
+    ctx.lineTo(tailX + 6, worldY + 38);
+    ctx.lineTo(tailX - 1, worldY + 50);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#fff8dc';
+    ctx.fillText(text, left + width / 2, worldY + 25, width - 22);
+    ctx.restore();
+  }
+
+  function drawPreShowBandMember(memberIndex, centerX, bottomY, height, time, options = {}) {
+    if (!images.preShowBand) return false;
+    const member = band[memberIndex];
+    const cellWidth = images.preShowBand.width / band.length;
+    const sourceY = 10;
+    const sourceHeight = images.preShowBand.height - 18;
+    const drawWidth = height * (cellWidth / sourceHeight);
+    const beat = Math.sin(time * (memberIndex === 4 ? .018 : .009) + memberIndex * .7);
+    ctx.save();
+    ctx.translate(centerX, bottomY);
+    if (options.mirror) ctx.scale(-1, 1);
+    ctx.rotate(beat * (memberIndex === 4 ? .018 : .008));
+    ctx.scale(1 + Math.max(0, beat) * .008, 1 - Math.max(0, beat) * .006);
+    ctx.shadowColor = member.color;
+    ctx.shadowBlur = options.glow === false ? 0 : 8 + Math.max(0, beat) * 5;
+    ctx.drawImage(
+      images.preShowBand,
+      memberIndex * cellWidth, sourceY, cellWidth, sourceHeight,
+      -drawWidth / 2, -height, drawWidth, height,
+    );
+    ctx.restore();
+    return true;
+  }
+
   function drawReplacementBandSprite(memberIndex, phase, centerX, bottomY, width, height) {
     let sheet = null;
     let cellWidth = 0;
@@ -3196,6 +3689,17 @@
     // personality without lifting the performer away from the terrain.
     ctx.rotate(performanceBeat * .012);
     ctx.scale(1 + Math.abs(performanceBeat) * .006, 1 - Math.abs(performanceBeat) * .008);
+    if (cameo.casual && drawPreShowBandMember(cameo.member, 30, 0, 162, time, { glow: false })) {
+      ctx.fillStyle = member.color;
+      ctx.font = '900 10px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${member.name} • HEADING BACKSTAGE`, 30, -170);
+      ctx.restore();
+      if (cameo.dialogueTimer > 0) {
+        drawPhase2SpeechBubble(cameo.x + 30, GROUND_Y - 225, cameo.dialogue, member.color);
+      }
+      return;
+    }
     if (drawReplacementBandSprite(
       cameo.member,
       Math.floor(time * .002 + cameo.member) % 2,
@@ -3237,6 +3741,196 @@
     ctx.textAlign = 'center';
     ctx.fillText(`${member.name} • ${member.role}`, 30, -8);
     ctx.restore();
+  }
+
+  function phase2StationInView(station, padding = 280) {
+    return station.end - game.cameraX > -padding && station.start - game.cameraX < canvas.width + padding;
+  }
+
+  function drawWorld23NeonMarquee(station, time) {
+    if (!phase2StationInView(station, 420)) return;
+    const x = 4200 - game.cameraX;
+    const y = 26;
+    const width = 360;
+    const height = 76;
+    const activation = station.completed ? 1 : clamp(station.progress * .72, .12, .68);
+    ctx.save();
+    ctx.shadowColor = '#50e7ff';
+    ctx.shadowBlur = station.completed ? 32 : 9;
+    roundedRect(x, y, width, height, 18, 'rgba(17,9,45,.94)', '#50e7ff', 4);
+    ctx.shadowBlur = 0;
+    const title = 'NEON NECKTIES';
+    ctx.font = '900 24px Arial';
+    ctx.textAlign = 'center';
+    const letterWidth = 21;
+    const startX = x + width / 2 - title.length * letterWidth / 2 + letterWidth / 2;
+    const activeLetters = station.completed ? title.length : Math.floor(title.length * activation);
+    [...title].forEach((letter, index) => {
+      if (letter === ' ') return;
+      const active = index < activeLetters;
+      ctx.fillStyle = active ? (index % 3 === 0 ? '#ff4fac' : index % 3 === 1 ? '#50e7ff' : '#ffd65a') : 'rgba(255,255,255,.19)';
+      ctx.shadowColor = ctx.fillStyle;
+      ctx.shadowBlur = active ? 10 + Math.sin(time * .009 + index) * 3 : 0;
+      ctx.fillText(letter, startX + index * letterWidth, y + 46);
+    });
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = station.completed ? '#fff8dc' : 'rgba(255,255,255,.46)';
+    ctx.font = '900 9px Arial';
+    ctx.fillText(station.completed ? 'POWERED BY TACO HERO' : 'VENUE MARQUEE • POWER OFFLINE', x + width / 2, y + 65);
+    for (let bulb = 0; bulb < 18; bulb += 1) {
+      const lit = station.completed || bulb / 18 < activation;
+      ctx.fillStyle = lit ? (bulb % 2 ? '#ff4fac' : '#ffd65a') : '#463b60';
+      ctx.beginPath(); ctx.arc(x + 15 + bulb * 19.3, y + 8, lit ? 3.2 : 2.5, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawWorld23BassSoundcheck(station, time) {
+    if (!phase2StationInView(station, 420)) return;
+    const beatPhase = station.beatPhase ?? ((game.levelTime / BASS_STACK_BEAT_SECONDS) % 1);
+    const pulse = 1 - smoothStep(clamp(beatPhase / .34, 0, 1));
+    const left = 12070 - game.cameraX;
+    const deckY = 272;
+    ctx.save();
+    for (const [offset, width, height] of [[-122, 100, 154], [520, 108, 170]]) {
+      drawPhase2SpeakerCabinet(left + offset, deckY - height + 18, width, height, pulse, '#a4f766');
+    }
+    ctx.shadowColor = '#a4f766';
+    ctx.shadowBlur = station.completed ? 22 : 8;
+    roundedRect(left + 202, deckY - 48, 188, 42, 9, '#151427', '#a4f766', 3);
+    ctx.shadowBlur = 0;
+    const meterCount = station.completed ? 10 : Math.max(2, Math.floor(station.progress * 10));
+    for (let meter = 0; meter < 10; meter += 1) {
+      ctx.fillStyle = meter < meterCount ? (meter > 7 ? '#ff4fac' : meter > 4 ? '#ffd65a' : '#a4f766') : '#3a3650';
+      ctx.fillRect(left + 214 + meter * 16, deckY - 36, 10, 14 - (meter % 3) * 3 + pulse * 5);
+    }
+    ctx.restore();
+
+    drawPreShowBandMember(2, 12220 - game.cameraX, deckY, 154, time);
+    drawPreShowBandMember(4, 12470 - game.cameraX, deckY, 154, time, { mirror: true });
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.font = '900 9px Arial';
+    ctx.fillStyle = '#a4f766';
+    ctx.fillText('MILO • BASS', 12220 - game.cameraX, deckY - 160);
+    ctx.fillStyle = '#b780ff';
+    ctx.fillText('REX • DRUMS', 12470 - game.cameraX, deckY - 160);
+    ctx.restore();
+  }
+
+  function drawWorld23SpotlightRig(station, time) {
+    if (!phase2StationInView(station, 520)) return;
+    const fixtureXs = [22930, 23215, 23500, 23810, 24110];
+    const activeCount = station.completed ? fixtureXs.length : Math.max(1, Math.ceil(station.progress * fixtureXs.length));
+    ctx.save();
+    fixtureXs.forEach((worldX, index) => {
+      const screenX = worldX - game.cameraX;
+      const active = index < activeCount;
+      if (active) {
+        const color = ['#50e7ff', '#ff4fac', '#ffd65a', '#b780ff', '#ff4fac'][index];
+        const sweep = Math.sin(time * .0016 + index * .9) * (station.completed ? 80 : 34);
+        const gradient = ctx.createLinearGradient(screenX, 120, screenX + sweep, GROUND_Y);
+        gradient.addColorStop(0, `${color}88`);
+        gradient.addColorStop(1, `${color}00`);
+        ctx.fillStyle = gradient;
+        ctx.globalAlpha = station.completed ? .24 : .12;
+        ctx.beginPath();
+        ctx.moveTo(screenX - 12, 120);
+        ctx.lineTo(screenX + 12, 120);
+        ctx.lineTo(screenX + sweep + 110, GROUND_Y);
+        ctx.lineTo(screenX + sweep - 110, GROUND_Y);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    });
+    ctx.restore();
+
+    drawPreShowBandMember(1, 23415 - game.cameraX, 216, 150, time, { mirror: true });
+    ctx.save();
+    ctx.fillStyle = '#50e7ff';
+    ctx.font = '900 9px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('JET • GUITAR / LIGHT CHECK', 23415 - game.cameraX, 60);
+    ctx.restore();
+  }
+
+  function drawWorld23Backstage(station, encore, time) {
+    if (!phase2StationInView({ start: station.start, end: encore.end }, 520)) return;
+    const curtainLeft = 33870 - game.cameraX;
+    const curtainRight = 34360 - game.cameraX;
+    ctx.save();
+    const curtainGradient = ctx.createLinearGradient(curtainLeft, 0, curtainRight, 0);
+    curtainGradient.addColorStop(0, '#4c174f');
+    curtainGradient.addColorStop(.45, '#9a246c');
+    curtainGradient.addColorStop(.52, '#26133e');
+    curtainGradient.addColorStop(1, '#68184f');
+    ctx.fillStyle = curtainGradient;
+    ctx.globalAlpha = .96;
+    ctx.beginPath();
+    ctx.moveTo(curtainLeft, 0); ctx.lineTo(curtainLeft + 132, 0);
+    ctx.lineTo(curtainLeft + 116, 108); ctx.lineTo(curtainLeft + 38, 170);
+    ctx.lineTo(curtainLeft, 170); ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(curtainRight - 46, 0); ctx.lineTo(curtainRight, 0);
+    ctx.lineTo(curtainRight, 170); ctx.lineTo(curtainRight - 76, 132);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#ffd65a';
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(curtainLeft + 8, 0); ctx.lineTo(curtainRight - 8, 0); ctx.stroke();
+    ctx.restore();
+
+    ctx.save();
+    const prepGlow = station.completed ? .92 : .34;
+    for (let light = 0; light < 5; light += 1) {
+      const x = 33250 - game.cameraX + light * 145;
+      ctx.fillStyle = light % 2 ? `rgba(255,79,172,${prepGlow})` : `rgba(255,214,90,${prepGlow})`;
+      ctx.shadowColor = ctx.fillStyle;
+      ctx.shadowBlur = station.completed ? 16 : 5;
+      ctx.beginPath(); ctx.arc(x, 42, 5, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+    roundedRect(33360 - game.cameraX, 18, 300, 38, 12, 'rgba(20,10,48,.92)', '#ffd65a', 3);
+    ctx.fillStyle = '#fff8dc';
+    ctx.font = '900 14px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('BACKSTAGE • CREW ACCESS', 33510 - game.cameraX, 42);
+    ctx.restore();
+
+    drawPreShowBandMember(3, 33145 - game.cameraX, 218, 150, time, { mirror: true });
+    const stashX = 34175 - game.cameraX;
+    ctx.save();
+    ctx.translate(stashX, 58);
+    ctx.shadowColor = '#fff170';
+    ctx.shadowBlur = encore.completed ? 30 + Math.sin(time * .008) * 8 : 5;
+    roundedRect(-84, -42, 168, 72, 10, '#201536', encore.completed ? '#fff170' : '#634b73', 4);
+    ctx.fillStyle = encore.completed ? '#fff170' : '#50405f';
+    ctx.fillRect(-70, -28, 140, 9);
+    ctx.fillStyle = encore.completed ? '#ff4fac' : '#392b4d';
+    ctx.fillRect(-58, -8, 34, 18);
+    ctx.fillStyle = encore.completed ? '#50e7ff' : '#392b4d';
+    ctx.fillRect(-12, -8, 34, 18);
+    ctx.fillStyle = encore.completed ? '#ffd65a' : '#392b4d';
+    ctx.fillRect(34, -8, 26, 18);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#fff8dc';
+    ctx.font = '900 8px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(encore.completed ? 'SPARE TIES • PICKS • SETLISTS' : 'NN • ROAD CASE 23', 0, 25);
+    ctx.restore();
+  }
+
+  function drawWorld23Phase2Destinations(time) {
+    if (game.phase2.preShowHidden) return;
+    const marquee = world23Phase2Station('marquee');
+    const bass = world23Phase2Station('bass');
+    const spotlight = world23Phase2Station('spotlight');
+    const backstage = world23Phase2Station('backstage');
+    const encore = world23Phase2Station('encore');
+    if (marquee) drawWorld23NeonMarquee(marquee, time);
+    if (bass) drawWorld23BassSoundcheck(bass, time);
+    if (spotlight) drawWorld23SpotlightRig(spotlight, time);
+    if (backstage && encore) drawWorld23Backstage(backstage, encore, time);
   }
 
   function drawGenerator(generator, time) {
@@ -3970,6 +4664,84 @@
     ctx.globalAlpha = 1;
   }
 
+  function drawWorld23Phase2Overlay(time) {
+    if (game.state === 'concert' || game.state === 'results') return;
+    const activeDialogue = world.phase2Stations.find((station) => station.dialogue && station.dialogueTimer > 0);
+    if (activeDialogue && !game.phase2.preShowHidden) {
+      const speaker = activeDialogue.id === 'bass' ? 'MILO + REX • SOUNDCHECK'
+        : activeDialogue.id === 'spotlight' ? 'JET • LIGHT CHECK'
+          : 'ARMAN • BACKSTAGE';
+      const entrance = smoothStep(clamp((3.2 - activeDialogue.dialogueTimer) / .2, 0, 1));
+      const exit = smoothStep(clamp(activeDialogue.dialogueTimer / .25, 0, 1));
+      ctx.save();
+      ctx.globalAlpha = entrance * exit;
+      ctx.translate((1 - entrance) * -16, 0);
+      roundedRect(24, 344, 342, 66, 18, 'rgba(22,10,52,.94)', activeDialogue.accent, 4);
+      ctx.fillStyle = activeDialogue.accent;
+      ctx.beginPath(); ctx.arc(48, 367, 8, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff8dc';
+      ctx.font = '900 10px Arial';
+      ctx.textAlign = 'left';
+      ctx.fillText(speaker, 66, 369, 282);
+      ctx.fillStyle = activeDialogue.accent;
+      ctx.font = '900 14px Arial';
+      ctx.fillText(activeDialogue.dialogue, 42, 394, 306);
+      ctx.restore();
+    }
+    if (game.phase2.toast) {
+      const toast = game.phase2.toast;
+      const entrance = smoothStep(clamp((2.75 - toast.timer) / .24, 0, 1));
+      const exit = smoothStep(clamp(toast.timer / .28, 0, 1));
+      const alpha = entrance * exit;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(0, (1 - entrance) * 22);
+      roundedRect(604, 446, 334, 72, 18, 'rgba(20,10,48,.92)', toast.color, 4);
+      ctx.fillStyle = toast.color;
+      ctx.font = '900 18px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(toast.title, 771, 474, 306);
+      ctx.fillStyle = '#fff8dc';
+      ctx.font = '900 9px Arial';
+      ctx.fillText(toast.subtitle, 771, 497, 306);
+      ctx.fillStyle = toast.color;
+      for (let sparkle = 0; sparkle < 6; sparkle += 1) {
+        const angle = time * .003 + sparkle * Math.PI / 3;
+        ctx.beginPath();
+        ctx.arc(771 + Math.cos(angle) * 142, 482 + Math.sin(angle) * 25, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+    if (game.phase2.secretBanner) {
+      const banner = game.phase2.secretBanner;
+      const entrance = smoothStep(clamp((3.35 - banner.timer) / .34, 0, 1));
+      const exit = smoothStep(clamp(banner.timer / .42, 0, 1));
+      const alpha = entrance * exit;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(canvas.width / 2, 238);
+      ctx.scale(.88 + entrance * .12 + Math.sin(time * .012) * .008, .88 + entrance * .12);
+      const glow = ctx.createRadialGradient(0, 0, 18, 0, 0, 330);
+      glow.addColorStop(0, 'rgba(255,241,112,.36)');
+      glow.addColorStop(1, 'rgba(255,79,172,0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(-350, -130, 700, 260);
+      roundedRect(-288, -68, 576, 136, 28, 'rgba(22,9,50,.96)', '#fff170', 6);
+      ctx.fillStyle = '#fff170';
+      ctx.font = '900 34px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(banner.title, 0, -12, 520);
+      ctx.fillStyle = '#50e7ff';
+      ctx.font = '900 23px Arial';
+      ctx.fillText(banner.subtitle, 0, 31, 520);
+      ctx.fillStyle = '#fff8dc';
+      ctx.font = '900 10px Arial';
+      ctx.fillText('RAINBOW TACOS • TOUR MEMORABILIA • SCORE JACKPOT', 0, 52, 520);
+      ctx.restore();
+    }
+  }
+
   function drawHUD(time) {
     ctx.save();
     roundedRect(18, 16, 330, 124, 16, 'rgba(20,10,48,.62)', 'rgba(80,231,255,.42)');
@@ -4267,6 +5039,7 @@
   function drawWorld(time) {
     drawBackground(time);
     for (const platform of world.platforms) drawPlatform(platform, time);
+    drawWorld23Phase2Destinations(time);
     drawOpeningScene(time);
     for (const cameo of world.bandCameos) drawBandCameo(cameo, time);
     drawBoat(time);
@@ -4485,6 +5258,7 @@
     }
     ctx.restore();
     drawHUD(time);
+    drawWorld23Phase2Overlay(time);
 
     if (qaMode) {
       canvas.dataset.qaState = JSON.stringify({
@@ -4518,6 +5292,35 @@
         },
         routeMaxGap: game.routeMaxGap,
         world23RouteAudit: game.world23RouteAudit,
+        world23Phase2Audit: game.world23Phase2Audit,
+        phase2: {
+          stations: world.phase2Stations.map((station) => ({
+            id: station.id,
+            completed: station.completed,
+            secret: Boolean(station.secret),
+            progress: Number((station.progress || 0).toFixed(2)),
+                rewardSpawned: station.rewardSpawned,
+                dialogueActive: station.dialogueTimer > 0,
+                dialoguePlayed: station.dialoguePlayed,
+          })),
+          completedIds: [...game.phase2.completedIds],
+          visibleCompletionUsesDiscovered: false,
+          discoveredBannerStation: 'encore',
+          groundCameo: {
+            member: band[world.bandCameos[0]?.member || 0].name,
+            casual: Boolean(world.bandCameos[0]?.casual),
+            seen: game.phase2.groundCameoSeen,
+          },
+          casualMemberOrder: [0, 2, 4, 1, 3].map((index) => band[index].name),
+          uniqueCasualMembers: new Set([0, 2, 4, 1, 3]).size,
+          casualVisible: game.state === 'playing' && !game.phase2.preShowHidden,
+          preShowHiddenForConcert: game.phase2.preShowHidden,
+          bassPads: world.bassPads.length,
+          bassLaunchVelocity: BASS_STACK_LAUNCH_VELOCITY,
+          bassBeatSeconds: BASS_STACK_BEAT_SECONDS,
+          safeDropToMainRoute: true,
+          repeatProtected: world.phase2Stations.every((station) => typeof station.completed === 'boolean'),
+        },
         world23CombatAudit: game.world23CombatAudit,
         platformOverlapCount: game.platformOverlapCount,
         platformOverlapPairs: game.platformOverlapPairs || [],
@@ -4574,6 +5377,7 @@
           chorusVolleys: game.concert.chorusVolleys.size,
           controlRecoveries: game.concert.controlRecoveries,
           songReady: tracks.concert.readyState >= 2, activeMusic: game.activeMusic,
+          venueSystems: game.concert.venueSystems,
         },
         music: {
           active: game.activeMusic,
@@ -4605,6 +5409,8 @@
           replacementBandArt: Boolean(images.bandReplacements),
           premiumPinata: Boolean(images.neonPinata),
           premiumTambourine: Boolean(images.tacoTambourine),
+          premiumPreShowBand: Boolean(images.preShowBand),
+          preShowBandAlphaRemoved: images.preShowBandAlphaRemoved || 0,
           enemies: world.enemies.filter((enemy) => Math.abs((enemy.baseY ?? enemy.y) + enemy.h - GROUND_Y) < 2).length,
           enemyTotal: world.enemies.length,
           sharedHeroArt: Boolean(images.hero),
@@ -4643,6 +5449,60 @@
     requestAnimationFrame(frame);
   }
 
+  function preparePreShowBandSheet(source) {
+    if (!source) return null;
+    const sheet = document.createElement('canvas');
+    sheet.width = source.width;
+    sheet.height = source.height;
+    const sheetContext = sheet.getContext('2d', { willReadFrequently: true });
+    sheetContext.drawImage(source, 0, 0);
+    const pixels = sheetContext.getImageData(0, 0, sheet.width, sheet.height);
+    const { data } = pixels;
+    const total = sheet.width * sheet.height;
+    const visited = new Uint8Array(total);
+    const queue = new Int32Array(total);
+    let head = 0;
+    let tail = 0;
+    let removed = 0;
+    const isBackground = (index) => {
+      const offset = index * 4;
+      const red = data[offset];
+      const green = data[offset + 1];
+      const blue = data[offset + 2];
+      const brightest = Math.max(red, green, blue);
+      const darkest = Math.min(red, green, blue);
+      return brightest - darkest <= 15 && (red + green + blue) / 3 >= 229;
+    };
+    const enqueue = (index) => {
+      if (index < 0 || index >= total || visited[index] || !isBackground(index)) return;
+      visited[index] = 1;
+      queue[tail] = index;
+      tail += 1;
+    };
+    for (let x = 0; x < sheet.width; x += 1) {
+      enqueue(x);
+      enqueue((sheet.height - 1) * sheet.width + x);
+    }
+    for (let y = 0; y < sheet.height; y += 1) {
+      enqueue(y * sheet.width);
+      enqueue(y * sheet.width + sheet.width - 1);
+    }
+    while (head < tail) {
+      const index = queue[head];
+      head += 1;
+      data[index * 4 + 3] = 0;
+      removed += 1;
+      const x = index % sheet.width;
+      if (x > 0) enqueue(index - 1);
+      if (x < sheet.width - 1) enqueue(index + 1);
+      if (index >= sheet.width) enqueue(index - sheet.width);
+      if (index < total - sheet.width) enqueue(index + sheet.width);
+    }
+    sheetContext.putImageData(pixels, 0, 0);
+    images.preShowBandAlphaRemoved = removed;
+    return sheet;
+  }
+
   function loadImage(path) {
     return new Promise((resolve) => {
       const image = new Image();
@@ -4667,6 +5527,7 @@
     loadImage('assets/neon_neckties_audience_v1.png'),
     loadImage('assets/neon_neckties_nova_v2.png'),
     loadImage('assets/neon_neckties_milo_arman_v1.png'),
+    loadImage('assets/world2_3_neon_neckties_preshow_v1.png'),
     loadImage('assets/neon_neckties_pinata_v1.png'),
     loadImage('assets/neon_neckties_taco_tambourine_v1.png'),
     loadImage('assets/island_catamaran_sheet_v1.png'),
@@ -4683,7 +5544,7 @@
   ]).then(([
     hero, items, bandStage, oliviaCrowd, worldEnemies, heroTerrainItems,
     environmentStage, bandOliviaCrowd, farSky, midground, nearScenery,
-    concertAudienceArt, nova, bandReplacements, neonPinata, tacoTambourine,
+    concertAudienceArt, nova, bandReplacements, preShowBandRaw, neonPinata, tacoTambourine,
     islandCatamaran,
     environmentSoundcheck, environmentBeach, environmentRooftops,
     environmentStampede, environmentLagoon, environmentPowerup, environmentVictory,
@@ -4703,6 +5564,7 @@
     images.concertAudience = concertAudienceArt;
     images.nova = nova;
     images.bandReplacements = bandReplacements;
+    images.preShowBand = preparePreShowBandSheet(preShowBandRaw);
     images.neonPinata = neonPinata;
     images.tacoTambourine = tacoTambourine;
     images.islandCatamaran = islandCatamaran;

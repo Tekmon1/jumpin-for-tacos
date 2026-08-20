@@ -2384,8 +2384,8 @@ test("ships the complete 35,000-unit Neon Neckties concert level", async () => {
   assert.match(runtime, /OLIVIA IS LOADING THE LAST TACOS!/);
   assert.match(runtime, /TACO ROADSTER: READY TO ROLL!/);
   assert.match(runtime, /SHOWTIME! OLIVIA IS TAKING THE SCENIC ROUTE!/);
-  assert.match(html, /level2-3\.js\?v=21/);
-  assert.match(runtime, /SOURCE_VERSION = 'w2-3-v21-alternating-super-run'/);
+  assert.match(html, /level2-3\.js\?v=22/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-3-v22-neon-neckties-preshow'/);
   assert.match(runtime, /generatorDefensePlans/);
   assert.match(runtime, /function ensureGeneratorDefensePlatform/);
   assert.match(runtime, /finitePlatformGeometry: world\.platforms\.every/);
@@ -2520,6 +2520,59 @@ test("ships the complete 35,000-unit Neon Neckties concert level", async () => {
   assert.match(html, /Skip Concert/);
   assert.equal(manifest.orientation, "landscape");
   assert.equal(manifest.display, "fullscreen");
+});
+
+test("ships World 2-3 Neon Neckties pre-show exploration without gating the concert", async () => {
+  const runtime = await readFile(new URL("../public/game/level2-3.js", import.meta.url), "utf8");
+  const html = await readFile(new URL("../public/game/level2-3.html", import.meta.url), "utf8");
+  const audio = await readFile(new URL("../public/game/audio-catalog.js", import.meta.url), "utf8");
+
+  assert.match(runtime, /const WORLD23_PHASE2_STATIONS = Object\.freeze/);
+  for (const station of [
+    "Neon Marquee Climb",
+    "Bass Stack Bounce",
+    "Spotlight Rig Run",
+    "Backstage Catwalk",
+    "Encore Stash",
+  ]) {
+    assert.match(runtime, new RegExp(`name: '${station}'`));
+  }
+  for (const completion of ["MARQUEE ONLINE", "SOUNDCHECK COMPLETE", "LIGHTS READY", "BACKSTAGE READY"]) {
+    assert.match(runtime, new RegExp(`completion: '${completion}'`));
+  }
+  assert.match(runtime, /completion: 'ENCORE STASH DISCOVERED!'/);
+  assert.doesNotMatch(runtime, /(?:MARQUEE|SOUNDCHECK|LIGHTS|BACKSTAGE)[^'\n]*DISCOVERED!/);
+
+  assert.match(runtime, /characters: Object\.freeze\(\[2, 4\]\)/);
+  assert.match(runtime, /dialogue: 'ONE MORE TIME\. MAKE IT SHAKE\.'/);
+  assert.match(runtime, /characters: Object\.freeze\(\[1\]\)/);
+  assert.match(runtime, /dialogue: 'TRY THE PINK ONE!'/);
+  assert.match(runtime, /characters: Object\.freeze\(\[3\]\)/);
+  assert.match(runtime, /dialogue: 'ALMOST SHOWTIME\.'/);
+  assert.match(runtime, /member: 0,[\s\S]*activity: 'carrying-microphone-case'/);
+  assert.match(runtime, /uniqueCasualMembers: new Set\(\[0, 2, 4, 1, 3\]\)\.size/);
+
+  assert.match(runtime, /const BASS_STACK_LAUNCH_VELOCITY = 600/);
+  assert.match(runtime, /const BASS_STACK_BEAT_SECONDS = 1\.34/);
+  assert.match(runtime, /bassPad: true/);
+  assert.match(runtime, /player\.vy = -BASS_STACK_LAUNCH_VELOCITY/);
+  assert.match(runtime, /automaticConcertFallback: fallbackSystems\.length > 0/);
+  assert.match(runtime, /game\.phase2\.preShowHidden = true/);
+  assert.match(runtime, /marquee: true,[\s\S]*sound: true,[\s\S]*lights: true,[\s\S]*backstage: true/);
+
+  assert.match(runtime, /world2_3_neon_neckties_preshow_v1\.png/);
+  assert.match(runtime, /function preparePreShowBandSheet/);
+  assert.match(html, /audio-catalog\.js\?v=9/);
+  await access(new URL("../public/game/assets/world2_3_neon_neckties_preshow_v1.png", import.meta.url));
+  for (const eventId of [
+    "stage.generatorActivate",
+    "concert.start",
+    "concert.tambourineAccent",
+    "checkpoint.activate",
+  ]) {
+    assert.match(runtime, new RegExp(eventId.replaceAll(".", "\\.")));
+    assert.match(audio, new RegExp(`'${eventId.replaceAll(".", "\\.")}'`));
+  }
 });
 
 test("ships the Neon Neckties full-song arrangement and review studio", async () => {
