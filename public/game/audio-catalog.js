@@ -656,6 +656,18 @@
   Object.entries(worldTwoSimple).forEach(([id, [file, priority, duckDb, cooldownMs]]) => {
     events[id] = event(worldTwoAsset(`${file}-01.wav`), { priority, duckDb, cooldownMs });
   });
+  Object.assign(events, {
+    'boss.feedbackFiend.enter': event(worldTwoAsset('concert-start-01.wav'), { priority: 5, duckDb: 6.5, cooldownMs: 600, gain: .82 }),
+    'boss.feedbackFiend.charge': event(worldTwoAsset('hazard-geyser-warn-01.wav'), { priority: 4, duckDb: 3.5, cooldownMs: 420, gain: .78 }),
+    'boss.feedbackFiend.shockwave': event(worldTwoAsset('surf-wave-hit-01.wav'), { priority: 4, duckDb: 4.5, cooldownMs: 260, gain: .86 }),
+    'boss.feedbackFiend.dropWarn': event(worldTwoAsset('hazard-geyser-warn-01.wav'), { priority: 3, duckDb: 2.5, cooldownMs: 300, gain: .72 }),
+    'boss.feedbackFiend.dropImpact': event(worldTwoAsset('hazard-coconut-cannon-fire-01.wav'), { priority: 4, duckDb: 4, cooldownMs: 110, maxPolyphony: 2, gain: .78 }),
+    'boss.feedbackFiend.cableWarn': event(worldTwoAsset('hazard-coconut-deflect-01.wav'), { priority: 3, duckDb: 2.5, cooldownMs: 300, gain: .74 }),
+    'boss.feedbackFiend.cableSweep': event(worldTwoAsset('surf-obstacle-clear-01.wav'), { priority: 4, duckDb: 3.5, cooldownMs: 300, gain: .8 }),
+    'boss.feedbackFiend.vulnerable': event(worldTwoAsset('stage-generator-activate-01.wav'), { priority: 4, duckDb: 4.5, cooldownMs: 420, gain: .82 }),
+    'boss.feedbackFiend.damage': event(worldTwoAsset('enemy-stomp-pepper-01.wav'), { priority: 5, duckDb: 6.5, cooldownMs: 180, gain: .9 }),
+    'boss.feedbackFiend.defeat': event(worldTwoAsset('concert-finale-lift-01.wav'), { priority: 5, duckDb: 8.5, duckReleaseSeconds: .9, cooldownMs: 800, gain: .88 }),
+  });
   events['volcano.active'] = event(worldTwoAsset('volcano-active-01.wav'), { bus: 'ambience', priority: 1, gain: 0.52, loop: true, cooldownMs: 0, maxPolyphony: 1, fallback: null });
 
   const worldThreeEnemyTypes = ['popcorn', 'cotton', 'pretzel', 'lemon', 'bumper', 'corndog'];

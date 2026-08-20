@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const SOURCE_VERSION = 'w2-3-v22-neon-neckties-preshow';
+  const SOURCE_VERSION = 'w2-3-v23-station-remaster-feedback-fiend';
 
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
@@ -48,7 +48,11 @@
   const BOAT_RENDER_WIDTH = 270;
   const BOAT_LAUNCH_X_OFFSET = -122;
   const BOAT_LAUNCH_Y_OFFSET = -106;
-  const CONCERT_ENTRY_TRIGGER_X = 34520;
+  const CONCERT_ENTRY_TRIGGER_X = 34820;
+  const FEEDBACK_FIEND_ARENA = Object.freeze({ left: 32720, right: 33780, triggerX: 32845 });
+  const FEEDBACK_FIEND_X = 33465;
+  const FEEDBACK_FIEND_MAX_HEALTH = 3;
+  const FEEDBACK_FIEND_REWARD_X = 33210;
   const CONCERT_ENCORE_ENERGY = 100;
   const OPENING_ROADSTER_SOURCE_WIDTH = 215;
   const OPENING_ROADSTER_SOURCE_HEIGHT = 148;
@@ -75,8 +79,8 @@
     { id: 'soundcheck', name: 'Sunrise Soundcheck', start: 0, end: 5500, music: 'soundcheck', accent: '#ffd65a' },
     { id: 'beach', name: 'Backstage Pass Beach', start: 5500, end: 11000, music: 'soundcheck', accent: '#50e7ff' },
     { id: 'rooftops', name: 'Roadie Rooftops', start: 11000, end: 17000, music: 'rooftops', accent: '#ff4fac' },
-    { id: 'stampede', name: 'Speaker Stack Stampede', start: 17000, end: 22500, music: 'stampede', accent: '#a4f766' },
-    { id: 'lagoon', name: 'Neon Lagoon Rehearsal', start: 22500, end: 28000, music: 'lagoon', accent: '#50e7ff' },
+    { id: 'stampede', name: 'Speaker Stack Stampede', start: 17000, end: 20500, music: 'stampede', accent: '#a4f766' },
+    { id: 'lagoon', name: 'Neon Lagoon Rehearsal', start: 20500, end: 28000, music: 'lagoon', accent: '#50e7ff' },
     { id: 'powerup', name: 'Power Up the Stage', start: 28000, end: 33000, music: 'powerup', accent: '#b780ff' },
     { id: 'victory', name: 'Golden Ticket Victory Dash', start: 33000, end: WORLD_WIDTH, music: 'powerup', accent: '#ffd65a' },
   ];
@@ -85,77 +89,90 @@
   const WORLD23_PHASE2_STATIONS = Object.freeze([
     Object.freeze({
       id: 'marquee', name: 'Neon Marquee Climb', completion: 'MARQUEE ONLINE',
-      start: 3120, end: 4620, accent: '#50e7ff', score: 2500, energy: 3,
-      trigger: Object.freeze({ x: 4310, y: 42, w: 220, h: 102 }),
-      reward: Object.freeze({ x: 4310, y: 58, count: 8, rainbowEvery: 4 }),
+      start: 2520, end: 5100, accent: '#50e7ff', score: 3200, energy: 4,
+      traversal: 'structural-climb-moving-venue-architecture',
+      trigger: Object.freeze({ x: 4740, y: 30, w: 250, h: 116 }),
+      reward: Object.freeze({ x: 4630, y: 52, count: 10, rainbowEvery: 4 }),
       platforms: Object.freeze([
-        Object.freeze({ x: 3220, y: 330, w: 190, kind: 'marquee-support' }),
-        Object.freeze({ x: 3465, y: 274, w: 184, kind: 'marquee-light' }),
-        Object.freeze({ x: 3700, y: 218, w: 184, kind: 'marquee-support' }),
-        Object.freeze({ x: 3935, y: 162, w: 210, kind: 'marquee-light' }),
-        Object.freeze({ x: 4200, y: 104, w: 360, kind: 'marquee-summit', summit: true }),
+        Object.freeze({ x: 2640, y: 344, w: 360, kind: 'marquee-ticket-roof' }),
+        Object.freeze({ x: 3060, y: 240, w: 168, kind: 'marquee-side-truss' }),
+        Object.freeze({ x: 3330, y: 222, w: 246, kind: 'marquee-moving-sign', moving: true, axis: 'x', range: 78, speed: .72, phase: .35 }),
+        Object.freeze({ x: 3670, y: 304, w: 312, kind: 'marquee-maintenance-ledge' }),
+        Object.freeze({ x: 4070, y: 214, w: 172, kind: 'marquee-light-lift', moving: true, axis: 'y', range: 28, speed: .88, phase: 1.1 }),
+        Object.freeze({ x: 4320, y: 154, w: 338, kind: 'marquee-back-catwalk' }),
+        Object.freeze({ x: 4670, y: 94, w: 350, kind: 'marquee-summit', summit: true }),
       ]),
     }),
     Object.freeze({
-      id: 'bass', name: 'Bass Stack Bounce', completion: 'SOUNDCHECK COMPLETE',
-      start: 11750, end: 13600, accent: '#a4f766', score: 3500, energy: 5,
-      trigger: Object.freeze({ x: 13170, y: 52, w: 240, h: 104 }),
-      reward: Object.freeze({ x: 13090, y: 62, count: 10, rainbowEvery: 3 }),
+      id: 'rooftops', name: 'Roadie Rooftops Soundcheck', completion: 'SOUNDCHECK COMPLETE',
+      start: 11160, end: 14540, accent: '#a4f766', score: 4200, energy: 6,
+      traversal: 'horizontal-rooftop-parkour-single-bass-launch',
+      trigger: Object.freeze({ x: 14020, y: 158, w: 420, h: 104 }),
+      reward: Object.freeze({ x: 13940, y: 170, count: 12, rainbowEvery: 3 }),
       platforms: Object.freeze([
-        Object.freeze({ x: 11840, y: 330, w: 206, kind: 'bass-case' }),
-        Object.freeze({ x: 12095, y: 272, w: 500, kind: 'soundcheck-deck' }),
-        Object.freeze({ x: 12370, y: 216, w: 224, kind: 'amp-rack' }),
-        Object.freeze({ x: 12650, y: 160, w: 244, kind: 'bass-pad', bassPad: true }),
-        Object.freeze({ x: 12950, y: 112, w: 480, kind: 'master-rack', summit: true }),
+        Object.freeze({ x: 11240, y: 364, w: 520, kind: 'rooftop-tile-run' }),
+        Object.freeze({ x: 11850, y: 326, w: 270, kind: 'rooftop-awning' }),
+        Object.freeze({ x: 12250, y: 272, w: 152, kind: 'rooftop-sign-support' }),
+        Object.freeze({ x: 12530, y: 292, w: 338, kind: 'rooftop-equipment-bridge', moving: true, axis: 'x', range: 64, speed: .74, phase: 1.7 }),
+        Object.freeze({ x: 13000, y: 362, w: 260, kind: 'rooftop-bass-pad', bassPad: true }),
+        Object.freeze({ x: 13180, y: 188, w: 258, kind: 'rooftop-road-case' }),
+        Object.freeze({ x: 13540, y: 206, w: 394, kind: 'rooftop-truss-bridge' }),
+        Object.freeze({ x: 13980, y: 250, w: 490, kind: 'rooftop-soundcheck-deck', summit: true }),
       ]),
       characters: Object.freeze([2, 4]),
-      dialogueX: 12345,
+      dialogueX: 14160,
       dialogue: 'ONE MORE TIME. MAKE IT SHAKE.',
     }),
     Object.freeze({
-      id: 'spotlight', name: 'Spotlight Rig Run', completion: 'LIGHTS READY',
-      start: 22720, end: 24600, accent: '#ff4fac', score: 3000, energy: 4,
-      trigger: Object.freeze({ x: 24050, y: 46, w: 280, h: 110 }),
-      reward: Object.freeze({ x: 24000, y: 58, count: 9, rainbowEvery: 4 }),
+      id: 'lagoon', name: 'Neon Lagoon Rehearsal', completion: 'LAGOON REHEARSAL READY',
+      start: 19580, end: 22080, accent: '#50e7ff', score: 3600, energy: 5,
+      traversal: 'waterfront-pontoons-suspended-rehearsal-structures',
+      trigger: Object.freeze({ x: 21520, y: 164, w: 390, h: 116 }),
+      reward: Object.freeze({ x: 21420, y: 178, count: 10, rainbowEvery: 4 }),
       platforms: Object.freeze([
-        Object.freeze({ x: 22800, y: 330, w: 198, kind: 'lighting-truss' }),
-        Object.freeze({ x: 23055, y: 272, w: 196, kind: 'spotlight-support' }),
-        Object.freeze({ x: 23310, y: 216, w: 210, kind: 'lighting-truss' }),
-        Object.freeze({ x: 23580, y: 160, w: 226, kind: 'spotlight-support' }),
-        Object.freeze({ x: 23870, y: 108, w: 500, kind: 'lighting-control', summit: true }),
+        Object.freeze({ x: 19640, y: 366, w: 390, kind: 'lagoon-dock-roof' }),
+        Object.freeze({ x: 20120, y: 396, w: 258, kind: 'lagoon-floating-pontoon', moving: true, axis: 'y', range: 11, speed: .68, phase: .8 }),
+        Object.freeze({ x: 20490, y: 276, w: 466, kind: 'lagoon-rehearsal-deck' }),
+        Object.freeze({ x: 21020, y: 334, w: 258, kind: 'lagoon-rope-deck', moving: true, axis: 'x', range: 46, speed: .63, phase: 2.2 }),
+        Object.freeze({ x: 21360, y: 210, w: 286, kind: 'lagoon-hanging-truss' }),
+        Object.freeze({ x: 21670, y: 272, w: 360, kind: 'lagoon-lookout', summit: true }),
       ]),
       characters: Object.freeze([1]),
-      dialogueX: 23415,
+      dialogueX: 20690,
       dialogue: 'TRY THE PINK ONE!',
     }),
     Object.freeze({
-      id: 'backstage', name: 'Backstage Catwalk', completion: 'BACKSTAGE READY',
-      start: 32460, end: 33920, accent: '#ffd65a', score: 1800, energy: 2,
-      trigger: Object.freeze({ x: 33670, y: 46, w: 220, h: 110 }),
-      reward: Object.freeze({ x: 33670, y: 62, count: 6, rainbowEvery: 3 }),
+      id: 'golden', name: 'Golden Ticket Victory Dash', completion: 'GOLDEN TICKET',
+      start: 27320, end: 29420, accent: '#ffd65a', score: 4500, energy: 5,
+      traversal: 'fast-forward-flow-ticket-arches-and-moving-signs',
+      trigger: Object.freeze({ x: 29215, y: 144, w: 205, h: 126 }),
+      reward: Object.freeze({ x: 29020, y: 164, count: 12, rainbowEvery: 3 }),
       platforms: Object.freeze([
-        Object.freeze({ x: 32520, y: 330, w: 210, kind: 'road-case' }),
-        Object.freeze({ x: 32780, y: 274, w: 210, kind: 'backstage-catwalk' }),
-        Object.freeze({ x: 33040, y: 218, w: 218, kind: 'backstage-catwalk' }),
-        Object.freeze({ x: 33310, y: 162, w: 226, kind: 'costume-rack' }),
-        Object.freeze({ x: 33590, y: 108, w: 330, kind: 'backstage-prep', summit: true }),
+        Object.freeze({ x: 27380, y: 354, w: 370, kind: 'golden-ticket-booth-roof' }),
+        Object.freeze({ x: 27840, y: 298, w: 220, kind: 'golden-banner-carriage', moving: true, axis: 'x', range: 48, speed: .82, phase: .45 }),
+        Object.freeze({ x: 28150, y: 374, w: 188, kind: 'golden-road-case' }),
+        Object.freeze({ x: 28420, y: 278, w: 300, kind: 'golden-ticket-ring' }),
+        Object.freeze({ x: 28790, y: 214, w: 194, kind: 'golden-neon-arrow', moving: true, axis: 'y', range: 20, speed: .92, phase: 1.3 }),
+        Object.freeze({ x: 29080, y: 286, w: 292, kind: 'golden-admission-bridge' }),
+        Object.freeze({ x: 29230, y: 232, w: 190, kind: 'golden-ticket-summit', summit: true }),
       ]),
       characters: Object.freeze([3]),
-      dialogueX: 33145,
+      dialogueX: 29230,
       dialogue: 'ALMOST SHOWTIME.',
     }),
     Object.freeze({
       id: 'encore', name: 'Encore Stash', completion: 'ENCORE STASH DISCOVERED!',
-      start: 33920, end: 34380, accent: '#fff170', score: 12000, energy: 10,
+      start: 29420, end: 29980, accent: '#fff170', score: 12000, energy: 10,
       secret: true,
-      trigger: Object.freeze({ x: 34020, y: 22, w: 300, h: 116 }),
-      reward: Object.freeze({ x: 33990, y: 36, count: 18, rainbowEvery: 2 }),
+      traversal: 'concealed-curtain-gap-beyond-ticket-destination',
+      trigger: Object.freeze({ x: 29620, y: 42, w: 310, h: 118 }),
+      reward: Object.freeze({ x: 29560, y: 62, count: 18, rainbowEvery: 2 }),
       platforms: Object.freeze([
-        Object.freeze({ x: 34010, y: 88, w: 330, kind: 'encore-stash', summit: true, secret: true }),
+        Object.freeze({ x: 29570, y: 128, w: 360, kind: 'encore-stash', summit: true, secret: true }),
       ]),
     }),
   ]);
-  const WORLD23_PHASE2_VISIBLE_IDS = Object.freeze(['marquee', 'bass', 'spotlight', 'backstage']);
+  const WORLD23_PHASE2_VISIBLE_IDS = Object.freeze(['marquee', 'rooftops', 'lagoon', 'golden']);
   const WORLD23_PHASE2_PROTECTED_RANGES = Object.freeze(
     WORLD23_PHASE2_STATIONS.map((station) => Object.freeze({ start: station.start, end: station.end })),
   );
@@ -182,8 +199,8 @@
     { x: 10800, name: 'Backstage Beach Gate', sign: 'OLIVIA RADIO: THE BAND REQUESTED WATER. I BROUGHT SPARKLING SALSA.', accent: '#50e7ff', look: 1 },
     { x: 16500, name: 'Rooftop Roadie Stop', sign: 'OLIVIA RADIO: REX CALLED THIS A QUIET SOUNDCHECK. PROTECT YOUR TACOS.', accent: '#ff4fac', look: 2 },
     { x: 22000, name: 'Speaker Safety Station', sign: 'OLIVIA RADIO: IF THE BASS MOVES YOUR HAIR, THE BASS IS WORKING.', accent: '#a4f766', look: 3 },
-    { x: 27800, name: 'Lagoon Light Dock', sign: 'OLIVIA RADIO: ARMAN PLUGGED THE KEYBOARD INTO A PALM TREE. IT STILL WORKED.', accent: '#50e7ff', look: 4 },
-    { x: 32600, name: 'Neon Power Gate', sign: 'OLIVIA RADIO: NOVA SAYS THE ENCORE NEEDS MORE TACOS. THIS IS NOT A DRILL.', accent: '#b780ff', look: 5 },
+    { x: 27020, name: 'Lagoon Light Dock', sign: 'OLIVIA RADIO: ARMAN PLUGGED THE KEYBOARD INTO A PALM TREE. IT STILL WORKED.', accent: '#50e7ff', look: 4 },
+    { x: 32420, name: 'Neon Power Gate', sign: 'OLIVIA RADIO: NOVA SAYS THE ENCORE NEEDS MORE TACOS. THIS IS NOT A DRILL.', accent: '#b780ff', look: 5 },
   ];
   const fanChatLines = [
     'NEON NECKTIES FOREVER!', 'JUMP FOR TACOS!', 'PLAY THE ONE ABOUT THE TACOS!',
@@ -248,7 +265,7 @@
     { id: 'stampede-spaghetti-entry-pack', anchorX: 17250, type: 'spaghetti', count: 2, section: 'stampede', purpose: 'Open the speaker district with a springy entry beat.' },
     { id: 'stampede-pepper-stack-pack', anchorX: 18550, type: 'pepper', count: 3, section: 'stampede', purpose: 'Make the first speaker stack a deliberate three-stomp challenge.' },
     { id: 'stampede-pineapple-bass-pack', anchorX: 20050, type: 'pineapple', count: 2, section: 'stampede', purpose: 'Give the bass bridge a bold lower-route patrol.' },
-    { id: 'stampede-berry-exit-pack', anchorX: 21400, type: 'berry', count: 3, section: 'stampede', purpose: 'End ordinary ground combat before the lagoon taco-drop lane.' },
+    { id: 'lagoon-berry-rehearsal-pack', anchorX: 21400, type: 'berry', count: 3, section: 'lagoon', purpose: 'Add one grounded rehearsal-floor rhythm, then end combat before Olivia’s catamaran lane.' },
   ]);
   const world23UpperEncounterPlan = Object.freeze([
     { id: 'soundcheck-upper-berry-sentry', anchorX: 1650, type: 'berry', count: 2, role: 'platform-sentry', section: 'soundcheck', purpose: 'Make the first soundcheck riser an obvious optional target.' },
@@ -261,7 +278,7 @@
     { id: 'rooftops-upper-berry-sentry', anchorX: 15300, type: 'berry', count: 2, role: 'platform-sentry', section: 'rooftops', purpose: 'Carry the optional route toward the rooftop exit.' },
     { id: 'stampede-upper-pineapple-sentry', anchorX: 17650, type: 'pineapple', count: 2, role: 'platform-sentry', section: 'stampede', purpose: 'Guard the first speaker-stack climb.' },
     { id: 'stampede-upper-pepper-moving-guard', anchorX: 19400, type: 'pepper', count: 2, role: 'moving-guard', section: 'stampede', purpose: 'Make the speaker lift a controlled two-stomp timing test.' },
-    { id: 'stampede-upper-spaghetti-champion', anchorX: 21200, type: 'spaghetti', count: 1, role: 'champion', section: 'stampede', purpose: 'Reward the last speaker summit before the lagoon.' },
+    { id: 'lagoon-upper-spaghetti-champion', anchorX: 21200, type: 'spaghetti', count: 1, role: 'champion', section: 'lagoon', purpose: 'Reward the suspended rehearsal route before Olivia’s catamaran arrives.' },
     { id: 'lagoon-upper-mango-sentry', anchorX: 22950, type: 'mango', count: 2, role: 'platform-sentry', section: 'lagoon', purpose: 'Offer optional combat above the clear catamaran lane.' },
     { id: 'lagoon-upper-berry-moving-guard', anchorX: 24450, type: 'berry', count: 2, role: 'moving-guard', section: 'lagoon', purpose: 'Turn the leaf lift into a risk-reward taco catch route.' },
     { id: 'lagoon-upper-pineapple-champion', anchorX: 26000, type: 'pineapple', count: 1, role: 'champion', section: 'lagoon', purpose: 'Place one premium target above Olivia’s rear taco volleys.' },
@@ -364,6 +381,17 @@
       concertFallbackSystems: [],
     };
   }
+
+  function createFeedbackFiendState() {
+    return {
+      phase: 'dormant', phaseTimer: 0, health: FEEDBACK_FIEND_MAX_HEALTH,
+      maxHealth: FEEDBACK_FIEND_MAX_HEALTH, attackCycle: 0, invulnerable: 0,
+      shockwaves: [], feedbackDrops: [], cableSweep: null,
+      startedAt: 0, defeatedAt: 0, hitsTaken: 0, retryCount: 0,
+      defeated: false, gateOpen: false, rewardSpawned: false,
+      lastAttack: null, normalEvadeWindows: true,
+    };
+  }
   const player = {
     x: 130, y: 370, w: 36, h: 44, vx: 0, vy: 0, dir: 1, grounded: false,
     platform: null, coyote: 0, jumpBuffer: 0, invulnerable: 0, rotation: 0, scale: 1,
@@ -402,6 +430,7 @@
     platformOverlapCount: 0,
     generatorDefenseAudit: null,
     phase2: createWorld23Phase2State(),
+    boss: createFeedbackFiendState(),
   };
 
   let roadsterLoopHandle = null;
@@ -440,6 +469,11 @@
   const previewGenerators = qaMode && params.has('generators')
     ? Number(params.get('generators')) : Number.NaN;
   const previewPhase2Complete = qaMode ? String(params.get('phase2Complete') || '') : '';
+  const previewBoss = qaMode && params.get('boss') === '1';
+  const previewBossHealth = qaMode && params.has('bossHealth')
+    ? Math.max(1, Math.min(FEEDBACK_FIEND_MAX_HEALTH, Number(params.get('bossHealth')))) : Number.NaN;
+  const previewBossPhase = qaMode ? String(params.get('bossPhase') || '') : '';
+  const previewBossDefeated = qaMode && params.get('bossDefeated') === '1';
 
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
   const lerp = (a, b, t) => a + (b - a) * t;
@@ -499,22 +533,24 @@
     const fullEnergy = game.energy >= CONCERT_ENCORE_ENERGY;
     const backstageReady = game.totalGolden > 0 && game.golden >= game.totalGolden;
     const encoreReady = circuitsReady || (fullEnergy && backstageReady);
+    const bossReady = game.boss.defeated;
     return {
-      routeReady: true,
+      routeReady: bossReady,
       encoreReady,
       reason: circuitsReady ? 'stage-circuits'
         : fullEnergy && backstageReady ? 'full-energy-backstage-encore' : 'main-route',
       circuitsReady,
       fullEnergy,
       backstageReady,
+      bossReady,
     };
   }
 
   function resolveConcertEntry(playerX, score, entryStatus) {
     return {
-      shouldStart: playerX >= CONCERT_ENTRY_TRIGGER_X,
+      shouldStart: playerX >= CONCERT_ENTRY_TRIGGER_X && entryStatus.routeReady,
       entryReason: entryStatus.reason,
-      routeReady: true,
+      routeReady: entryStatus.routeReady,
       encoreReady: entryStatus.encoreReady,
       score: Math.max(0, Math.floor(Number(score) || 0)),
       scoreRequirement: 0,
@@ -771,6 +807,11 @@
           phase2Secret: Boolean(definition.secret),
           bassPad: Boolean(definition.bassPad),
           enemySupport: false,
+          moving: Boolean(definition.moving),
+          axis: definition.axis || 'y',
+          range: definition.range || 0,
+          speed: definition.speed || .72,
+          phase: definition.phase || index * .47,
         });
         station.platformIds.push(platform.id);
         if (platform.bassPad) {
@@ -791,12 +832,15 @@
 
     // One small shimmer leads curious players beyond the obvious catwalk. It
     // previews the hidden jump without drawing a secret banner over the route.
-    addTaco(33958, 58, 'rainbow', { phase2Clue: 'encore-stash' });
+    addTaco(29492, 174, 'rainbow', { phase2Clue: 'encore-stash' });
     game.world23Phase2Audit = {
       sourceVersion: SOURCE_VERSION,
       visibleDestinations: WORLD23_PHASE2_VISIBLE_IDS.length,
       hiddenSecrets: world.phase2Stations.filter((station) => station.secret).length,
       stationIds: world.phase2Stations.map((station) => station.id),
+      traversalProfiles: Object.fromEntries(world.phase2Stations.map((station) => [
+        station.id, station.traversal || 'secret-destination',
+      ])),
       approximatePlacement: Object.fromEntries(world.phase2Stations.map((station) => [
         station.id,
         Number(((station.start + station.end) / 2 / WORLD_WIDTH).toFixed(3)),
@@ -808,6 +852,36 @@
       ],
       safeDropToMainRoute: true,
       normalRouteRequired: false,
+      repeatedFivePlatformStaircases: 0,
+      movingStationPlatforms: world.platforms.filter((platform) => platform.phase2StationId && platform.moving).length,
+      stationGeometry: Object.fromEntries(world.phase2Stations.map((station) => [
+        station.id,
+        {
+          platformCount: station.platforms.length,
+          movingCount: station.platforms.filter((platform) => platform.moving).length,
+          horizontalSpan: station.end - station.start,
+          verticalSpread: Math.max(...station.platforms.map((platform) => platform.y))
+            - Math.min(...station.platforms.map((platform) => platform.y)),
+          ySequence: station.platforms.map((platform) => platform.y),
+        },
+      ])),
+      catamaranIsolation: {
+        stationEnd: world23Phase2Station('lagoon')?.end || 0,
+        catamaranStart: 22800,
+        buffer: 22800 - (world23Phase2Station('lagoon')?.end || 22800),
+        overlap: (world23Phase2Station('lagoon')?.end || 0) >= 22800,
+        triggerToCatamaran: 22800 - (world23Phase2Station('lagoon')?.trigger.x || 22800),
+        dialogueDurationSeconds: 3.2,
+        dialogueClearanceAtRunSpeedSeconds: Number((
+          (22800 - (world23Phase2Station('lagoon')?.trigger.x || 22800)) / 310 - 3.2
+        ).toFixed(2)),
+      },
+      crowdIsolation: {
+        stationEnd: world23Phase2Station('golden')?.end || 0,
+        bossArenaRight: FEEDBACK_FIEND_ARENA.right,
+        crowdStart: 34020,
+        bossToCrowdBuffer: 34020 - FEEDBACK_FIEND_ARENA.right,
+      },
       secretBannerReservedFor: 'encore',
       casualRoster: ['NOVA', 'JET', 'MILO', 'ARMAN', 'REX'],
     };
@@ -1028,9 +1102,9 @@
       defaults: { y: GROUND_Y - 126, w: 190, h: 126 },
     });
     world.generators = [
-      { id: 'vocal-tower', x: 29150, y: 316, color: '#ff4fac', name: 'VOCAL TOWER', activated: false, defenseState: 'armed' },
-      { id: 'instrument-tower', x: 30550, y: 316, color: '#50e7ff', name: 'INSTRUMENT TOWER', activated: false, defenseState: 'armed' },
-      { id: 'rhythm-tower', x: 32200, y: 316, color: '#b780ff', name: 'RHYTHM TOWER', activated: false, defenseState: 'armed' },
+      { id: 'vocal-tower', x: 30100, y: 316, color: '#ff4fac', name: 'VOCAL TOWER', activated: false, defenseState: 'armed' },
+      { id: 'instrument-tower', x: 31220, y: 316, color: '#50e7ff', name: 'INSTRUMENT TOWER', activated: false, defenseState: 'armed' },
+      { id: 'rhythm-tower', x: 32150, y: 316, color: '#b780ff', name: 'RHYTHM TOWER', activated: false, defenseState: 'armed' },
     ];
     world.bandCameos = [
       {
@@ -1208,7 +1282,7 @@
     };
     auditWorld23CombatRemaster(patrolAudit);
 
-    for (let x = 33100, index = 0; x < 34800; x += 145, index += 1) {
+    for (let x = 34020, index = 0; x < 34760; x += 88, index += 1) {
       world.fans.push({
         x,
         message: fanChatLines[index % fanChatLines.length],
@@ -1310,6 +1384,7 @@
       activeMusic: null, musicTransition: null,
       musicTransitionCount: 0, musicOverlapRecoveries: 0, maxMusicPlaying: 0,
       phase2: createWorld23Phase2State(),
+      boss: createFeedbackFiendState(),
       opening: {
         timer: 0, phase: 'loading', carX: OPENING_ROADSTER_X + 38,
         dustTimer: 0, finished: false,
@@ -1528,6 +1603,17 @@
     }
     game.pinata.hits = previewPinataHits;
     applyWorld23Phase2PreviewState();
+    if (previewBoss) {
+      player.x = Math.max(player.x, FEEDBACK_FIEND_ARENA.left + 150);
+      game.cameraX = clamp(
+        (FEEDBACK_FIEND_ARENA.left + FEEDBACK_FIEND_ARENA.right) / 2 - canvas.width / 2,
+        0, WORLD_WIDTH - canvas.width,
+      );
+      startFeedbackFiend();
+      if (Number.isFinite(previewBossHealth)) game.boss.health = previewBossHealth;
+      if (previewBossPhase) enterFeedbackFiendPhase(previewBossPhase, previewBossPhase === 'vulnerable' ? 8 : 2.4);
+      if (previewBossDefeated) defeatFeedbackFiend();
+    }
     if (previewRespawn) {
       if (previewRespawnCheckpoint >= 0 && world.checkpoints[previewRespawnCheckpoint]) {
         game.latestCheckpoint = world.checkpoints[previewRespawnCheckpoint];
@@ -1763,6 +1849,7 @@
 
   function beginRespawn() {
     if (game.state === 'respawning' || game.respawn.active) return;
+    if (!game.boss.defeated && game.boss.phase !== 'dormant') resetFeedbackFiendForRetry();
     game.state = 'respawning';
     clearInputs();
     abilities.clearForRespawn(game.abilities);
@@ -2092,9 +2179,9 @@
       game.phase2.toast = {
         title: station.completion,
         subtitle: station.id === 'marquee' ? 'VENUE ENTRANCE POWERED'
-          : station.id === 'bass' ? 'RHYTHM SECTION LOCKED IN'
-            : station.id === 'spotlight' ? 'FULL LIGHTING PROGRAM ARMED'
-              : 'QUIET PRE-SHOW ACCESS COMPLETE',
+          : station.id === 'rooftops' ? 'RHYTHM SECTION LOCKED IN'
+            : station.id === 'lagoon' ? 'WATERFRONT REHEARSAL READY'
+              : 'ADMISSION LIGHTS BLAZING',
         color: station.accent,
         timer: 2.75,
       };
@@ -2109,9 +2196,9 @@
         ? (game.reducedShake ? 24 : 56) : (game.reducedShake ? 10 : 22));
       const eventId = {
         marquee: 'concert.start',
-        bass: 'concert.start',
-        spotlight: 'concert.tambourineAccent',
-        backstage: 'checkpoint.activate',
+        rooftops: 'concert.start',
+        lagoon: 'concert.tambourineAccent',
+        golden: 'checkpoint.activate',
         encore: 'concert.start',
       }[station.id];
       playAudio(eventId, { position: audioPosition(station.trigger.x), station: station.id });
@@ -2130,13 +2217,14 @@
       : new Set(previewPhase2Complete.split(',').map((id) => id.trim()).filter(Boolean));
     world.phase2Stations.forEach((station) => {
       if (requested.has(station.id)) completeWorld23Phase2Station(station, { silent: true });
+      if (requested.has(station.id)) station.dialogueTimer = 0;
     });
     game.phase2.toast = null;
     game.phase2.secretBanner = null;
   }
 
   function updateWorld23BassStack() {
-    const station = world23Phase2Station('bass');
+    const station = world23Phase2Station('rooftops');
     if (!station) return;
     const beatPosition = game.levelTime / BASS_STACK_BEAT_SECONDS;
     const beatCycle = Math.floor(beatPosition);
@@ -2190,6 +2278,216 @@
       }
     }
     updateWorld23BassStack();
+  }
+
+  function feedbackFiendBody() {
+    return { x: FEEDBACK_FIEND_X - 96, y: GROUND_Y - 252, w: 192, h: 252 };
+  }
+
+  function feedbackFiendCore() {
+    return { x: FEEDBACK_FIEND_X - 62, y: GROUND_Y - 168, w: 124, h: 76 };
+  }
+
+  function enterFeedbackFiendPhase(phase, duration) {
+    const boss = game.boss;
+    boss.phase = phase;
+    boss.phaseTimer = duration;
+    boss.lastAttack = phase;
+    if (phase === 'shockCharge') {
+      boss.attackCycle += 1;
+      playAudio('boss.feedbackFiend.charge', { position: audioPosition(FEEDBACK_FIEND_X) });
+    } else if (phase === 'feedbackDrop') {
+      const playerCenter = clamp(player.x + player.w / 2, FEEDBACK_FIEND_ARENA.left + 90, FEEDBACK_FIEND_ARENA.right - 170);
+      const direction = boss.attackCycle % 2 ? 1 : -1;
+      boss.feedbackDrops = [
+        { x: playerCenter, timer: 1.18, impact: 0, resolved: false },
+        { x: clamp(playerCenter + direction * 190, FEEDBACK_FIEND_ARENA.left + 80, FEEDBACK_FIEND_ARENA.right - 180), timer: 1.52, impact: 0, resolved: false },
+      ];
+      playAudio('boss.feedbackFiend.dropWarn', { position: audioPosition(playerCenter) });
+    } else if (phase === 'cableCharge') {
+      playAudio('boss.feedbackFiend.cableWarn', { position: audioPosition(FEEDBACK_FIEND_X) });
+    } else if (phase === 'cableSweep') {
+      boss.cableSweep = { timer: duration, duration };
+      playAudio('boss.feedbackFiend.cableSweep', { position: audioPosition(FEEDBACK_FIEND_X) });
+    } else if (phase === 'vulnerable') {
+      boss.invulnerable = 0;
+      playAudio('boss.feedbackFiend.vulnerable', { position: audioPosition(FEEDBACK_FIEND_X) });
+      showMessage('AMP CORE OPEN — STOMP THE FEEDBACK!', 1.7);
+    }
+  }
+
+  function startFeedbackFiend() {
+    const boss = game.boss;
+    if (boss.defeated || boss.phase !== 'dormant') return;
+    boss.startedAt = game.levelTime;
+    boss.shockwaves.length = 0;
+    boss.feedbackDrops.length = 0;
+    boss.cableSweep = null;
+    enterFeedbackFiendPhase('intro', 1.8);
+    showMessage('THE FEEDBACK FIEND — TAME THE NOISE!', 2.25);
+    playAudio('boss.feedbackFiend.enter', { position: audioPosition(FEEDBACK_FIEND_X) });
+    game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 3 : 8);
+  }
+
+  function resetFeedbackFiendForRetry() {
+    const retries = (game.boss.retryCount || 0) + 1;
+    game.boss = createFeedbackFiendState();
+    game.boss.retryCount = retries;
+  }
+
+  function spawnFeedbackFiendReward() {
+    const boss = game.boss;
+    if (boss.rewardSpawned) return;
+    boss.rewardSpawned = true;
+    for (let index = 0; index < 15; index += 1) {
+      addTaco(
+        FEEDBACK_FIEND_REWARD_X + (index % 8) * 36,
+        GROUND_Y - 86 - Math.floor(index / 8) * 38 - Math.sin((index % 8) / 7 * Math.PI) * 46,
+        index % 5 === 4 ? 'rainbow' : 'taco',
+        { feedbackFiendReward: true, bonus: true },
+      );
+    }
+  }
+
+  function defeatFeedbackFiend() {
+    const boss = game.boss;
+    boss.defeated = true;
+    boss.defeatedAt = game.levelTime;
+    boss.health = 0;
+    boss.gateOpen = false;
+    boss.shockwaves.length = 0;
+    boss.feedbackDrops.length = 0;
+    boss.cableSweep = null;
+    boss.phase = 'defeated';
+    boss.phaseTimer = 2.05;
+    game.score += 9000;
+    game.energy = clamp(game.energy + 12, 0, 100);
+    spawnFeedbackFiendReward();
+    spawnConfetti(FEEDBACK_FIEND_X - game.cameraX, GROUND_Y - 150, game.reducedShake ? 70 : 150);
+    spawnBurst(FEEDBACK_FIEND_X - game.cameraX, GROUND_Y - 150, '#50e7ff', game.reducedShake ? 18 : 42);
+    spawnBurst(FEEDBACK_FIEND_X - game.cameraX, GROUND_Y - 130, '#ff4fac', game.reducedShake ? 14 : 34);
+    game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 5 : 14);
+    showMessage('FEEDBACK TAMED — CONCERT PATH OPENING!', 2.3);
+    playAudio('boss.feedbackFiend.defeat', { position: audioPosition(FEEDBACK_FIEND_X) });
+  }
+
+  function damageFeedbackFiend() {
+    const boss = game.boss;
+    if (boss.phase !== 'vulnerable' || boss.invulnerable > 0 || boss.defeated) return;
+    boss.health -= 1;
+    boss.hitsTaken += 1;
+    boss.invulnerable = .85;
+    player.y = Math.min(player.y, feedbackFiendCore().y - player.h - 1);
+    player.vy = -heroPhysics.enemyBounceVelocity;
+    player.grounded = false;
+    player.platform = null;
+    game.score += 2600;
+    game.energy = clamp(game.energy + 4, 0, 100);
+    spawnBurst(FEEDBACK_FIEND_X - game.cameraX, GROUND_Y - 154, '#fff170', game.reducedShake ? 16 : 34);
+    game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 4 : 10);
+    playAudio('boss.feedbackFiend.damage', { position: audioPosition(FEEDBACK_FIEND_X), hit: boss.hitsTaken });
+    if (boss.health <= 0) {
+      defeatFeedbackFiend();
+      return;
+    }
+    showMessage(`FEEDBACK FIEND OVERLOAD — ${boss.health} HIT${boss.health === 1 ? '' : 'S'} LEFT!`, 1.55);
+    enterFeedbackFiendPhase('hurt', 1.05);
+  }
+
+  function updateFeedbackFiendHazards(dt) {
+    const boss = game.boss;
+    for (const wave of boss.shockwaves) {
+      wave.x += wave.vx * dt;
+      wave.life -= dt;
+      if (!wave.hit && intersects(player, wave)) {
+        wave.hit = true;
+        hurtPlayer(FEEDBACK_FIEND_X);
+      }
+    }
+    boss.shockwaves = boss.shockwaves.filter((wave) => wave.life > 0 && wave.x + wave.w > FEEDBACK_FIEND_ARENA.left - 120);
+
+    for (const drop of boss.feedbackDrops) {
+      if (drop.timer > 0) {
+        drop.timer -= dt;
+        if (drop.timer <= 0) {
+          drop.impact = .34;
+          spawnBurst(drop.x - game.cameraX, GROUND_Y - 8, '#ff4fac', game.reducedShake ? 8 : 18);
+          playAudio('boss.feedbackFiend.dropImpact', { position: audioPosition(drop.x) });
+        }
+      } else if (drop.impact > 0) {
+        drop.impact -= dt;
+        const hazard = { x: drop.x - 42, y: GROUND_Y - 154, w: 84, h: 154 };
+        if (!drop.resolved && intersects(player, hazard)) {
+          drop.resolved = true;
+          hurtPlayer(drop.x);
+        }
+      }
+    }
+    boss.feedbackDrops = boss.feedbackDrops.filter((drop) => drop.timer > 0 || drop.impact > 0);
+
+    if (boss.cableSweep) {
+      boss.cableSweep.timer = Math.max(0, boss.cableSweep.timer - dt);
+      const progress = 1 - boss.cableSweep.timer / boss.cableSweep.duration;
+      const sweepX = lerp(FEEDBACK_FIEND_X - 100, FEEDBACK_FIEND_ARENA.left + 60, smoothStep(progress));
+      const hazard = { x: sweepX - 58, y: GROUND_Y - 104, w: 116, h: 40 };
+      if (intersects(player, hazard)) hurtPlayer(sweepX);
+      if (boss.cableSweep.timer <= 0) boss.cableSweep = null;
+    }
+  }
+
+  function updateFeedbackFiend(dt) {
+    const boss = game.boss;
+    boss.invulnerable = Math.max(0, boss.invulnerable - dt);
+    if (boss.phase === 'dormant') {
+      if (player.x >= FEEDBACK_FIEND_ARENA.triggerX) startFeedbackFiend();
+      return;
+    }
+    if (boss.phase === 'cleared') return;
+
+    if (!boss.gateOpen) {
+      player.x = clamp(player.x, FEEDBACK_FIEND_ARENA.left + 26, FEEDBACK_FIEND_ARENA.right - player.w - 30);
+    }
+    updateFeedbackFiendHazards(dt);
+
+    if (!boss.defeated) {
+      const core = feedbackFiendCore();
+      if (boss.phase === 'vulnerable' && intersects(player, core)
+        && heroCore.isStomp(player, core, { topTolerance: 58 })) {
+        damageFeedbackFiend();
+        return;
+      }
+      const body = feedbackFiendBody();
+      if (intersects(player, body) && boss.phase !== 'vulnerable') hurtPlayer(FEEDBACK_FIEND_X);
+    }
+
+    boss.phaseTimer = Math.max(0, boss.phaseTimer - dt);
+    if (boss.phaseTimer > 0) return;
+    if (boss.phase === 'intro' || boss.phase === 'hurt') {
+      enterFeedbackFiendPhase('shockCharge', 1.15);
+    } else if (boss.phase === 'shockCharge') {
+      boss.shockwaves.push({
+        x: FEEDBACK_FIEND_X - 126, y: GROUND_Y - 50, w: 92, h: 46,
+        vx: -340, life: 3.1, hit: false,
+      });
+      enterFeedbackFiendPhase('shockwave', 3.0);
+      playAudio('boss.feedbackFiend.shockwave', { position: audioPosition(FEEDBACK_FIEND_X) });
+      game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 2 : 6);
+    } else if (boss.phase === 'shockwave') {
+      enterFeedbackFiendPhase('feedbackDrop', 2.25);
+    } else if (boss.phase === 'feedbackDrop') {
+      enterFeedbackFiendPhase('cableCharge', 1.0);
+    } else if (boss.phase === 'cableCharge') {
+      enterFeedbackFiendPhase('cableSweep', 1.8);
+    } else if (boss.phase === 'cableSweep') {
+      enterFeedbackFiendPhase('vulnerable', 2.65);
+    } else if (boss.phase === 'vulnerable') {
+      enterFeedbackFiendPhase('shockCharge', 1.15);
+    } else if (boss.phase === 'defeated') {
+      boss.gateOpen = true;
+      boss.phase = 'cleared';
+      showMessage('THE CROWD IS JUST AHEAD — SHOWTIME!', 1.8);
+      playAudio('concert.crowdCheer', { position: audioPosition(FEEDBACK_FIEND_ARENA.right + 300) });
+    }
   }
 
   function updatePinata(dt) {
@@ -2326,9 +2624,9 @@
       'BACKSTAGE PASS BEACH — SURF, BOUNCE, COLLECT!',
       'ROADIE ROOFTOPS — THE FLOOR IS MOSTLY SPEAKER CABLES!',
       'SPEAKER STACK STAMPEDE — RUN WITH THE BASS!',
-      'NEON LAGOON REHEARSAL — OLIVIA HAS TACOS AIRBORNE!',
+      'NEON LAGOON REHEARSAL — WATERFRONT SOUNDCHECK AHEAD!',
       'POWER UP THE STAGE — THREE TOWERS, MAXIMUM GLOW!',
-      'GOLDEN TICKET VICTORY DASH — NO ENEMIES, JUST FANS AND TACOS!',
+      'PRE-SHOW SHOWDOWN — THE FEEDBACK FIEND BLOCKS THE CROWD!',
     ];
     showMessage(messages[index], 2.7);
     spawnConfetti(canvas.width * .62, 170, index === 6 ? 100 : 40);
@@ -2480,6 +2778,12 @@
     };
     game.phase2.concertFallbackSystems = [...fallbackSystems];
     game.phase2.preShowHidden = true;
+    game.boss.defeated = true;
+    game.boss.gateOpen = true;
+    game.boss.phase = 'cleared';
+    game.boss.shockwaves.length = 0;
+    game.boss.feedbackDrops.length = 0;
+    game.boss.cableSweep = null;
     world.phase2Stations.forEach((station) => { station.dialogueTimer = 0; });
     world.bandCameos.forEach((cameo) => { cameo.dialogueTimer = 0; });
     stopRoadsterLoop();
@@ -2669,6 +2973,7 @@
     updateMovingPlatforms();
     updatePlayer(dt);
     updateWorld23Phase2(dt);
+    updateFeedbackFiend(dt);
     updateEnemies(dt);
     updateCollectibles(dt);
     updateCheckpoints();
@@ -2684,7 +2989,15 @@
       announceSection(nextSection);
     }
     const fastCamera = ['stampede', 'victory'].includes(currentSection().id);
-    game.cameraX = lerp(game.cameraX, clamp(player.x - canvas.width * (fastCamera ? .34 : .42), 0, WORLD_WIDTH - canvas.width), Math.min(1, dt * 9));
+    const bossCameraActive = game.boss.phase !== 'dormant' && game.boss.phase !== 'cleared' && !game.boss.gateOpen;
+    const cameraTarget = bossCameraActive
+      ? (FEEDBACK_FIEND_ARENA.left + FEEDBACK_FIEND_ARENA.right) / 2 - canvas.width / 2
+      : player.x - canvas.width * (fastCamera ? .34 : .42);
+    game.cameraX = lerp(
+      game.cameraX,
+      clamp(cameraTarget, 0, WORLD_WIDTH - canvas.width),
+      Math.min(1, dt * (bossCameraActive ? 6 : 9)),
+    );
     const concertEntryStatus = getConcertEntryStatus();
     const concertEntry = resolveConcertEntry(player.x, game.score, concertEntryStatus);
     if (concertEntry.shouldStart) startConcert(0, concertEntry);
@@ -3232,60 +3545,121 @@
     const station = world23Phase2Station(platform.phase2StationId);
     const accent = station?.accent || '#50e7ff';
     const beatPhase = station?.beatPhase ?? ((game.levelTime / BASS_STACK_BEAT_SECONDS) % 1);
-    const pulse = platform.bassPad ? 1 - smoothStep(clamp(beatPhase / .32, 0, 1)) : .14;
+    const pulse = platform.bassPad
+      ? 1 - smoothStep(clamp(beatPhase / .32, 0, 1))
+      : .14 + Math.sin(time * .004 + platform.x) * .03;
     ctx.save();
-    if (platform.phase2Style.startsWith('marquee')) {
-      drawPhase2Truss(x + 7, platform.y + 8, platform.w - 14, 42, accent);
+    const style = platform.phase2Style;
+    if (style.startsWith('marquee')) {
+      const booth = style === 'marquee-ticket-roof';
+      if (booth) {
+        const awning = ctx.createLinearGradient(0, platform.y + 5, 0, platform.y + 52);
+        awning.addColorStop(0, '#ffcf68'); awning.addColorStop(1, '#9a315f');
+        roundedRect(x + 8, platform.y + 7, platform.w - 16, 48, 7, awning, '#fff1b8', 3);
+        for (let stripe = 0; stripe < 8; stripe += 1) {
+          ctx.fillStyle = stripe % 2 ? 'rgba(80,231,255,.7)' : 'rgba(255,79,172,.72)';
+          ctx.fillRect(x + 18 + stripe * (platform.w - 36) / 8, platform.y + 12, (platform.w - 36) / 16, 32);
+        }
+      } else {
+        drawPhase2Truss(x + 7, platform.y + 8, platform.w - 14, 42, accent);
+      }
+      if (style.includes('moving-sign')) {
+        roundedRect(x + 28, platform.y + 14, platform.w - 56, 34, 8, '#24143e', '#ff4fac', 3);
+        ctx.fillStyle = '#fff3cc'; ctx.font = '900 9px Arial'; ctx.textAlign = 'center';
+        ctx.fillText('TONIGHT • NEON NECKTIES', x + platform.w / 2, platform.y + 35);
+      }
       for (let bulb = x + 18; bulb < x + platform.w - 12; bulb += 32) {
         ctx.fillStyle = station?.completed || (bulb - x) / platform.w < (station?.progress || 0)
           ? (Math.floor((bulb - x) / 32) % 2 ? '#ff4fac' : '#50e7ff') : 'rgba(255,255,255,.25)';
         ctx.shadowColor = ctx.fillStyle;
         ctx.shadowBlur = station?.completed ? 10 : 3;
-        ctx.beginPath(); ctx.arc(bulb, platform.y + 13, 3.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(bulb, platform.y + 12, 3.5, 0, Math.PI * 2); ctx.fill();
       }
-    } else if (['bass-case', 'bass-pad', 'amp-rack', 'soundcheck-deck', 'master-rack'].includes(platform.phase2Style)) {
-      const cabinetHeight = ['soundcheck-deck', 'master-rack'].includes(platform.phase2Style) ? 44 : platform.bassPad ? 92 : 64;
-      const cabinetWidth = Math.min(platform.w - 16, platform.bassPad ? 118 : 154);
-      drawPhase2SpeakerCabinet(
-        x + (platform.w - cabinetWidth) / 2,
-        platform.y + 8,
-        cabinetWidth,
-        cabinetHeight,
-        pulse,
-        accent,
-      );
-      if (['amp-rack', 'soundcheck-deck', 'master-rack'].includes(platform.phase2Style)) {
-        const active = station?.completed ? 8 : Math.max(2, Math.floor((station?.progress || 0) * 8));
-        for (let meter = 0; meter < 8; meter += 1) {
-          ctx.fillStyle = meter < active ? (meter % 2 ? '#ff4fac' : '#a4f766') : 'rgba(255,255,255,.16)';
-          ctx.fillRect(x + 24 + meter * 19, platform.y + 16, 11, 5);
+    } else if (style.startsWith('rooftop')) {
+      if (style.includes('bass-pad')) {
+        drawPhase2SpeakerCabinet(x + platform.w / 2 - 64, platform.y + 8, 128, 92, pulse, accent);
+      } else if (style.includes('soundcheck-deck')) {
+        for (let stack = 0; stack < 3; stack += 1) {
+          drawPhase2SpeakerCabinet(x + 18 + stack * 73, platform.y + 9, 62, 72, pulse * .65, accent);
+        }
+        roundedRect(x + 254, platform.y + 12, 205, 52, 7, '#17152a', accent, 3);
+        for (let meter = 0; meter < 10; meter += 1) {
+          const active = station?.completed ? 10 : Math.max(2, Math.floor((station?.progress || 0) * 10));
+          ctx.fillStyle = meter < active ? (meter > 7 ? '#ff4fac' : meter > 4 ? '#ffd65a' : '#a4f766') : '#3b3852';
+          ctx.fillRect(x + 270 + meter * 17, platform.y + 27, 10, 20 - meter % 3 * 4);
+        }
+      } else if (style.includes('truss')) {
+        drawPhase2Truss(x + 4, platform.y + 8, platform.w - 8, 45, accent);
+      } else if (style.includes('road-case')) {
+        roundedRect(x + 12, platform.y + 8, platform.w - 24, 70, 7, '#25233a', '#b9b7c7', 3);
+        ctx.strokeStyle = accent; ctx.lineWidth = 2;
+        ctx.strokeRect(x + 28, platform.y + 22, platform.w - 56, 38);
+      } else {
+        const roof = ctx.createLinearGradient(0, platform.y + 5, 0, platform.y + 54);
+        roof.addColorStop(0, '#d97b60'); roof.addColorStop(1, '#663a55');
+        roundedRect(x + 6, platform.y + 7, platform.w - 12, 48, 6, roof, '#ffe0a0', 2);
+        if (style.includes('equipment')) {
+          for (let unit = 0; unit < 3; unit += 1) {
+            roundedRect(x + 24 + unit * 88, platform.y + 17, 68, 28, 4, '#66747d', '#b9e5e3', 2);
+            ctx.strokeStyle = '#35434e';
+            for (let vent = 0; vent < 4; vent += 1) {
+              ctx.beginPath(); ctx.moveTo(x + 34 + unit * 88 + vent * 13, platform.y + 23); ctx.lineTo(x + 34 + unit * 88 + vent * 13, platform.y + 39); ctx.stroke();
+            }
+          }
         }
       }
-    } else if (['lighting-truss', 'spotlight-support', 'lighting-control'].includes(platform.phase2Style)) {
-      drawPhase2Truss(x + 5, platform.y + 8, platform.w - 10, 40, accent);
-      for (let fixture = x + 28; fixture < x + platform.w - 18; fixture += 62) {
-        ctx.fillStyle = '#25203e';
-        ctx.strokeStyle = accent;
-        ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.roundRect(fixture - 13, platform.y + 34, 26, 19, 7); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = station?.completed ? accent : 'rgba(255,255,255,.22)';
-        ctx.beginPath(); ctx.arc(fixture, platform.y + 48, 6, 0, Math.PI * 2); ctx.fill();
+    } else if (style.startsWith('lagoon')) {
+      const floating = style.includes('pontoon') || style.includes('rope-deck');
+      const deck = ctx.createLinearGradient(0, platform.y + 5, 0, platform.y + 52);
+      deck.addColorStop(0, '#f0b96b'); deck.addColorStop(1, '#5c4369');
+      roundedRect(x + 5, platform.y + 7, platform.w - 10, 42, 7, deck, '#50e7ff', 2.5);
+      ctx.strokeStyle = 'rgba(255,244,196,.58)'; ctx.lineWidth = 2;
+      for (let plank = x + 22; plank < x + platform.w - 12; plank += 32) {
+        ctx.beginPath(); ctx.moveTo(plank, platform.y + 10); ctx.lineTo(plank, platform.y + 44); ctx.stroke();
       }
-    } else if (['road-case', 'backstage-catwalk', 'costume-rack', 'backstage-prep', 'encore-stash'].includes(platform.phase2Style)) {
+      if (style.includes('truss')) drawPhase2Truss(x + 8, platform.y + 15, platform.w - 16, 46, '#ff4fac');
+      if (floating) {
+        ctx.fillStyle = '#ff7d79'; ctx.strokeStyle = '#fff0c6'; ctx.lineWidth = 2;
+        for (let floatX = x + 28; floatX < x + platform.w - 12; floatX += 56) {
+          ctx.beginPath(); ctx.ellipse(floatX, platform.y + 58, 22, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        }
+        ctx.strokeStyle = '#ffe0a0'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(x + 8, platform.y + 8); ctx.quadraticCurveTo(x + platform.w / 2, platform.y + 78, x + platform.w - 8, platform.y + 8); ctx.stroke();
+      }
+    } else if (style.startsWith('golden')) {
+      if (style.includes('ticket-ring')) {
+        ctx.strokeStyle = '#ffd65a'; ctx.lineWidth = 8; ctx.shadowColor = '#ffd65a'; ctx.shadowBlur = 16;
+        ctx.beginPath(); ctx.ellipse(x + platform.w / 2, platform.y + 38, platform.w * .32, 48, 0, 0, Math.PI * 2); ctx.stroke();
+      } else if (style.includes('neon-arrow')) {
+        ctx.fillStyle = '#fff170'; ctx.shadowColor = '#ffd65a'; ctx.shadowBlur = 16;
+        ctx.beginPath(); ctx.moveTo(x + 22, platform.y + 18); ctx.lineTo(x + platform.w - 56, platform.y + 18);
+        ctx.lineTo(x + platform.w - 56, platform.y + 5); ctx.lineTo(x + platform.w - 16, platform.y + 38);
+        ctx.lineTo(x + platform.w - 56, platform.y + 71); ctx.lineTo(x + platform.w - 56, platform.y + 58);
+        ctx.lineTo(x + 22, platform.y + 58); ctx.closePath(); ctx.fill();
+      } else if (style.includes('road-case')) {
+        roundedRect(x + 7, platform.y + 8, platform.w - 14, 58, 7, '#392943', '#ffd65a', 3);
+        ctx.fillStyle = '#fff1ae'; ctx.font = '900 9px Arial'; ctx.textAlign = 'center';
+        ctx.fillText('TOUR ADMISSION', x + platform.w / 2, platform.y + 41);
+      } else {
+        const gold = ctx.createLinearGradient(0, platform.y + 5, 0, platform.y + 56);
+        gold.addColorStop(0, '#ffe781'); gold.addColorStop(1, '#b56943');
+        roundedRect(x + 5, platform.y + 7, platform.w - 10, 46, 7, gold, '#fff4ca', 3);
+        for (let ticket = x + 26; ticket < x + platform.w - 12; ticket += 48) {
+          ctx.fillStyle = '#ff4fac';
+          roundedRect(ticket - 14, platform.y + 18, 28, 19, 4, '#ff4fac', '#fff6cd', 1.5);
+        }
+      }
+    } else if (style === 'encore-stash') {
       ctx.strokeStyle = accent;
-      ctx.lineWidth = 3;
-      ctx.fillStyle = platform.phase2Secret ? '#34234e' : '#25223c';
-      ctx.beginPath(); ctx.roundRect(x + 4, platform.y + 8, platform.w - 8, platform.phase2Secret ? 64 : 42, 7); ctx.fill(); ctx.stroke();
+      ctx.lineWidth = 4;
+      ctx.fillStyle = '#34234e';
+      ctx.beginPath(); ctx.roundRect(x + 4, platform.y + 8, platform.w - 8, 68, 7); ctx.fill(); ctx.stroke();
       ctx.strokeStyle = 'rgba(255,255,255,.38)';
       for (let brace = x + 24; brace < x + platform.w - 12; brace += 68) {
-        ctx.beginPath(); ctx.moveTo(brace, platform.y + 10); ctx.lineTo(brace + 28, platform.y + 48); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(brace, platform.y + 10); ctx.lineTo(brace + 28, platform.y + 68); ctx.stroke();
       }
-      if (platform.phase2Secret) {
-        ctx.fillStyle = '#fff170';
-        ctx.font = '900 10px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(station?.completed ? 'ENCORE CACHE OPEN' : 'NN TOUR • CASE 23', x + platform.w / 2, platform.y + 36);
-      }
+      ctx.fillStyle = '#fff170'; ctx.font = '900 10px Arial'; ctx.textAlign = 'center';
+      ctx.fillText(station?.completed ? 'ENCORE CACHE OPEN' : 'NN TOUR • CASE 23', x + platform.w / 2, platform.y + 45);
     }
     ctx.restore();
   }
@@ -3467,6 +3841,27 @@
     heroCore.drawEnemyBehaviorSignals(ctx, enemy, x, { warningColor: '#ffd65a', chargeColor: '#ff4fac', rollColor: '#50e7ff' });
   }
 
+  function drawGroundedCheckpointOlivia(centerX, bottomY, time, look = 0) {
+    if (!images.bandOliviaCrowd) return false;
+    const bounds = images.checkpointOliviaBounds || { x: 1300, y: 339, w: 157, h: 243 };
+    const height = 112;
+    const width = height * (bounds.w / bounds.h);
+    const numericLook = Number.isFinite(Number(look)) ? Number(look) : 0;
+    const sway = Math.sin(time * .004 + numericLook) * .012;
+    ctx.save();
+    ctx.translate(centerX, bottomY);
+    ctx.rotate(sway);
+    ctx.shadowColor = '#50e7ff';
+    ctx.shadowBlur = 6;
+    ctx.drawImage(
+      images.bandOliviaCrowd,
+      bounds.x, bounds.y, bounds.w, bounds.h,
+      -width / 2, -height, width, height,
+    );
+    ctx.restore();
+    return true;
+  }
+
   function drawRemasteredCheckpointStation(checkpoint, time) {
     if (!images.checkpointStations) return false;
     const screenX = checkpoint.x - game.cameraX;
@@ -3474,13 +3869,17 @@
     const pulse = (Math.sin(time * .007 + checkpoint.x) + 1) * .5;
     const frameColumns = 3;
     const frameRows = 2;
+    const frame = clamp(Math.round(checkpoint.look), 0, 5);
     const cellWidth = images.checkpointStations.width / frameColumns;
     const cellHeight = images.checkpointStations.height / frameRows;
-    const frame = clamp(Math.round(checkpoint.look), 0, 5);
-    const sourceX = frame % frameColumns * cellWidth;
-    const sourceY = Math.floor(frame / frameColumns) * cellHeight;
-    const drawWidth = 264;
-    const drawHeight = 182;
+    const bounds = images.checkpointBounds?.[frame] || {
+      x: frame % frameColumns * cellWidth,
+      y: Math.floor(frame / frameColumns) * cellHeight,
+      w: cellWidth,
+      h: cellHeight,
+    };
+    const drawHeight = 180;
+    const drawWidth = Math.min(280, drawHeight * (bounds.w / bounds.h));
     const centerX = screenX + checkpoint.w / 2;
     const baseY = GROUND_Y + 2;
 
@@ -3492,12 +3891,22 @@
     ctx.fill();
     ctx.restore();
 
+    // Heavy checkpoint structures receive a visible deck and foundation. The
+    // cropped art and Olivia are then bottom-anchored to this shared contact
+    // line so transparent padding can never make the station hover.
+    ctx.save();
+    roundedRect(centerX - drawWidth * .46, baseY - 18, drawWidth * .92, 18, 5, '#30224c', checkpoint.accent, 2);
+    ctx.fillStyle = '#1d1735';
+    ctx.fillRect(centerX - drawWidth * .36, baseY - 5, 18, 9);
+    ctx.fillRect(centerX + drawWidth * .36 - 18, baseY - 5, 18, 9);
+    ctx.restore();
+
     ctx.save();
     ctx.shadowColor = checkpoint.accent;
     ctx.shadowBlur = checkpoint.activated ? 24 + pulse * 8 : 8;
     ctx.drawImage(
       images.checkpointStations,
-      sourceX, sourceY, cellWidth, cellHeight,
+      bounds.x, bounds.y, bounds.w, bounds.h,
       centerX - drawWidth / 2, baseY - drawHeight, drawWidth, drawHeight,
     );
     ctx.restore();
@@ -3505,11 +3914,10 @@
     // Olivia remains a separate, independently grounded character so the
     // station can glow without making her float or pulse with the machinery.
     ctx.save();
-    ctx.translate(centerX + 69, baseY - 101);
     ctx.globalAlpha = checkpoint.activated ? 1 : .96;
     ctx.shadowColor = checkpoint.accent;
     ctx.shadowBlur = checkpoint.activated ? 16 : 6;
-    drawOlivia(-37, 0, time, checkpoint.look);
+    drawGroundedCheckpointOlivia(centerX + 73, baseY - 1, time, checkpoint.look);
     ctx.restore();
 
     const panelY = baseY - drawHeight - 42;
@@ -3629,9 +4037,10 @@
     if (!images.preShowBand) return false;
     const member = band[memberIndex];
     const cellWidth = images.preShowBand.width / band.length;
-    const sourceY = 10;
-    const sourceHeight = images.preShowBand.height - 18;
-    const drawWidth = height * (cellWidth / sourceHeight);
+    const bounds = images.preShowBandBounds?.[memberIndex] || {
+      x: memberIndex * cellWidth, y: 0, w: cellWidth, h: images.preShowBand.height,
+    };
+    const drawWidth = height * (bounds.w / bounds.h);
     const beat = Math.sin(time * (memberIndex === 4 ? .018 : .009) + memberIndex * .7);
     ctx.save();
     ctx.translate(centerX, bottomY);
@@ -3642,7 +4051,7 @@
     ctx.shadowBlur = options.glow === false ? 0 : 8 + Math.max(0, beat) * 5;
     ctx.drawImage(
       images.preShowBand,
-      memberIndex * cellWidth, sourceY, cellWidth, sourceHeight,
+      bounds.x, bounds.y, bounds.w, bounds.h,
       -drawWidth / 2, -height, drawWidth, height,
     );
     ctx.restore();
@@ -3747,190 +4156,268 @@
     return station.end - game.cameraX > -padding && station.start - game.cameraX < canvas.width + padding;
   }
 
-  function drawWorld23NeonMarquee(station, time) {
-    if (!phase2StationInView(station, 420)) return;
-    const x = 4200 - game.cameraX;
-    const y = 26;
-    const width = 360;
-    const height = 76;
-    const activation = station.completed ? 1 : clamp(station.progress * .72, .12, .68);
+  function drawWorld23Landmark(cellIndex, worldCenterX, bottomY, targetWidth, alpha = 1) {
+    if (!images.world23Landmarks) return false;
+    const bounds = images.world23LandmarkBounds?.[cellIndex];
+    if (!bounds) return false;
+    const screenCenterX = worldCenterX - game.cameraX;
+    const targetHeight = targetWidth * (bounds.h / bounds.w);
+    if (screenCenterX + targetWidth / 2 < -100 || screenCenterX - targetWidth / 2 > canvas.width + 100) return true;
     ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(
+      images.world23Landmarks,
+      bounds.x, bounds.y, bounds.w, bounds.h,
+      screenCenterX - targetWidth / 2, bottomY - targetHeight, targetWidth, targetHeight,
+    );
+    ctx.restore();
+    return true;
+  }
+
+  function drawWorld23NeonMarquee(station, time) {
+    if (!phase2StationInView(station, 520)) return;
+    drawWorld23Landmark(0, 4775, GROUND_Y + 3, 660, .96);
+    const x = 4485 - game.cameraX;
+    const y = 35;
+    const width = 580;
+    const activation = station.completed ? 1 : clamp(station.progress * .86, .08, .7);
+    ctx.save();
+    drawPhase2Truss(x - 20, 8, width + 40, 78, '#50e7ff');
     ctx.shadowColor = '#50e7ff';
-    ctx.shadowBlur = station.completed ? 32 : 9;
-    roundedRect(x, y, width, height, 18, 'rgba(17,9,45,.94)', '#50e7ff', 4);
-    ctx.shadowBlur = 0;
+    ctx.shadowBlur = station.completed ? 35 : 9;
+    roundedRect(x, y, width, 76, 18, 'rgba(17,9,45,.94)', '#50e7ff', 4);
     const title = 'NEON NECKTIES';
-    ctx.font = '900 24px Arial';
+    ctx.font = '900 27px Arial';
     ctx.textAlign = 'center';
-    const letterWidth = 21;
+    const letterWidth = 25;
     const startX = x + width / 2 - title.length * letterWidth / 2 + letterWidth / 2;
     const activeLetters = station.completed ? title.length : Math.floor(title.length * activation);
     [...title].forEach((letter, index) => {
       if (letter === ' ') return;
       const active = index < activeLetters;
-      ctx.fillStyle = active ? (index % 3 === 0 ? '#ff4fac' : index % 3 === 1 ? '#50e7ff' : '#ffd65a') : 'rgba(255,255,255,.19)';
+      ctx.fillStyle = active ? ['#ff4fac', '#50e7ff', '#ffd65a'][index % 3] : 'rgba(255,255,255,.18)';
       ctx.shadowColor = ctx.fillStyle;
-      ctx.shadowBlur = active ? 10 + Math.sin(time * .009 + index) * 3 : 0;
+      ctx.shadowBlur = active ? 12 + Math.sin(time * .008 + index) * 3 : 0;
       ctx.fillText(letter, startX + index * letterWidth, y + 46);
     });
     ctx.shadowBlur = 0;
-    ctx.fillStyle = station.completed ? '#fff8dc' : 'rgba(255,255,255,.46)';
+    ctx.fillStyle = station.completed ? '#fff8dc' : 'rgba(255,255,255,.52)';
     ctx.font = '900 9px Arial';
-    ctx.fillText(station.completed ? 'POWERED BY TACO HERO' : 'VENUE MARQUEE • POWER OFFLINE', x + width / 2, y + 65);
-    for (let bulb = 0; bulb < 18; bulb += 1) {
-      const lit = station.completed || bulb / 18 < activation;
+    ctx.fillText(station.completed ? 'ENTRANCE POWERED • SHOWTIME READY' : 'VENUE POWER • PARTIAL', x + width / 2, y + 65);
+    for (let bulb = 0; bulb < 28; bulb += 1) {
+      const lit = station.completed || bulb / 28 < activation;
       ctx.fillStyle = lit ? (bulb % 2 ? '#ff4fac' : '#ffd65a') : '#463b60';
-      ctx.beginPath(); ctx.arc(x + 15 + bulb * 19.3, y + 8, lit ? 3.2 : 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 16 + bulb * 20.2, y + 8, lit ? 3.2 : 2.5, 0, Math.PI * 2); ctx.fill();
     }
     ctx.restore();
   }
 
-  function drawWorld23BassSoundcheck(station, time) {
-    if (!phase2StationInView(station, 420)) return;
+  function drawWorld23RooftopSoundcheck(station, time) {
+    if (!phase2StationInView(station, 620)) return;
     const beatPhase = station.beatPhase ?? ((game.levelTime / BASS_STACK_BEAT_SECONDS) % 1);
     const pulse = 1 - smoothStep(clamp(beatPhase / .34, 0, 1));
-    const left = 12070 - game.cameraX;
-    const deckY = 272;
+    drawWorld23Landmark(1, 14200, GROUND_Y + 3, 610, .94);
+    const deckY = 250;
+    drawPhase2SpeakerCabinet(13978 - game.cameraX, deckY - 132, 88, 132, pulse, '#a4f766');
+    drawPhase2SpeakerCabinet(14382 - game.cameraX, deckY - 142, 92, 142, pulse, '#b780ff');
+    drawPreShowBandMember(2, 14105 - game.cameraX, deckY, 150, time);
+    drawPreShowBandMember(4, 14276 - game.cameraX, deckY, 146, time, { mirror: true });
     ctx.save();
-    for (const [offset, width, height] of [[-122, 100, 154], [520, 108, 170]]) {
-      drawPhase2SpeakerCabinet(left + offset, deckY - height + 18, width, height, pulse, '#a4f766');
-    }
-    ctx.shadowColor = '#a4f766';
-    ctx.shadowBlur = station.completed ? 22 : 8;
-    roundedRect(left + 202, deckY - 48, 188, 42, 9, '#151427', '#a4f766', 3);
-    ctx.shadowBlur = 0;
-    const meterCount = station.completed ? 10 : Math.max(2, Math.floor(station.progress * 10));
-    for (let meter = 0; meter < 10; meter += 1) {
-      ctx.fillStyle = meter < meterCount ? (meter > 7 ? '#ff4fac' : meter > 4 ? '#ffd65a' : '#a4f766') : '#3a3650';
-      ctx.fillRect(left + 214 + meter * 16, deckY - 36, 10, 14 - (meter % 3) * 3 + pulse * 5);
-    }
-    ctx.restore();
-
-    drawPreShowBandMember(2, 12220 - game.cameraX, deckY, 154, time);
-    drawPreShowBandMember(4, 12470 - game.cameraX, deckY, 154, time, { mirror: true });
-    ctx.save();
-    ctx.textAlign = 'center';
-    ctx.font = '900 9px Arial';
-    ctx.fillStyle = '#a4f766';
-    ctx.fillText('MILO • BASS', 12220 - game.cameraX, deckY - 160);
-    ctx.fillStyle = '#b780ff';
-    ctx.fillText('REX • DRUMS', 12470 - game.cameraX, deckY - 160);
+    ctx.textAlign = 'center'; ctx.font = '900 9px Arial';
+    ctx.fillStyle = '#a4f766'; ctx.fillText('MILO • BASS', 14105 - game.cameraX, deckY - 158);
+    ctx.fillStyle = '#b780ff'; ctx.fillText('REX • DRUMS', 14276 - game.cameraX, deckY - 154);
+    ctx.fillStyle = '#fff8dc'; ctx.font = '900 8px Arial';
+    ctx.fillText(station.completed ? 'MASTER RACK • LOCKED IN' : 'LIVE ROOFTOP SOUNDCHECK', 14192 - game.cameraX, 79);
     ctx.restore();
   }
 
-  function drawWorld23SpotlightRig(station, time) {
-    if (!phase2StationInView(station, 520)) return;
-    const fixtureXs = [22930, 23215, 23500, 23810, 24110];
-    const activeCount = station.completed ? fixtureXs.length : Math.max(1, Math.ceil(station.progress * fixtureXs.length));
+  function drawWorld23LagoonRehearsal(station, time) {
+    if (!phase2StationInView(station, 620)) return;
+    const glow = station.completed ? .52 : .18 + station.progress * .2;
     ctx.save();
-    fixtureXs.forEach((worldX, index) => {
-      const screenX = worldX - game.cameraX;
-      const active = index < activeCount;
-      if (active) {
-        const color = ['#50e7ff', '#ff4fac', '#ffd65a', '#b780ff', '#ff4fac'][index];
-        const sweep = Math.sin(time * .0016 + index * .9) * (station.completed ? 80 : 34);
-        const gradient = ctx.createLinearGradient(screenX, 120, screenX + sweep, GROUND_Y);
-        gradient.addColorStop(0, `${color}88`);
-        gradient.addColorStop(1, `${color}00`);
-        ctx.fillStyle = gradient;
-        ctx.globalAlpha = station.completed ? .24 : .12;
-        ctx.beginPath();
-        ctx.moveTo(screenX - 12, 120);
-        ctx.lineTo(screenX + 12, 120);
-        ctx.lineTo(screenX + sweep + 110, GROUND_Y);
-        ctx.lineTo(screenX + sweep - 110, GROUND_Y);
-        ctx.closePath();
-        ctx.fill();
-      }
-      ctx.globalAlpha = 1;
+    const water = ctx.createLinearGradient(0, 360, 0, GROUND_Y);
+    water.addColorStop(0, `rgba(80,231,255,${glow})`);
+    water.addColorStop(1, 'rgba(255,79,172,0)');
+    ctx.fillStyle = water;
+    ctx.fillRect(19580 - game.cameraX, 360, station.end - station.start, GROUND_Y - 360);
+    ctx.restore();
+    drawWorld23Landmark(2, 21635, GROUND_Y + 4, 650, .95);
+    for (let light = 0; light < 6; light += 1) {
+      const screenX = 20480 - game.cameraX + light * 270;
+      const active = station.completed || light / 6 < station.progress;
+      ctx.save(); ctx.fillStyle = active ? (light % 2 ? '#ff4fac' : '#50e7ff') : '#453d61';
+      ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = active ? 14 : 3;
+      ctx.beginPath(); ctx.arc(screenX, 238 + Math.sin(time * .004 + light) * 3, 5, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    }
+    drawPreShowBandMember(1, 20715 - game.cameraX, 276, 150, time, { mirror: true });
+    ctx.save(); ctx.fillStyle = '#50e7ff'; ctx.font = '900 9px Arial'; ctx.textAlign = 'center';
+    ctx.fillText('JET • LAGOON GUITAR REHEARSAL', 20715 - game.cameraX, 116); ctx.restore();
+  }
+
+  function drawWorld23GoldenTicket(station, encore, time) {
+    if (!phase2StationInView({ start: station.start, end: encore.end }, 620)) return;
+    drawWorld23Landmark(3, 29215, GROUND_Y + 4, 600, .96);
+    const flash = station.completed ? .7 + Math.sin(time * .01) * .2 : .2;
+    ctx.save();
+    for (let arrow = 0; arrow < 5; arrow += 1) {
+      const x = 27870 - game.cameraX + arrow * 330;
+      ctx.fillStyle = arrow % 2 ? `rgba(255,79,172,${flash})` : `rgba(255,214,90,${flash})`;
+      ctx.beginPath(); ctx.moveTo(x, 110); ctx.lineTo(x + 48, 110); ctx.lineTo(x + 48, 98);
+      ctx.lineTo(x + 82, 125); ctx.lineTo(x + 48, 152); ctx.lineTo(x + 48, 140); ctx.lineTo(x, 140); ctx.closePath(); ctx.fill();
+    }
+    roundedRect(29085 - game.cameraX, 78, 280, 58, 16, 'rgba(37,21,58,.94)', '#ffd65a', 4);
+    ctx.fillStyle = '#fff170'; ctx.shadowColor = '#ffd65a'; ctx.shadowBlur = station.completed ? 22 : 7;
+    ctx.font = '900 21px Arial'; ctx.textAlign = 'center'; ctx.fillText('GOLDEN TICKET', 29225 - game.cameraX, 114);
+    ctx.restore();
+    drawPreShowBandMember(3, 29285 - game.cameraX, 232, 148, time, { mirror: true });
+
+    const curtainLeft = 29405 - game.cameraX;
+    const curtainRight = 29955 - game.cameraX;
+    ctx.save();
+    const curtain = ctx.createLinearGradient(curtainLeft, 0, curtainRight, 0);
+    curtain.addColorStop(0, '#401441'); curtain.addColorStop(.38, '#a42970');
+    curtain.addColorStop(.5, 'rgba(25,12,52,.2)'); curtain.addColorStop(.62, '#8a225f'); curtain.addColorStop(1, '#35113d');
+    ctx.fillStyle = curtain; ctx.globalAlpha = encore.completed ? .52 : .95;
+    ctx.beginPath(); ctx.moveTo(curtainLeft, 0); ctx.lineTo(curtainLeft + 185, 0); ctx.lineTo(curtainLeft + 138, 170); ctx.lineTo(curtainLeft, 215); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(curtainRight - 190, 0); ctx.lineTo(curtainRight, 0); ctx.lineTo(curtainRight, 215); ctx.lineTo(curtainRight - 145, 172); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#ffd65a'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(curtainLeft, 3); ctx.lineTo(curtainRight, 3); ctx.stroke();
+    ctx.restore();
+
+    const stashX = 29745 - game.cameraX;
+    ctx.save(); ctx.translate(stashX, 79);
+    ctx.shadowColor = '#fff170'; ctx.shadowBlur = encore.completed ? 30 + Math.sin(time * .008) * 8 : 5;
+    roundedRect(-100, -44, 200, 78, 10, '#201536', encore.completed ? '#fff170' : '#634b73', 4);
+    ctx.fillStyle = encore.completed ? '#fff170' : '#50405f'; ctx.fillRect(-84, -28, 168, 9);
+    ['#ff4fac', '#50e7ff', '#ffd65a'].forEach((color, index) => {
+      ctx.fillStyle = encore.completed ? color : '#392b4d'; ctx.fillRect(-68 + index * 50, -8, 34, 19);
     });
-    ctx.restore();
-
-    drawPreShowBandMember(1, 23415 - game.cameraX, 216, 150, time, { mirror: true });
-    ctx.save();
-    ctx.fillStyle = '#50e7ff';
-    ctx.font = '900 9px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('JET • GUITAR / LIGHT CHECK', 23415 - game.cameraX, 60);
-    ctx.restore();
-  }
-
-  function drawWorld23Backstage(station, encore, time) {
-    if (!phase2StationInView({ start: station.start, end: encore.end }, 520)) return;
-    const curtainLeft = 33870 - game.cameraX;
-    const curtainRight = 34360 - game.cameraX;
-    ctx.save();
-    const curtainGradient = ctx.createLinearGradient(curtainLeft, 0, curtainRight, 0);
-    curtainGradient.addColorStop(0, '#4c174f');
-    curtainGradient.addColorStop(.45, '#9a246c');
-    curtainGradient.addColorStop(.52, '#26133e');
-    curtainGradient.addColorStop(1, '#68184f');
-    ctx.fillStyle = curtainGradient;
-    ctx.globalAlpha = .96;
-    ctx.beginPath();
-    ctx.moveTo(curtainLeft, 0); ctx.lineTo(curtainLeft + 132, 0);
-    ctx.lineTo(curtainLeft + 116, 108); ctx.lineTo(curtainLeft + 38, 170);
-    ctx.lineTo(curtainLeft, 170); ctx.closePath(); ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(curtainRight - 46, 0); ctx.lineTo(curtainRight, 0);
-    ctx.lineTo(curtainRight, 170); ctx.lineTo(curtainRight - 76, 132);
-    ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = '#ffd65a';
-    ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.moveTo(curtainLeft + 8, 0); ctx.lineTo(curtainRight - 8, 0); ctx.stroke();
-    ctx.restore();
-
-    ctx.save();
-    const prepGlow = station.completed ? .92 : .34;
-    for (let light = 0; light < 5; light += 1) {
-      const x = 33250 - game.cameraX + light * 145;
-      ctx.fillStyle = light % 2 ? `rgba(255,79,172,${prepGlow})` : `rgba(255,214,90,${prepGlow})`;
-      ctx.shadowColor = ctx.fillStyle;
-      ctx.shadowBlur = station.completed ? 16 : 5;
-      ctx.beginPath(); ctx.arc(x, 42, 5, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.shadowBlur = 0;
-    roundedRect(33360 - game.cameraX, 18, 300, 38, 12, 'rgba(20,10,48,.92)', '#ffd65a', 3);
-    ctx.fillStyle = '#fff8dc';
-    ctx.font = '900 14px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText('BACKSTAGE • CREW ACCESS', 33510 - game.cameraX, 42);
-    ctx.restore();
-
-    drawPreShowBandMember(3, 33145 - game.cameraX, 218, 150, time, { mirror: true });
-    const stashX = 34175 - game.cameraX;
-    ctx.save();
-    ctx.translate(stashX, 58);
-    ctx.shadowColor = '#fff170';
-    ctx.shadowBlur = encore.completed ? 30 + Math.sin(time * .008) * 8 : 5;
-    roundedRect(-84, -42, 168, 72, 10, '#201536', encore.completed ? '#fff170' : '#634b73', 4);
-    ctx.fillStyle = encore.completed ? '#fff170' : '#50405f';
-    ctx.fillRect(-70, -28, 140, 9);
-    ctx.fillStyle = encore.completed ? '#ff4fac' : '#392b4d';
-    ctx.fillRect(-58, -8, 34, 18);
-    ctx.fillStyle = encore.completed ? '#50e7ff' : '#392b4d';
-    ctx.fillRect(-12, -8, 34, 18);
-    ctx.fillStyle = encore.completed ? '#ffd65a' : '#392b4d';
-    ctx.fillRect(34, -8, 26, 18);
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = '#fff8dc';
-    ctx.font = '900 8px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText(encore.completed ? 'SPARE TIES • PICKS • SETLISTS' : 'NN • ROAD CASE 23', 0, 25);
+    ctx.shadowBlur = 0; ctx.fillStyle = '#fff8dc'; ctx.font = '900 8px Arial'; ctx.textAlign = 'center';
+    ctx.fillText(encore.completed ? 'SPARE TIES • PICKS • SETLISTS' : 'NN • ROAD CASE 23', 0, 27);
     ctx.restore();
   }
 
   function drawWorld23Phase2Destinations(time) {
     if (game.phase2.preShowHidden) return;
     const marquee = world23Phase2Station('marquee');
-    const bass = world23Phase2Station('bass');
-    const spotlight = world23Phase2Station('spotlight');
-    const backstage = world23Phase2Station('backstage');
+    const rooftops = world23Phase2Station('rooftops');
+    const lagoon = world23Phase2Station('lagoon');
+    const golden = world23Phase2Station('golden');
     const encore = world23Phase2Station('encore');
     if (marquee) drawWorld23NeonMarquee(marquee, time);
-    if (bass) drawWorld23BassSoundcheck(bass, time);
-    if (spotlight) drawWorld23SpotlightRig(spotlight, time);
-    if (backstage && encore) drawWorld23Backstage(backstage, encore, time);
+    if (rooftops) drawWorld23RooftopSoundcheck(rooftops, time);
+    if (lagoon) drawWorld23LagoonRehearsal(lagoon, time);
+    if (golden && encore) drawWorld23GoldenTicket(golden, encore, time);
+  }
+
+  function drawFeedbackFiendArena(time) {
+    const arenaLeft = FEEDBACK_FIEND_ARENA.left - game.cameraX;
+    const arenaRight = FEEDBACK_FIEND_ARENA.right - game.cameraX;
+    if (arenaRight < -240 || arenaLeft > canvas.width + 240) return;
+    const boss = game.boss;
+    const active = boss.phase !== 'dormant' && boss.phase !== 'cleared';
+    const defeated = boss.phase === 'defeated' || boss.phase === 'cleared';
+
+    ctx.save();
+    const stageGradient = ctx.createLinearGradient(0, GROUND_Y - 74, 0, GROUND_Y + 10);
+    stageGradient.addColorStop(0, '#5f3b70'); stageGradient.addColorStop(1, '#1f1838');
+    roundedRect(arenaLeft + 18, GROUND_Y - 18, arenaRight - arenaLeft - 36, 28, 7, stageGradient, '#50e7ff', 3);
+    drawPhase2Truss(arenaLeft + 14, 106, 32, GROUND_Y - 124, '#ff4fac');
+    drawPhase2Truss(arenaRight - 46, 106, 32, GROUND_Y - 124, '#50e7ff');
+    drawPhase2Truss(arenaLeft + 14, 106, arenaRight - arenaLeft - 28, 36, '#ffd65a');
+    for (let light = 0; light < 7; light += 1) {
+      const x = arenaLeft + 74 + light * ((arenaRight - arenaLeft - 148) / 6);
+      const color = ['#ff4fac', '#50e7ff', '#ffd65a'][light % 3];
+      ctx.fillStyle = defeated ? 'rgba(255,255,255,.24)' : color;
+      ctx.shadowColor = color; ctx.shadowBlur = active ? 13 : 4;
+      ctx.beginPath(); ctx.arc(x, 141, 5, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+    roundedRect(FEEDBACK_FIEND_X - game.cameraX - 142, 71, 284, 46, 13, 'rgba(21,10,48,.92)', defeated ? '#a4f766' : '#ff4fac', 3);
+    ctx.fillStyle = defeated ? '#a4f766' : '#fff4cc';
+    ctx.font = '900 15px Arial'; ctx.textAlign = 'center';
+    ctx.fillText(defeated ? 'FEEDBACK TAMED • SHOW PATH OPEN' : 'THE FEEDBACK FIEND', FEEDBACK_FIEND_X - game.cameraX, 99);
+
+    if (active && !boss.gateOpen) {
+      for (const gateX of [arenaLeft + 42, arenaRight - 42]) {
+        ctx.strokeStyle = '#ff4fac'; ctx.lineWidth = 5; ctx.shadowColor = '#ff4fac'; ctx.shadowBlur = 13;
+        for (let beam = 0; beam < 5; beam += 1) {
+          ctx.beginPath(); ctx.moveTo(gateX - 14 + beam * 7, 158); ctx.lineTo(gateX - 14 + beam * 7, GROUND_Y - 18); ctx.stroke();
+        }
+      }
+    }
+    ctx.restore();
+
+    for (const wave of boss.shockwaves) {
+      const x = wave.x - game.cameraX;
+      ctx.save();
+      const fade = clamp(wave.life / 1.4, 0, 1);
+      ctx.strokeStyle = `rgba(80,231,255,${.45 + fade * .45})`;
+      ctx.lineWidth = 6; ctx.shadowColor = '#50e7ff'; ctx.shadowBlur = 15;
+      for (let ring = 0; ring < 3; ring += 1) {
+        ctx.beginPath();
+        ctx.ellipse(x + wave.w / 2 + ring * 14, GROUND_Y - 24, 38 + ring * 18, 18 + ring * 8, 0, Math.PI, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    for (const drop of boss.feedbackDrops) {
+      const x = drop.x - game.cameraX;
+      ctx.save();
+      if (drop.timer > 0) {
+        const urgency = 1 - clamp(drop.timer / 1.55, 0, 1);
+        ctx.strokeStyle = urgency > .68 ? '#fff170' : '#ff4fac';
+        ctx.lineWidth = 4 + urgency * 3;
+        ctx.setLineDash([9, 7]);
+        ctx.beginPath(); ctx.ellipse(x, GROUND_Y - 7, 40 + Math.sin(time * .02) * 3, 11, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.setLineDash([]);
+        const beam = ctx.createLinearGradient(x, 110, x, GROUND_Y);
+        beam.addColorStop(0, 'rgba(255,79,172,0)'); beam.addColorStop(1, `rgba(255,79,172,${.12 + urgency * .28})`);
+        ctx.fillStyle = beam; ctx.fillRect(x - 24, 110, 48, GROUND_Y - 110);
+      } else {
+        ctx.fillStyle = 'rgba(255,241,112,.72)'; ctx.shadowColor = '#ff4fac'; ctx.shadowBlur = 24;
+        ctx.beginPath(); ctx.moveTo(x - 40, GROUND_Y); ctx.lineTo(x - 12, GROUND_Y - 154);
+        ctx.lineTo(x + 12, GROUND_Y - 154); ctx.lineTo(x + 40, GROUND_Y); ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    if (boss.cableSweep) {
+      const progress = 1 - boss.cableSweep.timer / boss.cableSweep.duration;
+      const sweepX = lerp(FEEDBACK_FIEND_X - 100, FEEDBACK_FIEND_ARENA.left + 60, smoothStep(progress)) - game.cameraX;
+      ctx.save(); ctx.strokeStyle = '#ffd65a'; ctx.lineWidth = 12; ctx.lineCap = 'round';
+      ctx.shadowColor = '#ff4fac'; ctx.shadowBlur = 18;
+      ctx.beginPath(); ctx.moveTo(FEEDBACK_FIEND_X - game.cameraX, GROUND_Y - 118); ctx.quadraticCurveTo(sweepX + 80, GROUND_Y - 150, sweepX, GROUND_Y - 84); ctx.stroke();
+      ctx.fillStyle = '#fff170'; ctx.beginPath(); ctx.arc(sweepX, GROUND_Y - 84, 12, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    }
+
+    const frame = defeated ? 3
+      : boss.phase === 'vulnerable' || boss.phase === 'hurt' ? 2
+        : ['shockCharge', 'shockwave', 'feedbackDrop', 'cableCharge', 'cableSweep'].includes(boss.phase) ? 1 : 0;
+    const centerX = FEEDBACK_FIEND_X - game.cameraX;
+    const chargeShake = boss.phase === 'shockCharge' ? Math.sin(time * .08) * 3 : 0;
+    if (images.feedbackFiend && images.feedbackFiendBounds?.[frame]) {
+      const bounds = images.feedbackFiendBounds[frame];
+      const height = 282;
+      const width = height * (bounds.w / bounds.h);
+      ctx.save(); ctx.translate(centerX + chargeShake, GROUND_Y);
+      ctx.shadowColor = boss.phase === 'vulnerable' ? '#fff170' : defeated ? '#a4f766' : '#ff4fac';
+      ctx.shadowBlur = active ? 18 : 7;
+      ctx.drawImage(images.feedbackFiend, bounds.x, bounds.y, bounds.w, bounds.h, -width / 2, -height, width, height);
+      ctx.restore();
+    } else {
+      drawPhase2SpeakerCabinet(centerX - 86, GROUND_Y - 238, 172, 238, active ? 1 : .2, '#ff4fac');
+    }
+
+    if (boss.phase === 'vulnerable') {
+      const core = feedbackFiendCore();
+      const coreX = core.x + core.w / 2 - game.cameraX;
+      const pulse = .8 + Math.sin(time * .018) * .2;
+      ctx.save(); ctx.strokeStyle = '#fff170'; ctx.lineWidth = 4; ctx.shadowColor = '#fff170'; ctx.shadowBlur = 20;
+      ctx.beginPath(); ctx.ellipse(coreX, core.y + 10, 62 * pulse, 18 * pulse, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = '#fff8dc'; ctx.font = '900 9px Arial'; ctx.textAlign = 'center';
+      ctx.fillText('STOMP!', coreX, core.y - 15); ctx.restore();
+    }
   }
 
   function drawGenerator(generator, time) {
@@ -4668,9 +5155,9 @@
     if (game.state === 'concert' || game.state === 'results') return;
     const activeDialogue = world.phase2Stations.find((station) => station.dialogue && station.dialogueTimer > 0);
     if (activeDialogue && !game.phase2.preShowHidden) {
-      const speaker = activeDialogue.id === 'bass' ? 'MILO + REX • SOUNDCHECK'
-        : activeDialogue.id === 'spotlight' ? 'JET • LIGHT CHECK'
-          : 'ARMAN • BACKSTAGE';
+      const speaker = activeDialogue.id === 'rooftops' ? 'MILO + REX • ROOFTOP SOUNDCHECK'
+        : activeDialogue.id === 'lagoon' ? 'JET • LAGOON REHEARSAL'
+          : 'ARMAN • GOLDEN TICKET';
       const entrance = smoothStep(clamp((3.2 - activeDialogue.dialogueTimer) / .2, 0, 1));
       const exit = smoothStep(clamp(activeDialogue.dialogueTimer / .25, 0, 1));
       ctx.save();
@@ -4783,6 +5270,16 @@
       roundedRect(410, 58, 288 * progress, 9, 5, '#ff4fac');
       ctx.fillStyle = '#fff'; ctx.font = '900 10px Arial';
       ctx.fillText(`${formatTime(game.concert.timer)} / 3:07`, 554, 82);
+    }
+    if (game.state !== 'concert' && game.boss.phase !== 'dormant' && game.boss.phase !== 'cleared') {
+      const bossColor = game.boss.phase === 'vulnerable' ? '#fff170' : game.boss.defeated ? '#a4f766' : '#ff4fac';
+      roundedRect(735, 84, 207, 48, 14, 'rgba(20,10,48,.76)', bossColor, 3);
+      ctx.fillStyle = bossColor; ctx.font = '900 10px Arial'; ctx.textAlign = 'center';
+      ctx.fillText(game.boss.defeated ? 'FEEDBACK TAMED' : 'FEEDBACK FIEND', 838, 101);
+      for (let hit = 0; hit < FEEDBACK_FIEND_MAX_HEALTH; hit += 1) {
+        const alive = hit < game.boss.health;
+        roundedRect(770 + hit * 46, 111, 34, 9, 5, alive ? bossColor : 'rgba(255,255,255,.16)');
+      }
     }
     if (abilities.isFrenzy(game.abilities)) {
       ctx.fillStyle = '#50e7ff';
@@ -5047,6 +5544,7 @@
     for (const checkpoint of world.checkpoints) drawCheckpoint(checkpoint, time);
     for (const generator of world.generators) drawGenerator(generator, time);
     drawPinata(time);
+    drawFeedbackFiendArena(time);
     for (let index = 0; index < world.fans.length; index += 1) drawFan(world.fans[index], index, time);
     for (const enemy of world.enemies) drawEnemy(enemy, time);
     heroCore.drawRespawnFX(ctx, game.respawn, player, game.cameraX, time, {
@@ -5321,6 +5819,25 @@
           safeDropToMainRoute: true,
           repeatProtected: world.phase2Stations.every((station) => typeof station.completed === 'boolean'),
         },
+        boss: {
+          name: 'THE FEEDBACK FIEND',
+          phase: game.boss.phase,
+          health: game.boss.health,
+          maxHealth: game.boss.maxHealth,
+          defeated: game.boss.defeated,
+          gateOpen: game.boss.gateOpen,
+          hitsTaken: game.boss.hitsTaken,
+          retryCount: game.boss.retryCount,
+          rewardSpawned: game.boss.rewardSpawned,
+          arena: { ...FEEDBACK_FIEND_ARENA, bossX: FEEDBACK_FIEND_X },
+          attacks: ['bass-shockwave', 'feedback-drop', 'cable-sweep'],
+          damageMethod: 'three-stomps-on-open-amp-core',
+          normalHeroCapable: true,
+          superHeroRequired: false,
+          activeShockwaves: game.boss.shockwaves.length,
+          activeFeedbackDrops: game.boss.feedbackDrops.length,
+          cableSweepActive: Boolean(game.boss.cableSweep),
+        },
         world23CombatAudit: game.world23CombatAudit,
         platformOverlapCount: game.platformOverlapCount,
         platformOverlapPairs: game.platformOverlapPairs || [],
@@ -5411,6 +5928,12 @@
           premiumTambourine: Boolean(images.tacoTambourine),
           premiumPreShowBand: Boolean(images.preShowBand),
           preShowBandAlphaRemoved: images.preShowBandAlphaRemoved || 0,
+          premiumPhase2Landmarks: Boolean(images.world23Landmarks),
+          landmarkAlphaRemoved: images.landmarkAlphaRemoved || 0,
+          premiumFeedbackFiend: Boolean(images.feedbackFiend),
+          bandFeetAnchoredToSurface: Boolean(images.preShowBandBounds),
+          checkpointArtCroppedToFoundation: Boolean(images.checkpointBounds),
+          checkpointOliviaFeetAnchored: Boolean(images.checkpointOliviaBounds),
           enemies: world.enemies.filter((enemy) => Math.abs((enemy.baseY ?? enemy.y) + enemy.h - GROUND_Y) < 2).length,
           enemyTotal: world.enemies.length,
           sharedHeroArt: Boolean(images.hero),
@@ -5449,7 +5972,65 @@
     requestAnimationFrame(frame);
   }
 
-  function preparePreShowBandSheet(source) {
+  function measureAlphaBoundsByGrid(sheet, columns, rows) {
+    const boundsCanvas = document.createElement('canvas');
+    boundsCanvas.width = sheet.width;
+    boundsCanvas.height = sheet.height;
+    const boundsContext = boundsCanvas.getContext('2d', { willReadFrequently: true });
+    boundsContext.drawImage(sheet, 0, 0);
+    const data = boundsContext.getImageData(0, 0, sheet.width, sheet.height).data;
+    const cellWidth = sheet.width / columns;
+    const cellHeight = sheet.height / rows;
+    const bounds = Array.from({ length: columns * rows }, () => ({
+      minX: Number.POSITIVE_INFINITY, minY: Number.POSITIVE_INFINITY,
+      maxX: Number.NEGATIVE_INFINITY, maxY: Number.NEGATIVE_INFINITY,
+    }));
+    for (let y = 0; y < sheet.height; y += 1) {
+      for (let x = 0; x < sheet.width; x += 1) {
+        if (data[(y * sheet.width + x) * 4 + 3] < 18) continue;
+        const column = Math.min(columns - 1, Math.floor(x / cellWidth));
+        const row = Math.min(rows - 1, Math.floor(y / cellHeight));
+        const cell = bounds[row * columns + column];
+        cell.minX = Math.min(cell.minX, x);
+        cell.minY = Math.min(cell.minY, y);
+        cell.maxX = Math.max(cell.maxX, x);
+        cell.maxY = Math.max(cell.maxY, y);
+      }
+    }
+    return bounds.map((cell, index) => {
+      const column = index % columns;
+      const row = Math.floor(index / columns);
+      if (!Number.isFinite(cell.minX)) {
+        return { x: column * cellWidth, y: row * cellHeight, w: cellWidth, h: cellHeight };
+      }
+      return {
+        x: cell.minX, y: cell.minY,
+        w: cell.maxX - cell.minX + 1,
+        h: cell.maxY - cell.minY + 1,
+      };
+    });
+  }
+
+  function measureImageRegionAlphaBounds(sheet, sourceX, sourceY, sourceWidth, sourceHeight) {
+    const boundsCanvas = document.createElement('canvas');
+    boundsCanvas.width = sourceWidth;
+    boundsCanvas.height = sourceHeight;
+    const boundsContext = boundsCanvas.getContext('2d', { willReadFrequently: true });
+    boundsContext.drawImage(
+      sheet,
+      sourceX, sourceY, sourceWidth, sourceHeight,
+      0, 0, sourceWidth, sourceHeight,
+    );
+    const bounds = measureAlphaBoundsByGrid(boundsCanvas, 1, 1)[0];
+    return {
+      x: sourceX + bounds.x,
+      y: sourceY + bounds.y,
+      w: bounds.w,
+      h: bounds.h,
+    };
+  }
+
+  function prepareNeutralBackgroundSheet(source, counterKey) {
     if (!source) return null;
     const sheet = document.createElement('canvas');
     sheet.width = source.width;
@@ -5499,7 +6080,19 @@
       if (index < total - sheet.width) enqueue(index + sheet.width);
     }
     sheetContext.putImageData(pixels, 0, 0);
-    images.preShowBandAlphaRemoved = removed;
+    images[counterKey] = removed;
+    return sheet;
+  }
+
+  function preparePreShowBandSheet(source) {
+    const sheet = prepareNeutralBackgroundSheet(source, 'preShowBandAlphaRemoved');
+    if (sheet) images.preShowBandBounds = measureAlphaBoundsByGrid(sheet, band.length, 1);
+    return sheet;
+  }
+
+  function prepareWorld23LandmarkSheet(source) {
+    const sheet = prepareNeutralBackgroundSheet(source, 'landmarkAlphaRemoved');
+    if (sheet) images.world23LandmarkBounds = measureAlphaBoundsByGrid(sheet, 2, 2);
     return sheet;
   }
 
@@ -5541,6 +6134,8 @@
     loadImage('assets/world2_3_terrain_atlas_v1.webp'),
     loadImage('assets/world2_3_checkpoint_stations_v1.webp'),
     loadImage('assets/world2_1_catamaran_arm_layer_base_v1.webp'),
+    loadImage('assets/world2_3_preshow_landmarks_v2.webp'),
+    loadImage('assets/world2_3_feedback_fiend_v1.webp'),
   ]).then(([
     hero, items, bandStage, oliviaCrowd, worldEnemies, heroTerrainItems,
     environmentStage, bandOliviaCrowd, farSky, midground, nearScenery,
@@ -5549,6 +6144,7 @@
     environmentSoundcheck, environmentBeach, environmentRooftops,
     environmentStampede, environmentLagoon, environmentPowerup, environmentVictory,
     terrainRemaster, checkpointStations, catamaranRemasterBase,
+    world23LandmarksRaw, feedbackFiendArt,
   ]) => {
     images.hero = hero;
     images.items = items;
@@ -5578,6 +6174,19 @@
     images.terrainRemaster = terrainRemaster;
     images.checkpointStations = checkpointStations;
     images.catamaranRemasterBase = catamaranRemasterBase;
+    images.world23Landmarks = prepareWorld23LandmarkSheet(world23LandmarksRaw);
+    images.feedbackFiend = feedbackFiendArt;
+    if (images.feedbackFiend) {
+      images.feedbackFiendBounds = measureAlphaBoundsByGrid(images.feedbackFiend, 4, 1);
+    }
+    if (images.checkpointStations) {
+      images.checkpointBounds = measureAlphaBoundsByGrid(images.checkpointStations, 3, 2);
+    }
+    if (images.bandOliviaCrowd) {
+      images.checkpointOliviaBounds = measureImageRegionAlphaBounds(
+        images.bandOliviaCrowd, 1300, 339, 157, 243,
+      );
+    }
     loadProgress();
     setupInputs();
     resetGame();

@@ -2384,8 +2384,8 @@ test("ships the complete 35,000-unit Neon Neckties concert level", async () => {
   assert.match(runtime, /OLIVIA IS LOADING THE LAST TACOS!/);
   assert.match(runtime, /TACO ROADSTER: READY TO ROLL!/);
   assert.match(runtime, /SHOWTIME! OLIVIA IS TAKING THE SCENIC ROUTE!/);
-  assert.match(html, /level2-3\.js\?v=22/);
-  assert.match(runtime, /SOURCE_VERSION = 'w2-3-v22-neon-neckties-preshow'/);
+  assert.match(html, /level2-3\.js\?v=23/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-3-v23-station-remaster-feedback-fiend'/);
   assert.match(runtime, /generatorDefensePlans/);
   assert.match(runtime, /function ensureGeneratorDefensePlatform/);
   assert.match(runtime, /finitePlatformGeometry: world\.platforms\.every/);
@@ -2443,28 +2443,34 @@ test("ships the complete 35,000-unit Neon Neckties concert level", async () => {
     /function resolveConcertEntry\(playerX, score, entryStatus\) \{[\s\S]*?\n  \}/,
   );
   assert.ok(concertEntryFunction, "World 2-3 exposes a deterministic concert-entry transition");
-  const concertEntryContext = { CONCERT_ENTRY_TRIGGER_X: 34520 };
+  const concertEntryContext = { CONCERT_ENTRY_TRIGGER_X: 34820 };
   vm.runInNewContext(
     `${concertEntryFunction[0]}; globalThis.resolveConcertEntryForTest = resolveConcertEntry;`,
     concertEntryContext,
     { filename: "level2-3-concert-entry.js" },
   );
-  const mainRouteStatus = { reason: "main-route", routeReady: true, encoreReady: false };
-  const beforeBoundary = concertEntryContext.resolveConcertEntryForTest(34519, 50000, mainRouteStatus);
+  const blockedBossStatus = { reason: "main-route", routeReady: false, bossReady: false, encoreReady: false };
+  assert.equal(
+    concertEntryContext.resolveConcertEntryForTest(34820, 50000, blockedBossStatus).shouldStart,
+    false,
+    "the concert cannot begin before Feedback Fiend is defeated",
+  );
+  const mainRouteStatus = { reason: "main-route", routeReady: true, bossReady: true, encoreReady: false };
+  const beforeBoundary = concertEntryContext.resolveConcertEntryForTest(34819, 50000, mainRouteStatus);
   assert.equal(beforeBoundary.shouldStart, false);
   for (const score of [0, 34540, 35000, 50000]) {
-    const decision = concertEntryContext.resolveConcertEntryForTest(34520, score, mainRouteStatus);
+    const decision = concertEntryContext.resolveConcertEntryForTest(34820, score, mainRouteStatus);
     assert.equal(decision.shouldStart, true, `score ${score} must not block the main concert route`);
     assert.equal(decision.entryReason, "main-route");
     assert.equal(decision.scoreRequirement, 0);
   }
   const circuitDecision = concertEntryContext.resolveConcertEntryForTest(
-    34520,
+    34820,
     1000,
     { reason: "stage-circuits", routeReady: true, encoreReady: true },
   );
   const encoreDecision = concertEntryContext.resolveConcertEntryForTest(
-    34520,
+    34820,
     1000,
     { reason: "full-energy-backstage-encore", routeReady: true, encoreReady: true },
   );
@@ -2522,7 +2528,7 @@ test("ships the complete 35,000-unit Neon Neckties concert level", async () => {
   assert.equal(manifest.display, "fullscreen");
 });
 
-test("ships World 2-3 Neon Neckties pre-show exploration without gating the concert", async () => {
+test("remasters World 2-3 pre-show exploration and gates the crowd only behind Feedback Fiend", async () => {
   const runtime = await readFile(new URL("../public/game/level2-3.js", import.meta.url), "utf8");
   const html = await readFile(new URL("../public/game/level2-3.html", import.meta.url), "utf8");
   const audio = await readFile(new URL("../public/game/audio-catalog.js", import.meta.url), "utf8");
@@ -2530,18 +2536,18 @@ test("ships World 2-3 Neon Neckties pre-show exploration without gating the conc
   assert.match(runtime, /const WORLD23_PHASE2_STATIONS = Object\.freeze/);
   for (const station of [
     "Neon Marquee Climb",
-    "Bass Stack Bounce",
-    "Spotlight Rig Run",
-    "Backstage Catwalk",
+    "Roadie Rooftops Soundcheck",
+    "Neon Lagoon Rehearsal",
+    "Golden Ticket Victory Dash",
     "Encore Stash",
   ]) {
     assert.match(runtime, new RegExp(`name: '${station}'`));
   }
-  for (const completion of ["MARQUEE ONLINE", "SOUNDCHECK COMPLETE", "LIGHTS READY", "BACKSTAGE READY"]) {
+  for (const completion of ["MARQUEE ONLINE", "SOUNDCHECK COMPLETE", "LAGOON REHEARSAL READY", "GOLDEN TICKET"]) {
     assert.match(runtime, new RegExp(`completion: '${completion}'`));
   }
   assert.match(runtime, /completion: 'ENCORE STASH DISCOVERED!'/);
-  assert.doesNotMatch(runtime, /(?:MARQUEE|SOUNDCHECK|LIGHTS|BACKSTAGE)[^'\n]*DISCOVERED!/);
+  assert.doesNotMatch(runtime, /(?:MARQUEE|SOUNDCHECK|LAGOON|GOLDEN TICKET)[^'\n]*DISCOVERED!/);
 
   assert.match(runtime, /characters: Object\.freeze\(\[2, 4\]\)/);
   assert.match(runtime, /dialogue: 'ONE MORE TIME\. MAKE IT SHAKE\.'/);
@@ -2561,14 +2567,36 @@ test("ships World 2-3 Neon Neckties pre-show exploration without gating the conc
   assert.match(runtime, /marquee: true,[\s\S]*sound: true,[\s\S]*lights: true,[\s\S]*backstage: true/);
 
   assert.match(runtime, /world2_3_neon_neckties_preshow_v1\.png/);
+  assert.match(runtime, /world2_3_preshow_landmarks_v2\.webp/);
+  assert.match(runtime, /world2_3_feedback_fiend_v1\.webp/);
   assert.match(runtime, /function preparePreShowBandSheet/);
-  assert.match(html, /audio-catalog\.js\?v=9/);
+  assert.match(runtime, /repeatedFivePlatformStaircases: 0/);
+  assert.match(runtime, /structural-climb-moving-venue-architecture/);
+  assert.match(runtime, /horizontal-rooftop-parkour-single-bass-launch/);
+  assert.match(runtime, /waterfront-pontoons-suspended-rehearsal-structures/);
+  assert.match(runtime, /fast-forward-flow-ticket-arches-and-moving-signs/);
+  assert.match(runtime, /catamaranStart: 22800/);
+  assert.match(runtime, /bossToCrowdBuffer/);
+  assert.match(runtime, /function drawGroundedCheckpointOlivia/);
+  assert.match(runtime, /checkpointArtCroppedToFoundation/);
+  assert.match(runtime, /function drawFeedbackFiendArena/);
+  assert.match(runtime, /const FEEDBACK_FIEND_MAX_HEALTH = 3/);
+  assert.match(runtime, /attacks: \['bass-shockwave', 'feedback-drop', 'cable-sweep'\]/);
+  assert.match(runtime, /damageMethod: 'three-stomps-on-open-amp-core'/);
+  assert.match(runtime, /resetFeedbackFiendForRetry/);
+  assert.match(runtime, /bossReady = game\.boss\.defeated/);
+  assert.match(html, /audio-catalog\.js\?v=10/);
   await access(new URL("../public/game/assets/world2_3_neon_neckties_preshow_v1.png", import.meta.url));
+  await access(new URL("../public/game/assets/world2_3_preshow_landmarks_v2.webp", import.meta.url));
+  await access(new URL("../public/game/assets/world2_3_feedback_fiend_v1.webp", import.meta.url));
   for (const eventId of [
     "stage.generatorActivate",
     "concert.start",
     "concert.tambourineAccent",
     "checkpoint.activate",
+    "boss.feedbackFiend.enter",
+    "boss.feedbackFiend.shockwave",
+    "boss.feedbackFiend.defeat",
   ]) {
     assert.match(runtime, new RegExp(eventId.replaceAll(".", "\\.")));
     assert.match(audio, new RegExp(`'${eventId.replaceAll(".", "\\.")}'`));
@@ -2849,7 +2877,12 @@ test("keeps every remaining level runtime on the shared Phase 3 audio engine", a
     const catalogPosition = html.indexOf('src="audio-catalog.js');
     const enginePosition = html.indexOf('src="audio-engine.js');
     const runtimePosition = html.indexOf(`src="${runtimeName}`);
-    assert.match(html, /src="audio-catalog\.js\?v=9"/, `${pageName} uses the release catalog cache key`);
+    const expectedCatalogVersion = pageName === "level2-3.html" ? 10 : 9;
+    assert.match(
+      html,
+      new RegExp(`src="audio-catalog\\.js\\?v=${expectedCatalogVersion}"`),
+      `${pageName} uses the release catalog cache key`,
+    );
     assert.match(html, /src="audio-engine\.js\?v=7"/, `${pageName} uses the release engine cache key`);
     assert.ok(catalogPosition >= 0, `${pageName} loads the audio catalog`);
     assert.ok(enginePosition > catalogPosition, `${pageName} loads the engine after its catalog`);
