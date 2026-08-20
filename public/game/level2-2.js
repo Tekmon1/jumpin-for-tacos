@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w2-2-v12-alternating-super-run';
+  const SOURCE_VERSION = 'w2-2-v13-phase2-exploration';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -114,6 +114,72 @@
     yOffset: -119,
     pulseDuration: .16,
   });
+  const CALDERA_EXPLORATION_VERSION = 'world-2-2-phase2-v1';
+  const ERUPTION_SCRIPT_START = 18450;
+  const SURF_SCRIPT_START = 27180;
+  const OLIVIA_COMPACT_DROP = Object.freeze({
+    triggerStart: 7000,
+    triggerEnd: 8400,
+    exitAt: 8350,
+    maxDrops: 8,
+    previousSegments: 2,
+    previousFootprint: Object.freeze([[7000, 11900], [19400, 27400]]),
+    revisedFootprint: Object.freeze([7000, 8400]),
+  });
+  const calderaExplorationPlan = Object.freeze([
+    Object.freeze({
+      id: 'coconut-camp-sky-lodge', name: 'Coconut Camp Sky Lodge', presentation: 'warm-camp-activation',
+      arrivalTitle: 'SKY LODGE ROUTE REACHED', completionTitle: 'CAMP LOOKOUT LIT!',
+      rewardLabel: '+1,700 SCORE  •  8-TACO LANTERN SPIRAL', score: 1700, bonusTacos: 8,
+      trigger: Object.freeze({ x: 4860, y: -8, w: 210, h: 120 }),
+      routeRange: Object.freeze([3780, 5160]), rewardPlatformId: 'phase2-lodge-upper', waypointCount: 5,
+      worldPercent: Object.freeze([10.8, 14.7]),
+    }),
+    Object.freeze({
+      id: 'geyser-garden-launch', name: 'Geyser Garden Launch', presentation: 'geyser-orchestra',
+      arrivalTitle: 'GEYSER GARDEN ROUTE REACHED', completionTitle: 'GEYSER ORCHESTRA!',
+      rewardLabel: '+2,100 SCORE  •  10-TACO GEOTHERMAL FINALE', score: 2100, bonusTacos: 10,
+      trigger: Object.freeze({ x: 10020, y: -20, w: 390, h: 126 }),
+      routeRange: Object.freeze([9180, 10620]), rewardPlatformId: 'phase2-geyser-finale', waypointCount: 4,
+      worldPercent: Object.freeze([26.2, 30.3]),
+    }),
+    Object.freeze({
+      id: 'lava-tube-lantern-shaft', name: 'Lava Tube Lantern Shaft', presentation: 'progressive-illumination',
+      arrivalTitle: 'LANTERN SHAFT ROUTE REACHED', completionTitle: 'LANTERN SHAFT AGLOW',
+      rewardLabel: '+2,300 SCORE  •  9-TACO LANTERN CASCADE', score: 2300, bonusTacos: 9,
+      trigger: Object.freeze({ x: 14510, y: -258, w: 310, h: 142 }),
+      routeRange: Object.freeze([14060, 15180]), rewardPlatformId: 'phase2-lantern-top', waypointCount: 5,
+      worldPercent: Object.freeze([40.2, 43.4]),
+    }),
+    Object.freeze({
+      id: 'caldera-firewatch', name: 'Caldera Firewatch', presentation: 'volcano-warning',
+      arrivalTitle: 'FIREWATCH ROUTE REACHED', completionTitle: 'CALDERA ALERT ONLINE',
+      rewardLabel: '+2,600 SCORE  •  9-TACO WARNING FAN', score: 2600, bonusTacos: 9,
+      trigger: Object.freeze({ x: 17420, y: 54, w: 350, h: 126 }),
+      routeRange: Object.freeze([16680, 17840]), rewardPlatformId: 'phase2-firewatch-upper', waypointCount: 4,
+      worldPercent: Object.freeze([47.7, 51.0]),
+    }),
+  ]);
+  const obsidianStashPlan = Object.freeze({
+    id: 'obsidian-stash', name: 'Obsidian Stash', presentation: 'true-secret',
+    completionTitle: 'OBSIDIAN STASH DISCOVERED!',
+    rewardLabel: '+5,500 SCORE  •  16-TACO JACKPOT  •  2 RAINBOWS  •  1 GOLDEN',
+    score: 5500, bonusTacos: 16, rainbowCount: 2, goldenCount: 1,
+    trigger: Object.freeze({ x: 15518, y: 64, w: 300, h: 176 }),
+    routeRange: Object.freeze([15180, 16080]), rewardPlatformId: 'phase2-obsidian-stash', waypointCount: 1,
+    worldPercent: Object.freeze([43.4, 45.9]), requiredParentProgress: 5,
+  });
+  const calderaExplorationArt = Object.freeze({
+    skyLodge: Object.freeze({ x: 3780, y: -158, w: 1200, h: 800, image: 'phase2SkyLodge' }),
+    geyserGarden: Object.freeze({ x: 9140, y: -188, w: 1400, h: 933, image: 'phase2GeyserGarden' }),
+    lanternShaft: Object.freeze({ x: 14125, y: -450, w: 650, h: 975, image: 'phase2LanternShaft' }),
+    obsidianStash: Object.freeze({ x: 15280, y: -181, w: 700, h: 466, image: 'phase2ObsidianStash' }),
+    firewatch: Object.freeze({ x: 16680, y: -164, w: 1200, h: 800, image: 'phase2CalderaFirewatch' }),
+  });
+  const phase2ReservedRanges = Object.freeze([
+    ...calderaExplorationPlan.map((entry) => entry.routeRange),
+    obsidianStashPlan.routeRange,
+  ]);
   const keys = { left: false, right: false, jump: false };
   const world = {
     platforms: [], collectibles: [], enemies: [], checkpoints: [], cannons: [],
@@ -136,9 +202,9 @@
     wave: { active: false, done: false, x: 0, speed: 0, crashing: false, crashTimer: 0 },
     surf: {
       phase: 'idle', oliviaX: 0, oliviaY: 330, oliviaTimer: 0,
-      boardMounted: false, mountX: 25900, landingLaunched: false, clearedObstacles: 0,
+      boardMounted: false, mountX: 27640, landingLaunched: false, clearedObstacles: 0,
     },
-    boat: { state: 'basecamp', x: 720, speed: 0, dropTimer: 0, dropPulse: 0, catches: 0, pass: 0 },
+    boat: { state: 'basecamp', x: 720, speed: 0, dropTimer: 0, dropPulse: 0, catches: 0, pass: 0, dropCount: 0, totalSpawns: 0 },
     eruption: { state: 'dormant', timer: 0, flash: 0, tremor: 0, rainbowBurst: 0 },
     cannonballs: [],
     tideY: 474, confetti: [], particles: [], impactTexts: [], fireworks: [],
@@ -152,6 +218,7 @@
     platformOverlapCount: 0, checkpointsGrounded: 0,
     environmentRemasterReady: false, foregroundRemasterReady: false,
     world2EncounterAudit: null, geyserLaunchTimer: 0,
+    calderaExploration: null, calderaExplorationGeometryAudit: null,
   };
 
   let vehicleLoopHandle = null;
@@ -167,6 +234,11 @@
   const previewSuper = previewHost && params.get('super') === '1';
   const previewRespawn = previewHost && params.get('respawn') === '1';
   const previewRespawnCheckpoint = previewHost ? Number(params.get('respawnCheckpoint') || -1) : -1;
+  const previewPhase2Ready = previewHost ? params.get('phase2Ready') || '' : '';
+  const previewPhase2Complete = previewHost ? params.get('phase2Complete') || '' : '';
+  const previewPhase2Secret = previewHost && params.get('phase2Secret') === '1';
+  const previewPowerDown = previewHost && params.get('powerDown') === '1';
+  const previewNoDamage = previewHost && params.get('noDamage') === '1';
 
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
   const lerp = (a, b, t) => a + (b - a) * t;
@@ -316,6 +388,7 @@
       const offsets = [0, -220, 220, -360, 360];
       const canPlaceGroup = (candidateBase) => {
         if (candidateBase < section.start + 80 || candidateBase + 672 > section.end - 80) return false;
+        if (phase2ReservedRanges.some(([start, end]) => candidateBase < end && candidateBase + 672 > start)) return false;
         const candidates = [
           { x: candidateBase, y: 350 },
           { x: candidateBase + 174, y: 294 },
@@ -448,6 +521,158 @@
       ));
     if (resolvedX == null) return null;
     return addPlatform({ x: resolvedX, y, w: width, h: 22, style, secret: true });
+  }
+
+  function createCalderaExplorationState() {
+    return {
+      version: CALDERA_EXPLORATION_VERSION,
+      scope: 'world-2-2-only',
+      normalRouteUnaffected: true,
+      noRequiredSuperTraversal: true,
+      phase1BalanceFrozen: true,
+      completionBanner: null,
+      cameraLift: 0,
+      cameraTargetLift: 0,
+      previewPowerDownTriggered: false,
+      destinations: Object.fromEntries(calderaExplorationPlan.map((entry) => [entry.id, {
+        revealed: false,
+        completed: false,
+        completedAt: null,
+        progress: 0,
+        lastAudioProgress: 0,
+        arrivalAcknowledged: false,
+        completionCount: 0,
+        rewardSpawned: false,
+        rewardSpawnCount: 0,
+        rewardSurfaceId: null,
+        environmentEnergized: false,
+        spectacleTimer: 0,
+        spectacleMaxTimer: 0,
+        orchestraStage: -1,
+      }])),
+      secret: {
+        revealed: false,
+        completed: false,
+        completedAt: null,
+        progress: 0,
+        arrivalAcknowledged: false,
+        completionCount: 0,
+        rewardSpawned: false,
+        rewardSpawnCount: 0,
+        rewardSurfaceId: null,
+        environmentEnergized: false,
+        spectacleTimer: 0,
+        spectacleMaxTimer: 0,
+        reveal: 0,
+      },
+    };
+  }
+
+  function calderaExplorationStateForEntry(entry) {
+    if (!game.calderaExploration || !entry) return null;
+    return entry.id === obsidianStashPlan.id
+      ? game.calderaExploration.secret
+      : game.calderaExploration.destinations[entry.id];
+  }
+
+  function addCalderaExplorationPlatform(data) {
+    return addPlatform({
+      h: 24,
+      optional: true,
+      mainRoute: false,
+      phase2ArtSurface: true,
+      phase2Escape: 'drop-to-main-route',
+      ...data,
+    });
+  }
+
+  function buildCalderaExplorationGeometry() {
+    const phase2Platforms = [
+      addCalderaExplorationPlatform({ id: 'phase2-lodge-entry', x: 3985, y: 310, w: 300, style: 'surfboard', phase2Discovery: 'coconut-camp-sky-lodge', phase2Waypoint: 1, superEntry: true }),
+      addCalderaExplorationPlatform({ id: 'phase2-lodge-mid', x: 4200, y: 226, w: 300, style: 'surfboard', phase2Discovery: 'coconut-camp-sky-lodge', phase2Waypoint: 2 }),
+      addCalderaExplorationPlatform({ id: 'phase2-lodge-bridge', x: 4430, y: 170, w: 330, style: 'surfboard', phase2Discovery: 'coconut-camp-sky-lodge', phase2Waypoint: 3 }),
+      addCalderaExplorationPlatform({ id: 'phase2-lodge-upper', x: 4685, y: 106, w: 360, style: 'surfboard', phase2Discovery: 'coconut-camp-sky-lodge', phase2Waypoint: 4 }),
+      addCalderaExplorationPlatform({ id: 'phase2-lodge-crown', x: 4870, y: 34, w: 205, style: 'surfboard', phase2Discovery: 'coconut-camp-sky-lodge', phase2Waypoint: 5 }),
+
+      addCalderaExplorationPlatform({ id: 'phase2-geyser-entry', x: 9285, y: 306, w: 240, style: 'leaf', phase2Discovery: 'geyser-garden-launch', phase2Waypoint: 1, superEntry: true }),
+      addCalderaExplorationPlatform({ id: 'phase2-geyser-mid', x: 9525, y: 244, w: 255, style: 'leaf', phase2Discovery: 'geyser-garden-launch', phase2Waypoint: 2 }),
+      addCalderaExplorationPlatform({ id: 'phase2-geyser-upper', x: 9770, y: 148, w: 275, style: 'leaf', phase2Discovery: 'geyser-garden-launch', phase2Waypoint: 3 }),
+      addCalderaExplorationPlatform({ id: 'phase2-geyser-finale', x: 10018, y: 60, w: 405, style: 'leaf', phase2Discovery: 'geyser-garden-launch', phase2Waypoint: 4 }),
+
+      addCalderaExplorationPlatform({ id: 'phase2-lantern-entry', x: 14242, y: 304, w: 242, style: 'temple', phase2Discovery: 'lava-tube-lantern-shaft', phase2Waypoint: 1, superEntry: true }),
+      addCalderaExplorationPlatform({ id: 'phase2-lantern-hanging', x: 14442, y: 226, w: 176, style: 'temple', phase2Discovery: 'lava-tube-lantern-shaft', phase2Waypoint: 2, moving: true, axis: 'y', range: 14, speed: .82, phase: 1.3 }),
+      addCalderaExplorationPlatform({ id: 'phase2-lantern-mid', x: 14262, y: 105, w: 268, style: 'temple', phase2Discovery: 'lava-tube-lantern-shaft', phase2Waypoint: 3 }),
+      addCalderaExplorationPlatform({ id: 'phase2-lantern-upper', x: 14502, y: -46, w: 225, style: 'temple', phase2Discovery: 'lava-tube-lantern-shaft', phase2Waypoint: 4 }),
+      addCalderaExplorationPlatform({ id: 'phase2-lantern-top', x: 14276, y: -185, w: 350, style: 'temple', phase2Discovery: 'lava-tube-lantern-shaft', phase2Waypoint: 5 }),
+
+      addCalderaExplorationPlatform({ id: 'phase2-secret-clue-a', x: 14822, y: -72, w: 170, style: 'obsidian-high', phase2Discovery: 'obsidian-stash', phase2SecretRoute: true }),
+      addCalderaExplorationPlatform({ id: 'phase2-secret-clue-b', x: 15102, y: 6, w: 182, style: 'obsidian-high', phase2Discovery: 'obsidian-stash', phase2SecretRoute: true }),
+      addCalderaExplorationPlatform({ id: 'phase2-obsidian-stash', x: 15472, y: 158, w: 330, style: 'obsidian-high', phase2Discovery: 'obsidian-stash', phase2Waypoint: 1, hiddenSecretSurface: true }),
+
+      addCalderaExplorationPlatform({ id: 'phase2-firewatch-entry', x: 16872, y: 306, w: 280, style: 'obsidian-high', phase2Discovery: 'caldera-firewatch', phase2Waypoint: 1, superEntry: true }),
+      addCalderaExplorationPlatform({ id: 'phase2-firewatch-lower', x: 17118, y: 258, w: 365, style: 'obsidian-high', phase2Discovery: 'caldera-firewatch', phase2Waypoint: 2 }),
+      addCalderaExplorationPlatform({ id: 'phase2-firewatch-mid', x: 17328, y: 158, w: 365, style: 'obsidian-high', phase2Discovery: 'caldera-firewatch', phase2Waypoint: 3 }),
+      addCalderaExplorationPlatform({ id: 'phase2-firewatch-upper', x: 17462, y: 82, w: 330, style: 'obsidian-high', phase2Discovery: 'caldera-firewatch', phase2Waypoint: 4 }),
+    ];
+
+    [
+      { x: 9405, surfaceY: 306, phase: .35, orchestraIndex: 0 },
+      { x: 9655, surfaceY: 244, phase: 1.1, orchestraIndex: 1 },
+      { x: 9912, surfaceY: 148, phase: 1.85, orchestraIndex: 2 },
+      { x: 10215, surfaceY: 60, phase: 2.5, orchestraIndex: 3, finaleVent: true },
+    ].forEach((geyser) => world.geysers.push({
+      ...geyser,
+      y: geyser.surfaceY,
+      cycle: 3.1,
+      phase2Discovery: 'geyser-garden-launch',
+      phase2Launch: true,
+    }));
+
+    const guideLayout = [
+      ['coconut-camp-sky-lodge', ['phase2-lodge-entry', 'phase2-lodge-mid', 'phase2-lodge-bridge', 'phase2-lodge-upper', 'phase2-lodge-crown']],
+      ['geyser-garden-launch', ['phase2-geyser-entry', 'phase2-geyser-mid', 'phase2-geyser-upper', 'phase2-geyser-finale']],
+      ['lava-tube-lantern-shaft', ['phase2-lantern-entry', 'phase2-lantern-hanging', 'phase2-lantern-mid', 'phase2-lantern-upper', 'phase2-lantern-top']],
+      ['caldera-firewatch', ['phase2-firewatch-entry', 'phase2-firewatch-lower', 'phase2-firewatch-mid', 'phase2-firewatch-upper']],
+    ];
+    guideLayout.forEach(([discovery, ids]) => ids.forEach((id, platformIndex) => {
+      const platform = phase2Platforms.find((candidate) => candidate.id === id);
+      if (!platform) return;
+      const count = platform.w >= 320 ? 5 : platform.w >= 230 ? 4 : 2;
+      const gap = Math.min(46, (platform.w - 44) / Math.max(1, count - 1));
+      const startX = platform.x + (platform.w - (count - 1) * gap - 24) * .5;
+      for (let index = 0; index < count; index += 1) {
+        addItem(startX + index * gap, platform.y - 43, 'taco', {
+          bonusReward: true,
+          phase2Guide: true,
+          phase2Discovery: discovery,
+          bob: platformIndex * .7 + index * .32,
+        });
+      }
+    }));
+    addItem(14844, -114, 'taco', { bonusReward: true, phase2Guide: true, phase2SecretClue: true, phase2Discovery: 'obsidian-stash', bob: 2.8 });
+    addItem(15138, -38, 'taco', { bonusReward: true, phase2Guide: true, phase2SecretClue: true, phase2Discovery: 'obsidian-stash', bob: 3.4 });
+
+    const entryRises = Object.fromEntries(calderaExplorationPlan.map((entry) => {
+      const entryPlatform = phase2Platforms.find((platform) => platform.phase2Discovery === entry.id && platform.superEntry);
+      return [entry.id, entryPlatform ? GROUND_Y - entryPlatform.y : null];
+    }));
+    const centers = calderaExplorationPlan.map((entry) => entry.trigger.x + entry.trigger.w * .5).sort((a, b) => a - b);
+    game.calderaExplorationGeometryAudit = {
+      version: CALDERA_EXPLORATION_VERSION,
+      phase2PlatformCount: phase2Platforms.length,
+      phase2PlatformIds: phase2Platforms.map((platform) => platform.id),
+      entryRises,
+      allEntriesRequireSuper: Object.values(entryRises).every((rise) => Number.isFinite(rise) && rise > heroPhysics.normalJumpRise + 1),
+      minimumDestinationSpacing: centers.slice(1).reduce((minimum, center, index) => Math.min(minimum, center - centers[index]), Infinity),
+      standardViewportSeparated: centers.slice(1).every((center, index) => center - centers[index] > canvas.width),
+      allOptional: phase2Platforms.every((platform) => platform.optional && !platform.mainRoute),
+      allDropRecoverable: phase2Platforms.every((platform) => platform.phase2Escape === 'drop-to-main-route'),
+      compactOliviaDropBeforeGeyserGarden: OLIVIA_COMPACT_DROP.triggerEnd < calderaExplorationPlan[1].routeRange[0],
+      firewatchBeforeEruption: calderaExplorationPlan[3].routeRange[1] < ERUPTION_SCRIPT_START,
+      allStationsBeforeSurf: calderaExplorationPlan.every((entry) => entry.routeRange[1] < SURF_SCRIPT_START),
+      cameraMaximumLift: 286,
+      backgroundSeamsExposed: false,
+    };
   }
 
   function buildWorld() {
@@ -687,24 +912,28 @@
       lengths: [740, 860, 660, 820], gaps: [96, 174, 110, 88],
       style: 'obsidian', moverStyle: 'obsidian-high',
     });
-    addGroundRoute({ start: 27000, end: 33000 }, {
-      lengths: [900, 760, 860, 720], gaps: [88, 142, 96, 104],
-      style: 'moon-sand', moverStyle: 'glowboard',
-    });
-    addPlatform({
-      x: 33000, y: GROUND_Y, w: WORLD_WIDTH - 33000, h: 100,
-      style: 'moon-sand', ground: true, finalRunway: true, checkpointPad: false,
-    });
+    // Preserve the authored post-eruption surf finale as one readable lane.
+    // The optional Phase 2 stations all end well before this script begins.
+    addPlatform({ x: 27000, y: GROUND_Y, w: 760, h: 100, style: 'moon-sand', ground: true, finalRunway: true, surfLaunchBeach: true });
+    addPlatform({ x: 27760, y: GROUND_Y, w: 5520, h: 20, style: 'surf-lane', ground: true, finalRunway: true, surfLane: true });
+    addPlatform({ x: 33280, y: GROUND_Y, w: WORLD_WIDTH - 33280, h: 100, style: 'moon-sand', ground: true, finalRunway: true, surfLandingBeach: true });
+    world.surfObstacles = [
+      { x: 28440, y: 410, w: 74, h: 50, type: 'driftwood', hit: false },
+      { x: 29580, y: 396, w: 78, h: 64, type: 'coral', hit: false },
+      { x: 30760, y: 406, w: 82, h: 54, type: 'buoy', hit: false },
+      { x: 31940, y: 392, w: 86, h: 68, type: 'tiki', hit: false },
+      { x: 32810, y: 402, w: 84, h: 58, type: 'coconuts', hit: false },
+    ];
 
     addReachableDetours(sections[0], 'surfboard', 520, 1580);
     addReachableDetours(sections[1], 'leaf', 430, 1520);
     addReachableDetours(sections[2], 'temple', 420, 1580);
     addReachableDetours(sections[3], 'obsidian-high', 460, 1620);
-    addReachableDetours({ start: 27000, end: 32800 }, 'glowboard', 430, 1640);
+    buildCalderaExplorationGeometry();
 
     const goldenRewards = [
-      [1450, 154], [5050, 164], [8260, 148], [11820, 160],
-      [15100, 150], [18720, 158], [24120, 152], [31480, 154],
+      [1450, 154], [5650, 164], [8260, 148], [11820, 160],
+      [16320, 150], [18720, 158], [24120, 152], [31480, 154],
     ];
     goldenRewards.forEach(([x], index) => {
       const y = 286 + (index % 2) * 8;
@@ -717,7 +946,7 @@
       if (platform) addItem(platform.x + platform.w / 2, y, 'golden');
     });
 
-    const rainbowRewards = [3300, 6350, 9700, 13800, 17200, 22100, 27800, 32600];
+    const rainbowRewards = [3300, 6350, 11020, 13800, 16520, 22100, 27800, 32600];
     rainbowRewards.forEach((x, index) => {
       const y = 288 + (index % 3) * 5;
       const section = currentSection(x);
@@ -744,7 +973,7 @@
 
     // One clean taco line per physical surface keeps the route legible.
     for (const platform of world.platforms) {
-      if (platform.checkpointPad || platform.secret) continue;
+      if (platform.checkpointPad || platform.secret || platform.phase2ArtSurface) continue;
       if (platform.ground) {
         const start = platform.x + 64;
         const end = platform.x + platform.w - 54;
@@ -786,7 +1015,7 @@
     ].forEach(([x, type]) => addItem(x, 402, type));
 
     // Animated geysers are readable launch opportunities, not surprise damage.
-    [7150, 8620, 10150, 11900].forEach((x, index) => {
+    [7150, 8620, 10720, 11900].forEach((x, index) => {
       world.geysers.push({ x, y: GROUND_Y, phase: index * 0.78, cycle: 2.9 + index * 0.12 });
       addArc(x - 118, 400, 8, 34, 96);
     });
@@ -817,7 +1046,7 @@
       pepper: 'jalapeno', crab: 'chili', nacho: 'tomato', ash: 'tomato',
     };
     enemySlots.forEach((desiredX, index) => {
-      if (desiredX >= 33000) return;
+      if (desiredX >= SURF_SCRIPT_START) return;
       const platform = platformAt(desiredX);
       if (!platform) return;
       const section = currentSection(desiredX);
@@ -851,7 +1080,7 @@
     const geyserGuardSpecs = [
       { id: 'geyser-guard-a', x: 7150, type: 'pepper', geyserX: 7150, style: 'leaf', surfaceKind: 'geyser-overlook', purpose: 'Guard above the first geyser launch' },
       { id: 'geyser-guard-b', x: 8620, type: 'crab', geyserX: 8620, style: 'leaf', surfaceKind: 'geyser-overlook', purpose: 'Guard above the second geyser launch' },
-      { id: 'geyser-guard-c', x: 10150, type: 'pineapple', geyserX: 10150, style: 'leaf', surfaceKind: 'geyser-overlook', purpose: 'Guard above the third geyser launch' },
+      { id: 'geyser-guard-c', x: 10720, type: 'pineapple', geyserX: 10720, style: 'leaf', surfaceKind: 'geyser-overlook', purpose: 'Guard above the third geyser launch' },
       { id: 'geyser-guard-d', x: 11900, type: 'pepper', geyserX: 11900, style: 'leaf', surfaceKind: 'geyser-overlook', purpose: 'Guard above the final geyser launch' },
     ];
     const geyserEnemies = [];
@@ -993,9 +1222,9 @@
       wave: { active: false, done: false, x: 0, speed: 0, crashing: false, crashTimer: 0 },
       surf: {
         phase: 'idle', oliviaX: 0, oliviaY: 330, oliviaTimer: 0,
-        boardMounted: false, mountX: 25900, landingLaunched: false, clearedObstacles: 0,
+        boardMounted: false, mountX: 27640, landingLaunched: false, clearedObstacles: 0,
       },
-      boat: { state: 'basecamp', x: 720, speed: 0, dropTimer: 0, dropPulse: 0, catches: 0, pass: 0 },
+      boat: { state: 'basecamp', x: 720, speed: 0, dropTimer: 0, dropPulse: 0, catches: 0, pass: 0, dropCount: 0, totalSpawns: 0 },
       eruption: { state: 'dormant', timer: 0, flash: 0, tremor: 0, rainbowBurst: 0 },
       cannonballs: [],
       geyserLaunchTimer: 0,
@@ -1005,6 +1234,7 @@
       respawnCount: 0, respawnFallbacks: 0, lastRespawnLanding: null,
       activeMusic: null, musicTransition: null,
       musicTransitionCount: 0, musicOverlapRecoveries: 0, maxMusicPlaying: 0,
+      calderaExploration: createCalderaExplorationState(),
     });
     Object.assign(player, { x: 140, y: 380, vx: 0, vy: 0, dir: 1, grounded: false, platform: null, anim: 0, invulnerable: 0, coyote: 0, jumpBuffer: 0, rotation: 0, scale: 1 });
     if (previewSuper) {
@@ -1105,6 +1335,25 @@
       player.x = clamp(previewStart, 0, WORLD_WIDTH - player.w);
       player.y = 330;
       game.cameraX = clamp(player.x - canvas.width * 0.42, 0, WORLD_WIDTH - canvas.width);
+    }
+    if (previewPhase2Ready) {
+      const entry = calderaExplorationPlan.find((candidate) => candidate.id === previewPhase2Ready)
+        || (previewPhase2Ready === obsidianStashPlan.id ? obsidianStashPlan : null);
+      if (entry) {
+        const routePlatforms = world.platforms
+          .filter((platform) => platform.phase2Discovery === entry.id && (platform.phase2Waypoint || platform.hiddenSecretSurface))
+          .sort((a, b) => (a.phase2Waypoint || 0) - (b.phase2Waypoint || 0));
+        const platform = routePlatforms.at(-1);
+        if (platform) {
+          player.x = platform.x + Math.min(28, platform.w * .25);
+          player.y = platform.y - player.h;
+          player.grounded = true;
+          player.platform = platform;
+          const state = calderaExplorationStateForEntry(entry);
+          if (state) state.progress = Math.max(0, (platform.phase2Waypoint || 1) - 1);
+          game.cameraX = clamp(player.x - canvas.width * .42, 0, WORLD_WIDTH - canvas.width);
+        }
+      }
     }
     if (previewAutoRun) keys.right = true;
     unlockAudio();
@@ -1301,6 +1550,7 @@
 
   function hurtPlayer(fromX) {
     if (player.invulnerable > 0 || sharedAbilities.isFrenzy(game.abilities) || game.state !== 'playing') return;
+    if (previewNoDamage) { player.invulnerable = .22; return; }
     if (game.limeShield) {
       game.limeShield = false;
       game.activePower = null;
@@ -1451,101 +1701,71 @@
   }
 
   function spawnBoatTaco() {
+    const boat = game.boat;
+    if (boat.dropCount >= OLIVIA_COMPACT_DROP.maxDrops) return false;
     const origin = trekkerRearLauncherOrigin(game.boat);
     addItem(origin.x, origin.y, 'taco', {
       bonusReward: true, dynamic: true, boatDrop: true,
       vx: -150 - seeded() * 90, vy: -270 - seeded() * 140, angle: 0,
     });
+    boat.dropCount += 1;
+    boat.totalSpawns += 1;
     game.boat.dropPulse = calderaTrekkerRearLauncher.pulseDuration;
     playAudio('vehicle.tacoDrop', {
       vehicleType: 'trekker',
       position: audioPosition(game.boat.x),
     });
+    return true;
   }
 
   function updateBoat(dt) {
     const boat = game.boat;
     boat.dropPulse = Math.max(0, boat.dropPulse - dt);
-    const geyserDrop = player.x > 7000 && player.x < 11900;
-    const lavaChase = player.x > 19400 && player.x < 27400;
+    const compactDrop = player.x > OLIVIA_COMPACT_DROP.triggerStart && player.x < OLIVIA_COMPACT_DROP.triggerEnd;
 
-    if (geyserDrop && boat.state === 'basecamp') {
-      boat.state = 'entering-geyser';
+    if (compactDrop && boat.state === 'basecamp') {
+      boat.state = 'entering-compact';
       boat.pass = 1;
+      boat.dropCount = 0;
       boat.x = game.cameraX - 420;
       boat.speed = 460;
-      showMessage('OLIVIA’S TACO TREKKER: PICNIC DROP INCOMING!', 2.3);
+      showMessage('OLIVIA’S TACO TREKKER: QUICK PICNIC DROP!', 2.15);
       playAudio('vehicle.approach', { vehicleType: 'trekker', position: -0.8 });
       startVehicleLoop(-0.8);
     }
 
-    if (boat.state === 'entering-geyser') {
+    if (boat.state === 'entering-compact') {
       const target = player.x + 275;
       boat.speed = Math.min(980, boat.speed + 760 * dt);
       boat.x = Math.min(target, boat.x + boat.speed * dt);
       if (boat.x >= target - 2) {
-        boat.state = 'geyser-drop';
+        boat.state = 'compact-drop';
         boat.dropTimer = 0.08;
-        showMessage('GEYSER PICNIC DROP! CATCH THE AIRBORNE CRUNCH!', 2.1);
+        showMessage('EIGHT AIRBORNE TACOS — CATCH WHAT YOU CAN!', 1.9);
       }
-    } else if (boat.state === 'geyser-drop') {
-      boat.x = lerp(boat.x, Math.min(12140, player.x + 280 + Math.sin(game.levelTime * 3.1) * 32), Math.min(1, dt * 4.2));
+    } else if (boat.state === 'compact-drop') {
+      boat.x = lerp(boat.x, Math.min(OLIVIA_COMPACT_DROP.triggerEnd + 220, player.x + 280 + Math.sin(game.levelTime * 3.1) * 32), Math.min(1, dt * 4.2));
       boat.dropTimer -= dt;
-      if (boat.dropTimer <= 0) {
-        boat.dropTimer = 0.25 + seeded() * 0.09;
+      if (boat.dropTimer <= 0 && boat.dropCount < OLIVIA_COMPACT_DROP.maxDrops) {
+        boat.dropTimer = 0.31 + seeded() * 0.07;
         spawnBoatTaco();
-        if (seeded() > 0.7) spawnBoatTaco();
       }
-      if (!geyserDrop || player.x >= 11800) {
-        boat.state = 'escaping-geyser';
+      if (boat.dropCount >= OLIVIA_COMPACT_DROP.maxDrops || !compactDrop || player.x >= OLIVIA_COMPACT_DROP.exitAt) {
+        boat.state = 'escaping-compact';
         boat.speed = 720;
         stopVehicleLoop();
-        showMessage('OLIVIA: SAVING THE REST FOR A COMPLETELY SAFE CAMPFIRE!', 2.1);
+        showMessage('OLIVIA: SHORT, SWEET, AND MOSTLY ON TARGET!', 1.9);
         playAudio('vehicle.depart', { vehicleType: 'trekker', position: audioPosition(boat.x) });
       }
-    } else if (boat.state === 'escaping-geyser') {
+    } else if (boat.state === 'escaping-compact') {
       boat.speed = Math.min(1650, boat.speed + 1450 * dt);
       boat.x += boat.speed * dt;
-      if (boat.x - game.cameraX > canvas.width + 430) boat.state = 'ready-lava';
+      if (boat.x - game.cameraX > canvas.width + 430) boat.state = 'waiting-fiesta';
     }
 
-    if (lavaChase && ['basecamp', 'ready-lava'].includes(boat.state) && game.eruption.state !== 'dormant') {
-      boat.state = 'entering-lava';
-      boat.pass = 2;
-      boat.x = game.cameraX - 450;
-      boat.speed = 520;
-      showMessage('LAVA SAFARI MODE! OLIVIA HAS ABSOLUTELY READ THE MANUAL!', 2.6);
-      playAudio('vehicle.approach', { vehicleType: 'trekker', position: -0.8 });
-      playAudio('vehicle.accelerate', { vehicleType: 'trekker', position: -0.65 });
-      startVehicleLoop(-0.8);
-    }
-    if (boat.state === 'entering-lava') {
-      const target = player.x + 250;
-      boat.speed = Math.min(1160, boat.speed + 920 * dt);
-      boat.x = Math.min(target, boat.x + boat.speed * dt);
-      if (boat.x >= target - 2) {
-        boat.state = 'lava-chase';
-        boat.dropTimer = .12;
-      }
-    } else if (boat.state === 'lava-chase') {
-      boat.x = lerp(boat.x, Math.min(27600, player.x + 260 + Math.sin(game.levelTime * 4.1) * 24), Math.min(1, dt * 5));
-      boat.dropTimer -= dt;
-      if (boat.dropTimer <= 0) {
-        boat.dropTimer = .38 + seeded() * .12;
-        spawnBoatTaco();
-      }
-      if (!lavaChase || player.x >= 27100) {
-        boat.state = 'fiesta-bound';
-        boat.speed = 820;
-        showMessage('OLIVIA: CAMPSITE RULE #1 — OUTRUN THE CAMPSITE!', 2.4);
-        stopVehicleLoop();
-        playAudio('vehicle.depart', { vehicleType: 'trekker', position: audioPosition(boat.x) });
-      }
-    } else if (boat.state === 'fiesta-bound') {
-      boat.speed = Math.min(1800, boat.speed + 1600 * dt);
-      boat.x += boat.speed * dt;
-      if (boat.x - game.cameraX > canvas.width + 450) boat.state = 'waiting-fiesta';
-    }
+    // Preview starts beyond the compact pass settle Olivia into her later state
+    // without replaying or creating a second drop segment during the lava chase.
+    if (boat.state === 'basecamp' && player.x >= OLIVIA_COMPACT_DROP.triggerEnd) boat.state = 'waiting-fiesta';
     if (player.x >= 32900 && boat.state === 'waiting-fiesta') {
       boat.state = 'parked';
       boat.x = world.goal.x - 160;
@@ -1557,7 +1777,7 @@
     eruption.flash = Math.max(0, eruption.flash - dt);
     eruption.rainbowBurst = Math.max(0, eruption.rainbowBurst - dt);
 
-    if (eruption.state === 'dormant' && player.x > 18450) {
+    if (eruption.state === 'dormant' && player.x > ERUPTION_SCRIPT_START) {
       eruption.state = 'warming';
       eruption.timer = 0;
       showMessage('OLIVIA RADIO: REHEATING ONE TACO. WHAT COULD GO WRONG?', 3);
@@ -1573,7 +1793,6 @@
         eruption.flash = .45;
         eruption.rainbowBurst = 3.6;
         eruption.tremor = 18;
-        game.wave.done = true;
         game.hitStop = game.reducedShake ? .06 : .14;
         game.cameraShake = game.reducedShake ? 7 : 22;
         showMessage('KABOOM! THE VOLCANO ORDERED EXTRA RAINBOW!', 3.4);
@@ -1619,15 +1838,17 @@
       }
       if (!geyser.active || geyser.cooldown > 0) continue;
       const overVent = player.x + player.w > geyser.x - 34 && player.x < geyser.x + 34;
-      const closeToGround = player.y + player.h > GROUND_Y - 72;
-      if (!overVent || !closeToGround || player.vy < -120) continue;
+      const surfaceY = Number.isFinite(geyser.surfaceY) ? geyser.surfaceY : GROUND_Y;
+      const closeToSurface = player.y + player.h > surfaceY - 76 && player.y + player.h < surfaceY + 42;
+      if (!overVent || !closeToSurface || player.vy < -120) continue;
+      if (geyser.phase2Launch && !sharedAbilities.isSuper(game.abilities)) continue;
       geyser.cooldown = 1.1;
-      player.vy = -790;
+      player.vy = geyser.phase2Launch ? -675 : -790;
       player.grounded = false;
       player.coyote = 0;
       game.geyserLaunchTimer = 1.15;
       showMessage('GEYSER EXPRESS! FIRST CLASS: SLIGHTLY DAMP!', 1.25);
-      spawnBurst(geyser.x - game.cameraX, GROUND_Y - 20, '#65e7ff', 36);
+      spawnBurst(geyser.x - game.cameraX, surfaceY - 20, '#65e7ff', geyser.phase2Launch ? 24 : 36);
       playAudio('hazard.geyserLaunch', { position: audioPosition(geyser.x) });
     }
   }
@@ -1636,7 +1857,7 @@
     const wave = game.wave;
     const surf = game.surf;
 
-    if (surf.phase === 'idle' && player.x > 24820) {
+    if (surf.phase === 'idle' && player.x > SURF_SCRIPT_START) {
       // Preview/test teleports enter the playable chase directly; an ordinary
       // run always receives Olivia's complete surf-by introduction.
       if (player.x >= surf.mountX + 220) {
@@ -1710,20 +1931,15 @@
       wave.x = lerp(wave.x, desiredWaveX, 1 - Math.exp(-dt * 7.5));
     }
     if (player.x - wave.x < 178) {
-      if (game.limeShield) {
-        hurtPlayer(wave.x);
-        wave.x = player.x - 250;
-      }
-      else {
-        game.hearts = Math.max(1, game.hearts - 1);
-        player.vx = 390;
-        player.vy = -330;
-        player.invulnerable = 1.4;
-        wave.x = player.x - 250;
+      const protectedHit = game.limeShield || sharedAbilities.isSuper(game.abilities);
+      hurtPlayer(wave.x);
+      player.vx = Math.max(player.vx, 390);
+      player.vy = Math.min(player.vy, -270);
+      wave.x = player.x - 250;
+      if (!protectedHit && !previewNoDamage) {
         showMessage('WAVE BOOP! BOARD STILL TACO-UGH!', 1.4);
         game.cameraShake = 12;
         playAudio('surf.waveHit', { position: audioPosition(player.x + player.w / 2) });
-        playAudio('hero.hurt', { position: audioPosition(player.x + player.w / 2) });
       }
     }
 
@@ -1739,14 +1955,13 @@
       }
       if (player.x + player.w < obstacle.x || !intersects(player, obstacle)) continue;
       obstacle.hit = true;
-      game.hearts = Math.max(1, game.hearts - 1);
-      player.vx = 390;
-      player.vy = -330;
-      player.invulnerable = 1.3;
-      showMessage('BOARD BONK! KEEP THE WAVE!', 1.2);
+      const protectedHit = game.limeShield || sharedAbilities.isSuper(game.abilities);
+      hurtPlayer(obstacle.x + obstacle.w * .5);
+      player.vx = Math.max(player.vx, 390);
+      player.vy = Math.min(player.vy, -270);
+      if (!protectedHit && !previewNoDamage) showMessage('BOARD BONK! KEEP THE WAVE!', 1.2);
       spawnBurst(obstacle.x - game.cameraX + obstacle.w / 2, obstacle.y, '#ff718f', 30);
       playAudio('surf.obstacleHit', { position: audioPosition(obstacle.x + obstacle.w / 2) });
-      playAudio('hero.hurt', { position: audioPosition(player.x + player.w / 2) });
     }
 
     if (player.x > 33120 && !surf.landingLaunched) {
@@ -1857,9 +2072,237 @@
     }
   }
 
+  function calderaExplorationRewardSurface(entry) {
+    const platform = world.platforms.find((candidate) => candidate.id === entry.rewardPlatformId);
+    if (!platform) return null;
+    const itemSize = 32;
+    const padding = 16;
+    return {
+      platform,
+      platformId: platform.id,
+      top: platform.y,
+      center: platform.x + platform.w * .5,
+      safeLeft: platform.x + padding,
+      safeRight: platform.x + platform.w - padding - itemSize,
+    };
+  }
+
+  function addCalderaExplorationRewardItem(entry, surface, type, index, total, row = 0) {
+    const itemSize = ['golden', 'rainbow'].includes(type) ? 32 : 24;
+    const spacing = type === 'taco' ? Math.min(27, (surface.platform.w - 48) / Math.max(1, Math.min(total, 8) - 1)) : 46;
+    const rowLength = type === 'taco' ? Math.min(8, total - row * 8) : total;
+    const column = type === 'taco' ? index - row * 8 : index;
+    const rowWidth = Math.max(0, (rowLength - 1) * spacing);
+    const targetX = clamp(surface.center - rowWidth * .5 - itemSize * .5 + column * spacing, surface.safeLeft, surface.safeRight);
+    const targetY = surface.top - itemSize - 7 - row * 28;
+    const launchX = entry.trigger.x + entry.trigger.w * .5 - itemSize * .5;
+    const launchY = entry.trigger.y + entry.trigger.h * .55;
+    return addItem(launchX, launchY, type, {
+      bonusReward: true,
+      dynamic: true,
+      explorationReward: true,
+      rainbowReward: type === 'rainbow',
+      goldenReward: type === 'golden',
+      phase2Discovery: entry.id,
+      rewardFlight: {
+        elapsed: -index * .024,
+        duration: .62 + column * .035 + row * .08,
+        startX: launchX,
+        startY: launchY,
+        targetX,
+        targetY,
+        arc: entry.id === obsidianStashPlan.id ? 64 + row * 9 : 86 + row * 12,
+        platformId: surface.platformId,
+      },
+      rewardLanding: {
+        platformId: surface.platformId,
+        surfaceY: surface.top,
+        targetX,
+        targetY,
+        safeLeft: surface.safeLeft,
+        safeRight: surface.safeRight,
+        settled: false,
+      },
+      vx: 0,
+      vy: 0,
+      angle: index * .58,
+    });
+  }
+
+  function spawnCalderaExplorationRewards(entry, state) {
+    if (!state || state.rewardSpawned) return false;
+    const surface = calderaExplorationRewardSurface(entry);
+    if (!surface) return false;
+    for (let index = 0; index < entry.bonusTacos; index += 1) {
+      addCalderaExplorationRewardItem(entry, surface, 'taco', index, entry.bonusTacos, Math.floor(index / 8));
+    }
+    for (let index = 0; index < (entry.rainbowCount || 0); index += 1) {
+      addCalderaExplorationRewardItem(entry, surface, 'rainbow', index, entry.rainbowCount, 0);
+    }
+    for (let index = 0; index < (entry.goldenCount || 0); index += 1) {
+      addCalderaExplorationRewardItem(entry, surface, 'golden', index, entry.goldenCount, 0);
+    }
+    state.rewardSurfaceId = surface.platformId;
+    state.rewardSpawned = true;
+    state.rewardSpawnCount += 1;
+    return true;
+  }
+
+  function completeCalderaExplorationEntry(entry) {
+    const state = calderaExplorationStateForEntry(entry);
+    if (!state || state.completed) return false;
+    const secret = entry.id === obsidianStashPlan.id;
+    state.revealed = true;
+    state.completed = true;
+    state.completedAt = game.levelTime;
+    state.completionCount += 1;
+    state.environmentEnergized = true;
+    state.spectacleTimer = secret ? 3.6 : entry.id === 'geyser-garden-launch' ? 3.25 : 2.6;
+    state.spectacleMaxTimer = state.spectacleTimer;
+    game.score += entry.score;
+    spawnCalderaExplorationRewards(entry, state);
+    const duration = secret ? 3.35 : entry.id === 'caldera-firewatch' ? 2.25 : 2.55;
+    game.calderaExploration.completionBanner = {
+      mode: secret ? 'secret' : entry.presentation,
+      eyebrow: secret ? 'TRUE HIDDEN VOLCANIC SECRET' : 'OPTIONAL DESTINATION COMPLETE',
+      title: entry.completionTitle,
+      reward: entry.rewardLabel,
+      timer: duration,
+      maxTimer: duration,
+    };
+    const centerX = entry.trigger.x + entry.trigger.w * .5;
+    const screenX = centerX - game.cameraX;
+    spawnBurst(screenX, entry.trigger.y + entry.trigger.h * .6, secret ? '#c69cff' : entry.id === 'caldera-firewatch' ? '#ff704d' : '#ffe17f', secret ? 88 : 52);
+    spawnConfetti(screenX, Math.max(32, entry.trigger.y + 36), game.reducedShake ? (secret ? 44 : 24) : (secret ? 126 : 58));
+    game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? (secret ? 4 : 2) : (secret ? 12 : 6));
+    if (entry.id === 'coconut-camp-sky-lodge') {
+      playAudio('checkpoint.activate', { position: audioPosition(centerX), pitchCents: 90, gain: .82 });
+      playAudio('level.celebrationPulse', { position: audioPosition(centerX), pitchCents: 35 });
+    } else if (entry.id === 'geyser-garden-launch') {
+      playAudio('hazard.geyserLaunch', { position: audioPosition(centerX), pitchCents: 75 });
+      playAudio('level.celebrationPulse', { position: audioPosition(centerX), pitchCents: 115 });
+    } else if (entry.id === 'lava-tube-lantern-shaft') {
+      playAudio('checkpoint.activate', { position: audioPosition(centerX), pitchCents: -65, gain: .78 });
+      playAudio('pinata.jackpotSparkle', { position: audioPosition(centerX), pitchCents: -25, gain: .72 });
+    } else if (entry.id === 'caldera-firewatch') {
+      playAudio('goal.warning', { position: audioPosition(centerX), gain: .72 });
+      playAudio('volcano.warmup', { position: audioPosition(centerX), pitchCents: -120, gain: .52 });
+    } else if (secret) {
+      playAudio('pinata.break', { position: audioPosition(centerX), combo: 5 });
+      playAudio('pinata.jackpotSparkle', { position: audioPosition(centerX), pitchCents: 145 });
+      playAudio('collect.rainbowTaco', { position: audioPosition(centerX), pitchCents: 80 });
+    }
+    return true;
+  }
+
+  function updateCalderaExploration(dt) {
+    const exploration = game.calderaExploration;
+    if (!exploration) return;
+    if (exploration.completionBanner) {
+      exploration.completionBanner.timer = Math.max(0, exploration.completionBanner.timer - dt);
+      if (exploration.completionBanner.timer <= 0) exploration.completionBanner = null;
+    }
+    for (const entry of calderaExplorationPlan) {
+      const state = exploration.destinations[entry.id];
+      if (player.platform?.phase2Discovery === entry.id) {
+        state.revealed = true;
+        const waypoint = Number(player.platform.phase2Waypoint) || 0;
+        state.progress = Math.max(state.progress, waypoint);
+        if (!state.arrivalAcknowledged) {
+          state.arrivalAcknowledged = true;
+          impactText(player.x + player.w * .5, player.y - 14, entry.name.toUpperCase(), '#fff2b4', 16);
+          playAudio('checkpoint.activate', { position: audioPosition(player.x + player.w * .5), pitchCents: -120, gain: .42 });
+        }
+        if (state.progress > state.lastAudioProgress && !state.completed) {
+          state.lastAudioProgress = state.progress;
+          if (entry.id === 'lava-tube-lantern-shaft' || entry.id === 'coconut-camp-sky-lodge') {
+            playAudio('checkpoint.activate', {
+              position: audioPosition(player.x + player.w * .5),
+              pitchCents: -90 + state.progress * 36,
+              gain: .42,
+            });
+          }
+        }
+      }
+      if (!state.completed && state.progress >= entry.waypointCount && intersects(player, entry.trigger)) {
+        completeCalderaExplorationEntry(entry);
+      }
+      if (state.spectacleTimer > 0) {
+        state.spectacleTimer = Math.max(0, state.spectacleTimer - dt);
+        if (entry.id === 'geyser-garden-launch') {
+          const elapsed = state.spectacleMaxTimer - state.spectacleTimer;
+          const stage = Math.min(4, Math.floor(elapsed / .48));
+          if (stage !== state.orchestraStage) {
+            state.orchestraStage = stage;
+            if (stage > 0) playAudio('hazard.geyserLaunch', { position: audioPosition(9380 + stage * 210), pitchCents: -75 + stage * 55, gain: .64 });
+          }
+        }
+      }
+    }
+
+    const secret = exploration.secret;
+    const parent = exploration.destinations['lava-tube-lantern-shaft'];
+    const secretInRange = player.x >= obsidianStashPlan.routeRange[0] && player.x <= obsidianStashPlan.routeRange[1];
+    const clueEligible = parent.progress >= obsidianStashPlan.requiredParentProgress;
+    const revealTarget = secret.completed ? 1 : secretInRange && clueEligible ? .22 : 0;
+    secret.reveal = lerp(secret.reveal, revealTarget, Math.min(1, dt * (secret.completed ? 4.8 : 2.2)));
+    secret.revealed = secret.revealed || secret.reveal > .08;
+    if (player.platform?.phase2Discovery === obsidianStashPlan.id && player.platform.hiddenSecretSurface) {
+      secret.progress = Math.max(secret.progress, Number(player.platform.phase2Waypoint) || 1);
+      if (clueEligible && !secret.completed && intersects(player, obsidianStashPlan.trigger)) {
+        completeCalderaExplorationEntry(obsidianStashPlan);
+      }
+    }
+    if (secret.spectacleTimer > 0) secret.spectacleTimer = Math.max(0, secret.spectacleTimer - dt);
+
+    if (previewHost && previewPhase2Complete) {
+      const entry = calderaExplorationPlan.find((candidate) => candidate.id === previewPhase2Complete);
+      if (entry) completeCalderaExplorationEntry(entry);
+    }
+    if (previewHost && previewPhase2Secret && !secret.completed) {
+      parent.progress = obsidianStashPlan.requiredParentProgress;
+      completeCalderaExplorationEntry(obsidianStashPlan);
+    }
+    if (previewHost && previewPowerDown && previewSuper && !exploration.previewPowerDownTriggered && game.levelTime > .25) {
+      exploration.previewPowerDownTriggered = true;
+      hurtPlayer(player.x + 120);
+    }
+  }
+
+  function updateCalderaExplorationCamera(dt) {
+    const exploration = game.calderaExploration;
+    if (!exploration) return;
+    const allRanges = [...calderaExplorationPlan.map((entry) => entry.routeRange), obsidianStashPlan.routeRange];
+    const inExplorationRange = allRanges.some(([start, end]) => player.x >= start && player.x <= end);
+    const scriptedSurf = game.surf.phase === 'riding' || game.surf.phase === 'landing';
+    const eruptionLocked = game.eruption.state !== 'dormant' && player.x >= ERUPTION_SCRIPT_START;
+    const cameraAllowed = (game.state === 'playing' || game.state === 'respawning') && !scriptedSurf && !eruptionLocked;
+    exploration.cameraTargetLift = cameraAllowed && inExplorationRange ? clamp((286 - player.y) * .64, 0, 286) : 0;
+    exploration.cameraLift = lerp(exploration.cameraLift, exploration.cameraTargetLift, Math.min(1, dt * (exploration.cameraTargetLift > exploration.cameraLift ? 5.7 : 4.1)));
+  }
+
   function updateDynamicItems(dt) {
     for (const item of world.collectibles) {
       if (!item.dynamic || item.collected) continue;
+      if (item.rewardFlight) {
+        const flight = item.rewardFlight;
+        flight.elapsed += dt;
+        if (flight.elapsed < 0) continue;
+        const progress = clamp(flight.elapsed / flight.duration, 0, 1);
+        const eased = smoothstep(progress);
+        item.x = lerp(flight.startX, flight.targetX, eased);
+        item.y = lerp(flight.startY, flight.targetY, eased) - Math.sin(progress * Math.PI) * flight.arc;
+        item.angle = (item.angle || 0) + dt * 8;
+        if (progress >= 1) {
+          item.x = flight.targetX;
+          item.y = flight.targetY;
+          item.angle = 0;
+          item.rewardFlight = null;
+          item.dynamic = false;
+          if (item.rewardLanding) item.rewardLanding.settled = true;
+        }
+        continue;
+      }
       item.x += item.vx * dt;
       item.y += item.vy * dt;
       item.vy += 720 * dt;
@@ -1871,6 +2314,7 @@
   function updatePlayer(dt) {
     const scriptedSurf = game.surf.phase === 'riding' || game.surf.phase === 'landing';
     if (sharedAbilities.suspendForTransformation(game.abilities, player, { disabled: scriptedSurf })) return;
+    if (previewAutoRun) keys.right = true;
     const wasGrounded = player.grounded;
     if (player.grounded) sharedAbilities.land(game.abilities);
     if (player.grounded && player.platform) {
@@ -1881,19 +2325,21 @@
     player.jumpBuffer = Math.max(0, player.jumpBuffer - dt);
     player.coyote = player.grounded ? heroPhysics.coyoteTime : Math.max(0, player.coyote - dt);
 
-    const surfing = false;
-    const surfLanding = false;
+    const surfing = game.surf.phase === 'riding';
+    const surfLanding = game.surf.phase === 'landing';
     const calderaChase = game.eruption.state !== 'dormant' && player.x >= 19400 && player.x < 27400;
     const acceleration = player.grounded ? 1250 : 780;
-    const maxSpeed = calderaChase ? 330 : game.pepperTimer > 0 ? 385 : 255;
+    const maxSpeed = surfing || surfLanding ? 450 : calderaChase ? 330 : game.pepperTimer > 0 ? 385 : 255;
     if (keys.left && !surfing && !surfLanding) { player.vx -= acceleration * dt; player.dir = -1; }
     if (keys.right) { player.vx += acceleration * dt; player.dir = 1; }
     if (!keys.left && !keys.right && !surfing && !surfLanding) player.vx *= player.grounded ? 0.79 : 0.94;
+    if (surfing) player.vx = Math.max(player.vx, 342);
+    if (surfLanding) player.vx = Math.max(player.vx, 300);
     if (calderaChase && keys.right) player.vx = Math.max(player.vx, 285);
     player.vx = clamp(player.vx, -maxSpeed, maxSpeed);
 
     if (previewAutoJump && player.grounded) {
-      const lookAhead = player.x + player.w + 82;
+      const lookAhead = player.x + player.w + 24;
       const supportedAhead = world.platforms.some((platform) => (
         platform.y >= player.y + player.h - 24
         && platform.y <= player.y + player.h + 96
@@ -1958,7 +2404,7 @@
     const seconds = (game.finishTime - game.startTime) / 1000;
     const completion = game.totalCollectibles ? game.collected / game.totalCollectibles : 0;
     const medal = game.goldenCollected === game.totalGolden && game.wave.done && completion > 0.75 ? 'CALDERA LEGEND'
-      : game.wave.done && game.boat.catches >= 18 ? 'LAVA SAFARI STAR'
+      : game.wave.done && game.boat.catches >= 6 ? 'LAVA SAFARI STAR'
       : completion > 0.45 ? 'CAMPFIRE CRUISER' : 'TENT TRAINEE';
     const previous = game.personalBest;
     const newBest = previous.runs === 0 || game.score > previous.score || seconds < previous.time;
@@ -2036,13 +2482,16 @@
       updateDynamicItems(dt);
       updateEnemies(dt);
       updateCheckpoints();
+      updateCalderaExploration(dt);
       updateCalderaEvent(dt);
       updateGeysers(dt);
       updateBoat(dt);
+      updateWaveChase(dt);
       updateCoconutCannons(dt);
 
       for (const item of world.collectibles) {
         if (item.collected) continue;
+        if (item.rewardFlight) continue;
         if (sharedAbilities.hasMagnet(game.abilities) && !['lime', 'pepper', 'shell', 'coconut'].includes(item.type)) {
           const dx = player.x + player.w / 2 - (item.x + item.w / 2);
           const dy = player.y + player.h / 2 - (item.y + item.h / 2);
@@ -2068,13 +2517,17 @@
       }
 
       const chaseActive = game.eruption.state !== 'dormant' && player.x >= 19400 && player.x < 27400;
-      const trekkerActive = ['geyser-drop', 'lava-chase'].includes(game.boat.state);
+      const trekkerActive = game.boat.state === 'compact-drop';
       const followOffset = chaseActive || trekkerActive || game.pepperTimer > 0 ? 0.34 : 0.42;
       const targetCamera = clamp(player.x - canvas.width * followOffset, 0, WORLD_WIDTH - canvas.width);
       game.cameraX = lerp(game.cameraX, targetCamera, Math.min(1, dt * 9));
+      updateCalderaExplorationCamera(dt);
       maybeFinish();
     }
-    if (game.state === 'celebrating') updateCelebration(dt);
+    if (game.state === 'celebrating') {
+      updateCelebration(dt);
+      updateCalderaExplorationCamera(dt);
+    }
     updateParticles(dt);
   }
 
@@ -2557,35 +3010,42 @@
     for (const geyser of world.geysers) {
       if (!visibleWorldX(geyser.x, 90, 100)) continue;
       const x = geyser.x - game.cameraX;
+      const surfaceY = Number.isFinite(geyser.surfaceY) ? geyser.surfaceY : GROUND_Y;
       const phase = (game.levelTime + geyser.phase) % geyser.cycle;
-      const active = phase > geyser.cycle * .56 && phase < geyser.cycle * .9;
+      const phase2State = geyser.phase2Discovery ? game.calderaExploration?.destinations[geyser.phase2Discovery] : null;
+      const orchestraActive = phase2State?.spectacleTimer > 0 && geyser.orchestraIndex <= phase2State.orchestraStage;
+      const active = orchestraActive || (phase > geyser.cycle * .56 && phase < geyser.cycle * .9);
       ctx.fillStyle = '#3e3151';
       ctx.strokeStyle = '#1d1930';
       ctx.lineWidth = 4;
       ctx.beginPath();
-      ctx.ellipse(x, GROUND_Y + 1, 35, 12, 0, 0, Math.PI * 2);
+      ctx.ellipse(x, surfaceY + 1, 35, 12, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
       if (active) {
-        const height = 74 + Math.sin(time * .012 + geyser.phase) * 15;
-        const plume = ctx.createLinearGradient(x, GROUND_Y, x, GROUND_Y - height);
+        const orchestraBoost = orchestraActive ? 1.52 : 1;
+        const height = (74 + Math.sin(time * .012 + geyser.phase) * 15) * orchestraBoost;
+        const plume = ctx.createLinearGradient(x, surfaceY, x, surfaceY - height);
         plume.addColorStop(0, 'rgba(76,220,238,.82)');
         plume.addColorStop(.7, 'rgba(218,255,250,.7)');
         plume.addColorStop(1, 'rgba(218,255,250,0)');
         ctx.fillStyle = plume;
         ctx.beginPath();
-        ctx.moveTo(x - 13, GROUND_Y);
-        ctx.quadraticCurveTo(x - 30, GROUND_Y - height * .55, x - 6, GROUND_Y - height);
-        ctx.quadraticCurveTo(x + 28, GROUND_Y - height * .52, x + 13, GROUND_Y);
+        ctx.moveTo(x - 13, surfaceY);
+        ctx.quadraticCurveTo(x - 30, surfaceY - height * .55, x - 6, surfaceY - height);
+        ctx.quadraticCurveTo(x + 28, surfaceY - height * .52, x + 13, surfaceY);
         ctx.closePath();
         ctx.fill();
       } else {
-        ctx.globalAlpha = .38;
-        ctx.fillStyle = '#dffefa';
-        for (let puff = 0; puff < 3; puff += 1) {
+        ctx.globalAlpha = .34;
+        ctx.strokeStyle = '#dffefa';
+        ctx.lineWidth = 3;
+        for (let wisp = 0; wisp < 2; wisp += 1) {
+          const drift = Math.sin(time * .0028 + geyser.phase + wisp) * 7;
           ctx.beginPath();
-          ctx.arc(x + (puff - 1) * 8, GROUND_Y - 15 - puff * 7, 5 + puff, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.moveTo(x + (wisp ? 7 : -7), surfaceY - 5);
+          ctx.bezierCurveTo(x - 12 + drift, surfaceY - 18, x + 18 - drift, surfaceY - 28, x + drift, surfaceY - 42 - wisp * 8);
+          ctx.stroke();
         }
         ctx.globalAlpha = 1;
       }
@@ -2628,6 +3088,209 @@
       );
       ctx.restore();
     }
+  }
+
+  function drawCalderaExplorationBackdrops(time) {
+    const exploration = game.calderaExploration;
+    if (!exploration) return;
+    for (const [key, art] of Object.entries(calderaExplorationArt)) {
+      if (!visibleWorldX(art.x, art.w, 180)) continue;
+      const image = images[art.image];
+      if (!image) continue;
+      let alpha = .96;
+      if (key === 'obsidianStash') {
+        alpha = exploration.secret.completed
+          ? 1
+          : clamp(.035 + exploration.secret.reveal * .78, .035, .22);
+      }
+      const energized = key === 'skyLodge'
+        ? exploration.destinations['coconut-camp-sky-lodge'].environmentEnergized
+        : key === 'geyserGarden'
+          ? exploration.destinations['geyser-garden-launch'].environmentEnergized
+          : key === 'lanternShaft'
+            ? exploration.destinations['lava-tube-lantern-shaft'].environmentEnergized
+            : key === 'firewatch'
+              ? exploration.destinations['caldera-firewatch'].environmentEnergized
+              : exploration.secret.environmentEnergized;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      if (energized) {
+        ctx.shadowColor = key === 'firewatch' ? '#ff704d' : key === 'lanternShaft' || key === 'obsidianStash' ? '#c69cff' : '#ffe17f';
+        ctx.shadowBlur = game.reducedShake ? 6 : 11 + Math.sin(time * .004 + art.x) * 3;
+      }
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(image, art.x - game.cameraX, art.y, art.w, art.h);
+      ctx.restore();
+      ctx.imageSmoothingEnabled = false;
+    }
+  }
+
+  function drawPhase2ExplorationSurface(platform) {
+    if (!platform.phase2ArtSurface || !visibleWorldX(platform.x, platform.w, 100)) return;
+    const x = Math.floor(platform.x - game.cameraX);
+    const y = Math.floor(platform.y);
+    const width = platform.w;
+    const discovery = platform.phase2Discovery;
+    const secretRoute = discovery === obsidianStashPlan.id;
+    const secretState = game.calderaExploration?.secret;
+    const lantern = discovery === 'lava-tube-lantern-shaft';
+    const lodge = discovery === 'coconut-camp-sky-lodge';
+    const geyser = discovery === 'geyser-garden-launch';
+    const firewatch = discovery === 'caldera-firewatch';
+    const opacity = secretRoute && platform.hiddenSecretSurface && !secretState?.completed
+      ? clamp(.35 + (secretState?.reveal || 0) * 1.8, .35, .74)
+      : 1;
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.fillStyle = 'rgba(5,20,35,.22)';
+    ctx.beginPath();
+    ctx.ellipse(x + width * .5, y + 22, Math.max(34, width * .42), 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (lodge) {
+      const wood = ctx.createLinearGradient(0, y - 7, 0, y + 28);
+      wood.addColorStop(0, '#f6bc65'); wood.addColorStop(.28, '#bb693d'); wood.addColorStop(1, '#573444');
+      roundedPanel(x, y - 5, width, 16, 6, wood, '#33243d', 3);
+      ctx.strokeStyle = '#ffe399'; ctx.lineWidth = 2;
+      for (let plank = x + 18; plank < x + width; plank += 36) {
+        ctx.beginPath(); ctx.moveTo(plank, y - 2); ctx.lineTo(plank - 2, y + 8); ctx.stroke();
+      }
+      ctx.strokeStyle = 'rgba(89,49,43,.78)'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(x + 5, y + 11); ctx.quadraticCurveTo(x + width * .5, y + 20, x + width - 5, y + 11); ctx.stroke();
+    } else if (geyser) {
+      const mineral = ctx.createLinearGradient(0, y - 8, 0, y + 30);
+      mineral.addColorStop(0, '#fff0a0'); mineral.addColorStop(.22, '#61e4d8'); mineral.addColorStop(.58, '#d98548'); mineral.addColorStop(1, '#49344f');
+      ctx.fillStyle = mineral; ctx.strokeStyle = '#31283f'; ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x + 2, y + 1);
+      for (let point = 0; point <= 8; point += 1) {
+        const px = x + width * (point / 8);
+        const py = y - 5 + Math.sin(point * 2.15 + platform.x) * 3;
+        ctx.lineTo(px, py);
+      }
+      ctx.lineTo(x + width - 3, y + 13); ctx.lineTo(x + 10, y + 17); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = 'rgba(221,255,247,.78)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x + 12, y + 2); ctx.quadraticCurveTo(x + width * .5, y + 10, x + width - 12, y - 1); ctx.stroke();
+    } else if (lantern || secretRoute) {
+      const rock = ctx.createLinearGradient(0, y - 9, 0, y + 36);
+      rock.addColorStop(0, '#9c6dd7'); rock.addColorStop(.18, '#4b356d'); rock.addColorStop(.7, '#2a2147'); rock.addColorStop(1, '#171735');
+      ctx.fillStyle = rock; ctx.strokeStyle = '#140f2c'; ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(x + 3, y + 3);
+      for (let point = 0; point <= 7; point += 1) ctx.lineTo(x + width * point / 7, y - 5 + (point % 2) * 5);
+      ctx.lineTo(x + width - 6, y + 15); ctx.lineTo(x + width * .72, y + 21); ctx.lineTo(x + width * .45, y + 16); ctx.lineTo(x + width * .18, y + 21); ctx.lineTo(x + 4, y + 14); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = secretRoute ? '#63e7ff' : '#ff7d49'; ctx.lineWidth = 2;
+      for (let crack = 0; crack < 3; crack += 1) {
+        const cx = x + 32 + crack * Math.max(38, (width - 64) / 3);
+        ctx.beginPath(); ctx.moveTo(cx, y + 1); ctx.lineTo(cx + 6, y + 8); ctx.lineTo(cx + 2, y + 15); ctx.stroke();
+      }
+    } else if (firewatch) {
+      const deck = ctx.createLinearGradient(0, y - 8, 0, y + 30);
+      deck.addColorStop(0, '#f2a75f'); deck.addColorStop(.3, '#985044'); deck.addColorStop(1, '#342844');
+      roundedPanel(x, y - 5, width, 16, 5, deck, '#241d34', 3);
+      ctx.fillStyle = '#315c72';
+      for (let bolt = x + 16; bolt < x + width; bolt += 34) {
+        ctx.beginPath(); ctx.arc(bolt, y + 3, 2, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.strokeStyle = 'rgba(36,29,52,.75)'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(x + 8, y + 11); ctx.lineTo(x + width - 8, y + 11); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawExplorationLantern(x, y, lit, time, hue = '#ffe17f') {
+    ctx.save();
+    if (lit) { ctx.shadowColor = hue; ctx.shadowBlur = game.reducedShake ? 8 : 16 + Math.sin(time * .006 + x) * 3; }
+    ctx.strokeStyle = '#3a2940'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(x, y - 12); ctx.lineTo(x, y); ctx.stroke();
+    roundedPanel(x - 8, y, 16, 21, 4, lit ? hue : '#403947', '#2a2135', 2);
+    ctx.fillStyle = lit ? '#fff7c7' : '#675a67';
+    ctx.fillRect(x - 3, y + 5, 6, 10);
+    ctx.restore();
+  }
+
+  function drawCalderaExplorationAccents(time) {
+    const exploration = game.calderaExploration;
+    if (!exploration) return;
+    const lodge = exploration.destinations['coconut-camp-sky-lodge'];
+    const lantern = exploration.destinations['lava-tube-lantern-shaft'];
+    const firewatch = exploration.destinations['caldera-firewatch'];
+
+    const lodgeLights = [[4240,194,1],[4380,156,2],[4540,128,3],[4740,70,4],[4930,18,5]];
+    for (const [worldX, worldY, waypoint] of lodgeLights) {
+      const lit = lodge.environmentEnergized || lodge.progress >= waypoint;
+      drawExplorationLantern(worldX - game.cameraX, worldY, lit, time, '#ffe17f');
+    }
+
+    const shaftLights = [[14320,299,1],[14520,192,2],[14370,72,3],[14592,-77,4],[14415,-218,5]];
+    for (const [worldX, worldY, waypoint] of shaftLights) {
+      const lit = lantern.environmentEnergized || lantern.progress >= waypoint;
+      drawExplorationLantern(worldX - game.cameraX, worldY, lit, time, waypoint % 2 ? '#ffb14c' : '#c69cff');
+    }
+
+    if (visibleWorldX(17380, 470, 100)) {
+      const signX = 17585 - game.cameraX;
+      roundedPanel(signX - 145, 10, 290, 38, 11, 'rgba(31,25,45,.94)', firewatch.environmentEnergized ? '#ff704d' : '#ffe17f', 3);
+      ctx.fillStyle = firewatch.environmentEnergized ? '#ff9a6c' : '#fff2b4';
+      ctx.font = '900 13px Arial'; ctx.textAlign = 'center';
+      ctx.fillText(firewatch.environmentEnergized ? 'CALDERA: DEFINITELY NOT FINE' : 'CALDERA: PROBABLY FINE', signX, 34);
+      const beaconX = 17565 - game.cameraX;
+      const beaconY = -78;
+      ctx.save();
+      ctx.fillStyle = firewatch.environmentEnergized ? '#ff5a51' : '#604758';
+      if (firewatch.environmentEnergized) { ctx.shadowColor = '#ff5a51'; ctx.shadowBlur = game.reducedShake ? 7 : 18 + Math.sin(time * .012) * 5; }
+      ctx.beginPath(); ctx.arc(beaconX, beaconY, 11, Math.PI, 0); ctx.lineTo(beaconX + 11, beaconY + 5); ctx.lineTo(beaconX - 11, beaconY + 5); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+
+    const parent = exploration.destinations['lava-tube-lantern-shaft'];
+    if (parent.progress >= obsidianStashPlan.requiredParentProgress && visibleWorldX(14920, 380, 80)) {
+      const glintX = 15182 - game.cameraX;
+      const glintY = -13;
+      const glint = .45 + Math.sin(time * .009) * .28;
+      ctx.save(); ctx.globalAlpha = game.reducedShake ? .6 : glint;
+      drawStar(glintX, glintY, 8, '#63e7ff');
+      ctx.strokeStyle = 'rgba(198,156,255,.6)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(glintX - 17, glintY + 12); ctx.lineTo(glintX, glintY); ctx.lineTo(glintX + 17, glintY + 12); ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function drawCalderaExplorationBanner(time) {
+    const banner = game.calderaExploration?.completionBanner;
+    if (!banner) return;
+    const progress = clamp(banner.timer / banner.maxTimer, 0, 1);
+    const appear = clamp((1 - progress) * 6, 0, 1);
+    const disappear = clamp(progress * 7, 0, 1);
+    const alpha = Math.min(appear, disappear);
+    const secret = banner.mode === 'secret';
+    const width = Math.min(canvas.width - 32, secret ? 720 : 480);
+    const height = secret ? 132 : 82;
+    const x = (canvas.width - width) * .5;
+    const y = secret ? 112 : 148;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(canvas.width * .5, y + height * .5);
+    ctx.scale(.96 + appear * .04 + (secret && !game.reducedShake ? Math.sin(time * .015) * .008 : 0), .96 + appear * .04);
+    ctx.translate(-canvas.width * .5, -(y + height * .5));
+    const fill = secret ? 'rgba(31,14,54,.96)' : 'rgba(5,39,57,.94)';
+    const stroke = secret ? '#c69cff' : banner.mode === 'volcano-warning' ? '#ff704d' : '#ffe17f';
+    roundedPanel(x, y, width, height, 20, fill, stroke, secret ? 5 : 3);
+    if (secret) {
+      ctx.shadowColor = '#c69cff'; ctx.shadowBlur = 20;
+      ctx.strokeStyle = 'rgba(99,231,255,.55)'; ctx.lineWidth = 2;
+      ctx.strokeRect(x + 10, y + 10, width - 20, height - 20);
+    }
+    ctx.shadowBlur = 0; ctx.textAlign = 'center';
+    ctx.fillStyle = secret ? '#63e7ff' : 'rgba(255,255,255,.72)';
+    ctx.font = `900 ${secret ? 11 : 9}px Arial`; ctx.fillText(banner.eyebrow, canvas.width * .5, y + (secret ? 24 : 18));
+    ctx.fillStyle = secret ? '#ffe17f' : '#fff6ce';
+    ctx.font = `900 ${secret ? 28 : 24}px Arial`; ctx.fillText(banner.title, canvas.width * .5, y + (secret ? 64 : 44));
+    ctx.fillStyle = secret ? '#fff' : '#aaf7ea';
+    ctx.font = `900 ${secret ? 13 : 11}px Arial`; ctx.fillText(banner.reward, canvas.width * .5, y + (secret ? 99 : 66));
+    ctx.restore();
   }
 
   function drawBackground(time) {
@@ -2829,6 +3492,7 @@
 
   function drawPlatform(platform, time) {
     if (!visibleWorldX(platform.x, platform.w, 80)) return;
+    if (platform.phase2ArtSurface) return;
     const x = Math.floor(platform.x - game.cameraX);
     const y = Math.floor(platform.y);
     const width = platform.w;
@@ -3204,12 +3868,12 @@
       ctx.fillText('OLIVIA: I PACKED LIGHT. JUST 47 TACOS!', 520 - game.cameraX, 214);
       return;
     }
-    if (['ready-lava', 'waiting-fiesta', 'parked'].includes(boat.state)) return;
+    if (['waiting-fiesta', 'parked'].includes(boat.state)) return;
     if (!visibleWorldX(boat.x - 190, 410, 280)) return;
     const screenX = boat.x - game.cameraX;
     const entering = boat.state.startsWith('entering');
     const escaping = boat.state.startsWith('escaping') || boat.state === 'fiesta-bound';
-    const heat = boat.state === 'lava-chase' || boat.state === 'entering-lava' || boat.state === 'fiesta-bound';
+    const heat = false;
     const suspension = Math.abs(Math.sin(time * .009 + boat.x * .01)) * 2.2;
     if (entering || escaping || heat) {
       for (let streak = 0; streak < 5; streak += 1) {
@@ -3987,7 +4651,7 @@
       ctx.fillStyle = { lime: '#7cff68', pepper: '#ff8b70', shell: '#ffe17f', coconut: '#f0bd7b' }[game.activePower]; ctx.fillText(labels[game.activePower], 936, 76);
     }
     if (game.splatCombo > 1) { ctx.fillStyle = '#ff718f'; ctx.fillText(`CALDERA SPLAT ×${game.splatCombo}`, 936, 100); }
-    if (['geyser-drop', 'lava-chase'].includes(game.boat.state)) {
+    if (game.boat.state === 'compact-drop') {
       ctx.fillStyle = '#63e7ff';
       ctx.fillText(`TACO TREKKER CATCHES ${game.boat.catches}`, 936, 124);
     }
@@ -4012,26 +4676,38 @@
       ctx.translate((seeded() - 0.5) * shake, (seeded() - 0.5) * shake * 0.55);
     }
     drawCalderaBackground(time);
+    ctx.save();
+    ctx.translate(0, game.calderaExploration?.cameraLift || 0);
     drawCalderaHazards(time);
     drawCalderaScenery(time);
-    for (const platform of world.platforms) drawPlatform(platform, time);
+    drawCalderaExplorationBackdrops(time);
+    for (const platform of world.platforms) {
+      drawPlatform(platform, time);
+      drawPhase2ExplorationSurface(platform);
+    }
+    drawCalderaExplorationAccents(time);
+    drawSurfObstacles(time);
     drawCalderaTrekker(time);
     for (const item of world.collectibles) drawCollectible(item, time);
     for (const checkpoint of world.checkpoints) drawCalderaCheckpoint(checkpoint, time);
     drawCoconutCannons();
     drawCalderaGoal(time);
     for (const enemy of world.enemies) drawCalderaEnemy(enemy, time);
+    drawSurfIntro(time);
+    drawWaveChase(time);
     heroCore.drawRespawnFX(ctx, game.respawn, player, game.cameraX, time, {
       vanish: '#63e7ff', vanishRing: '#ffe17f', landingRing: 'rgba(99, 231, 255, .86)',
     });
     drawPlayer(time);
     drawParticles();
     ctx.restore();
+    ctx.restore();
     drawHUD(time);
+    drawCalderaExplorationBanner(time);
     if (previewHost) {
       canvas.dataset.qaState = JSON.stringify({
         sourceVersion: SOURCE_VERSION,
-        state: game.state, player: { x: Math.round(player.x), y: Math.round(player.y), vx: Math.round(player.vx), vy: Math.round(player.vy), grounded: player.grounded },
+        state: game.state, hearts: game.hearts, player: { x: Math.round(player.x), y: Math.round(player.y), vx: Math.round(player.vx), vy: Math.round(player.vy), grounded: player.grounded },
         superHero: { ...sharedAbilities.snapshot(game.abilities), collisionWidth: player.w, collisionHeight: player.h },
         heroPhysics, respawn: {
           active: game.respawn.active,
@@ -4051,7 +4727,63 @@
           state: game.boat.state,
           x: Math.round(game.boat.x),
           catches: game.boat.catches,
+          dropCount: game.boat.dropCount,
+          totalSpawns: game.boat.totalSpawns,
           launcherPulse: Number(game.boat.dropPulse.toFixed(3)),
+        },
+        calderaExplorationPhase2: {
+          version: game.calderaExploration?.version,
+          scope: game.calderaExploration?.scope,
+          normalRouteUnaffected: game.calderaExploration?.normalRouteUnaffected,
+          noRequiredSuperTraversal: game.calderaExploration?.noRequiredSuperTraversal,
+          phase1BalanceFrozen: game.calderaExploration?.phase1BalanceFrozen,
+          destinations: Object.fromEntries(calderaExplorationPlan.map((entry) => {
+            const state = game.calderaExploration?.destinations[entry.id];
+            return [entry.id, {
+              progress: state?.progress || 0,
+              completed: Boolean(state?.completed),
+              completionCount: state?.completionCount || 0,
+              rewardSpawnCount: state?.rewardSpawnCount || 0,
+              rewardSurfaceId: state?.rewardSurfaceId || null,
+              presentation: entry.presentation,
+              completionTitle: entry.completionTitle,
+              routeRange: entry.routeRange,
+            }];
+          })),
+          secret: {
+            id: obsidianStashPlan.id,
+            completed: Boolean(game.calderaExploration?.secret.completed),
+            completionCount: game.calderaExploration?.secret.completionCount || 0,
+            rewardSpawnCount: game.calderaExploration?.secret.rewardSpawnCount || 0,
+            reveal: Number((game.calderaExploration?.secret.reveal || 0).toFixed(3)),
+            completionTitle: obsidianStashPlan.completionTitle,
+          },
+          popupHierarchy: {
+            visibleDestinationDiscoveredCount: calderaExplorationPlan.filter((entry) => /DISCOVERED!/i.test(entry.completionTitle)).length,
+            trueSecretUsesDiscovered: /DISCOVERED!/i.test(obsidianStashPlan.completionTitle),
+          },
+          geometryAudit: game.calderaExplorationGeometryAudit,
+          artReady: Object.values(calderaExplorationArt).every((art) => Boolean(images[art.image])),
+          unsettledRewardFlights: world.collectibles.filter((item) => item.rewardFlight).length,
+        },
+        oliviaCompactDrop: {
+          previousSegments: OLIVIA_COMPACT_DROP.previousSegments,
+          previousFootprint: OLIVIA_COMPACT_DROP.previousFootprint,
+          revisedSegments: 1,
+          revisedFootprint: OLIVIA_COMPACT_DROP.revisedFootprint,
+          revisedDistance: OLIVIA_COMPACT_DROP.triggerEnd - OLIVIA_COMPACT_DROP.triggerStart,
+          previousDistance: OLIVIA_COMPACT_DROP.previousFootprint.reduce((total, range) => total + range[1] - range[0], 0),
+          maxDrops: OLIVIA_COMPACT_DROP.maxDrops,
+          secondLavaDropRemoved: true,
+          laterStatePreserved: ['waiting-fiesta', 'parked'].includes(game.boat.state) || player.x < OLIVIA_COMPACT_DROP.triggerEnd,
+        },
+        scriptSafeguards: {
+          eruptionStart: ERUPTION_SCRIPT_START,
+          surfStart: SURF_SCRIPT_START,
+          firewatchBeforeEruption: calderaExplorationPlan[3].routeRange[1] < ERUPTION_SCRIPT_START,
+          allExplorationBeforeSurf: calderaExplorationPlan.every((entry) => entry.routeRange[1] < SURF_SCRIPT_START),
+          surfArtReady: Boolean(images.islandSurf && images.islandWave),
+          surfObstacleCount: world.surfObstacles.length,
         },
         eruption: { state: game.eruption.state, timer: Number(game.eruption.timer.toFixed(2)), done: game.wave.done },
         wave: {
@@ -4088,7 +4820,9 @@
           independentWheelMotion: true,
           armAnimationRemoved: true,
           rearVehicleLauncher: calderaTrekkerRearLauncher,
-          dropStates: ['geyser-drop', 'lava-chase'],
+          dropStates: ['compact-drop'],
+          maxDrops: OLIVIA_COMPACT_DROP.maxDrops,
+          secondLavaDropRemoved: true,
           pinkBlueBangs: true,
         },
         enemyScaleAudit: {
@@ -4152,6 +4886,13 @@
     checkpointEruption: 'assets/world2_2_checkpoint_eruption_v1.webp',
     checkpointLuau: 'assets/world2_2_checkpoint_luau_v1.webp',
     calderaTrekkerBase: 'assets/world2_2_caldera_trekker_base_v1.webp',
+    islandSurf: 'assets/island_surf_sheet_v1.png',
+    islandWave: 'assets/island_wave_sheet_v1.png',
+    phase2SkyLodge: 'assets/world2_2_phase2_sky_lodge_v1.webp',
+    phase2GeyserGarden: 'assets/world2_2_phase2_geyser_garden_v1.webp',
+    phase2LanternShaft: 'assets/world2_2_phase2_lantern_shaft_v1.webp',
+    phase2CalderaFirewatch: 'assets/world2_2_phase2_caldera_firewatch_v1.webp',
+    phase2ObsidianStash: 'assets/world2_2_phase2_obsidian_stash_v1.webp',
   };
 
   Promise.all(Object.entries(imageAssets).map(([key, path]) => loadImage(path).then((image) => [key, image]))).then((entries) => {

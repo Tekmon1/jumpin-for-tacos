@@ -2134,7 +2134,7 @@ test("ships the 35,000-unit caldera camping sequel with premium art and adaptive
   assert.match(runtime, /name: 'Caldera KABOOM'.*start: 19000, end: 27000/);
   assert.match(runtime, /name: 'Rainbow Lava Luau'.*start: 27000, end: WORLD_WIDTH/);
   assert.match(runtime, /addReachableDetours\(sections\[0\]/);
-  assert.match(runtime, /x: 33000, y: GROUND_Y, w: WORLD_WIDTH - 33000/);
+  assert.match(runtime, /x: 33280, y: GROUND_Y, w: WORLD_WIDTH - 33280/);
   assert.match(runtime, /KABOOM! THE VOLCANO ORDERED EXTRA RAINBOW!/);
   assert.match(runtime, /duration: 3\.2/);
   assert.match(runtime, /const ENVIRONMENT_TRANSITION_WIDTH = 1600/);
@@ -2148,7 +2148,8 @@ test("ships the 35,000-unit caldera camping sequel with premium art and adaptive
   assert.match(runtime, /independentWheelMotion: true/);
   assert.match(runtime, /armAnimationRemoved: true/);
   assert.match(runtime, /rearVehicleLauncher: calderaTrekkerRearLauncher/);
-  assert.match(runtime, /dropStates: \['geyser-drop', 'lava-chase'\]/);
+  assert.match(runtime, /dropStates: \['compact-drop'\]/);
+  assert.match(runtime, /secondLavaDropRemoved: true/);
   assert.match(runtime, /const origin = trekkerRearLauncherOrigin\(game\.boat\)/);
   assert.match(runtime, /xOffset: -104/);
   assert.match(runtime, /yOffset: -119/);
@@ -2180,14 +2181,90 @@ test("ships the 35,000-unit caldera camping sequel with premium art and adaptive
     assert.match(html, new RegExp(`music_caldera_${track}\\.ogg`));
   }
   assert.match(html, /World 2 • Level 2-2 • 35,000 units/);
-  assert.match(html, /level2-2\.js\?v=12/);
-  assert.match(runtime, /SOURCE_VERSION = 'w2-2-v12-alternating-super-run'/);
+  assert.match(html, /level2-2\.js\?v=13/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-2-v13-phase2-exploration'/);
   assert.match(html, /id="startBtn"/);
   assert.match(runtime, /geyserGuardSpecs/);
   assert.match(runtime, /requiresGeyserAirborne/);
   assert.match(runtime, /geyserLaunchTimer/);
   assert.match(runtime, /type: 'ash'/);
   assert.match(runtime, /projectileMode: 'single-cannon-single-projectile'/);
+});
+
+test("adds four World 2-2 Super exploration destinations, one true Obsidian Stash, and one compact Olivia drop", async () => {
+  const runtime = await readFile(new URL("../public/game/level2-2.js", import.meta.url), "utf8");
+  const html = await readFile(new URL("../public/game/level2-2.html", import.meta.url), "utf8");
+  const phase2Assets = [
+    "world2_2_phase2_sky_lodge_v1.webp",
+    "world2_2_phase2_geyser_garden_v1.webp",
+    "world2_2_phase2_lantern_shaft_v1.webp",
+    "world2_2_phase2_caldera_firewatch_v1.webp",
+    "world2_2_phase2_obsidian_stash_v1.webp",
+  ];
+
+  assert.match(html, /level2-2\.js\?v=13/);
+  assert.match(runtime, /CALDERA_EXPLORATION_VERSION = 'world-2-2-phase2-v1'/);
+  for (const filename of phase2Assets) {
+    assert.match(runtime, new RegExp(filename.replace(".", "\\.")));
+    await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
+  }
+
+  for (const destination of [
+    "id: 'coconut-camp-sky-lodge'",
+    "id: 'geyser-garden-launch'",
+    "id: 'lava-tube-lantern-shaft'",
+    "id: 'caldera-firewatch'",
+    "id: 'obsidian-stash'",
+  ]) assert.ok(runtime.includes(destination), `includes ${destination}`);
+
+  assert.match(runtime, /completionTitle: 'CAMP LOOKOUT LIT!'/);
+  assert.match(runtime, /completionTitle: 'GEYSER ORCHESTRA!'/);
+  assert.match(runtime, /completionTitle: 'LANTERN SHAFT AGLOW'/);
+  assert.match(runtime, /completionTitle: 'CALDERA ALERT ONLINE'/);
+  assert.match(runtime, /completionTitle: 'OBSIDIAN STASH DISCOVERED!'/);
+  assert.equal((runtime.match(/completionTitle: '[^']*DISCOVERED!'/g) || []).length, 1, "only the concealed stash uses major discovery language");
+  assert.match(runtime, /presentation: 'warm-camp-activation'/);
+  assert.match(runtime, /presentation: 'geyser-orchestra'/);
+  assert.match(runtime, /presentation: 'progressive-illumination'/);
+  assert.match(runtime, /presentation: 'volcano-warning'/);
+  assert.match(runtime, /presentation: 'true-secret'/);
+
+  assert.match(runtime, /id: 'phase2-lodge-entry', x: 3985, y: 310, w: 300/);
+  assert.match(runtime, /id: 'phase2-geyser-entry', x: 9285, y: 306, w: 240/);
+  assert.match(runtime, /id: 'phase2-lantern-entry', x: 14242, y: 304, w: 242/);
+  assert.match(runtime, /id: 'phase2-firewatch-entry', x: 16872, y: 306, w: 280/);
+  assert.match(runtime, /id: 'phase2-obsidian-stash', x: 15472, y: 158, w: 330/);
+  assert.match(runtime, /allEntriesRequireSuper/);
+  assert.match(runtime, /allDropRecoverable/);
+  assert.match(runtime, /standardViewportSeparated/);
+  assert.match(runtime, /normalRouteUnaffected: true/);
+  assert.match(runtime, /noRequiredSuperTraversal: true/);
+  assert.match(runtime, /phase1BalanceFrozen: true/);
+  assert.match(runtime, /if \(platform\.phase2ArtSurface\) return/);
+  assert.match(runtime, /function drawPhase2ExplorationSurface/);
+  assert.match(runtime, /CALDERA: PROBABLY FINE/);
+  assert.match(runtime, /CALDERA: DEFINITELY NOT FINE/);
+
+  assert.match(runtime, /ERUPTION_SCRIPT_START = 18450/);
+  assert.match(runtime, /SURF_SCRIPT_START = 27180/);
+  assert.match(runtime, /firewatchBeforeEruption/);
+  assert.match(runtime, /allStationsBeforeSurf/);
+  assert.match(runtime, /island_surf_sheet_v1\.png/);
+  assert.match(runtime, /island_wave_sheet_v1\.png/);
+  assert.match(runtime, /updateWaveChase\(dt\)/);
+  assert.match(runtime, /drawWaveChase\(time\)/);
+
+  assert.match(runtime, /triggerStart: 7000/);
+  assert.match(runtime, /triggerEnd: 8400/);
+  assert.match(runtime, /maxDrops: 8/);
+  assert.match(runtime, /boat\.state = 'compact-drop'/);
+  assert.match(runtime, /dropStates: \['compact-drop'\]/);
+  assert.match(runtime, /secondLavaDropRemoved: true/);
+  assert.doesNotMatch(runtime, /boat\.state = 'geyser-drop'/);
+  assert.doesNotMatch(runtime, /boat\.state = 'lava-chase'/);
+  assert.match(runtime, /game\.boat\.catches >= 6/);
+  assert.match(html, /controller\.js\?v=9/);
+  assert.match(html, /class="touch-controls"/);
 });
 
 test("ships the complete 35,000-unit Neon Neckties concert level", async () => {
