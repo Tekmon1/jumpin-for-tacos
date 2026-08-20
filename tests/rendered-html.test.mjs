@@ -2132,9 +2132,9 @@ test("ships the 35,000-unit caldera camping sequel with premium art and adaptive
   assert.match(runtime, /const WORLD_WIDTH = 35000/);
   assert.match(runtime, /name: 'Coconut Campgrounds'.*start: 0, end: 6500/);
   assert.match(runtime, /name: 'Caldera KABOOM'.*start: 19000, end: 27000/);
-  assert.match(runtime, /name: 'Rainbow Lava Luau'.*start: 27000, end: WORLD_WIDTH/);
+  assert.match(runtime, /name: 'Taco Trekker Escape'.*start: 27000, end: WORLD_WIDTH/);
   assert.match(runtime, /addReachableDetours\(sections\[0\]/);
-  assert.match(runtime, /x: 33280, y: GROUND_Y, w: WORLD_WIDTH - 33280/);
+  assert.match(runtime, /x: 27000, y: GROUND_Y, w: WORLD_WIDTH - 27000/);
   assert.match(runtime, /KABOOM! THE VOLCANO ORDERED EXTRA RAINBOW!/);
   assert.match(runtime, /duration: 3\.2/);
   assert.match(runtime, /const ENVIRONMENT_TRANSITION_WIDTH = 1600/);
@@ -2174,6 +2174,8 @@ test("ships the 35,000-unit caldera camping sequel with premium art and adaptive
 
   assert.match(catalog, /name: 'Campfire Caldera Caper'/);
   assert.match(catalog, /worldWidth: 35000/);
+  assert.match(catalog, /name: 'Taco Trekker Escape'.*start: 27000, end: 35000/);
+  assert.match(catalog, /Falling-rock on-foot escape and scripted Taco Trekker evacuation/);
   assert.match(catalog, /short brown hair with vivid pink-and-blue bangs/);
   assert.match(catalog, /crossfadeSeconds: 3\.2/);
 
@@ -2181,12 +2183,23 @@ test("ships the 35,000-unit caldera camping sequel with premium art and adaptive
     assert.match(html, new RegExp(`music_caldera_${track}\\.ogg`));
   }
   assert.match(html, /World 2 • Level 2-2 • 35,000 units/);
-  assert.match(html, /level2-2\.js\?v=13/);
-  assert.match(runtime, /SOURCE_VERSION = 'w2-2-v13-phase2-exploration'/);
+  assert.match(html, /level2-2\.js\?v=14/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-2-v14-geyser-volcano-escape'/);
   assert.match(html, /id="startBtn"/);
   assert.match(runtime, /geyserGuardSpecs/);
   assert.match(runtime, /requiresGeyserAirborne/);
   assert.match(runtime, /geyserLaunchTimer/);
+  assert.match(runtime, /regularLaunchVelocity: 840/);
+  assert.match(runtime, /phase2LaunchVelocity: 920/);
+  assert.match(runtime, /world2_2_geyser_vent_v2\.webp/);
+  assert.match(runtime, /world2_2_geyser_plume_v2\.webp/);
+  assert.match(runtime, /world2_2_escape_debris_v1\.webp/);
+  assert.match(runtime, /function updateVolcanoEscape/);
+  assert.match(runtime, /function updateJeepRescue/);
+  assert.match(runtime, /function drawJeepRescue/);
+  assert.match(runtime, /inputMode: 'scripted-no-player-steering'/);
+  assert.doesNotMatch(runtime, /updateWaveChase|drawWaveChase|world\.surfObstacles|game\.surf|game\.wave/);
+  assert.doesNotMatch(runtime, /island_surf_sheet_v1|island_wave_sheet_v1/);
   assert.match(runtime, /type: 'ash'/);
   assert.match(runtime, /projectileMode: 'single-cannon-single-projectile'/);
 });
@@ -2196,13 +2209,13 @@ test("adds four World 2-2 Super exploration destinations, one true Obsidian Stas
   const html = await readFile(new URL("../public/game/level2-2.html", import.meta.url), "utf8");
   const phase2Assets = [
     "world2_2_phase2_sky_lodge_v1.webp",
-    "world2_2_phase2_geyser_garden_v1.webp",
+    "world2_2_phase2_geyser_garden_v2.webp",
     "world2_2_phase2_lantern_shaft_v1.webp",
     "world2_2_phase2_caldera_firewatch_v1.webp",
     "world2_2_phase2_obsidian_stash_v1.webp",
   ];
 
-  assert.match(html, /level2-2\.js\?v=13/);
+  assert.match(html, /level2-2\.js\?v=14/);
   assert.match(runtime, /CALDERA_EXPLORATION_VERSION = 'world-2-2-phase2-v1'/);
   for (const filename of phase2Assets) {
     assert.match(runtime, new RegExp(filename.replace(".", "\\.")));
@@ -2246,13 +2259,25 @@ test("adds four World 2-2 Super exploration destinations, one true Obsidian Stas
   assert.match(runtime, /CALDERA: DEFINITELY NOT FINE/);
 
   assert.match(runtime, /ERUPTION_SCRIPT_START = 18450/);
-  assert.match(runtime, /SURF_SCRIPT_START = 27180/);
+  assert.match(runtime, /const VOLCANO_ESCAPE = Object\.freeze/);
+  assert.match(runtime, /finalGeyserX: 26880/);
+  assert.match(runtime, /rescueX: 27720/);
+  assert.match(runtime, /jeepFinishX: 34120/);
   assert.match(runtime, /firewatchBeforeEruption/);
-  assert.match(runtime, /allStationsBeforeSurf/);
-  assert.match(runtime, /island_surf_sheet_v1\.png/);
-  assert.match(runtime, /island_wave_sheet_v1\.png/);
-  assert.match(runtime, /updateWaveChase\(dt\)/);
-  assert.match(runtime, /drawWaveChase\(time\)/);
+  assert.match(runtime, /allStationsBeforeEscape/);
+  assert.match(runtime, /repeatedFinaleRemoved: true/);
+  assert.match(runtime, /world21SequenceUntouched: true/);
+  assert.match(runtime, /updateVolcanoEscape\(dt\)/);
+  assert.match(runtime, /drawVolcanoEscape\(time\)/);
+  assert.match(runtime, /drawJeepRescue\(time\)/);
+  for (const filename of [
+    "world2_2_geyser_vent_v2.webp",
+    "world2_2_geyser_plume_v2.webp",
+    "world2_2_escape_debris_v1.webp",
+  ]) {
+    assert.match(runtime, new RegExp(filename.replace(".", "\\.")));
+    await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
+  }
 
   assert.match(runtime, /triggerStart: 7000/);
   assert.match(runtime, /triggerEnd: 8400/);

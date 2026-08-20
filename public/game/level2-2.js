@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w2-2-v13-phase2-exploration';
+  const SOURCE_VERSION = 'w2-2-v14-geyser-volcano-escape';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -28,7 +28,7 @@
     resultTacos: document.getElementById('resultTacos'),
     resultGolden: document.getElementById('resultGolden'),
     resultBoat: document.getElementById('resultBoat'),
-    resultWave: document.getElementById('resultWave'),
+    resultEscape: document.getElementById('resultEscape'),
     winText: document.getElementById('winText'),
     newBestText: document.getElementById('newBestText'),
   };
@@ -42,14 +42,14 @@
     { id: 'geyser', name: 'Geyser Gardens', start: 6500, end: 12500, music: 'geyser', accent: '#65e7ff' },
     { id: 'caves', name: 'Lava Tube Laughs', start: 12500, end: 19000, music: 'caves', accent: '#bb8cff' },
     { id: 'eruption', name: 'Caldera KABOOM', start: 19000, end: 27000, music: 'eruption', accent: '#ff704d' },
-    { id: 'luau', name: 'Rainbow Lava Luau', start: 27000, end: WORLD_WIDTH, music: 'luau', accent: '#ff75bd' },
+    { id: 'luau', name: 'Taco Trekker Escape', start: 27000, end: WORLD_WIDTH, music: 'luau', accent: '#ff75bd' },
   ];
   const checkpoints = [
     { x: 5400, name: 'Taco Tent Basecamp', look: 'camp', sign: 'OLIVIA RADIO: VOLCANO STATUS — EMOTIONALLY AVAILABLE.', accent: '#ffd65a' },
     { x: 11600, name: 'Geyser Picnic Stop', look: 'geyser', sign: 'OLIVIA RADIO: DO NOT FEED THE GEYSERS. THEY GET CLINGY.', accent: '#65e7ff' },
     { x: 18100, name: 'Lava-Tube Lantern Camp', look: 'caves', sign: 'OLIVIA RADIO: CAVE ECHO RATED 10/10 FOR TACO CRUNCH.', accent: '#bb8cff' },
     { x: 25900, name: 'Ashfall Ranger Station', look: 'eruption', sign: 'OLIVIA RADIO: ASH IS JUST SPICY WEATHER!', accent: '#ff8b5f' },
-    { x: 33050, name: 'Caldera Camper Fiesta', look: 'luau', sign: 'OLIVIA RADIO: FIVE-STAR CAMPSITE. SLIGHTLY MOLTEN.', accent: '#ff75bd' },
+    { x: 33050, name: 'Taco Trekker Safe Point', look: 'luau', sign: 'OLIVIA: ALMOST CLEAR — HOLD ON TO YOUR TACOS!', accent: '#ff75bd' },
   ];
 
   const tracks = {
@@ -116,7 +116,34 @@
   });
   const CALDERA_EXPLORATION_VERSION = 'world-2-2-phase2-v1';
   const ERUPTION_SCRIPT_START = 18450;
-  const SURF_SCRIPT_START = 27180;
+  const VOLCANO_ESCAPE = Object.freeze({
+    runStart: 19120,
+    pressureStart: 18480,
+    finalGeyserX: 26880,
+    rescueX: 27720,
+    jeepFinishX: 34120,
+    onFootMaxSpeed: 330,
+    finalLaunchVelocity: 930,
+    finalLaunchSpeed: 480,
+    jeepCruiseSpeed: 560,
+  });
+  const VOLCANO_ESCAPE_HAZARDS = Object.freeze([
+    Object.freeze({ x: 20020, warningLead: 530, typeIndex: 0, size: 58 }),
+    Object.freeze({ x: 21280, warningLead: 560, typeIndex: 1, size: 66 }),
+    Object.freeze({ x: 22620, warningLead: 590, typeIndex: 2, size: 62 }),
+    Object.freeze({ x: 24080, warningLead: 560, typeIndex: 3, size: 72 }),
+    Object.freeze({ x: 25420, warningLead: 610, typeIndex: 1, size: 66 }),
+    Object.freeze({ x: 26380, warningLead: 500, typeIndex: 2, size: 60 }),
+  ]);
+  const GEYSER_PHYSICS = Object.freeze({
+    regularLaunchVelocity: 840,
+    phase2LaunchVelocity: 920,
+    activeStart: .5,
+    activeEnd: .86,
+    warningStart: .34,
+    warningEnd: .5,
+    launchCooldown: 1.05,
+  });
   const OLIVIA_COMPACT_DROP = Object.freeze({
     triggerStart: 7000,
     triggerEnd: 8400,
@@ -126,6 +153,23 @@
     previousFootprint: Object.freeze([[7000, 11900], [19400, 27400]]),
     revisedFootprint: Object.freeze([7000, 8400]),
   });
+  function createVolcanoEscapeState() {
+    return {
+      phase: 'dormant', timer: 0, startedAt: null, completedAt: null,
+      pressureX: VOLCANO_ESCAPE.pressureStart, finalGeyserLaunched: false,
+      finalLaunchCount: 0, cueShown: false, rescueTriggered: false,
+      deathRecoveries: 0, rewardGranted: false, completed: false,
+      hazards: VOLCANO_ESCAPE_HAZARDS.map((spec) => ({ ...spec, state: 'waiting', timer: 0, y: -120, vy: 0, hit: false })),
+    };
+  }
+
+  function createJeepRescueState() {
+    return {
+      state: 'inactive', x: VOLCANO_ESCAPE.rescueX - 980, speed: 0, timer: 0,
+      boarded: false, suspension: 0, dustPulse: 0, arrivalCount: 0,
+      boardingCount: 0, completionCount: 0, dialogueShown: false,
+    };
+  }
   const calderaExplorationPlan = Object.freeze([
     Object.freeze({
       id: 'coconut-camp-sky-lodge', name: 'Coconut Camp Sky Lodge', presentation: 'warm-camp-activation',
@@ -183,7 +227,7 @@
   const keys = { left: false, right: false, jump: false };
   const world = {
     platforms: [], collectibles: [], enemies: [], checkpoints: [], cannons: [],
-    surfObstacles: [], geysers: [], goal: { x: 34440, y: 320, w: 120, h: 140 },
+    geysers: [], goal: { x: 34440, y: 320, w: 120, h: 140 },
   };
   const player = {
     x: 140, y: 380, w: 34, h: 42, vx: 0, vy: 0, dir: 1,
@@ -199,11 +243,8 @@
     splatCombo: 0, splatTimer: 0, bestSplat: 0,
     abilities: sharedAbilities.createState(),
     activePower: null, limeShield: false, pepperTimer: 0, coconutLaunchTimer: 0,
-    wave: { active: false, done: false, x: 0, speed: 0, crashing: false, crashTimer: 0 },
-    surf: {
-      phase: 'idle', oliviaX: 0, oliviaY: 330, oliviaTimer: 0,
-      boardMounted: false, mountX: 27640, landingLaunched: false, clearedObstacles: 0,
-    },
+    escape: createVolcanoEscapeState(),
+    jeep: createJeepRescueState(),
     boat: { state: 'basecamp', x: 720, speed: 0, dropTimer: 0, dropPulse: 0, catches: 0, pass: 0, dropCount: 0, totalSpawns: 0 },
     eruption: { state: 'dormant', timer: 0, flash: 0, tremor: 0, rainbowBurst: 0 },
     cannonballs: [],
@@ -218,6 +259,7 @@
     platformOverlapCount: 0, checkpointsGrounded: 0,
     environmentRemasterReady: false, foregroundRemasterReady: false,
     world2EncounterAudit: null, geyserLaunchTimer: 0,
+    geyserLaunchAudit: { count: 0, lastVelocity: 0, lastVentX: null, airControlPreserved: true },
     calderaExploration: null, calderaExplorationGeometryAudit: null,
   };
 
@@ -543,6 +585,7 @@
         arrivalAcknowledged: false,
         completionCount: 0,
         rewardSpawned: false,
+        pendingReward: false,
         rewardSpawnCount: 0,
         rewardSurfaceId: null,
         environmentEnergized: false,
@@ -669,7 +712,7 @@
       allDropRecoverable: phase2Platforms.every((platform) => platform.phase2Escape === 'drop-to-main-route'),
       compactOliviaDropBeforeGeyserGarden: OLIVIA_COMPACT_DROP.triggerEnd < calderaExplorationPlan[1].routeRange[0],
       firewatchBeforeEruption: calderaExplorationPlan[3].routeRange[1] < ERUPTION_SCRIPT_START,
-      allStationsBeforeSurf: calderaExplorationPlan.every((entry) => entry.routeRange[1] < SURF_SCRIPT_START),
+      allStationsBeforeEscape: calderaExplorationPlan.every((entry) => entry.routeRange[1] < ERUPTION_SCRIPT_START),
       cameraMaximumLift: 286,
       backgroundSeamsExposed: false,
     };
@@ -681,7 +724,6 @@
     world.collectibles = [];
     world.enemies = [];
     world.cannons = [];
-    world.surfObstacles = [];
     world.checkpoints = heroCore.createCheckpointSet(checkpoints, {
       defaults: { y: 326, w: 188, h: 134 },
     });
@@ -702,20 +744,7 @@
     addPlatform({ x: 21200, y: 438, w: 900, h: 102, style: 'dock', ground: true });
     addGroundRoute({ start: 22100, end: 24500 }, { lengths: [620, 760, 560], gaps: [100, 170, 86], style: 'temple-ground', moverStyle: 'raft' });
 
-    // The final act is a readable, enemy-free surf set piece. An invisible
-    // collision lane keeps the board glued to the water while the beach bookends
-    // make the mount and dismount unmistakable.
-    addPlatform({ x: 24500, y: GROUND_Y, w: 1120, h: 100, style: 'moon-sand', ground: true, finalRunway: true, surfLaunchBeach: true });
-    addPlatform({ x: 25620, y: GROUND_Y, w: 7660, h: 20, style: 'surf-lane', ground: true, finalRunway: true, surfLane: true });
-    addPlatform({ x: 33280, y: GROUND_Y, w: WORLD_WIDTH - 33280, h: 100, style: 'moon-sand', ground: true, finalRunway: true, surfLandingBeach: true });
-
-    world.surfObstacles = [
-      { x: 27040, y: 410, w: 74, h: 50, type: 'driftwood', hit: false },
-      { x: 28180, y: 396, w: 78, h: 64, type: 'coral', hit: false },
-      { x: 29360, y: 406, w: 82, h: 54, type: 'buoy', hit: false },
-      { x: 30620, y: 392, w: 86, h: 68, type: 'tiki', hit: false },
-      { x: 31920, y: 402, w: 84, h: 58, type: 'coconuts', hit: false },
-    ];
+    addPlatform({ x: 24500, y: GROUND_Y, w: WORLD_WIDTH - 24500, h: 100, style: 'moon-sand', ground: true, finalRunway: true });
 
     addUpperRoute(sections[0], 'surfboard', 420, 430);
     addUpperRoute(sections[1], 'leaf', 360, 420);
@@ -751,7 +780,7 @@
       if (platform.ground) {
         const start = platform.x + 70;
         const end = platform.x + platform.w - 50;
-        if ((start > 16800 && start < 22000) || platform.surfLane) continue;
+        if (start > 16800 && start < 22000) continue;
         const count = Math.max(2, Math.floor((end - start) / 38));
         addLine(start, platform.y - 48, count, 38);
       } else {
@@ -778,14 +807,8 @@
       }
     }
 
-    // Tacos telegraph every surf jump. Each obstacle sits beneath the center of
-    // a generous arc, with calmer rows before mounting and after landing.
     addLine(24720, 402, 16, 42);
-    world.surfObstacles.forEach((obstacle, index) => {
-      addArc(obstacle.x - 152, 402, 11, 34, 92 + (index % 2) * 12);
-    });
     for (let x = 26300, index = 0; x < 32900; x += 520, index += 1) {
-      if (world.surfObstacles.some((obstacle) => Math.abs(obstacle.x - x) < 250)) continue;
       addArc(x, 402, 8, 36, 46 + (index % 3) * 14);
     }
     addLine(33420, 402, 38, 46);
@@ -887,7 +910,6 @@
     world.collectibles = [];
     world.enemies = [];
     world.cannons = [];
-    world.surfObstacles = [];
     world.geysers = [];
     game.world2EncounterAudit = null;
     world.checkpoints = heroCore.createCheckpointSet(checkpoints, {
@@ -912,18 +934,9 @@
       lengths: [740, 860, 660, 820], gaps: [96, 174, 110, 88],
       style: 'obsidian', moverStyle: 'obsidian-high',
     });
-    // Preserve the authored post-eruption surf finale as one readable lane.
-    // The optional Phase 2 stations all end well before this script begins.
-    addPlatform({ x: 27000, y: GROUND_Y, w: 760, h: 100, style: 'moon-sand', ground: true, finalRunway: true, surfLaunchBeach: true });
-    addPlatform({ x: 27760, y: GROUND_Y, w: 5520, h: 20, style: 'surf-lane', ground: true, finalRunway: true, surfLane: true });
-    addPlatform({ x: 33280, y: GROUND_Y, w: WORLD_WIDTH - 33280, h: 100, style: 'moon-sand', ground: true, finalRunway: true, surfLandingBeach: true });
-    world.surfObstacles = [
-      { x: 28440, y: 410, w: 74, h: 50, type: 'driftwood', hit: false },
-      { x: 29580, y: 396, w: 78, h: 64, type: 'coral', hit: false },
-      { x: 30760, y: 406, w: 82, h: 54, type: 'buoy', hit: false },
-      { x: 31940, y: 392, w: 86, h: 68, type: 'tiki', hit: false },
-      { x: 32810, y: 402, w: 84, h: 58, type: 'coconuts', hit: false },
-    ];
+    // The repeated ride finale is replaced with an uninterrupted volcanic road.
+    // Taco Hero reaches the rescue on foot; Olivia drives the final evacuation.
+    addPlatform({ x: 27000, y: GROUND_Y, w: WORLD_WIDTH - 27000, h: 100, style: 'obsidian', ground: true, finalRunway: true, escapeRoad: true });
 
     addReachableDetours(sections[0], 'surfboard', 520, 1580);
     addReachableDetours(sections[1], 'leaf', 430, 1520);
@@ -1011,7 +1024,7 @@
 
     [
       [3900, 'lime'], [7800, 'shell'], [11300, 'pepper'], [14600, 'coconut'],
-      [17800, 'lime'], [21400, 'pepper'], [25800, 'shell'], [30600, 'coconut'],
+      [17800, 'lime'], [21400, 'pepper'], [25800, 'shell'], [26620, 'coconut'],
     ].forEach(([x, type]) => addItem(x, 402, type));
 
     // Animated geysers are readable launch opportunities, not surprise damage.
@@ -1019,6 +1032,11 @@
       world.geysers.push({ x, y: GROUND_Y, phase: index * 0.78, cycle: 2.9 + index * 0.12 });
       addArc(x - 118, 400, 8, 34, 96);
     });
+    world.geysers.push({
+      id: 'volcano-escape-final-geyser', x: VOLCANO_ESCAPE.finalGeyserX, y: GROUND_Y,
+      surfaceY: GROUND_Y, phase: 0, cycle: 1, escapeFinal: true, finaleVent: true,
+    });
+    addArc(VOLCANO_ESCAPE.finalGeyserX - 205, GROUND_Y - 46, 12, 38, 132);
 
     world.cannons = [
       { id: 'caldera-cannon-a', x: 20700, y: 430, timer: .9, section: 'caldera' },
@@ -1046,7 +1064,7 @@
       pepper: 'jalapeno', crab: 'chili', nacho: 'tomato', ash: 'tomato',
     };
     enemySlots.forEach((desiredX, index) => {
-      if (desiredX >= SURF_SCRIPT_START) return;
+      if (desiredX >= VOLCANO_ESCAPE.rescueX) return;
       const platform = platformAt(desiredX);
       if (!platform) return;
       const section = currentSection(desiredX);
@@ -1219,15 +1237,13 @@
       splatCombo: 0, splatTimer: 0, bestSplat: 0,
       abilities: sharedAbilities.createState(),
       activePower: null, limeShield: false, pepperTimer: 0, coconutLaunchTimer: 0,
-      wave: { active: false, done: false, x: 0, speed: 0, crashing: false, crashTimer: 0 },
-      surf: {
-        phase: 'idle', oliviaX: 0, oliviaY: 330, oliviaTimer: 0,
-        boardMounted: false, mountX: 27640, landingLaunched: false, clearedObstacles: 0,
-      },
+      escape: createVolcanoEscapeState(),
+      jeep: createJeepRescueState(),
       boat: { state: 'basecamp', x: 720, speed: 0, dropTimer: 0, dropPulse: 0, catches: 0, pass: 0, dropCount: 0, totalSpawns: 0 },
       eruption: { state: 'dormant', timer: 0, flash: 0, tremor: 0, rainbowBurst: 0 },
       cannonballs: [],
       geyserLaunchTimer: 0,
+      geyserLaunchAudit: { count: 0, lastVelocity: 0, lastVentX: null, airControlPreserved: true },
       tideY: 474, confetti: [], particles: [], impactTexts: [], fireworks: [],
       cameraShake: 0, hitStop: 0, celebrationTime: 0, partyBeat: -1,
       settingsOpen: false, respawn: heroCore.createRespawnState(),
@@ -1515,6 +1531,20 @@
   function beginRespawn() {
     if (game.state !== 'playing' || game.respawn.active) return;
     const sourceX = player.x; const sourceY = Math.min(player.y, canvas.height - player.h - 8); const point = findRespawn(sourceX);
+    if (game.escape.phase !== 'dormant' && !game.escape.completed) {
+      game.escape.deathRecoveries += 1;
+      game.escape.phase = 'on-foot';
+      game.escape.timer = 0;
+      game.escape.pressureX = Math.max(VOLCANO_ESCAPE.pressureStart, point.targetX - 760);
+      game.escape.rescueTriggered = false;
+      game.escape.finalGeyserLaunched = false;
+      game.escape.cueShown = false;
+      game.escape.hazards.forEach((hazard) => {
+        if (hazard.x >= point.targetX - 180) Object.assign(hazard, { state: 'waiting', timer: 0, y: -120, vy: 0, hit: false });
+      });
+      game.jeep = createJeepRescueState();
+      stopVehicleLoop();
+    }
     game.state = 'respawning';
     sharedAbilities.clearForRespawn(game.abilities);
     keys.left = false; keys.right = false; keys.jump = false;
@@ -1549,7 +1579,7 @@
   }
 
   function hurtPlayer(fromX) {
-    if (player.invulnerable > 0 || sharedAbilities.isFrenzy(game.abilities) || game.state !== 'playing') return;
+    if (game.jeep.boarded || player.invulnerable > 0 || sharedAbilities.isFrenzy(game.abilities) || game.state !== 'playing') return;
     if (previewNoDamage) { player.invulnerable = .22; return; }
     if (game.limeShield) {
       game.limeShield = false;
@@ -1808,6 +1838,12 @@
             angle: index * .4,
           });
         }
+        if (game.escape.phase === 'dormant') {
+          game.escape.phase = 'on-foot';
+          game.escape.timer = 0;
+          game.escape.startedAt = game.levelTime;
+          game.escape.pressureX = Math.min(player.x - 720, VOLCANO_ESCAPE.pressureStart);
+        }
         playAudio('volcano.erupt');
       }
     } else if (eruption.state === 'kaboom') {
@@ -1826,164 +1862,276 @@
     }
   }
 
+  function geyserCycleState(geyser) {
+    if (geyser.escapeFinal) {
+      const onFoot = game.escape.phase === 'on-foot';
+      const warning = onFoot && !game.escape.finalGeyserLaunched
+        && player.x >= geyser.x - 650 && player.x < geyser.x - 310;
+      const active = (onFoot && !game.escape.finalGeyserLaunched && player.x >= geyser.x - 330)
+        || (game.escape.phase === 'final-launch' && game.escape.timer < .95);
+      return { progress: active ? .68 : warning ? .44 : .1, active, warning, strength: active ? 1.16 : 0, orchestraActive: false, orchestraStage: -1 };
+    }
+    const progress = ((game.levelTime + geyser.phase) % geyser.cycle) / geyser.cycle;
+    const phase2State = geyser.phase2Discovery
+      ? game.calderaExploration?.destinations[geyser.phase2Discovery]
+      : null;
+    const orchestraActive = Boolean(
+      phase2State?.spectacleTimer > 0
+      && Number.isFinite(geyser.orchestraIndex)
+      && geyser.orchestraIndex < phase2State.orchestraStage
+    );
+    const naturallyActive = progress >= GEYSER_PHYSICS.activeStart && progress < GEYSER_PHYSICS.activeEnd;
+    const active = orchestraActive || naturallyActive;
+    const warning = !orchestraActive
+      && progress >= GEYSER_PHYSICS.warningStart
+      && progress < GEYSER_PHYSICS.warningEnd;
+    const activeProgress = naturallyActive
+      ? clamp((progress - GEYSER_PHYSICS.activeStart) / (GEYSER_PHYSICS.activeEnd - GEYSER_PHYSICS.activeStart), 0, 1)
+      : 1;
+    const strength = active
+      ? (orchestraActive ? 1 : .68 + Math.sin(activeProgress * Math.PI) * .32)
+      : 0;
+    return { progress, active, warning, strength, orchestraActive, orchestraStage: phase2State?.orchestraStage ?? -1 };
+  }
+
   function updateGeysers(dt) {
     game.geyserLaunchTimer = Math.max(0, game.geyserLaunchTimer - dt);
     for (const geyser of world.geysers) {
       geyser.cooldown = Math.max(0, (geyser.cooldown || 0) - dt);
-      const phase = (game.levelTime + geyser.phase) % geyser.cycle;
-      const wasActive = Boolean(geyser.active);
-      geyser.active = phase > geyser.cycle * .56 && phase < geyser.cycle * .9;
-      if (geyser.active && !wasActive) {
-        playAudio('hazard.geyserWarn', { position: audioPosition(geyser.x) });
+      const wasWarning = Boolean(geyser.warning);
+      const cycle = geyserCycleState(geyser);
+      geyser.active = cycle.active;
+      geyser.warning = cycle.warning;
+      geyser.activeStrength = cycle.strength;
+      geyser.orchestraActive = cycle.orchestraActive;
+      geyser.orchestraStage = cycle.orchestraStage;
+      if (geyser.warning && !wasWarning) {
+        playAudio('hazard.geyserWarn', { position: audioPosition(geyser.x), gain: .72 });
       }
       if (!geyser.active || geyser.cooldown > 0) continue;
-      const overVent = player.x + player.w > geyser.x - 34 && player.x < geyser.x + 34;
+      const triggerRadius = geyser.escapeFinal ? 86 : 38;
+      const overVent = player.x + player.w > geyser.x - triggerRadius
+        && player.x < geyser.x + (geyser.escapeFinal ? 170 : triggerRadius);
       const surfaceY = Number.isFinite(geyser.surfaceY) ? geyser.surfaceY : GROUND_Y;
-      const closeToSurface = player.y + player.h > surfaceY - 76 && player.y + player.h < surfaceY + 42;
+      const closeToSurface = player.y + player.h > surfaceY - (geyser.escapeFinal ? 160 : 82)
+        && player.y + player.h < surfaceY + 42;
       if (!overVent || !closeToSurface || player.vy < -120) continue;
       if (geyser.phase2Launch && !sharedAbilities.isSuper(game.abilities)) continue;
-      geyser.cooldown = 1.1;
-      player.vy = geyser.phase2Launch ? -675 : -790;
+      const launchVelocity = geyser.escapeFinal
+        ? VOLCANO_ESCAPE.finalLaunchVelocity
+        : geyser.phase2Launch ? GEYSER_PHYSICS.phase2LaunchVelocity : GEYSER_PHYSICS.regularLaunchVelocity;
+      geyser.cooldown = GEYSER_PHYSICS.launchCooldown;
+      player.vy = -launchVelocity;
+      if (geyser.escapeFinal) player.vx = Math.max(player.vx, VOLCANO_ESCAPE.finalLaunchSpeed);
       player.grounded = false;
+      player.platform = null;
       player.coyote = 0;
-      game.geyserLaunchTimer = 1.15;
-      showMessage('GEYSER EXPRESS! FIRST CLASS: SLIGHTLY DAMP!', 1.25);
-      spawnBurst(geyser.x - game.cameraX, surfaceY - 20, '#65e7ff', geyser.phase2Launch ? 24 : 36);
-      playAudio('hazard.geyserLaunch', { position: audioPosition(geyser.x) });
+      game.geyserLaunchTimer = geyser.escapeFinal ? 1.35 : 1.15;
+      game.geyserLaunchAudit.count += 1;
+      game.geyserLaunchAudit.lastVelocity = launchVelocity;
+      game.geyserLaunchAudit.lastVentX = geyser.x;
+      if (geyser.escapeFinal) {
+        game.escape.finalGeyserLaunched = true;
+        game.escape.finalLaunchCount += 1;
+        game.escape.phase = 'final-launch';
+        game.escape.timer = 0;
+        showMessage('THE GEYSER KNOWS THE WAY — RESCUE AHEAD!', 2.2);
+      } else showMessage('GEYSER EXPRESS! FIRST CLASS: SLIGHTLY DAMP!', 1.25);
+      spawnBurst(geyser.x - game.cameraX, surfaceY - 18, '#65e7ff', geyser.escapeFinal ? 50 : geyser.phase2Launch ? 38 : 30);
+      game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 2 : 5);
+      playAudio('hazard.geyserLaunch', { position: audioPosition(geyser.x), gain: geyser.escapeFinal || geyser.phase2Launch ? 1.08 : .94 });
     }
   }
 
-  function updateWaveChase(dt) {
-    const wave = game.wave;
-    const surf = game.surf;
+  function beginJeepRescue() {
+    if (game.escape.rescueTriggered || game.jeep.state !== 'inactive') return false;
+    game.escape.rescueTriggered = true;
+    game.escape.phase = 'rescue';
+    game.escape.timer = 0;
+    game.jeep.state = 'approaching';
+    game.jeep.x = Math.max(VOLCANO_ESCAPE.finalGeyserX + 120, player.x - 900);
+    game.jeep.speed = 760;
+    game.jeep.timer = 0;
+    game.jeep.arrivalCount += 1;
+    playAudio('vehicle.approach', { vehicleType: 'trekker', position: -0.75 });
+    showMessage('OLIVIA’S TACO TREKKER IS COMING IN HOT!', 2.1);
+    return true;
+  }
 
-    if (surf.phase === 'idle' && player.x > SURF_SCRIPT_START) {
-      // Preview/test teleports enter the playable chase directly; an ordinary
-      // run always receives Olivia's complete surf-by introduction.
-      if (player.x >= surf.mountX + 220) {
-        surf.phase = 'riding';
-        surf.boardMounted = true;
-        wave.active = true;
-        wave.x = player.x - 330;
-        wave.speed = 318;
-      } else {
-        surf.phase = 'olivia-intro';
-        surf.oliviaX = player.x - 280;
-        surf.oliviaY = 345;
-        surf.oliviaTimer = 0;
-        showMessage('OLIVIA: CATCH THE BIG ONE, TACO HERO!', 2.6);
-        playAudio('surf.oliviaPass', { position: -0.65 });
+  function boardJeep() {
+    if (game.jeep.boarded || game.jeep.state !== 'waiting-board') return false;
+    game.jeep.boarded = true;
+    game.jeep.state = 'boarding';
+    game.jeep.timer = 0;
+    game.jeep.boardingCount += 1;
+    player.vx = 0;
+    player.vy = 0;
+    player.grounded = false;
+    player.platform = null;
+    keys.left = false;
+    keys.right = false;
+    keys.jump = false;
+    spawnConfetti(game.jeep.x - game.cameraX, GROUND_Y - 92, game.reducedShake ? 18 : 48);
+    playAudio('checkpoint.activate', { position: audioPosition(game.jeep.x), pitchCents: 120, gain: .82 });
+    showMessage('TACO HERO ABOARD — FLOOR IT, OLIVIA!', 2.2);
+    return true;
+  }
+
+  function updateJeepRescue(dt) {
+    const jeep = game.jeep;
+    if (jeep.state === 'inactive' || jeep.state === 'parked-safe') return;
+    jeep.timer += dt;
+    jeep.dustPulse = Math.max(0, jeep.dustPulse - dt);
+    jeep.suspension = Math.abs(Math.sin(game.levelTime * 11 + jeep.x * .012)) * (jeep.state === 'escaping' ? 5 : 2.5);
+
+    if (jeep.state === 'approaching') {
+      const targetX = Math.max(VOLCANO_ESCAPE.rescueX, player.x + 110);
+      jeep.speed = Math.min(1020, jeep.speed + 640 * dt);
+      jeep.x += jeep.speed * dt;
+      if (jeep.x >= targetX - 18) {
+        jeep.x = targetX;
+        jeep.speed = 0;
+        jeep.timer = 0;
+        jeep.state = 'waiting-board';
+        jeep.dialogueShown = true;
+        game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 2 : 6);
+        spawnBurst(jeep.x - game.cameraX - 82, GROUND_Y - 22, '#ffcf6b', 34);
+        playAudio('vehicle.idle', { vehicleType: 'trekker', position: audioPosition(jeep.x), gain: .78 });
+        showMessage('OLIVIA: TACO HERO! GET IN!', 2.4);
+      }
+    } else if (jeep.state === 'waiting-board') {
+      const closeEnough = Math.abs((player.x + player.w * .5) - jeep.x) < 215;
+      if (jeep.timer >= .58 && closeEnough) boardJeep();
+    } else if (jeep.state === 'boarding') {
+      player.x = jeep.x + 22;
+      player.y = GROUND_Y - 104;
+      player.vx = 0;
+      player.vy = 0;
+      if (jeep.timer >= .82) {
+        jeep.state = 'escaping';
+        jeep.timer = 0;
+        jeep.speed = 210;
+        startVehicleLoop(audioPosition(jeep.x));
+        playAudio('vehicle.accelerate', { vehicleType: 'trekker', position: audioPosition(jeep.x), gain: .94 });
+        showMessage('OLIVIA: NEXT STOP — NOT THE ACTIVE VOLCANO!', 2.5);
+      }
+    } else if (jeep.state === 'escaping') {
+      jeep.speed = Math.min(VOLCANO_ESCAPE.jeepCruiseSpeed, jeep.speed + 250 * dt);
+      jeep.x += jeep.speed * dt;
+      player.x = jeep.x + 22;
+      player.y = GROUND_Y - 104;
+      player.vx = jeep.speed;
+      player.vy = 0;
+      player.dir = 1;
+      if (jeep.dustPulse <= 0) {
+        jeep.dustPulse = .12;
+        spawnBurst(jeep.x - game.cameraX - 128, GROUND_Y - 10, Math.floor(game.levelTime * 8) % 2 ? '#ffb45c' : '#d8d2c8', game.reducedShake ? 2 : 5);
+      }
+      for (const item of world.collectibles) {
+        if (
+          !item.collected && !item.rewardFlight
+          && ['taco', 'golden', 'rainbow'].includes(item.type)
+          && item.x >= jeep.x - 145 && item.x <= jeep.x + 150
+        ) collectItem(item);
+      }
+      if (jeep.x >= VOLCANO_ESCAPE.jeepFinishX) {
+        jeep.x = VOLCANO_ESCAPE.jeepFinishX;
+        jeep.speed = 0;
+        jeep.state = 'parked-safe';
+        jeep.boarded = false;
+        jeep.completionCount += 1;
+        game.escape.phase = 'complete';
+        game.escape.completed = true;
+        game.escape.completedAt = game.levelTime;
+        if (!game.escape.rewardGranted) {
+          game.escape.rewardGranted = true;
+          game.score += 1800;
+        }
+        player.x = world.goal.x + 22;
+        player.y = GROUND_Y - player.h;
+        player.vx = 0;
+        player.vy = 0;
+        player.grounded = true;
+        stopVehicleLoop();
+        stopVolcanoLoop();
+        spawnConfetti(canvas.width * .48, 190, game.reducedShake ? 54 : 150);
+        playAudio('vehicle.depart', { vehicleType: 'trekker', position: .25, pitchCents: 95 });
+        showMessage('VOLCANO EVAC COMPLETE — TACO TREKKER FOR THE WIN!', 3.1);
       }
     }
+  }
 
-    if (surf.phase === 'olivia-intro') {
-      surf.oliviaTimer += dt;
-      surf.oliviaX += (920 + surf.oliviaTimer * 80) * dt;
-      surf.oliviaY = 342 + Math.sin(surf.oliviaTimer * 5.2) * 6;
-      if (surf.oliviaX > player.x + 820 || surf.oliviaTimer > 2.8) {
-        surf.phase = 'ready';
-        showMessage('YOUR BOARD IS READY — JUMP ON AND SURF!', 2.5);
-        spawnBurst(surf.mountX - game.cameraX, GROUND_Y - 12, '#63e7ff', 36);
+  function updateVolcanoEscape(dt) {
+    const escape = game.escape;
+    if (escape.phase === 'dormant' || escape.phase === 'complete') return;
+    escape.timer += dt;
+
+    if (escape.phase === 'on-foot') {
+      if (!escape.runCueShown && escape.timer >= .7) {
+        escape.runCueShown = true;
+        showMessage('VOLCANO ESCAPE — RUN RIGHT!', 2.1);
+        playAudio('goal.warning', { position: .42, gain: .88 });
       }
-    }
-
-    const jumpedOntoBoard = player.x >= surf.mountX - 64 && player.y + player.h < GROUND_Y - 4;
-    const forgivingAutoMount = player.x >= surf.mountX + 130;
-    if (surf.phase === 'ready' && (jumpedOntoBoard || forgivingAutoMount)) {
-      surf.phase = 'riding';
-      surf.boardMounted = true;
-      player.x = Math.max(player.x, surf.mountX);
-      player.vx = Math.max(player.vx, 338);
-      wave.active = true;
-      wave.x = player.x - 330;
-      wave.speed = 318;
-      showMessage('BIG WAVE SURF! JUMP THE OBSTACLES!', 2.5);
-      spawnConfetti(canvas.width * 0.4, 250, game.reducedShake ? 24 : 66);
-      playAudio('surf.mount', { position: audioPosition(surf.mountX) });
-    }
-
-    if (wave.crashing) {
-      wave.crashTimer = Math.max(0, wave.crashTimer - dt);
-      if (wave.crashTimer <= 0) wave.crashing = false;
-    }
-    if (surf.phase === 'landing' && player.x > 33380 && player.grounded) {
-      surf.phase = 'complete';
-      surf.boardMounted = false;
-      player.vx = Math.max(player.vx, 280);
-      showMessage(`PERFECT BEACH LANDING! ${surf.clearedObstacles}/5 SURF CLEARS!`, 2.4);
-      spawnBurst(player.x - game.cameraX, GROUND_Y - 8, '#ffe17f', 72);
-      playAudio('surf.land', { position: audioPosition(player.x + player.w / 2) });
-    }
-    if (!wave.active) return;
-
-    player.vx = Math.max(player.vx, 342);
-    player.dir = 1;
-
-    // Match the breaker to the board instead of giving it a lower fixed speed.
-    // The soft catch-up keeps the curl continuously beneath/behind Taco Hero
-    // without snapping forward when the player accelerates after a jump.
-    const ridingGap = 250;
-    const desiredWaveX = player.x - ridingGap;
-    const matchingSpeed = clamp(player.vx - 2, 356, 450);
-    wave.speed = lerp(wave.speed, matchingSpeed, Math.min(1, dt * 3.8));
-    wave.x += wave.speed * dt;
-    if (wave.x < desiredWaveX) {
-      wave.x = lerp(wave.x, desiredWaveX, 1 - Math.exp(-dt * 7.5));
-    }
-    if (player.x - wave.x < 178) {
-      const protectedHit = game.limeShield || sharedAbilities.isSuper(game.abilities);
-      hurtPlayer(wave.x);
-      player.vx = Math.max(player.vx, 390);
-      player.vy = Math.min(player.vy, -270);
-      wave.x = player.x - 250;
-      if (!protectedHit && !previewNoDamage) {
-        showMessage('WAVE BOOP! BOARD STILL TACO-UGH!', 1.4);
-        game.cameraShake = 12;
-        playAudio('surf.waveHit', { position: audioPosition(player.x + player.w / 2) });
+      const timedPressure = VOLCANO_ESCAPE.runStart - 650 + escape.timer * 228;
+      escape.pressureX = Math.max(escape.pressureX, Math.min(timedPressure, VOLCANO_ESCAPE.finalGeyserX - 820));
+      if (player.x - escape.pressureX < 135 && player.x < VOLCANO_ESCAPE.finalGeyserX - 180) {
+        hurtPlayer(escape.pressureX);
+        player.vx = Math.max(player.vx, 285);
+        escape.pressureX = player.x - 720;
+        showMessage('THE LAVA IS TOO CLOSE — KEEP MOVING!', 1.35);
       }
-    }
 
-    for (const obstacle of world.surfObstacles) {
-      if (obstacle.hit) continue;
-      if (player.x > obstacle.x + obstacle.w) {
-        obstacle.hit = true;
-        surf.clearedObstacles += 1;
-        game.score += 250;
-        impactText(obstacle.x + obstacle.w / 2, obstacle.y - 18, 'SURF CLEAR! +250', '#ffe17f', 21);
-        playAudio('surf.obstacleClear', { position: audioPosition(obstacle.x + obstacle.w / 2) });
-        continue;
+      for (const hazard of escape.hazards) {
+        if (hazard.state === 'waiting' && player.x >= hazard.x - hazard.warningLead) {
+          hazard.state = 'warning';
+          hazard.timer = 0;
+          playAudio('goal.warning', { position: audioPosition(hazard.x), pitchCents: -160 + hazard.typeIndex * 55, gain: .5 });
+        } else if (hazard.state === 'warning') {
+          hazard.timer += dt;
+          if (hazard.timer >= .78) {
+            hazard.state = 'falling';
+            hazard.timer = 0;
+            hazard.y = -95;
+            hazard.vy = 150;
+          }
+        } else if (hazard.state === 'falling') {
+          hazard.vy += 940 * dt;
+          hazard.y += hazard.vy * dt;
+          const hitbox = { x: hazard.x - hazard.size * .42, y: hazard.y, w: hazard.size * .84, h: hazard.size * .82 };
+          if (!hazard.hit && intersects(player, hitbox)) {
+            hazard.hit = true;
+            hurtPlayer(hazard.x);
+          }
+          if (hazard.y + hazard.size >= GROUND_Y) {
+            hazard.y = GROUND_Y - hazard.size;
+            hazard.state = 'landed';
+            hazard.timer = 0;
+            spawnBurst(hazard.x - game.cameraX, GROUND_Y - 14, '#ff8a55', game.reducedShake ? 12 : 30);
+            game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 2 : 7);
+            playAudio('hero.landHard', { position: audioPosition(hazard.x), gain: .72 });
+          }
+        } else if (hazard.state === 'landed') {
+          hazard.timer += dt;
+          const hitbox = { x: hazard.x - hazard.size * .42, y: hazard.y + 8, w: hazard.size * .84, h: hazard.size * .72 };
+          if (!hazard.hit && hazard.timer < 1.5 && intersects(player, hitbox)) {
+            hazard.hit = true;
+            hurtPlayer(hazard.x);
+          }
+          if (hazard.timer >= 2.8) hazard.state = 'spent';
+        }
       }
-      if (player.x + player.w < obstacle.x || !intersects(player, obstacle)) continue;
-      obstacle.hit = true;
-      const protectedHit = game.limeShield || sharedAbilities.isSuper(game.abilities);
-      hurtPlayer(obstacle.x + obstacle.w * .5);
-      player.vx = Math.max(player.vx, 390);
-      player.vy = Math.min(player.vy, -270);
-      if (!protectedHit && !previewNoDamage) showMessage('BOARD BONK! KEEP THE WAVE!', 1.2);
-      spawnBurst(obstacle.x - game.cameraX + obstacle.w / 2, obstacle.y, '#ff718f', 30);
-      playAudio('surf.obstacleHit', { position: audioPosition(obstacle.x + obstacle.w / 2) });
+
+      if (!escape.cueShown && player.x >= VOLCANO_ESCAPE.finalGeyserX - 760) {
+        escape.cueShown = true;
+        showMessage('FINAL GEYSER AHEAD — RIDE THE BLUE PLUME!', 2.2);
+        playAudio('hazard.geyserWarn', { position: audioPosition(VOLCANO_ESCAPE.finalGeyserX), gain: .9 });
+      }
+    } else if (escape.phase === 'final-launch') {
+      player.vx = Math.max(player.vx, VOLCANO_ESCAPE.finalLaunchSpeed * .86);
+      if (player.x >= VOLCANO_ESCAPE.rescueX - 280 || escape.timer >= 2.45) beginJeepRescue();
     }
 
-    if (player.x > 33120 && !surf.landingLaunched) {
-      surf.landingLaunched = true;
-      surf.phase = 'landing';
-      player.vx = 430;
-      player.vy = -520;
-      player.grounded = false;
-      player.coyote = 0;
-      wave.active = false;
-      wave.done = true;
-      wave.crashing = true;
-      wave.crashTimer = 2.6;
-      // Begin the crash from the wave's riding position so the breaker visibly
-      // carries Taco Hero to the beach rather than teleporting into the finale.
-      wave.x = player.x - 220;
-      game.score += 1800 + surf.clearedObstacles * 250;
-      showMessage('BEACH LAUNCH! THE BIG ONE CRASHES BEHIND YOU!', 2.6);
-      spawnConfetti(canvas.width * 0.34, 210, game.reducedShake ? 55 : 150);
-      game.cameraShake = 15;
-      playAudio('surf.waveCrashLaunch', { position: audioPosition(player.x + player.w / 2) });
-    }
+    updateJeepRescue(dt);
   }
 
   function updateCoconutCannons(dt) {
@@ -2160,7 +2308,8 @@
     state.spectacleTimer = secret ? 3.6 : entry.id === 'geyser-garden-launch' ? 3.25 : 2.6;
     state.spectacleMaxTimer = state.spectacleTimer;
     game.score += entry.score;
-    spawnCalderaExplorationRewards(entry, state);
+    if (entry.id === 'geyser-garden-launch') state.pendingReward = true;
+    else spawnCalderaExplorationRewards(entry, state);
     const duration = secret ? 3.35 : entry.id === 'caldera-firewatch' ? 2.25 : 2.55;
     game.calderaExploration.completionBanner = {
       mode: secret ? 'secret' : entry.presentation,
@@ -2231,10 +2380,22 @@
         state.spectacleTimer = Math.max(0, state.spectacleTimer - dt);
         if (entry.id === 'geyser-garden-launch') {
           const elapsed = state.spectacleMaxTimer - state.spectacleTimer;
-          const stage = Math.min(4, Math.floor(elapsed / .48));
+          const stage = Math.min(4, 1 + Math.floor(elapsed / .48));
           if (stage !== state.orchestraStage) {
             state.orchestraStage = stage;
-            if (stage > 0) playAudio('hazard.geyserLaunch', { position: audioPosition(9380 + stage * 210), pitchCents: -75 + stage * 55, gain: .64 });
+            playAudio('hazard.geyserLaunch', { position: audioPosition(9190 + stage * 255), pitchCents: -95 + stage * 62, gain: .64 + stage * .04 });
+            if (stage === 4) {
+              spawnBurst(entry.trigger.x + entry.trigger.w * .5 - game.cameraX, entry.trigger.y + 86, '#d8fbff', 68);
+              game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 2 : 7);
+            }
+          }
+          if (state.pendingReward && elapsed >= 2.18) {
+            state.pendingReward = false;
+            spawnCalderaExplorationRewards(entry, state);
+            const finaleX = entry.trigger.x + entry.trigger.w * .5;
+            spawnConfetti(finaleX - game.cameraX, Math.max(24, entry.trigger.y + 40), game.reducedShake ? 26 : 72);
+            impactText(finaleX, entry.trigger.y + 22, 'GEOTHERMAL FINALE!', '#d8fbff', 18);
+            playAudio('level.celebrationPulse', { position: audioPosition(finaleX), pitchCents: 165, gain: .88 });
           }
         }
       }
@@ -2274,9 +2435,9 @@
     if (!exploration) return;
     const allRanges = [...calderaExplorationPlan.map((entry) => entry.routeRange), obsidianStashPlan.routeRange];
     const inExplorationRange = allRanges.some(([start, end]) => player.x >= start && player.x <= end);
-    const scriptedSurf = game.surf.phase === 'riding' || game.surf.phase === 'landing';
+    const scriptedJeep = ['boarding', 'escaping'].includes(game.jeep.state);
     const eruptionLocked = game.eruption.state !== 'dormant' && player.x >= ERUPTION_SCRIPT_START;
-    const cameraAllowed = (game.state === 'playing' || game.state === 'respawning') && !scriptedSurf && !eruptionLocked;
+    const cameraAllowed = (game.state === 'playing' || game.state === 'respawning') && !scriptedJeep && !eruptionLocked;
     exploration.cameraTargetLift = cameraAllowed && inExplorationRange ? clamp((286 - player.y) * .64, 0, 286) : 0;
     exploration.cameraLift = lerp(exploration.cameraLift, exploration.cameraTargetLift, Math.min(1, dt * (exploration.cameraTargetLift > exploration.cameraLift ? 5.7 : 4.1)));
   }
@@ -2312,8 +2473,13 @@
   }
 
   function updatePlayer(dt) {
-    const scriptedSurf = game.surf.phase === 'riding' || game.surf.phase === 'landing';
-    if (sharedAbilities.suspendForTransformation(game.abilities, player, { disabled: scriptedSurf })) return;
+    const scriptedJeep = ['boarding', 'escaping'].includes(game.jeep.state);
+    if (scriptedJeep) {
+      player.invulnerable = Math.max(0, player.invulnerable - dt);
+      player.jumpBuffer = 0;
+      return;
+    }
+    if (sharedAbilities.suspendForTransformation(game.abilities, player, { disabled: false })) return;
     if (previewAutoRun) keys.right = true;
     const wasGrounded = player.grounded;
     if (player.grounded) sharedAbilities.land(game.abilities);
@@ -2325,17 +2491,15 @@
     player.jumpBuffer = Math.max(0, player.jumpBuffer - dt);
     player.coyote = player.grounded ? heroPhysics.coyoteTime : Math.max(0, player.coyote - dt);
 
-    const surfing = game.surf.phase === 'riding';
-    const surfLanding = game.surf.phase === 'landing';
-    const calderaChase = game.eruption.state !== 'dormant' && player.x >= 19400 && player.x < 27400;
+    const calderaChase = ['on-foot', 'final-launch'].includes(game.escape.phase);
+    const finalLaunch = game.escape.phase === 'final-launch';
     const acceleration = player.grounded ? 1250 : 780;
-    const maxSpeed = surfing || surfLanding ? 450 : calderaChase ? 330 : game.pepperTimer > 0 ? 385 : 255;
-    if (keys.left && !surfing && !surfLanding) { player.vx -= acceleration * dt; player.dir = -1; }
+    const maxSpeed = finalLaunch ? VOLCANO_ESCAPE.finalLaunchSpeed : calderaChase ? VOLCANO_ESCAPE.onFootMaxSpeed : game.pepperTimer > 0 ? 385 : 255;
+    if (keys.left) { player.vx -= acceleration * dt; player.dir = -1; }
     if (keys.right) { player.vx += acceleration * dt; player.dir = 1; }
-    if (!keys.left && !keys.right && !surfing && !surfLanding) player.vx *= player.grounded ? 0.79 : 0.94;
-    if (surfing) player.vx = Math.max(player.vx, 342);
-    if (surfLanding) player.vx = Math.max(player.vx, 300);
+    if (!keys.left && !keys.right) player.vx *= player.grounded ? 0.79 : 0.94;
     if (calderaChase && keys.right) player.vx = Math.max(player.vx, 285);
+    if (finalLaunch) player.vx = Math.max(player.vx, VOLCANO_ESCAPE.finalLaunchSpeed * .86);
     player.vx = clamp(player.vx, -maxSpeed, maxSpeed);
 
     if (previewAutoJump && player.grounded) {
@@ -2354,9 +2518,8 @@
       player.grounded = false; player.coyote = 0; player.jumpBuffer = 0;
       playAudio('hero.jump', { position: audioPosition(player.x + player.w / 2) });
     } else if (player.jumpBuffer > 0 && !player.grounded) {
-      const superJumpVelocity = sharedAbilities.trySuperJump(game.abilities, { suspended: scriptedSurf, position: audioPosition(player.x + player.w / 2) });
+      const superJumpVelocity = sharedAbilities.trySuperJump(game.abilities, { suspended: false, position: audioPosition(player.x + player.w / 2) });
       if (superJumpVelocity) { player.vy = -superJumpVelocity; player.platform = null; player.jumpBuffer = 0; game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 2 : 5); }
-      else if (scriptedSurf) player.jumpBuffer = 0;
     }
 
     const previousY = player.y;
@@ -2385,16 +2548,16 @@
   }
 
   function maybeFinish() {
-    if (game.state !== 'playing' || !intersects(player, world.goal)) return;
+    if (game.state !== 'playing' || !game.escape.completed || !intersects(player, world.goal)) return;
     game.state = 'celebrating';
     game.finishTime = performance.now();
     game.celebrationTime = 0;
     player.vx = 0; player.vy = 0;
     setMusic('luau');
     const completion = game.totalCollectibles ? game.collected / game.totalCollectibles : 0;
-    const bonus = Math.round(2500 + completion * 3000 + game.goldenCollected * 600 + game.boat.catches * 35 + (game.wave.done ? 1800 : 0));
+    const bonus = Math.round(2500 + completion * 3000 + game.goldenCollected * 600 + game.boat.catches * 35 + (game.escape.completed ? 1800 : 0));
     game.score += bonus;
-    showMessage('RAINBOW LAVA LUAU — MAXIMUM CAMPFIRE CRUNCH!', 4);
+    showMessage('TACO TREKKER SAFE ZONE — MAXIMUM CAMPFIRE CRUNCH!', 4);
     spawnConfetti(canvas.width / 2, 150, game.reducedShake ? 90 : 240);
     for (let i = 0; i < (game.reducedShake ? 5 : 14); i += 1) spawnFirework();
     playAudio('goal.enter');
@@ -2403,8 +2566,8 @@
   function presentResults() {
     const seconds = (game.finishTime - game.startTime) / 1000;
     const completion = game.totalCollectibles ? game.collected / game.totalCollectibles : 0;
-    const medal = game.goldenCollected === game.totalGolden && game.wave.done && completion > 0.75 ? 'CALDERA LEGEND'
-      : game.wave.done && game.boat.catches >= 6 ? 'LAVA SAFARI STAR'
+    const medal = game.goldenCollected === game.totalGolden && game.escape.completed && completion > 0.75 ? 'CALDERA LEGEND'
+      : game.escape.completed && game.boat.catches >= 6 ? 'VOLCANO EVAC STAR'
       : completion > 0.45 ? 'CAMPFIRE CRUISER' : 'TENT TRAINEE';
     const previous = game.personalBest;
     const newBest = previous.runs === 0 || game.score > previous.score || seconds < previous.time;
@@ -2421,8 +2584,8 @@
     ui.resultTacos.textContent = `${game.collected}/${game.totalCollectibles}`;
     ui.resultGolden.textContent = `${game.goldenCollected}/${game.totalGolden}`;
     ui.resultBoat.textContent = String(game.boat.catches);
-    ui.resultWave.textContent = game.wave.done ? 'Rainbow KABOOM!' : 'Still simmering';
-    ui.winText.textContent = `You crossed five volcanic island acts, caught ${game.boat.catches} Taco Trekker drops, found ${game.rainbowCollected}/${game.totalRainbow} Rainbow Tacos, and finished Campfire Caldera Caper in ${formatTime(seconds)}. Olivia rates the campsite five stars; the ground is only a little molten.`;
+    ui.resultEscape.textContent = game.escape.completed ? 'Taco Trekker Evac!' : 'Still simmering';
+    ui.winText.textContent = `You crossed five volcanic island acts, escaped the eruption on foot, caught ${game.boat.catches} Taco Trekker drops, found ${game.rainbowCollected}/${game.totalRainbow} Rainbow Tacos, and rode Olivia’s rescue Jeep to safety in ${formatTime(seconds)}.`;
     ui.newBestText.classList.toggle('hidden', !newBest);
     ui.winOverlay.classList.remove('hidden');
     ui.winOverlay.classList.add('visible');
@@ -2486,7 +2649,7 @@
       updateCalderaEvent(dt);
       updateGeysers(dt);
       updateBoat(dt);
-      updateWaveChase(dt);
+      updateVolcanoEscape(dt);
       updateCoconutCannons(dt);
 
       for (const item of world.collectibles) {
@@ -2511,14 +2674,15 @@
           'DO NOT FEED THE GEYSERS!',
           'FOLLOW THE LANTERNS. IGNORE THE SUSPICIOUS GLOW!',
           'KABOOM PROTOCOL: RUN WITH STYLE!',
-          'THE LAST 2,000 UNITS ARE ENEMY-FREE FIESTA GLORY!',
+          'OLIVIA’S TACO TREKKER IS YOUR TICKET OUT!',
         ][sectionIndex]}`, 2.7);
         spawnConfetti(canvas.width * 0.6, 180, 55);
       }
 
-      const chaseActive = game.eruption.state !== 'dormant' && player.x >= 19400 && player.x < 27400;
+      const chaseActive = ['on-foot', 'final-launch', 'rescue'].includes(game.escape.phase);
+      const jeepActive = ['boarding', 'escaping'].includes(game.jeep.state);
       const trekkerActive = game.boat.state === 'compact-drop';
-      const followOffset = chaseActive || trekkerActive || game.pepperTimer > 0 ? 0.34 : 0.42;
+      const followOffset = jeepActive ? 0.38 : chaseActive || trekkerActive || game.pepperTimer > 0 ? 0.34 : 0.42;
       const targetCamera = clamp(player.x - canvas.width * followOffset, 0, WORLD_WIDTH - canvas.width);
       game.cameraX = lerp(game.cameraX, targetCamera, Math.min(1, dt * 9));
       updateCalderaExplorationCamera(dt);
@@ -3008,46 +3172,91 @@
     }
 
     for (const geyser of world.geysers) {
-      if (!visibleWorldX(geyser.x, 90, 100)) continue;
+      if (!visibleWorldX(geyser.x, 180, 120)) continue;
       const x = geyser.x - game.cameraX;
       const surfaceY = Number.isFinite(geyser.surfaceY) ? geyser.surfaceY : GROUND_Y;
-      const phase = (game.levelTime + geyser.phase) % geyser.cycle;
-      const phase2State = geyser.phase2Discovery ? game.calderaExploration?.destinations[geyser.phase2Discovery] : null;
-      const orchestraActive = phase2State?.spectacleTimer > 0 && geyser.orchestraIndex <= phase2State.orchestraStage;
-      const active = orchestraActive || (phase > geyser.cycle * .56 && phase < geyser.cycle * .9);
-      ctx.fillStyle = '#3e3151';
-      ctx.strokeStyle = '#1d1930';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.ellipse(x, surfaceY + 1, 35, 12, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      if (active) {
-        const orchestraBoost = orchestraActive ? 1.52 : 1;
-        const height = (74 + Math.sin(time * .012 + geyser.phase) * 15) * orchestraBoost;
-        const plume = ctx.createLinearGradient(x, surfaceY, x, surfaceY - height);
-        plume.addColorStop(0, 'rgba(76,220,238,.82)');
-        plume.addColorStop(.7, 'rgba(218,255,250,.7)');
-        plume.addColorStop(1, 'rgba(218,255,250,0)');
-        ctx.fillStyle = plume;
-        ctx.beginPath();
-        ctx.moveTo(x - 13, surfaceY);
-        ctx.quadraticCurveTo(x - 30, surfaceY - height * .55, x - 6, surfaceY - height);
-        ctx.quadraticCurveTo(x + 28, surfaceY - height * .52, x + 13, surfaceY);
-        ctx.closePath();
-        ctx.fill();
-      } else {
-        ctx.globalAlpha = .34;
+      const cycle = geyserCycleState(geyser);
+      const phase2 = Boolean(geyser.phase2Launch);
+      const ventWidth = phase2 ? 116 : 94;
+      const ventHeight = ventWidth * .46;
+      if (images.geyserVent) {
+        ctx.save();
+        ctx.shadowColor = cycle.active ? '#65e7ff' : cycle.warning ? '#ffe17f' : 'rgba(25,34,47,.55)';
+        ctx.shadowBlur = cycle.active ? 18 : cycle.warning ? 11 : 5;
+        ctx.drawImage(images.geyserVent, x - ventWidth * .5, surfaceY - ventHeight * .56, ventWidth, ventHeight);
+        ctx.restore();
+      }
+
+      if (cycle.warning) {
+        const warningPulse = .5 + Math.sin(time * .018 + geyser.phase) * .5;
+        ctx.save();
+        ctx.globalAlpha = .48 + warningPulse * .3;
         ctx.strokeStyle = '#dffefa';
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 2.5;
+        for (let ring = 0; ring < 3; ring += 1) {
+          ctx.beginPath();
+          ctx.ellipse(x, surfaceY - 7, 15 + ring * 8 + warningPulse * 5, 4 + ring * 2, 0, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        for (let bubble = 0; bubble < 7; bubble += 1) {
+          const bubblePhase = (time * .0017 + bubble * .19 + geyser.phase) % 1;
+          ctx.fillStyle = bubble % 2 ? '#fff9dc' : '#83f4ff';
+          ctx.beginPath();
+          ctx.ellipse(x - 24 + bubble * 8, surfaceY - 12 - bubblePhase * 29, 2 + bubble % 2, 3 + bubble % 3, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      if (cycle.active && images.geyserPlume) {
+        const orchestraFinale = cycle.orchestraActive && cycle.orchestraStage >= 4 && geyser.finaleVent;
+        const baseHeight = phase2 ? 188 : 146;
+        const orchestraBoost = cycle.orchestraActive
+          ? 1.08 + (geyser.orchestraIndex || 0) * .08 + (orchestraFinale ? .28 : 0)
+          : 1;
+        const height = baseHeight * cycle.strength * orchestraBoost;
+        const width = (phase2 ? 98 : 78) * (.92 + cycle.strength * .12) * (orchestraFinale ? 1.16 : 1);
+        const sway = Math.sin(time * .009 + geyser.phase * 2.3) * 4;
+        ctx.save();
+        ctx.translate(x + sway, surfaceY + 2);
+        ctx.rotate(Math.sin(time * .0065 + geyser.phase) * .018);
+        ctx.shadowColor = '#63e7ff';
+        ctx.shadowBlur = orchestraFinale ? 28 : 16;
+        ctx.globalAlpha = .96;
+        ctx.drawImage(images.geyserPlume, -width * .5, -height, width, height);
+        ctx.globalAlpha = .26;
+        ctx.scale(-1, 1);
+        ctx.drawImage(images.geyserPlume, -width * .42, -height * .92, width * .84, height * .92);
+        ctx.restore();
+
+        ctx.save();
+        for (let drop = 0; drop < (phase2 ? 14 : 10); drop += 1) {
+          const travel = (time * (.0014 + (drop % 3) * .00018) + drop * .137 + geyser.phase) % 1;
+          const side = drop % 2 ? 1 : -1;
+          const spread = 22 + (drop % 5) * 7;
+          const dropX = x + side * spread * travel + Math.sin(drop + time * .004) * 4;
+          const dropY = surfaceY - height * (.16 + travel * .76) + Math.sin(travel * Math.PI) * -18;
+          ctx.globalAlpha = .3 + (1 - travel) * .62;
+          ctx.fillStyle = drop % 4 === 0 ? '#ffe8a3' : '#e9ffff';
+          ctx.beginPath();
+          ctx.ellipse(dropX, dropY, 1.8 + drop % 3, 4 + drop % 4, side * .28, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        ctx.restore();
+      } else if (!cycle.warning) {
+        ctx.save();
+        ctx.globalAlpha = .24;
+        ctx.strokeStyle = '#dffefa';
+        ctx.lineWidth = 2.2;
         for (let wisp = 0; wisp < 2; wisp += 1) {
           const drift = Math.sin(time * .0028 + geyser.phase + wisp) * 7;
           ctx.beginPath();
-          ctx.moveTo(x + (wisp ? 7 : -7), surfaceY - 5);
-          ctx.bezierCurveTo(x - 12 + drift, surfaceY - 18, x + 18 - drift, surfaceY - 28, x + drift, surfaceY - 42 - wisp * 8);
+          ctx.moveTo(x + (wisp ? 7 : -7), surfaceY - 7);
+          ctx.bezierCurveTo(x - 10 + drift, surfaceY - 15, x + 12 - drift, surfaceY - 24, x + drift, surfaceY - 32 - wisp * 7);
           ctx.stroke();
         }
-        ctx.globalAlpha = 1;
+        ctx.restore();
       }
     }
   }
@@ -3423,7 +3632,6 @@
   }
 
   function drawPaintedTerrainSlice(platform, time) {
-    if (platform.style === 'surf-lane') return false;
     const ground = Boolean(platform.ground);
     const atlas = ground ? images.groundAtlas : images.platformAtlas;
     if (!atlas) return false;
@@ -3508,22 +3716,7 @@
       return;
     }
 
-    if (platform.style === 'surf-lane') {
-      const left = Math.max(-20, x);
-      const right = Math.min(canvas.width + 20, x + width);
-      ctx.strokeStyle = 'rgba(225,255,249,.78)';
-      ctx.lineWidth = 3;
-      for (let row = 0; row < 2; row += 1) {
-        ctx.beginPath();
-        for (let px = left; px <= right; px += 18) {
-          const py = y + 5 + row * 7 + Math.sin(px * .045 + time * .009 + row) * (3 + row);
-          if (px === left) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-        }
-        ctx.stroke();
-      }
-      ctx.restore();
-      return;
-    } else if (platform.style === 'sand' || platform.style === 'moon-sand') {
+    if (platform.style === 'sand' || platform.style === 'moon-sand') {
       const moon = platform.style === 'moon-sand';
       const soil = ctx.createLinearGradient(0, y, 0, y + height);
       soil.addColorStop(0, moon ? '#596d9c' : '#d99052'); soil.addColorStop(0.25, moon ? '#3e527c' : '#b86a42'); soil.addColorStop(1, moon ? '#26385d' : '#71422f');
@@ -3894,6 +4087,141 @@
     });
   }
 
+  function drawVolcanoEscape(time) {
+    const escape = game.escape;
+    if (escape.phase === 'dormant' || escape.phase === 'complete') return;
+    const pressureScreenX = escape.pressureX - game.cameraX;
+    ctx.save();
+    const glow = ctx.createLinearGradient(pressureScreenX - 250, 0, pressureScreenX + 210, 0);
+    glow.addColorStop(0, 'rgba(100,12,18,.1)');
+    glow.addColorStop(.55, 'rgba(255,60,34,.42)');
+    glow.addColorStop(1, 'rgba(255,184,56,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(pressureScreenX - 280, 70, 510, GROUND_Y - 52);
+    for (let ember = 0; ember < (game.reducedShake ? 10 : 24); ember += 1) {
+      const span = ((ember * 83 + game.levelTime * (42 + ember % 5 * 9)) % (canvas.width + 260)) - 130;
+      const emberX = span;
+      const emberY = 95 + ((ember * 59 + game.levelTime * 36) % 330);
+      ctx.globalAlpha = .24 + (ember % 4) * .11;
+      ctx.fillStyle = ember % 3 ? '#ff8a55' : '#ffe18a';
+      ctx.beginPath(); ctx.arc(emberX, emberY, 2 + ember % 3, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+
+    for (let patchIndex = 0; patchIndex < 6; patchIndex += 1) {
+      const worldX = 19740 + patchIndex * 1310;
+      const screenX = worldX - game.cameraX;
+      if (screenX < -130 || screenX > canvas.width + 130) continue;
+      const proximity = clamp(1 - Math.abs(player.x - worldX) / 760, 0, 1);
+      ctx.save();
+      ctx.globalAlpha = .28 + proximity * .48;
+      ctx.strokeStyle = proximity > .25 ? '#ff8a55' : '#85514d';
+      ctx.shadowColor = '#ff5c39';
+      ctx.shadowBlur = proximity * 13;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(screenX - 58, GROUND_Y - 2);
+      ctx.lineTo(screenX - 28, GROUND_Y - 17 - Math.sin(time * .013 + patchIndex) * 3);
+      ctx.lineTo(screenX - 8, GROUND_Y - 4);
+      ctx.lineTo(screenX + 17, GROUND_Y - 23);
+      ctx.lineTo(screenX + 48, GROUND_Y - 3);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    const debris = images.escapeDebris;
+    for (const hazard of escape.hazards) {
+      if (hazard.state === 'waiting' || hazard.state === 'spent') continue;
+      const screenX = hazard.x - game.cameraX;
+      if (screenX < -160 || screenX > canvas.width + 160) continue;
+      if (hazard.state === 'warning') {
+        const pulse = .55 + Math.sin(time * .02) * .22;
+        ctx.save();
+        ctx.globalAlpha = pulse;
+        ctx.strokeStyle = '#fff0a8';
+        ctx.fillStyle = 'rgba(255,75,43,.22)';
+        ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.ellipse(screenX, GROUND_Y - 4, hazard.size * .7, 12, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#fff8dc';
+        ctx.font = '900 20px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('!', screenX, GROUND_Y - 34 - Math.sin(time * .016) * 5);
+        ctx.restore();
+        continue;
+      }
+      const rotation = hazard.state === 'falling' ? game.levelTime * (2.2 + hazard.typeIndex * .35) : -.16 + hazard.typeIndex * .08;
+      ctx.save();
+      ctx.translate(screenX, hazard.y + hazard.size * .5);
+      ctx.rotate(rotation);
+      ctx.shadowColor = '#ff5c39';
+      ctx.shadowBlur = hazard.state === 'falling' ? 18 : 7;
+      if (debris) {
+        const cellW = debris.width / 4;
+        ctx.imageSmoothingEnabled = true;
+        ctx.drawImage(debris, cellW * hazard.typeIndex, 0, cellW, debris.height, -hazard.size * .5, -hazard.size * .5, hazard.size, hazard.size);
+        ctx.imageSmoothingEnabled = false;
+      } else {
+        ctx.fillStyle = '#342d38';
+        ctx.beginPath(); ctx.arc(0, 0, hazard.size * .42, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+
+  function drawJeepRescue(time) {
+    const jeep = game.jeep;
+    if (jeep.state === 'inactive') return;
+    const screenX = jeep.x - game.cameraX;
+    if (screenX < -420 || screenX > canvas.width + 420) return;
+    const moving = jeep.state === 'approaching' || jeep.state === 'escaping';
+    if (moving) {
+      ctx.save();
+      for (let streak = 0; streak < 6; streak += 1) {
+        ctx.strokeStyle = streak % 2 ? 'rgba(255,214,90,.58)' : 'rgba(255,112,77,.52)';
+        ctx.lineWidth = 3 + streak % 3;
+        ctx.beginPath();
+        ctx.moveTo(screenX - 150 - streak * 13, GROUND_Y - 38 - streak * 8);
+        ctx.lineTo(screenX - 230 - streak * 25, GROUND_Y - 38 - streak * 8);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+    drawCalderaTrekkerVehicle(screenX, time, {
+      width: 328,
+      groundY: GROUND_Y,
+      suspension: jeep.suspension,
+      heat: true,
+    });
+    if (jeep.boarded) {
+      const heroFrame = jeep.state === 'escaping' ? 2 : 0;
+      ctx.save();
+      ctx.translate(screenX + 32, GROUND_Y - 151 - jeep.suspension);
+      ctx.rotate(jeep.state === 'escaping' ? -.08 + Math.sin(time * .014) * .035 : 0);
+      sharedAbilities.applyHeroVisualTransform(ctx, game.abilities, { direction: 1, baseScale: .68, anchorY: 33, time });
+      sharedAbilities.applyHeroStyle(ctx, game.abilities);
+      sharedAbilities.drawHeroSpriteFrame(ctx, game.abilities, images.hero, heroFrame, { x: -33, y: -33, width: 66, height: 66, running: false, animation: player.anim });
+      ctx.restore();
+    }
+    if (jeep.state === 'waiting-board') {
+      const bubbleWidth = 258;
+      const bubbleX = clamp(screenX - bubbleWidth * .5, 18, canvas.width - bubbleWidth - 18);
+      roundedPanel(bubbleX, 238, bubbleWidth, 62, 17, 'rgba(37,19,62,.94)', '#ffd65a', 3);
+      ctx.fillStyle = '#fff5c7';
+      ctx.font = '900 15px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('TACO HERO! GET IN!', bubbleX + bubbleWidth * .5, 264);
+      ctx.fillStyle = '#65e7ff';
+      ctx.font = '900 11px Arial';
+      ctx.fillText('OLIVIA’S VOLCANO EVAC', bubbleX + bubbleWidth * .5, 284);
+      ctx.fillStyle = '#ffd65a';
+      ctx.beginPath();
+      ctx.moveTo(clamp(screenX, bubbleX + 34, bubbleX + bubbleWidth - 34), 300);
+      ctx.lineTo(clamp(screenX, bubbleX + 34, bubbleX + bubbleWidth - 34) - 10, 314);
+      ctx.lineTo(clamp(screenX, bubbleX + 34, bubbleX + bubbleWidth - 34) + 9, 300);
+      ctx.fill();
+    }
+  }
+
   function drawCalderaGoal(time) {
     const x = world.goal.x - game.cameraX;
     if (x < -560 || x > canvas.width + 560 || !images.environment) return;
@@ -3918,27 +4246,25 @@
     }
     ctx.drawImage(images.environment, 512, 682, 512, 342, x - 305, 128, 420, 281);
     ctx.drawImage(images.environment, 1024, 682, 512, 342, x + 40, 242, 330, 220);
-    drawCalderaTrekkerVehicle(x + 150, time, { width: 262, groundY: GROUND_Y });
-    drawAtlasCell(images.oliviaTrekker, 4, 2, 4, x - 105, GROUND_Y + 4, 150, 200);
     ctx.textAlign = 'center';
     ctx.shadowColor = '#ffca55';
     ctx.shadowBlur = 14 + pulse * 10;
     ctx.font = '900 17px Arial';
     ctx.strokeStyle = '#30163f';
     ctx.lineWidth = 6;
-    ctx.strokeText('RAINBOW LAVA', x, 105);
+    ctx.strokeText('VOLCANO EVAC', x, 105);
     ctx.fillStyle = '#fff2ae';
-    ctx.fillText('RAINBOW LAVA', x, 105);
+    ctx.fillText('VOLCANO EVAC', x, 105);
     ctx.font = '900 38px Arial';
     ctx.lineWidth = 9;
-    ctx.strokeText('LUAU!', x, 145);
+    ctx.strokeText('SAFE!', x, 145);
     ctx.fillStyle = '#ff70b2';
-    ctx.fillText('LUAU!', x, 145);
+    ctx.fillText('SAFE!', x, 145);
     ctx.font = '900 12px Arial';
     ctx.lineWidth = 5;
-    ctx.strokeText('THE GROUND IS ONLY A LITTLE MOLTEN', x, 172);
+    ctx.strokeText('OLIVIA NEVER LEAVES A TACO BEHIND', x, 172);
     ctx.fillStyle = '#65e7ff';
-    ctx.fillText('THE GROUND IS ONLY A LITTLE MOLTEN', x, 172);
+    ctx.fillText('OLIVIA NEVER LEAVES A TACO BEHIND', x, 172);
     ctx.shadowBlur = 0;
     for (let sparkle = 0; sparkle < 18; sparkle += 1) {
       const angle = time * .0017 + sparkle * Math.PI * 2 / 18;
@@ -4263,235 +4589,6 @@
     ctx.restore();
   }
 
-  function drawSurfCell(frame, x, y, width, height, alpha = 1) {
-    if (!images.islandSurf) return false;
-    const cellW = images.islandSurf.width / 3;
-    const cellH = images.islandSurf.height / 2;
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.drawImage(
-      images.islandSurf,
-      (frame % 3) * cellW, Math.floor(frame / 3) * cellH, cellW, cellH,
-      x, y, width, height,
-    );
-    ctx.restore();
-    return true;
-  }
-
-  function drawWaveCell(frame, x, y, width, height, alpha = 1) {
-    if (!images.islandWave) return false;
-    const cellW = images.islandWave.width / 3;
-    const cellH = images.islandWave.height / 2;
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.drawImage(
-      images.islandWave,
-      (frame % 3) * cellW, Math.floor(frame / 3) * cellH, cellW, cellH,
-      x, y, width, height,
-    );
-    ctx.restore();
-    return true;
-  }
-
-  function drawSurfObstacles(time) {
-    for (const obstacle of world.surfObstacles) {
-      if (!visibleWorldX(obstacle.x, obstacle.w, 100)) continue;
-      const x = obstacle.x - game.cameraX;
-      const y = obstacle.y;
-      const pulse = 1 + Math.sin(time * .009 + obstacle.x) * .025;
-      ctx.save();
-      ctx.translate(x + obstacle.w / 2, y + obstacle.h);
-      ctx.scale(pulse, pulse);
-      ctx.fillStyle = 'rgba(3,29,49,.25)';
-      ctx.beginPath(); ctx.ellipse(0, 6, obstacle.w * .56, 8, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.lineWidth = 3;
-      if (obstacle.type === 'driftwood') {
-        const wood = ctx.createLinearGradient(-38, -32, 34, 0);
-        wood.addColorStop(0, '#6e3d36'); wood.addColorStop(.45, '#c77a4e'); wood.addColorStop(1, '#59333b');
-        ctx.strokeStyle = '#3b2940'; ctx.fillStyle = wood;
-        ctx.beginPath(); ctx.roundRect(-39, -30, 78, 29, 13); ctx.fill(); ctx.stroke();
-        ctx.strokeStyle = '#f0b46b'; ctx.lineWidth = 3;
-        for (let px = -24; px < 30; px += 18) { ctx.beginPath(); ctx.arc(px, -15, 8, -1.2, 1.2); ctx.stroke(); }
-        ctx.strokeStyle = '#6e3d36'; ctx.lineWidth = 8;
-        ctx.beginPath(); ctx.moveTo(-25, -25); ctx.lineTo(-37, -43); ctx.moveTo(24, -25); ctx.lineTo(36, -40); ctx.stroke();
-      } else if (obstacle.type === 'coral') {
-        ctx.strokeStyle = '#73365b'; ctx.lineWidth = 8;
-        const branches = [[-24,-4,-30,-47],[-11,-3,-8,-60],[4,-4,12,-48],[20,-3,31,-54]];
-        for (const [x1,y1,x2,y2] of branches) { ctx.beginPath(); ctx.moveTo(x1,y1); ctx.quadraticCurveTo((x1+x2)/2-4,y2+18,x2,y2); ctx.stroke(); }
-        ctx.strokeStyle = '#ff7993'; ctx.lineWidth = 5;
-        for (const [x1,y1,x2,y2] of branches) { ctx.beginPath(); ctx.moveTo(x1,y1); ctx.quadraticCurveTo((x1+x2)/2-4,y2+18,x2,y2); ctx.stroke(); }
-        ctx.fillStyle = '#ffe17f';
-        for (const [sx,sy] of [[-30,-48],[-8,-61],[12,-49],[31,-55]]) drawStar(sx, sy, 4, '#ffe17f');
-      } else if (obstacle.type === 'buoy') {
-        ctx.strokeStyle = '#382c4d'; ctx.fillStyle = '#ff718f';
-        ctx.beginPath(); ctx.ellipse(0, -22, 28, 27, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = '#fff3c6'; ctx.fillRect(-27, -27, 54, 12);
-        ctx.fillStyle = '#63e7ff'; ctx.beginPath(); ctx.arc(0, -22, 7, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = '#ffe17f'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(0, -48); ctx.lineTo(0, -64); ctx.stroke();
-        drawStar(0, -70, 6, '#ffe17f');
-      } else if (obstacle.type === 'tiki') {
-        const tiki = ctx.createLinearGradient(-34, -68, 34, 0);
-        tiki.addColorStop(0, '#f3a35c'); tiki.addColorStop(.5, '#b9504f'); tiki.addColorStop(1, '#65304b');
-        roundedPanel(-34, -68, 68, 68, 12, tiki, '#3c2742', 4);
-        ctx.fillStyle = '#63e7ff'; ctx.beginPath(); ctx.roundRect(-25, -53, 50, 13, 6); ctx.fill();
-        ctx.fillStyle = '#ffe17f'; ctx.beginPath(); ctx.roundRect(-25, -25, 50, 12, 6); ctx.fill();
-        ctx.fillStyle = '#31233c';
-        ctx.beginPath(); ctx.moveTo(-21,-49); ctx.lineTo(-5,-43); ctx.lineTo(-21,-40); ctx.closePath();
-        ctx.moveTo(21,-49); ctx.lineTo(5,-43); ctx.lineTo(21,-40); ctx.closePath(); ctx.fill();
-        ctx.strokeStyle = '#31233c'; ctx.lineWidth = 4;
-        ctx.beginPath(); ctx.moveTo(-20,-18); ctx.lineTo(-8,-28); ctx.lineTo(6,-17); ctx.lineTo(20,-28); ctx.stroke();
-        for (const lx of [-24,0,24]) { ctx.fillStyle = '#55e6a5'; ctx.beginPath(); ctx.ellipse(lx, -75, 18, 7, lx * .02, 0, Math.PI * 2); ctx.fill(); }
-      } else {
-        for (let i = 0; i < 3; i += 1) {
-          const cx = (i - 1) * 24;
-          const cy = i === 1 ? -43 : -24;
-          const nut = ctx.createRadialGradient(cx - 6, cy - 7, 2, cx, cy, 20);
-          nut.addColorStop(0, '#ddb173'); nut.addColorStop(.48, '#94603f'); nut.addColorStop(1, '#4c3032');
-          ctx.fillStyle = nut; ctx.strokeStyle = '#35283b';
-          ctx.beginPath(); ctx.arc(cx, cy, 20, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-          ctx.fillStyle = '#332631'; ctx.beginPath(); ctx.arc(cx - 5, cy - 4, 2, 0, Math.PI * 2); ctx.arc(cx + 5, cy - 4, 2, 0, Math.PI * 2); ctx.fill();
-        }
-      }
-      if (game.surf.phase === 'riding' && obstacle.x > player.x && obstacle.x - player.x < 620) {
-        ctx.globalAlpha = .7 + Math.sin(time * .014) * .25;
-        ctx.fillStyle = '#ffe17f'; ctx.beginPath(); ctx.moveTo(0, -92); ctx.lineTo(-10, -76); ctx.lineTo(10, -76); ctx.closePath(); ctx.fill();
-      }
-      ctx.restore();
-    }
-  }
-
-  function drawSurfIntro(time) {
-    const surf = game.surf;
-    if (surf.phase === 'olivia-intro') {
-      const x = surf.oliviaX - game.cameraX;
-      const y = game.tideY - 223 + Math.sin(time * .008) * 4;
-      ctx.save();
-      ctx.shadowColor = '#63e7ff'; ctx.shadowBlur = 18;
-      drawSurfCell(0, x - 40, y, 285, 190);
-      ctx.restore();
-      roundedPanel(x + 72, y - 4, 178, 35, 13, 'rgba(5,31,52,.92)', '#ffe17f', 3);
-      ctx.fillStyle = '#fff8dc'; ctx.font = '900 12px Arial'; ctx.textAlign = 'center';
-      ctx.fillText('OLIVIA: WAVE DELIVERY!', x + 161, y + 18);
-    } else if (surf.phase === 'ready' && visibleWorldX(surf.mountX, 190, 120)) {
-      const x = surf.mountX - game.cameraX;
-      const bob = Math.sin(time * .008) * 4;
-      ctx.save(); ctx.shadowColor = '#ffe17f'; ctx.shadowBlur = 22 + bob;
-      drawSurfCell(1, x - 82, GROUND_Y - 118 + bob, 190, 127);
-      ctx.restore();
-      ctx.fillStyle = '#ffe17f'; ctx.font = '900 14px Arial'; ctx.textAlign = 'center';
-      ctx.strokeStyle = '#082a43'; ctx.lineWidth = 5;
-      ctx.strokeText('JUMP ON!', x + 10, GROUND_Y - 94 + bob);
-      ctx.fillText('JUMP ON!', x + 10, GROUND_Y - 94 + bob);
-    }
-  }
-
-  function drawWaveChase(time) {
-    if (!game.wave.active && !game.wave.crashing) return;
-    const x = game.wave.x - game.cameraX;
-    if (x < -660 || x > canvas.width + 320) return;
-    const crashing = game.wave.crashing;
-    const crashElapsed = crashing ? 2.6 - game.wave.crashTimer : 0;
-    const activeFrames = [0, 1, 2, 1];
-    const frame = crashing ? (crashElapsed < 1.38 ? 3 : 4) : activeFrames[Math.floor(time / 145) % activeFrames.length];
-    const pulse = crashing ? 1 + Math.min(.16, crashElapsed * .09) : 1 + Math.sin(time * .005) * .012;
-    const crestX = x + 230;
-    const crestY = crashing ? 208 : 218 + Math.sin(time * .006) * 5;
-    const spriteW = crashing ? 620 : 566;
-    const spriteH = crashing ? 620 : 566;
-    const spriteX = crestX - spriteW * .82;
-    const spriteY = crestY - spriteH * .39;
-
-    ctx.save(); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-
-    // A deep animated water wall fills behind the illustrated breaker so the
-    // chase still reads as a physical hazard at every camera position.
-    const wall = ctx.createLinearGradient(Math.min(-80, x - 360), 250, crestX + 96, 520);
-    wall.addColorStop(0, 'rgba(5,43,105,.74)');
-    wall.addColorStop(.48, 'rgba(12,103,163,.78)');
-    wall.addColorStop(.82, 'rgba(29,181,201,.76)');
-    wall.addColorStop(1, 'rgba(118,247,235,.34)');
-    ctx.fillStyle = wall;
-    ctx.beginPath();
-    ctx.moveTo(Math.min(-100, x - 390), 540);
-    ctx.lineTo(Math.min(-100, x - 390), 345 + Math.sin(time * .004) * 8);
-    ctx.bezierCurveTo(x - 250, 282, x - 94, 326, crestX + 88, 475);
-    ctx.lineTo(crestX + 138, 540);
-    ctx.closePath();
-    ctx.fill();
-
-    // Moonlight ribbons travel across the wave face independently of the
-    // sprite frames, adding movement without obscuring the hero or obstacles.
-    for (let ribbon = 0; ribbon < 4; ribbon += 1) {
-      const ribbonY = 350 + ribbon * 37;
-      const ribbonOffset = ((time * (.055 + ribbon * .008)) % 110) - 55;
-      ctx.strokeStyle = `rgba(190,255,247,${.28 - ribbon * .035})`;
-      ctx.lineWidth = 6 - ribbon * .7;
-      ctx.beginPath();
-      for (let px = Math.min(-100, x - 390); px <= crestX + 92; px += 20) {
-        const py = ribbonY + Math.sin((px + ribbonOffset) * .035 + ribbon) * (7 + ribbon);
-        if (px === Math.min(-100, x - 390)) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-      }
-      ctx.stroke();
-    }
-
-    // Speed streaks make the moving wall feel fast while staying behind the
-    // illustrated crest and the playable foreground.
-    if (!crashing) {
-      for (let streak = 0; streak < 10; streak += 1) {
-        const travel = (time * (.18 + streak * .012) + streak * 91) % 360;
-        const sx = crestX - 470 + travel;
-        const sy = 250 + (streak % 6) * 39;
-        ctx.strokeStyle = `rgba(218,255,249,${.12 + (streak % 3) * .07})`;
-        ctx.lineWidth = 2 + streak % 3;
-        ctx.beginPath(); ctx.moveTo(sx - 58, sy); ctx.lineTo(sx, sy - 4); ctx.stroke();
-      }
-    }
-
-    ctx.save();
-    ctx.translate(crestX, crestY);
-    ctx.scale(pulse, pulse);
-    ctx.translate(-crestX, -crestY);
-    ctx.shadowColor = crashing ? '#d6fff8' : '#63e7ff';
-    ctx.shadowBlur = crashing ? 32 : 18;
-    drawWaveCell(frame, spriteX, spriteY, spriteW, spriteH);
-    ctx.restore();
-
-    // Animated spray lives above the sprite and changes cadence during the
-    // beach crash, giving every frame sparkle and directional motion.
-    const sprayCount = crashing ? 40 : 25;
-    for (let drop = 0; drop < sprayCount; drop += 1) {
-      const cycle = ((time * (.00055 + (drop % 4) * .00008) + drop * .127) % 1);
-      const direction = drop % 2 ? 1 : -1;
-      const sprayX = crestX + 35 + direction * cycle * (70 + (drop % 5) * 12);
-      const sprayY = crestY - 126 - Math.sin(cycle * Math.PI) * (42 + (drop % 6) * 8) + cycle * 72;
-      ctx.globalAlpha = .25 + (1 - cycle) * .7;
-      ctx.fillStyle = drop % 5 === 0 ? '#c69cff' : '#f4fff7';
-      ctx.beginPath();
-      ctx.ellipse(sprayX, sprayY, 2 + drop % 4, 5 + drop % 5, direction * .5, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-
-    if (crashing) {
-      const wash = clamp(crashElapsed / 1.25, 0, 1);
-      ctx.globalAlpha = .72 * (1 - clamp((crashElapsed - 1.8) / .8, 0, 1));
-      const washGradient = ctx.createLinearGradient(crestX - 120, 452, crestX + 520, 475);
-      washGradient.addColorStop(0, 'rgba(99,231,255,.18)');
-      washGradient.addColorStop(.5, 'rgba(239,255,248,.92)');
-      washGradient.addColorStop(1, 'rgba(198,156,255,0)');
-      ctx.fillStyle = washGradient;
-      ctx.beginPath();
-      ctx.ellipse(crestX + wash * 220, 486, 170 + wash * 250, 31 + wash * 12, -.03, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = clamp(game.wave.crashTimer / .8, 0, 1);
-      ctx.fillStyle = '#fff8dc'; ctx.font = '900 38px Arial'; ctx.textAlign = 'center';
-      ctx.strokeStyle = '#174e7a'; ctx.lineWidth = 9;
-      ctx.strokeText('KERSPLASH!', crestX + 62, 248);
-      ctx.fillText('KERSPLASH!', crestX + 62, 248);
-    }
-    ctx.restore();
-  }
-
   function drawCoconutCannons() {
     for (const cannon of world.cannons) {
       if (!visibleWorldX(cannon.x, 90, 120)) continue;
@@ -4541,7 +4638,7 @@
     ctx.textAlign = 'center'; ctx.shadowColor = '#ffdc63'; ctx.shadowBlur = 12 + pulse * 10;
     ctx.font = '900 17px Arial'; ctx.strokeStyle = '#32153e'; ctx.lineWidth = 5; ctx.strokeText('MOONLIGHT ISLAND', x, 124); ctx.fillStyle = '#fff4bd'; ctx.fillText('MOONLIGHT ISLAND', x, 124);
     ctx.font = '900 38px Arial'; ctx.lineWidth = 8; ctx.strokeText('FIESTA!', x, 164); ctx.fillStyle = '#ff75ac'; ctx.fillText('FIESTA!', x, 164);
-    ctx.font = '900 11px Arial'; ctx.lineWidth = 4; ctx.strokeText('WAVE ESCAPED • TACOS SECURED', x, 188); ctx.fillStyle = '#84f3ff'; ctx.fillText('WAVE ESCAPED • TACOS SECURED', x, 188);
+    ctx.font = '900 11px Arial'; ctx.lineWidth = 4; ctx.strokeText('VOLCANO ESCAPED • TACOS SECURED', x, 188); ctx.fillStyle = '#84f3ff'; ctx.fillText('VOLCANO ESCAPED • TACOS SECURED', x, 188);
     ctx.shadowBlur = 0;
 
     ctx.fillStyle = 'rgba(5,27,48,.34)'; ctx.beginPath(); ctx.ellipse(x + 48, 454, 228, 16, 0, 0, Math.PI * 2); ctx.fill();
@@ -4561,26 +4658,34 @@
   }
 
   function drawPlayer(time) {
-    if (heroCore.hidePlayerDuringRespawn(game.respawn)) return;
+    if (game.jeep.boarded || heroCore.hidePlayerDuringRespawn(game.respawn)) return;
     const frame = game.state === 'celebrating' || game.state === 'won' ? 7
       : player.invulnerable > 0 ? 6
       : !player.grounded ? (player.vy < 0 ? 4 : 5)
       : Math.abs(player.vx) > 24 ? 1 + (Math.floor(player.anim) % 3) : 0;
-    const running = frame >= 1 && frame <= 3 && !game.surf.boardMounted;
+    const running = frame >= 1 && frame <= 3;
     if (player.invulnerable > 0 && Math.floor(player.invulnerable * 12) % 2 === 0) ctx.globalAlpha = 0.45;
     const x = player.x - game.cameraX + player.w / 2;
     const y = player.y + player.h / 2;
     sharedAbilities.drawHeroEffects(ctx, game.abilities, player, game.cameraX, time, { reducedMotion: game.reducedShake });
-    ctx.save(); ctx.globalAlpha = player.grounded ? 0.24 : 0.12; ctx.fillStyle = '#07243a'; ctx.beginPath(); ctx.ellipse(x, player.y + player.h + 7, player.grounded ? 26 : 18, player.grounded ? 6 : 4, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-    ctx.save(); ctx.translate(x, y); ctx.rotate(player.rotation || 0); if (game.surf.boardMounted) ctx.scale(player.dir * (player.scale || 1), player.scale || 1); else sharedAbilities.applyHeroVisualTransform(ctx, game.abilities, { direction: player.dir, baseScale: player.scale || 1, anchorY: 33, time });
-    if (game.surf.boardMounted) {
-      const surfFrame = game.surf.phase === 'landing' ? 3 : !player.grounded ? 2 : 1;
+    if (game.geyserLaunchTimer > 0) {
+      const launchLife = clamp(game.geyserLaunchTimer / 1.15, 0, 1);
       ctx.save();
-      ctx.rotate(clamp(player.vy / 1700, -.24, .24));
-      ctx.shadowColor = '#63e7ff'; ctx.shadowBlur = 14;
-      drawSurfCell(surfFrame, -76, -22, 152, 101);
+      ctx.globalCompositeOperation = 'screen';
+      for (let index = 0; index < (game.reducedShake ? 3 : 6); index += 1) {
+        const phase = time * .008 + index * 1.37;
+        const trailY = player.y + player.h + 8 + index * 13;
+        const trailX = x + Math.sin(phase) * (5 + index * 1.4);
+        ctx.globalAlpha = launchLife * (.56 - index * .055);
+        ctx.fillStyle = index % 2 ? '#8af4ff' : '#f7ffff';
+        ctx.beginPath();
+        ctx.ellipse(trailX, trailY, 4 + index * .7, 10 + index * 1.8, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
       ctx.restore();
     }
+    ctx.save(); ctx.globalAlpha = player.grounded ? 0.24 : 0.12; ctx.fillStyle = '#07243a'; ctx.beginPath(); ctx.ellipse(x, player.y + player.h + 7, player.grounded ? 26 : 18, player.grounded ? 6 : 4, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.translate(x, y); ctx.rotate(player.rotation || 0); sharedAbilities.applyHeroVisualTransform(ctx, game.abilities, { direction: player.dir, baseScale: player.scale || 1, anchorY: 33, time });
     if (game.activePower || sharedAbilities.isFrenzy(game.abilities)) {
       const powerColors = { lime: '#7cff68', pepper: '#ff674d', shell: '#ffe17f', coconut: '#c98b54' };
       const auraColor = sharedAbilities.isFrenzy(game.abilities) ? '#63e7ff' : powerColors[game.activePower];
@@ -4686,15 +4791,14 @@
       drawPhase2ExplorationSurface(platform);
     }
     drawCalderaExplorationAccents(time);
-    drawSurfObstacles(time);
+    drawVolcanoEscape(time);
     drawCalderaTrekker(time);
     for (const item of world.collectibles) drawCollectible(item, time);
     for (const checkpoint of world.checkpoints) drawCalderaCheckpoint(checkpoint, time);
     drawCoconutCannons();
     drawCalderaGoal(time);
     for (const enemy of world.enemies) drawCalderaEnemy(enemy, time);
-    drawSurfIntro(time);
-    drawWaveChase(time);
+    drawJeepRescue(time);
     heroCore.drawRespawnFX(ctx, game.respawn, player, game.cameraX, time, {
       vanish: '#63e7ff', vanishRing: '#ffe17f', landingRing: 'rgba(99, 231, 255, .86)',
     });
@@ -4744,6 +4848,8 @@
               completed: Boolean(state?.completed),
               completionCount: state?.completionCount || 0,
               rewardSpawnCount: state?.rewardSpawnCount || 0,
+              pendingReward: Boolean(state?.pendingReward),
+              orchestraStage: state?.orchestraStage ?? -1,
               rewardSurfaceId: state?.rewardSurfaceId || null,
               presentation: entry.presentation,
               completionTitle: entry.completionTitle,
@@ -4779,20 +4885,47 @@
         },
         scriptSafeguards: {
           eruptionStart: ERUPTION_SCRIPT_START,
-          surfStart: SURF_SCRIPT_START,
+          escapeRunStart: VOLCANO_ESCAPE.runStart,
+          finalGeyserX: VOLCANO_ESCAPE.finalGeyserX,
+          rescueX: VOLCANO_ESCAPE.rescueX,
           firewatchBeforeEruption: calderaExplorationPlan[3].routeRange[1] < ERUPTION_SCRIPT_START,
-          allExplorationBeforeSurf: calderaExplorationPlan.every((entry) => entry.routeRange[1] < SURF_SCRIPT_START),
-          surfArtReady: Boolean(images.islandSurf && images.islandWave),
-          surfObstacleCount: world.surfObstacles.length,
+          allExplorationBeforeEscape: calderaExplorationPlan.every((entry) => entry.routeRange[1] < ERUPTION_SCRIPT_START),
+          repeatedFinaleRemoved: true,
+          world21SequenceUntouched: true,
         },
-        eruption: { state: game.eruption.state, timer: Number(game.eruption.timer.toFixed(2)), done: game.wave.done },
-        wave: {
-          active: game.wave.active, done: game.wave.done, crashing: game.wave.crashing,
-          crashTimer: Number(game.wave.crashTimer.toFixed(2)), x: Math.round(game.wave.x),
-          gap: Math.round(player.x - game.wave.x),
-          artReady: Boolean(images.environment),
+        eruption: { state: game.eruption.state, timer: Number(game.eruption.timer.toFixed(2)), escapeComplete: game.escape.completed },
+        geyserUpgrade: {
+          physics: GEYSER_PHYSICS,
+          launchAudit: game.geyserLaunchAudit,
+          ventArtReady: Boolean(images.geyserVent),
+          plumeArtReady: Boolean(images.geyserPlume),
+          gardenArtReady: Boolean(images.phase2GeyserGarden),
+          gardenVentCount: world.geysers.filter((geyser) => geyser.phase2Discovery === 'geyser-garden-launch').length,
+          totalVentCount: world.geysers.length,
         },
-        surf: { phase: game.surf.phase, boardMounted: game.surf.boardMounted, clearedObstacles: game.surf.clearedObstacles, obstacles: world.surfObstacles.length },
+        volcanoEscape: {
+          phase: game.escape.phase,
+          timer: Number(game.escape.timer.toFixed(2)),
+          pressureGap: Math.round(player.x - game.escape.pressureX),
+          hazardCount: game.escape.hazards.length,
+          hazardStates: game.escape.hazards.map((hazard) => hazard.state),
+          finalGeyserLaunched: game.escape.finalGeyserLaunched,
+          finalLaunchCount: game.escape.finalLaunchCount,
+          deathRecoveries: game.escape.deathRecoveries,
+          completed: game.escape.completed,
+          normalHeroSupported: true,
+        },
+        jeepRescue: {
+          state: game.jeep.state,
+          x: Math.round(game.jeep.x),
+          speed: Math.round(game.jeep.speed),
+          boarded: game.jeep.boarded,
+          arrivalCount: game.jeep.arrivalCount,
+          boardingCount: game.jeep.boardingCount,
+          completionCount: game.jeep.completionCount,
+          inputMode: 'scripted-no-player-steering',
+          artReady: Boolean(images.calderaTrekkerBase),
+        },
         cannonballs: game.cannonballs.length,
         worldWidth: WORLD_WIDTH,
         backgroundBlend: game.backgroundBlend,
@@ -4886,10 +5019,11 @@
     checkpointEruption: 'assets/world2_2_checkpoint_eruption_v1.webp',
     checkpointLuau: 'assets/world2_2_checkpoint_luau_v1.webp',
     calderaTrekkerBase: 'assets/world2_2_caldera_trekker_base_v1.webp',
-    islandSurf: 'assets/island_surf_sheet_v1.png',
-    islandWave: 'assets/island_wave_sheet_v1.png',
     phase2SkyLodge: 'assets/world2_2_phase2_sky_lodge_v1.webp',
-    phase2GeyserGarden: 'assets/world2_2_phase2_geyser_garden_v1.webp',
+    phase2GeyserGarden: 'assets/world2_2_phase2_geyser_garden_v2.webp',
+    geyserVent: 'assets/world2_2_geyser_vent_v2.webp',
+    geyserPlume: 'assets/world2_2_geyser_plume_v2.webp',
+    escapeDebris: 'assets/world2_2_escape_debris_v1.webp',
     phase2LanternShaft: 'assets/world2_2_phase2_lantern_shaft_v1.webp',
     phase2CalderaFirewatch: 'assets/world2_2_phase2_caldera_firewatch_v1.webp',
     phase2ObsidianStash: 'assets/world2_2_phase2_obsidian_stash_v1.webp',
