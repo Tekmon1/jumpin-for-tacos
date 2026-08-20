@@ -1,5 +1,5 @@
 (() => {
-  const SOURCE_VERSION = 'w2-2-v14-geyser-volcano-escape';
+  const SOURCE_VERSION = 'w2-2-v15-volcano-hazard-jeep-reliability';
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -121,12 +121,36 @@
     pressureStart: 18480,
     finalGeyserX: 26880,
     rescueX: 27720,
+    rescueEligibilityX: 27340,
+    rescueFallbackX: 28120,
+    rescueSafeStartX: 26740,
+    rescueSafeEndX: 28620,
     jeepFinishX: 34120,
     onFootMaxSpeed: 330,
     finalLaunchVelocity: 930,
     finalLaunchSpeed: 480,
     jeepCruiseSpeed: 560,
+    jeepApproachTimeout: 2.85,
+    boardingRadiusX: 330,
+    boardingHeight: 205,
+    boardingFallbackDelay: 2.8,
+    jeepEscapeTimeout: 15.5,
   });
+  const VOLCANO_HAZARD_PHYSICS = Object.freeze({
+    warningDuration: .92,
+    fallGravity: 940,
+    initialFallVelocity: 150,
+    impactDuration: .34,
+    lavaDangerDuration: 1.55,
+    coolingDuration: 1.18,
+    poolWidthScale: 1.82,
+    poolHeightScale: .68,
+    poolCollisionWidthScale: .62,
+    poolCollisionHeight: 18,
+  });
+  const JEEP_RESCUE_STATES = Object.freeze([
+    'inactive', 'approaching', 'waiting-board', 'boarding', 'escaping', 'parked-safe',
+  ]);
   const VOLCANO_ESCAPE_HAZARDS = Object.freeze([
     Object.freeze({ x: 20020, warningLead: 530, typeIndex: 0, size: 58 }),
     Object.freeze({ x: 21280, warningLead: 560, typeIndex: 1, size: 66 }),
@@ -155,11 +179,19 @@
   });
   function createVolcanoEscapeState() {
     return {
-      phase: 'dormant', timer: 0, startedAt: null, completedAt: null,
+      phase: 'dormant', timer: 0, startedAt: null, completedAt: null, runCueShown: false,
       pressureX: VOLCANO_ESCAPE.pressureStart, finalGeyserLaunched: false,
       finalLaunchCount: 0, cueShown: false, rescueTriggered: false,
+      rescueEligible: false, rescueQueuedAt: null, rescueTriggerReason: null,
+      rescueAttemptCount: 0, rescueFallbackCount: 0, rescueRecoveryCount: 0,
+      furthestX: 0,
       deathRecoveries: 0, rewardGranted: false, completed: false,
-      hazards: VOLCANO_ESCAPE_HAZARDS.map((spec) => ({ ...spec, state: 'waiting', timer: 0, y: -120, vy: 0, hit: false })),
+      hazards: VOLCANO_ESCAPE_HAZARDS.map((spec) => ({
+        ...spec,
+        impactX: spec.x,
+        state: 'waiting', timer: 0, y: -120, vy: 0, hit: false,
+        warningCount: 0, impactCount: 0, trailTick: 0,
+      })),
     };
   }
 
@@ -168,6 +200,7 @@
       state: 'inactive', x: VOLCANO_ESCAPE.rescueX - 980, speed: 0, timer: 0,
       boarded: false, suspension: 0, dustPulse: 0, arrivalCount: 0,
       boardingCount: 0, completionCount: 0, dialogueShown: false,
+      approachRecoveryCount: 0, boardingFallbackCount: 0, selfHealCount: 0,
     };
   }
   const calderaExplorationPlan = Object.freeze([
@@ -1537,10 +1570,15 @@
       game.escape.timer = 0;
       game.escape.pressureX = Math.max(VOLCANO_ESCAPE.pressureStart, point.targetX - 760);
       game.escape.rescueTriggered = false;
+      game.escape.rescueEligible = false;
+      game.escape.rescueQueuedAt = null;
+      game.escape.rescueTriggerReason = null;
       game.escape.finalGeyserLaunched = false;
       game.escape.cueShown = false;
+      game.escape.runCueShown = false;
+      game.escape.furthestX = point.targetX;
       game.escape.hazards.forEach((hazard) => {
-        if (hazard.x >= point.targetX - 180) Object.assign(hazard, { state: 'waiting', timer: 0, y: -120, vy: 0, hit: false });
+        if (hazard.impactX >= point.targetX - 180) Object.assign(hazard, { state: 'waiting', timer: 0, y: -120, vy: 0, hit: false, trailTick: 0 });
       });
       game.jeep = createJeepRescueState();
       stopVehicleLoop();
@@ -1943,16 +1981,93 @@
     }
   }
 
-  function beginJeepRescue() {
-    if (game.escape.rescueTriggered || game.jeep.state !== 'inactive') return false;
-    game.escape.rescueTriggered = true;
-    game.escape.phase = 'rescue';
-    game.escape.timer = 0;
-    game.jeep.state = 'approaching';
-    game.jeep.x = Math.max(VOLCANO_ESCAPE.finalGeyserX + 120, player.x - 900);
-    game.jeep.speed = 760;
-    game.jeep.timer = 0;
-    game.jeep.arrivalCount += 1;
+  function volcanoPoolMetrics(hazard) {
+    const visualWidth = hazard.size * VOLCANO_HAZARD_PHYSICS.poolWidthScale;
+    const visualHeight = hazard.size * VOLCANO_HAZARD_PHYSICS.poolHeightScale;
+    const collisionWidth = visualWidth * VOLCANO_HAZARD_PHYSICS.poolCollisionWidthScale;
+    return {
+      visualWidth,
+      visualHeight,
+      collision: {
+        x: hazard.impactX - collisionWidth * .5,
+        y: GROUND_Y - VOLCANO_HAZARD_PHYSICS.poolCollisionHeight,
+        w: collisionWidth,
+        h: VOLCANO_HAZARD_PHYSICS.poolCollisionHeight + 2,
+      },
+    };
+  }
+
+  function spawnVolcanoImpactParticles(hazard) {
+    const count = game.reducedShake ? 14 : 30;
+    const screenX = hazard.impactX - game.cameraX;
+    for (let index = 0; index < count; index += 1) {
+      const rock = index % 4 === 0;
+      const smoke = index % 7 === 0;
+      game.particles.push({
+        x: screenX + (seeded() - .5) * 28,
+        y: GROUND_Y - 16 - seeded() * 15,
+        vx: (seeded() - .5) * (rock ? 310 : 220),
+        vy: -100 - seeded() * (rock ? 330 : 250),
+        gravity: smoke ? -24 : rock ? 760 : 520,
+        life: smoke ? .72 + seeded() * .38 : .48 + seeded() * .58,
+        size: smoke ? 10 + seeded() * 10 : rock ? 5 + seeded() * 6 : 3 + seeded() * 5,
+        color: smoke ? 'rgba(70,55,67,.72)' : rock ? '#2c2630' : index % 3 ? '#ff7a32' : '#ffe27a',
+        shape: smoke ? 'smoke' : rock ? 'volcanic-rock' : 'ember',
+        angle: seeded() * Math.PI * 2,
+      });
+    }
+    spawnBurst(screenX, GROUND_Y - 18, '#ff8a3d', game.reducedShake ? 8 : 16);
+    game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 2 : 7);
+    playAudio('hazard.volcanicDebrisImpact', { position: audioPosition(hazard.impactX), pitchCents: -90 + hazard.typeIndex * 42, gain: .82 });
+  }
+
+  function retireVolcanoHazardsForRescue() {
+    for (const hazard of game.escape.hazards) {
+      if (hazard.impactX >= VOLCANO_ESCAPE.rescueSafeStartX && hazard.impactX <= VOLCANO_ESCAPE.rescueSafeEndX) {
+        hazard.state = 'spent';
+        hazard.timer = 0;
+      } else if (hazard.state === 'warning' || hazard.state === 'falling') {
+        hazard.state = 'spent';
+        hazard.timer = 0;
+      } else if (hazard.state === 'impact' || hazard.state === 'lava') {
+        hazard.state = 'cooling';
+        hazard.timer = Math.max(hazard.timer, VOLCANO_HAZARD_PHYSICS.coolingDuration * .46);
+      }
+    }
+  }
+
+  function markJeepRescueEligible(reason) {
+    const escape = game.escape;
+    if (escape.completed) return false;
+    if (!escape.rescueEligible) {
+      escape.rescueEligible = true;
+      escape.rescueQueuedAt = game.levelTime;
+      escape.rescueTriggerReason = reason;
+    }
+    return true;
+  }
+
+  function beginJeepRescue(reason = 'progression-threshold') {
+    const escape = game.escape;
+    const jeep = game.jeep;
+    if (escape.completed || jeep.state !== 'inactive') return false;
+    const recoveringInconsistentState = escape.rescueTriggered;
+    markJeepRescueEligible(reason);
+    escape.rescueTriggered = true;
+    escape.phase = 'rescue';
+    escape.timer = 0;
+    escape.rescueAttemptCount += 1;
+    if (/fallback|failsafe/i.test(reason)) escape.rescueFallbackCount += 1;
+    if (recoveringInconsistentState) {
+      escape.rescueRecoveryCount += 1;
+      jeep.selfHealCount += 1;
+    }
+    jeep.state = 'approaching';
+    jeep.x = Math.max(VOLCANO_ESCAPE.finalGeyserX + 120, player.x - 900);
+    jeep.speed = 760;
+    jeep.timer = 0;
+    jeep.arrivalCount += 1;
+    retireVolcanoHazardsForRescue();
     playAudio('vehicle.approach', { vehicleType: 'trekker', position: -0.75 });
     showMessage('OLIVIA’S TACO TREKKER IS COMING IN HOT!', 2.1);
     return true;
@@ -1977,6 +2092,52 @@
     return true;
   }
 
+  function settleJeepForBoarding(targetX, recovered = false) {
+    const jeep = game.jeep;
+    if (jeep.state !== 'approaching') return false;
+    jeep.x = targetX;
+    jeep.speed = 0;
+    jeep.timer = 0;
+    jeep.state = 'waiting-board';
+    if (recovered) jeep.approachRecoveryCount += 1;
+    game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 2 : 6);
+    spawnBurst(jeep.x - game.cameraX - 82, GROUND_Y - 22, '#ffcf6b', 34);
+    playAudio('vehicle.idle', { vehicleType: 'trekker', position: audioPosition(jeep.x), gain: .78 });
+    if (!jeep.dialogueShown) {
+      jeep.dialogueShown = true;
+      showMessage('OLIVIA: TACO HERO! GET IN!', 2.4);
+    }
+    return true;
+  }
+
+  function completeJeepEvacuation() {
+    const jeep = game.jeep;
+    if (game.escape.completed) return false;
+    jeep.x = Math.max(jeep.x, VOLCANO_ESCAPE.jeepFinishX);
+    jeep.speed = 0;
+    jeep.state = 'parked-safe';
+    jeep.boarded = false;
+    jeep.completionCount += 1;
+    game.escape.phase = 'complete';
+    game.escape.completed = true;
+    game.escape.completedAt = game.levelTime;
+    if (!game.escape.rewardGranted) {
+      game.escape.rewardGranted = true;
+      game.score += 1800;
+    }
+    player.x = world.goal.x + 22;
+    player.y = GROUND_Y - player.h;
+    player.vx = 0;
+    player.vy = 0;
+    player.grounded = true;
+    stopVehicleLoop();
+    stopVolcanoLoop();
+    spawnConfetti(canvas.width * .48, 190, game.reducedShake ? 54 : 150);
+    playAudio('vehicle.depart', { vehicleType: 'trekker', position: .25, pitchCents: 95 });
+    showMessage('VOLCANO EVAC COMPLETE — TACO TREKKER FOR THE WIN!', 3.1);
+    return true;
+  }
+
   function updateJeepRescue(dt) {
     const jeep = game.jeep;
     if (jeep.state === 'inactive' || jeep.state === 'parked-safe') return;
@@ -1985,23 +2146,27 @@
     jeep.suspension = Math.abs(Math.sin(game.levelTime * 11 + jeep.x * .012)) * (jeep.state === 'escaping' ? 5 : 2.5);
 
     if (jeep.state === 'approaching') {
-      const targetX = Math.max(VOLCANO_ESCAPE.rescueX, player.x + 110);
+      const targetX = clamp(Math.max(VOLCANO_ESCAPE.rescueX, player.x + 110), VOLCANO_ESCAPE.rescueX, WORLD_WIDTH - 210);
       jeep.speed = Math.min(1020, jeep.speed + 640 * dt);
       jeep.x += jeep.speed * dt;
-      if (jeep.x >= targetX - 18) {
-        jeep.x = targetX;
-        jeep.speed = 0;
-        jeep.timer = 0;
-        jeep.state = 'waiting-board';
-        jeep.dialogueShown = true;
-        game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 2 : 6);
-        spawnBurst(jeep.x - game.cameraX - 82, GROUND_Y - 22, '#ffcf6b', 34);
-        playAudio('vehicle.idle', { vehicleType: 'trekker', position: audioPosition(jeep.x), gain: .78 });
-        showMessage('OLIVIA: TACO HERO! GET IN!', 2.4);
-      }
+      if (jeep.x >= targetX - 18) settleJeepForBoarding(targetX);
+      else if (jeep.timer >= VOLCANO_ESCAPE.jeepApproachTimeout) settleJeepForBoarding(targetX, true);
     } else if (jeep.state === 'waiting-board') {
-      const closeEnough = Math.abs((player.x + player.w * .5) - jeep.x) < 215;
-      if (jeep.timer >= .58 && closeEnough) boardJeep();
+      const playerCenterX = player.x + player.w * .5;
+      const horizontalDistance = Math.abs(playerCenterX - jeep.x);
+      if (horizontalDistance >= VOLCANO_ESCAPE.boardingRadiusX && jeep.timer >= 1.35) {
+        jeep.x = clamp(playerCenterX + 110, VOLCANO_ESCAPE.rescueX, WORLD_WIDTH - 210);
+        jeep.timer = .58;
+        jeep.approachRecoveryCount += 1;
+      }
+      const closeEnough = Math.abs(playerCenterX - jeep.x) < VOLCANO_ESCAPE.boardingRadiusX;
+      const playerBottom = player.y + player.h;
+      const nearBoardingHeight = playerBottom >= GROUND_Y - VOLCANO_ESCAPE.boardingHeight && player.y < GROUND_Y + 34;
+      const fallbackBoarding = closeEnough && jeep.timer >= VOLCANO_ESCAPE.boardingFallbackDelay;
+      if (jeep.timer >= .58 && closeEnough && (nearBoardingHeight || fallbackBoarding)) {
+        if (fallbackBoarding && !nearBoardingHeight) jeep.boardingFallbackCount += 1;
+        boardJeep();
+      }
     } else if (jeep.state === 'boarding') {
       player.x = jeep.x + 22;
       player.y = GROUND_Y - 104;
@@ -2034,37 +2199,128 @@
           && item.x >= jeep.x - 145 && item.x <= jeep.x + 150
         ) collectItem(item);
       }
-      if (jeep.x >= VOLCANO_ESCAPE.jeepFinishX) {
+      if (jeep.x >= VOLCANO_ESCAPE.jeepFinishX || jeep.timer >= VOLCANO_ESCAPE.jeepEscapeTimeout) {
         jeep.x = VOLCANO_ESCAPE.jeepFinishX;
-        jeep.speed = 0;
-        jeep.state = 'parked-safe';
-        jeep.boarded = false;
-        jeep.completionCount += 1;
-        game.escape.phase = 'complete';
-        game.escape.completed = true;
-        game.escape.completedAt = game.levelTime;
-        if (!game.escape.rewardGranted) {
-          game.escape.rewardGranted = true;
-          game.score += 1800;
-        }
-        player.x = world.goal.x + 22;
-        player.y = GROUND_Y - player.h;
-        player.vx = 0;
-        player.vy = 0;
-        player.grounded = true;
-        stopVehicleLoop();
-        stopVolcanoLoop();
-        spawnConfetti(canvas.width * .48, 190, game.reducedShake ? 54 : 150);
-        playAudio('vehicle.depart', { vehicleType: 'trekker', position: .25, pitchCents: 95 });
-        showMessage('VOLCANO EVAC COMPLETE — TACO TREKKER FOR THE WIN!', 3.1);
+        completeJeepEvacuation();
       }
     }
+  }
+
+  function updateVolcanoHazards(dt) {
+    for (const hazard of game.escape.hazards) {
+      if (hazard.state === 'waiting' && player.x >= hazard.impactX - hazard.warningLead) {
+        hazard.state = 'warning';
+        hazard.timer = 0;
+        hazard.warningCount += 1;
+        playAudio('hazard.volcanicDebrisWarn', { position: audioPosition(hazard.impactX), pitchCents: -160 + hazard.typeIndex * 55, gain: .6 });
+      } else if (hazard.state === 'warning') {
+        hazard.timer += dt;
+        if (hazard.timer >= VOLCANO_HAZARD_PHYSICS.warningDuration) {
+          hazard.state = 'falling';
+          hazard.timer = 0;
+          hazard.y = -95;
+          hazard.vy = VOLCANO_HAZARD_PHYSICS.initialFallVelocity;
+          hazard.trailTick = 0;
+          playAudio('hazard.volcanicDebrisFall', { position: audioPosition(hazard.impactX), pitchCents: -80 + hazard.typeIndex * 35, gain: .72 });
+        }
+      } else if (hazard.state === 'falling') {
+        hazard.timer += dt;
+        hazard.trailTick += dt;
+        hazard.vy += VOLCANO_HAZARD_PHYSICS.fallGravity * dt;
+        hazard.y += hazard.vy * dt;
+        const coreWidth = hazard.size * .56;
+        const hitbox = {
+          x: hazard.impactX - coreWidth * .5,
+          y: hazard.y + hazard.size * .18,
+          w: coreWidth,
+          h: hazard.size * .64,
+        };
+        if (!hazard.hit && intersects(player, hitbox)) {
+          hazard.hit = true;
+          hurtPlayer(hazard.impactX);
+        }
+        if (hazard.y + hazard.size >= GROUND_Y) {
+          hazard.y = GROUND_Y - hazard.size;
+          hazard.state = 'impact';
+          hazard.timer = 0;
+          hazard.impactCount += 1;
+          spawnVolcanoImpactParticles(hazard);
+        }
+      } else if (hazard.state === 'impact' || hazard.state === 'lava') {
+        hazard.timer += dt;
+        if (!hazard.hit && intersects(player, volcanoPoolMetrics(hazard).collision)) {
+          hazard.hit = true;
+          hurtPlayer(hazard.impactX);
+        }
+        if (hazard.state === 'impact' && hazard.timer >= VOLCANO_HAZARD_PHYSICS.impactDuration) {
+          hazard.state = 'lava';
+          hazard.timer = 0;
+        } else if (hazard.state === 'lava' && hazard.timer >= VOLCANO_HAZARD_PHYSICS.lavaDangerDuration) {
+          hazard.state = 'cooling';
+          hazard.timer = 0;
+        }
+      } else if (hazard.state === 'cooling') {
+        hazard.timer += dt;
+        if (hazard.timer >= VOLCANO_HAZARD_PHYSICS.coolingDuration) hazard.state = 'spent';
+      }
+    }
+  }
+
+  function ensureJeepRescueProgression(reasonHint = 'progression-threshold') {
+    const escape = game.escape;
+    const jeep = game.jeep;
+    if (escape.phase === 'dormant' || escape.completed) return false;
+    escape.furthestX = Math.max(escape.furthestX, player.x);
+
+    const invalidJeepState = !JEEP_RESCUE_STATES.includes(jeep.state)
+      || !Number.isFinite(jeep.x)
+      || !Number.isFinite(jeep.speed)
+      || !Number.isFinite(jeep.timer);
+    if (invalidJeepState) {
+      jeep.state = 'inactive';
+      jeep.x = VOLCANO_ESCAPE.rescueX - 980;
+      jeep.speed = 0;
+      jeep.timer = 0;
+      jeep.boarded = false;
+      escape.rescueTriggered = true;
+      escape.phase = 'rescue';
+    }
+
+    if (escape.finalGeyserLaunched) markJeepRescueEligible('final-geyser-launch');
+    if (player.x >= VOLCANO_ESCAPE.rescueEligibilityX) markJeepRescueEligible(reasonHint);
+    if (jeep.state !== 'inactive' && !escape.rescueTriggered) {
+      escape.rescueTriggered = true;
+      escape.rescueEligible = true;
+      escape.rescueRecoveryCount += 1;
+    }
+    if (jeep.state === 'parked-safe' && !escape.completed) return completeJeepEvacuation();
+    if (player.x >= VOLCANO_ESCAPE.rescueFallbackX && jeep.state === 'inactive') {
+      markJeepRescueEligible('rescue-corridor-fallback');
+      return beginJeepRescue('rescue-corridor-fallback');
+    }
+    if (escape.phase === 'rescue' && jeep.state === 'inactive') {
+      markJeepRescueEligible('rescue-state-self-heal');
+      return beginJeepRescue('rescue-state-self-heal');
+    }
+    if (escape.rescueTriggered && jeep.state === 'inactive') {
+      escape.phase = 'rescue';
+      markJeepRescueEligible('rescue-trigger-self-heal');
+      return beginJeepRescue('rescue-trigger-self-heal');
+    }
+    const preservingFinalLaunchBeat = escape.phase === 'final-launch'
+      && player.x < VOLCANO_ESCAPE.rescueX - 280
+      && escape.timer < 2.45;
+    if (escape.rescueEligible && jeep.state === 'inactive' && !preservingFinalLaunchBeat) {
+      return beginJeepRescue(escape.rescueTriggerReason || reasonHint);
+    }
+    return false;
   }
 
   function updateVolcanoEscape(dt) {
     const escape = game.escape;
     if (escape.phase === 'dormant' || escape.phase === 'complete') return;
     escape.timer += dt;
+    ensureJeepRescueProgression();
 
     if (escape.phase === 'on-foot') {
       if (!escape.runCueShown && escape.timer >= .7) {
@@ -2081,45 +2337,7 @@
         showMessage('THE LAVA IS TOO CLOSE — KEEP MOVING!', 1.35);
       }
 
-      for (const hazard of escape.hazards) {
-        if (hazard.state === 'waiting' && player.x >= hazard.x - hazard.warningLead) {
-          hazard.state = 'warning';
-          hazard.timer = 0;
-          playAudio('goal.warning', { position: audioPosition(hazard.x), pitchCents: -160 + hazard.typeIndex * 55, gain: .5 });
-        } else if (hazard.state === 'warning') {
-          hazard.timer += dt;
-          if (hazard.timer >= .78) {
-            hazard.state = 'falling';
-            hazard.timer = 0;
-            hazard.y = -95;
-            hazard.vy = 150;
-          }
-        } else if (hazard.state === 'falling') {
-          hazard.vy += 940 * dt;
-          hazard.y += hazard.vy * dt;
-          const hitbox = { x: hazard.x - hazard.size * .42, y: hazard.y, w: hazard.size * .84, h: hazard.size * .82 };
-          if (!hazard.hit && intersects(player, hitbox)) {
-            hazard.hit = true;
-            hurtPlayer(hazard.x);
-          }
-          if (hazard.y + hazard.size >= GROUND_Y) {
-            hazard.y = GROUND_Y - hazard.size;
-            hazard.state = 'landed';
-            hazard.timer = 0;
-            spawnBurst(hazard.x - game.cameraX, GROUND_Y - 14, '#ff8a55', game.reducedShake ? 12 : 30);
-            game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 2 : 7);
-            playAudio('hero.landHard', { position: audioPosition(hazard.x), gain: .72 });
-          }
-        } else if (hazard.state === 'landed') {
-          hazard.timer += dt;
-          const hitbox = { x: hazard.x - hazard.size * .42, y: hazard.y + 8, w: hazard.size * .84, h: hazard.size * .72 };
-          if (!hazard.hit && hazard.timer < 1.5 && intersects(player, hitbox)) {
-            hazard.hit = true;
-            hurtPlayer(hazard.x);
-          }
-          if (hazard.timer >= 2.8) hazard.state = 'spent';
-        }
-      }
+      updateVolcanoHazards(dt);
 
       if (!escape.cueShown && player.x >= VOLCANO_ESCAPE.finalGeyserX - 760) {
         escape.cueShown = true;
@@ -2128,9 +2346,13 @@
       }
     } else if (escape.phase === 'final-launch') {
       player.vx = Math.max(player.vx, VOLCANO_ESCAPE.finalLaunchSpeed * .86);
-      if (player.x >= VOLCANO_ESCAPE.rescueX - 280 || escape.timer >= 2.45) beginJeepRescue();
+      if (player.x >= VOLCANO_ESCAPE.rescueX - 280 || escape.timer >= 2.45) {
+        markJeepRescueEligible('final-launch-progress');
+        beginJeepRescue('final-launch-progress');
+      }
     }
 
+    ensureJeepRescueProgression();
     updateJeepRescue(dt);
   }
 
@@ -2548,7 +2770,12 @@
   }
 
   function maybeFinish() {
-    if (game.state !== 'playing' || !game.escape.completed || !intersects(player, world.goal)) return;
+    if (game.state !== 'playing') return;
+    if (!game.escape.completed && game.escape.phase !== 'dormant' && player.x >= world.goal.x - 520) {
+      markJeepRescueEligible('goal-proximity-failsafe');
+      ensureJeepRescueProgression('goal-proximity-failsafe');
+    }
+    if (!game.escape.completed || !intersects(player, world.goal)) return;
     game.state = 'celebrating';
     game.finishTime = performance.now();
     game.celebrationTime = 0;
@@ -4087,6 +4314,168 @@
     });
   }
 
+  function drawVolcanoImpactWarning(hazard, time) {
+    const screenX = hazard.impactX - game.cameraX;
+    if (screenX < -180 || screenX > canvas.width + 180) return;
+    const metrics = volcanoPoolMetrics(hazard);
+    const progress = clamp(hazard.timer / VOLCANO_HAZARD_PHYSICS.warningDuration, 0, 1);
+    const pulse = .86 + Math.sin(time * .024 + hazard.typeIndex) * .08;
+    const radiusX = metrics.visualWidth * .5 * (.82 + progress * .18) * pulse;
+    const radiusY = Math.max(8, metrics.visualHeight * (.18 + progress * .08));
+    ctx.save();
+    ctx.globalAlpha = .48 + progress * .44;
+    ctx.shadowColor = '#ff522f';
+    ctx.shadowBlur = game.reducedShake ? 5 : 11 + progress * 8;
+    const underglow = ctx.createRadialGradient(screenX, GROUND_Y - 3, 3, screenX, GROUND_Y - 3, radiusX);
+    underglow.addColorStop(0, `rgba(255,225,104,${.4 + progress * .35})`);
+    underglow.addColorStop(.38, `rgba(255,91,42,${.34 + progress * .28})`);
+    underglow.addColorStop(1, 'rgba(76,24,28,0)');
+    ctx.fillStyle = underglow;
+    ctx.beginPath();
+    ctx.ellipse(screenX, GROUND_Y - 3, radiusX, radiusY, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.lineCap = 'round';
+    for (let crack = 0; crack < 7; crack += 1) {
+      const angle = -Math.PI + crack * (Math.PI / 6) + Math.sin(hazard.typeIndex * 2.1 + crack) * .13;
+      const length = radiusX * (.48 + ((crack + hazard.typeIndex) % 3) * .13) * progress;
+      const startX = screenX + Math.cos(angle) * 5;
+      const startY = GROUND_Y - 3 + Math.sin(angle) * 1.8;
+      ctx.strokeStyle = crack % 2 ? 'rgba(255,103,47,.86)' : 'rgba(255,226,111,.9)';
+      ctx.lineWidth = 1.7 + progress * 1.5;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(startX + Math.cos(angle) * length * .52, startY + Math.sin(angle) * radiusY * .42 - 2);
+      ctx.lineTo(startX + Math.cos(angle) * length, GROUND_Y - 3 + Math.sin(angle) * radiusY * .72);
+      ctx.stroke();
+    }
+    const sparkCount = game.reducedShake ? 2 : 4;
+    for (let spark = 0; spark < sparkCount; spark += 1) {
+      const phase = time * .006 + spark * 1.73 + hazard.typeIndex;
+      const rise = (phase % 1) * (13 + progress * 16);
+      ctx.globalAlpha = progress * (.35 + spark * .12);
+      ctx.fillStyle = spark % 2 ? '#ff8c45' : '#ffe78b';
+      ctx.beginPath();
+      ctx.arc(screenX + Math.sin(phase * 4.2) * radiusX * .54, GROUND_Y - 9 - rise, 1.5 + progress, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawVolcanoFireball(hazard, time) {
+    const screenX = hazard.impactX - game.cameraX;
+    if (screenX < -210 || screenX > canvas.width + 210) return;
+    const fireball = images.volcanoFireball;
+    const destWidth = hazard.size * 1.34;
+    const cellWidth = fireball ? fireball.width / 4 : 1;
+    const destHeight = fireball ? destWidth * (fireball.height / cellWidth) : hazard.size * 1.3;
+    const flare = .88 + Math.sin(time * .018 + hazard.typeIndex * 1.9) * .08;
+    ctx.save();
+    ctx.globalAlpha = .26;
+    ctx.globalCompositeOperation = 'screen';
+    ctx.strokeStyle = '#ff5e34';
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 8 + hazard.typeIndex;
+    ctx.beginPath();
+    ctx.moveTo(screenX - destWidth * .24, hazard.y + destHeight * .26);
+    ctx.lineTo(screenX - destWidth * .66, hazard.y - destHeight * .28);
+    ctx.stroke();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+    ctx.shadowColor = '#ff542f';
+    ctx.shadowBlur = game.reducedShake ? 7 : 15;
+    if (fireball) {
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(
+        fireball,
+        cellWidth * hazard.typeIndex, 0, cellWidth, fireball.height,
+        screenX - destWidth * .7,
+        hazard.y - destHeight * .12,
+        destWidth * flare,
+        destHeight * flare,
+      );
+      ctx.imageSmoothingEnabled = false;
+    } else {
+      ctx.fillStyle = '#ff6b32';
+      ctx.beginPath();
+      ctx.arc(screenX, hazard.y + hazard.size * .54, hazard.size * .34, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+    const trailCount = game.reducedShake ? 2 : 4;
+    for (let ember = 0; ember < trailCount; ember += 1) {
+      const phase = time * .011 + ember * 1.87 + hazard.typeIndex;
+      ctx.globalAlpha = .34 + ember * .09;
+      ctx.fillStyle = ember % 2 ? '#ff7838' : '#ffe27d';
+      ctx.beginPath();
+      ctx.arc(
+        screenX - destWidth * (.48 + ember * .12) + Math.sin(phase) * 5,
+        hazard.y - destHeight * (.08 + ember * .09) + Math.cos(phase * 1.4) * 4,
+        1.8 + (trailCount - ember) * .45,
+        0,
+        Math.PI * 2,
+      );
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawVolcanoLavaPool(hazard, time) {
+    const screenX = hazard.impactX - game.cameraX;
+    if (screenX < -210 || screenX > canvas.width + 210) return;
+    const metrics = volcanoPoolMetrics(hazard);
+    const lavaPool = images.volcanoLavaPool;
+    const coolingProgress = hazard.state === 'cooling'
+      ? clamp(hazard.timer / VOLCANO_HAZARD_PHYSICS.coolingDuration, 0, 1)
+      : 0;
+    const frameIndex = hazard.state === 'impact' ? 0
+      : hazard.state === 'lava' ? 1
+        : coolingProgress < .56 ? 2 : 3;
+    const drawWidth = metrics.visualWidth * (hazard.state === 'impact' ? 1.08 : 1);
+    const cellWidth = lavaPool ? lavaPool.width / 4 : 1;
+    const drawHeight = lavaPool ? drawWidth * (lavaPool.height / cellWidth) : metrics.visualHeight * 1.55;
+    const fade = hazard.state === 'cooling' ? 1 - Math.max(0, coolingProgress - .82) / .18 * .62 : 1;
+    ctx.save();
+    ctx.globalAlpha = clamp(fade, .28, 1);
+    ctx.shadowColor = hazard.state === 'cooling' ? '#a84432' : '#ff5c2f';
+    ctx.shadowBlur = game.reducedShake ? 5 : hazard.state === 'cooling' ? 7 : 14;
+    if (lavaPool) {
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(
+        lavaPool,
+        cellWidth * frameIndex, 0, cellWidth, lavaPool.height,
+        screenX - drawWidth * .5,
+        GROUND_Y - drawHeight + 8,
+        drawWidth,
+        drawHeight,
+      );
+      ctx.imageSmoothingEnabled = false;
+    } else {
+      const fallback = ctx.createRadialGradient(screenX, GROUND_Y - 7, 4, screenX, GROUND_Y - 7, drawWidth * .5);
+      fallback.addColorStop(0, '#ffe36d');
+      fallback.addColorStop(.45, '#ff5d2f');
+      fallback.addColorStop(1, '#2b2229');
+      ctx.fillStyle = fallback;
+      ctx.beginPath();
+      ctx.ellipse(screenX, GROUND_Y - 6, drawWidth * .5, metrics.visualHeight * .35, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    if (hazard.state === 'lava') {
+      const bubbleCount = game.reducedShake ? 1 : 3;
+      ctx.shadowBlur = 5;
+      for (let bubble = 0; bubble < bubbleCount; bubble += 1) {
+        const phase = time * .005 + bubble * 2.4 + hazard.typeIndex;
+        const pop = .5 + .5 * Math.sin(phase * 3.3);
+        ctx.globalAlpha = .28 + pop * .38;
+        ctx.fillStyle = bubble % 2 ? '#ff8b3f' : '#ffe774';
+        ctx.beginPath();
+        ctx.arc(screenX + Math.sin(phase) * drawWidth * .2, GROUND_Y - 13 - pop * 7, 2 + pop * 2.3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+
   function drawVolcanoEscape(time) {
     const escape = game.escape;
     if (escape.phase === 'dormant' || escape.phase === 'complete') return;
@@ -4108,63 +4497,11 @@
     }
     ctx.restore();
 
-    for (let patchIndex = 0; patchIndex < 6; patchIndex += 1) {
-      const worldX = 19740 + patchIndex * 1310;
-      const screenX = worldX - game.cameraX;
-      if (screenX < -130 || screenX > canvas.width + 130) continue;
-      const proximity = clamp(1 - Math.abs(player.x - worldX) / 760, 0, 1);
-      ctx.save();
-      ctx.globalAlpha = .28 + proximity * .48;
-      ctx.strokeStyle = proximity > .25 ? '#ff8a55' : '#85514d';
-      ctx.shadowColor = '#ff5c39';
-      ctx.shadowBlur = proximity * 13;
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(screenX - 58, GROUND_Y - 2);
-      ctx.lineTo(screenX - 28, GROUND_Y - 17 - Math.sin(time * .013 + patchIndex) * 3);
-      ctx.lineTo(screenX - 8, GROUND_Y - 4);
-      ctx.lineTo(screenX + 17, GROUND_Y - 23);
-      ctx.lineTo(screenX + 48, GROUND_Y - 3);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    const debris = images.escapeDebris;
     for (const hazard of escape.hazards) {
       if (hazard.state === 'waiting' || hazard.state === 'spent') continue;
-      const screenX = hazard.x - game.cameraX;
-      if (screenX < -160 || screenX > canvas.width + 160) continue;
-      if (hazard.state === 'warning') {
-        const pulse = .55 + Math.sin(time * .02) * .22;
-        ctx.save();
-        ctx.globalAlpha = pulse;
-        ctx.strokeStyle = '#fff0a8';
-        ctx.fillStyle = 'rgba(255,75,43,.22)';
-        ctx.lineWidth = 4;
-        ctx.beginPath(); ctx.ellipse(screenX, GROUND_Y - 4, hazard.size * .7, 12, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = '#fff8dc';
-        ctx.font = '900 20px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('!', screenX, GROUND_Y - 34 - Math.sin(time * .016) * 5);
-        ctx.restore();
-        continue;
-      }
-      const rotation = hazard.state === 'falling' ? game.levelTime * (2.2 + hazard.typeIndex * .35) : -.16 + hazard.typeIndex * .08;
-      ctx.save();
-      ctx.translate(screenX, hazard.y + hazard.size * .5);
-      ctx.rotate(rotation);
-      ctx.shadowColor = '#ff5c39';
-      ctx.shadowBlur = hazard.state === 'falling' ? 18 : 7;
-      if (debris) {
-        const cellW = debris.width / 4;
-        ctx.imageSmoothingEnabled = true;
-        ctx.drawImage(debris, cellW * hazard.typeIndex, 0, cellW, debris.height, -hazard.size * .5, -hazard.size * .5, hazard.size, hazard.size);
-        ctx.imageSmoothingEnabled = false;
-      } else {
-        ctx.fillStyle = '#342d38';
-        ctx.beginPath(); ctx.arc(0, 0, hazard.size * .42, 0, Math.PI * 2); ctx.fill();
-      }
-      ctx.restore();
+      if (hazard.state === 'warning') drawVolcanoImpactWarning(hazard, time);
+      else if (hazard.state === 'falling') drawVolcanoFireball(hazard, time);
+      else drawVolcanoLavaPool(hazard, time);
     }
   }
 
@@ -4702,7 +5039,48 @@
     for (const particle of game.particles) {
       ctx.globalAlpha = clamp(particle.life, 0, 1);
       if (particle.shape === 'star') drawStar(particle.x, particle.y, particle.size, particle.color);
-      else { ctx.fillStyle = particle.color; ctx.beginPath(); ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2); ctx.fill(); }
+      else if (particle.shape === 'smoke') {
+        ctx.save();
+        ctx.translate(particle.x, particle.y);
+        ctx.rotate(particle.angle * .12);
+        ctx.scale(1.35, .82);
+        ctx.fillStyle = particle.color;
+        ctx.beginPath();
+        ctx.arc(0, 0, particle.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      } else if (particle.shape === 'volcanic-rock') {
+        ctx.save();
+        ctx.translate(particle.x, particle.y);
+        ctx.rotate(particle.angle);
+        ctx.fillStyle = particle.color;
+        ctx.strokeStyle = '#ff6a35';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(-particle.size * .72, -particle.size * .22);
+        ctx.lineTo(-particle.size * .12, -particle.size * .7);
+        ctx.lineTo(particle.size * .66, -particle.size * .24);
+        ctx.lineTo(particle.size * .48, particle.size * .62);
+        ctx.lineTo(-particle.size * .48, particle.size * .54);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      } else if (particle.shape === 'ember') {
+        ctx.save();
+        ctx.translate(particle.x, particle.y);
+        ctx.rotate(Math.atan2(particle.vy, particle.vx || .01));
+        ctx.fillStyle = particle.color;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, particle.size * 1.35, particle.size * .58, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      } else {
+        ctx.fillStyle = particle.color;
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
     for (const particle of game.confetti) {
       ctx.globalAlpha = clamp(particle.life, 0, 1); ctx.fillStyle = particle.color;
@@ -4888,6 +5266,12 @@
           escapeRunStart: VOLCANO_ESCAPE.runStart,
           finalGeyserX: VOLCANO_ESCAPE.finalGeyserX,
           rescueX: VOLCANO_ESCAPE.rescueX,
+          rescueEligibilityX: VOLCANO_ESCAPE.rescueEligibilityX,
+          rescueFallbackX: VOLCANO_ESCAPE.rescueFallbackX,
+          rescueSafeCorridor: [VOLCANO_ESCAPE.rescueSafeStartX, VOLCANO_ESCAPE.rescueSafeEndX],
+          rescueTriggerIsYIndependent: true,
+          rescueStateSelfHealing: true,
+          goalProximityFailsafe: true,
           firewatchBeforeEruption: calderaExplorationPlan[3].routeRange[1] < ERUPTION_SCRIPT_START,
           allExplorationBeforeEscape: calderaExplorationPlan.every((entry) => entry.routeRange[1] < ERUPTION_SCRIPT_START),
           repeatedFinaleRemoved: true,
@@ -4908,7 +5292,20 @@
           timer: Number(game.escape.timer.toFixed(2)),
           pressureGap: Math.round(player.x - game.escape.pressureX),
           hazardCount: game.escape.hazards.length,
-          hazardStates: game.escape.hazards.map((hazard) => hazard.state),
+          hazardPhysics: VOLCANO_HAZARD_PHYSICS,
+          hazardStates: game.escape.hazards.map((hazard) => ({
+            impactX: hazard.impactX,
+            state: hazard.state,
+            warningCount: hazard.warningCount,
+            impactCount: hazard.impactCount,
+            hitbox: volcanoPoolMetrics(hazard).collision,
+          })),
+          activeLavaCount: game.escape.hazards.filter((hazard) => ['impact', 'lava'].includes(hazard.state)).length,
+          warningTelegraphIntegratedIntoGround: true,
+          decorativeLavaDistinctFromActivePools: true,
+          fireballArtReady: Boolean(images.volcanoFireball),
+          lavaPoolArtReady: Boolean(images.volcanoLavaPool),
+          gameplayImpactPositionsPreserved: game.escape.hazards.every((hazard) => hazard.impactX === hazard.x),
           finalGeyserLaunched: game.escape.finalGeyserLaunched,
           finalLaunchCount: game.escape.finalLaunchCount,
           deathRecoveries: game.escape.deathRecoveries,
@@ -4920,9 +5317,23 @@
           x: Math.round(game.jeep.x),
           speed: Math.round(game.jeep.speed),
           boarded: game.jeep.boarded,
+          rescueEligible: game.escape.rescueEligible,
+          rescueQueuedAt: game.escape.rescueQueuedAt,
+          triggerReason: game.escape.rescueTriggerReason,
+          furthestX: Math.round(game.escape.furthestX),
+          attemptCount: game.escape.rescueAttemptCount,
+          fallbackCount: game.escape.rescueFallbackCount,
+          recoveryCount: game.escape.rescueRecoveryCount,
           arrivalCount: game.jeep.arrivalCount,
           boardingCount: game.jeep.boardingCount,
           completionCount: game.jeep.completionCount,
+          approachRecoveryCount: game.jeep.approachRecoveryCount,
+          boardingFallbackCount: game.jeep.boardingFallbackCount,
+          selfHealCount: game.jeep.selfHealCount,
+          progressionBased: true,
+          yIndependent: true,
+          duplicateSpawnGuard: game.jeep.arrivalCount <= game.escape.rescueAttemptCount,
+          completionFailsafes: ['approach-timeout', 'boarding-fallback', 'escape-timeout', 'goal-proximity'],
           inputMode: 'scripted-no-player-steering',
           artReady: Boolean(images.calderaTrekkerBase),
         },
@@ -5023,7 +5434,8 @@
     phase2GeyserGarden: 'assets/world2_2_phase2_geyser_garden_v2.webp',
     geyserVent: 'assets/world2_2_geyser_vent_v2.webp',
     geyserPlume: 'assets/world2_2_geyser_plume_v2.webp',
-    escapeDebris: 'assets/world2_2_escape_debris_v1.webp',
+    volcanoFireball: 'assets/world2_2_volcano_fireball_v2.webp',
+    volcanoLavaPool: 'assets/world2_2_lava_pool_v1.webp',
     phase2LanternShaft: 'assets/world2_2_phase2_lantern_shaft_v1.webp',
     phase2CalderaFirewatch: 'assets/world2_2_phase2_caldera_firewatch_v1.webp',
     phase2ObsidianStash: 'assets/world2_2_phase2_obsidian_stash_v1.webp',

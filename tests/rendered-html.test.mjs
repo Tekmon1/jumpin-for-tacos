@@ -2183,8 +2183,8 @@ test("ships the 35,000-unit caldera camping sequel with premium art and adaptive
     assert.match(html, new RegExp(`music_caldera_${track}\\.ogg`));
   }
   assert.match(html, /World 2 • Level 2-2 • 35,000 units/);
-  assert.match(html, /level2-2\.js\?v=14/);
-  assert.match(runtime, /SOURCE_VERSION = 'w2-2-v14-geyser-volcano-escape'/);
+  assert.match(html, /level2-2\.js\?v=15/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-2-v15-volcano-hazard-jeep-reliability'/);
   assert.match(html, /id="startBtn"/);
   assert.match(runtime, /geyserGuardSpecs/);
   assert.match(runtime, /requiresGeyserAirborne/);
@@ -2193,7 +2193,8 @@ test("ships the 35,000-unit caldera camping sequel with premium art and adaptive
   assert.match(runtime, /phase2LaunchVelocity: 920/);
   assert.match(runtime, /world2_2_geyser_vent_v2\.webp/);
   assert.match(runtime, /world2_2_geyser_plume_v2\.webp/);
-  assert.match(runtime, /world2_2_escape_debris_v1\.webp/);
+  assert.match(runtime, /world2_2_volcano_fireball_v2\.webp/);
+  assert.match(runtime, /world2_2_lava_pool_v1\.webp/);
   assert.match(runtime, /function updateVolcanoEscape/);
   assert.match(runtime, /function updateJeepRescue/);
   assert.match(runtime, /function drawJeepRescue/);
@@ -2215,7 +2216,7 @@ test("adds four World 2-2 Super exploration destinations, one true Obsidian Stas
     "world2_2_phase2_obsidian_stash_v1.webp",
   ];
 
-  assert.match(html, /level2-2\.js\?v=14/);
+  assert.match(html, /level2-2\.js\?v=15/);
   assert.match(runtime, /CALDERA_EXPLORATION_VERSION = 'world-2-2-phase2-v1'/);
   for (const filename of phase2Assets) {
     assert.match(runtime, new RegExp(filename.replace(".", "\\.")));
@@ -2273,7 +2274,8 @@ test("adds four World 2-2 Super exploration destinations, one true Obsidian Stas
   for (const filename of [
     "world2_2_geyser_vent_v2.webp",
     "world2_2_geyser_plume_v2.webp",
-    "world2_2_escape_debris_v1.webp",
+    "world2_2_volcano_fireball_v2.webp",
+    "world2_2_lava_pool_v1.webp",
   ]) {
     assert.match(runtime, new RegExp(filename.replace(".", "\\.")));
     await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
@@ -2290,6 +2292,53 @@ test("adds four World 2-2 Super exploration destinations, one true Obsidian Stas
   assert.match(runtime, /game\.boat\.catches >= 6/);
   assert.match(html, /controller\.js\?v=9/);
   assert.match(html, /class="touch-controls"/);
+});
+
+test("remasters World 2-2 volcano hazards and makes the Jeep rescue progression-safe", async () => {
+  const runtime = await readFile(new URL("../public/game/level2-2.js", import.meta.url), "utf8");
+  const html = await readFile(new URL("../public/game/level2-2.html", import.meta.url), "utf8");
+  const audio = await readFile(new URL("../public/game/audio-catalog.js", import.meta.url), "utf8");
+
+  assert.match(html, /level2-2\.js\?v=15/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-2-v15-volcano-hazard-jeep-reliability'/);
+  for (const filename of ["world2_2_volcano_fireball_v2.webp", "world2_2_lava_pool_v1.webp"]) {
+    assert.match(runtime, new RegExp(filename.replace(".", "\\.")));
+    await access(new URL(`../public/game/assets/${filename}`, import.meta.url));
+  }
+
+  assert.match(runtime, /warningDuration: \.92/);
+  assert.match(runtime, /lavaDangerDuration: 1\.55/);
+  assert.match(runtime, /function drawVolcanoImpactWarning/);
+  assert.match(runtime, /function drawVolcanoFireball/);
+  assert.match(runtime, /function drawVolcanoLavaPool/);
+  assert.match(runtime, /hazard\.state === 'impact' \|\| hazard\.state === 'lava'/);
+  assert.match(runtime, /hazard\.state = 'cooling'/);
+  assert.match(runtime, /decorativeLavaDistinctFromActivePools: true/);
+  assert.match(runtime, /gameplayImpactPositionsPreserved/);
+  assert.doesNotMatch(runtime, /ctx\.fillText\('!', screenX/);
+  for (const eventId of ["hazard.volcanicDebrisWarn", "hazard.volcanicDebrisFall", "hazard.volcanicDebrisImpact"]) {
+    assert.match(runtime, new RegExp(eventId.replaceAll(".", "\\.")));
+    assert.match(audio, new RegExp(`'${eventId.replaceAll(".", "\\.")}'`));
+  }
+
+  assert.match(runtime, /rescueEligibilityX: 27340/);
+  assert.match(runtime, /rescueFallbackX: 28120/);
+  assert.match(runtime, /rescueTriggerIsYIndependent: true/);
+  assert.match(runtime, /function ensureJeepRescueProgression/);
+  assert.match(runtime, /progressionBased: true/);
+  assert.match(runtime, /duplicateSpawnGuard/);
+  assert.match(runtime, /rescue-state-self-heal/);
+  assert.match(runtime, /goal-proximity-failsafe/);
+  assert.match(runtime, /jeepApproachTimeout: 2\.85/);
+  assert.match(runtime, /boardingRadiusX: 330/);
+  assert.match(runtime, /boardingFallbackDelay: 2\.8/);
+  assert.match(runtime, /jeepEscapeTimeout: 15\.5/);
+  assert.match(runtime, /OLIVIA: TACO HERO! GET IN!/);
+
+  assert.match(runtime, /regularLaunchVelocity: 840/);
+  assert.match(runtime, /phase2LaunchVelocity: 920/);
+  assert.match(runtime, /finalLaunchVelocity: 930/);
+  assert.match(runtime, /phase2GeyserGarden/);
 });
 
 test("ships the complete 35,000-unit Neon Neckties concert level", async () => {
