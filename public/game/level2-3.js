@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const SOURCE_VERSION = 'w2-3-v25-clean-welcome-arch';
+  const SOURCE_VERSION = 'w2-3-v26-welcome-booth-grounding';
 
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
@@ -96,6 +96,15 @@
     liftRailX: 3405,
     signPanel: Object.freeze({ x: 3568, y: 112, w: 264, h: 58 }),
   });
+  const MARQUEE_WELCOME_BOOTH = Object.freeze({
+    x: 3065,
+    bottomY: GROUND_Y + 20,
+    drawWidth: 300,
+    drawHeight: 124,
+    roofCollisionY: 366,
+    signPanel: Object.freeze({ x: 3156, y: 371, w: 118, h: 29 }),
+  });
+  const MARQUEE_GROUND_FOUNDATION = Object.freeze({ startX: 3002, endX: 4207 });
   const WORLD23_PHASE2_STATIONS = Object.freeze([
     Object.freeze({
       id: 'marquee', name: 'Neon Neckties Welcome Arch', completion: 'MARQUEE ONLINE',
@@ -793,6 +802,28 @@
   }
 
   function buildWorld23Phase2Exploration() {
+    const groundSegments = world.platforms.filter((platform) => (
+      platform.ground
+      && Math.abs(platform.y - GROUND_Y) < 1
+      && platform.x < MARQUEE_GROUND_FOUNDATION.endX
+      && platform.x + platform.w > MARQUEE_GROUND_FOUNDATION.startX
+    ));
+    const coveredStart = Math.min(...groundSegments.map((platform) => platform.x));
+    const coveredEnd = Math.max(...groundSegments.map((platform) => platform.x + platform.w));
+    const sortedGroundSegments = [...groundSegments].sort((a, b) => a.x - b.x);
+    const gapsBefore = sortedGroundSegments.slice(1).map((platform, index) => Math.max(
+      0,
+      platform.x - (sortedGroundSegments[index].x + sortedGroundSegments[index].w),
+    )).filter((gap) => gap > 0);
+    world.platforms = world.platforms.filter((platform) => !groundSegments.includes(platform));
+    const marqueeFoundation = addPlatform(coveredStart, GROUND_Y, coveredEnd - coveredStart, 'soundcheck', {
+      id: 'marquee-ground-foundation',
+      h: 90,
+      ground: true,
+      mainRoute: true,
+      marqueeFoundation: true,
+    });
+
     world.phase2Stations = WORLD23_PHASE2_STATIONS.map((definition) => ({
       ...definition,
       completed: false,
@@ -884,6 +915,15 @@
         stageDecks: 0,
         groundedFootings: true,
         groundedCheckInHuts: true,
+        premiumWelcomeBooth: true,
+        welcomeBoothRoofCollisionY: MARQUEE_WELCOME_BOOTH.roofCollisionY,
+        welcomeBoothSignIntegrated: true,
+        continuousGroundFoundation: true,
+        foundationStartX: marqueeFoundation.x,
+        foundationEndX: marqueeFoundation.x + marqueeFoundation.w,
+        absorbedGroundSegments: groundSegments.length,
+        closedGroundGaps: gapsBefore,
+        closedGroundGapWidth: gapsBefore.reduce((total, gap) => total + gap, 0),
         supportTowers: 2,
         crossBracing: true,
         lowerCrossConnection: true,
@@ -3606,20 +3646,9 @@
       };
 
       if (style === 'marquee-check-in-awning') {
-        const canopy = ctx.createLinearGradient(0, platform.y, 0, platform.y + 36);
-        canopy.addColorStop(0, '#ffd65a'); canopy.addColorStop(.42, '#ff7f72'); canopy.addColorStop(1, '#6d284f');
-        roundedRect(x, platform.y, platform.w, 36, 7, canopy, '#fff1bd', 3);
-        for (let stripe = 0; stripe < 8; stripe += 1) {
-          ctx.fillStyle = stripe % 2 ? 'rgba(80,231,255,.65)' : 'rgba(255,79,172,.58)';
-          ctx.fillRect(x + 10 + stripe * 29, platform.y + 7, 15, 22);
-        }
-        roundedRect(x + 28, platform.y + 34, platform.w - 56, GROUND_Y - platform.y - 26, 5, '#442c47', '#c58b62', 3);
-        roundedRect(x + 54, platform.y + 51, platform.w - 108, 34, 5, '#16283b', '#50e7ff', 2);
-        ctx.fillStyle = '#fff1bd'; ctx.font = '900 8px Arial'; ctx.textAlign = 'center';
-        ctx.fillText('WELCOME CHECK-IN', x + platform.w / 2, platform.y + 73);
-        ctx.fillStyle = '#171725';
-        ctx.fillRect(x + 17, GROUND_Y - 10, 50, 18);
-        ctx.fillRect(x + platform.w - 67, GROUND_Y - 10, 50, 18);
+        // The premium booth is a single grounded backplate asset. Keeping this
+        // collision-only surface prevents the old flat box facade from being
+        // layered back over the finished building.
       } else if (style === 'marquee-west-tower-ledge') {
         drawGratedDeck('#ff4fac', 13);
         ctx.strokeStyle = '#32364b'; ctx.lineWidth = 6;
@@ -4272,6 +4301,30 @@
     const activation = station.completed ? 1 : clamp(station.progress, 0, .74);
     const toScreen = (worldX) => worldX - game.cameraX;
     ctx.save();
+
+    if (images.welcomeCheckInBooth) {
+      const booth = MARQUEE_WELCOME_BOOTH;
+      const boothX = toScreen(booth.x);
+      const boothY = booth.bottomY - booth.drawHeight;
+      ctx.drawImage(
+        images.welcomeCheckInBooth,
+        0, 0, images.welcomeCheckInBooth.width, images.welcomeCheckInBooth.height,
+        boothX, boothY, booth.drawWidth, booth.drawHeight,
+      );
+      const sign = booth.signPanel;
+      const signX = toScreen(sign.x);
+      ctx.shadowColor = '#50e7ff';
+      ctx.shadowBlur = 8;
+      roundedRect(signX, sign.y, sign.w, sign.h, 6, 'rgba(19,20,34,.96)', '#ffd65a', 2.2);
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#fff4cf';
+      ctx.textAlign = 'center';
+      ctx.font = '900 8px Arial';
+      ctx.fillText('WELCOME', signX + sign.w / 2, sign.y + 12);
+      ctx.fillStyle = '#50e7ff';
+      ctx.font = '900 7.5px Arial';
+      ctx.fillText('CHECK-IN', signX + sign.w / 2, sign.y + 23);
+    }
 
     // One authored asset is the complete welcome arch: two towers, one sign,
     // one lower connection, one upper maintenance system, and grounded huts.
@@ -6113,6 +6166,7 @@
           premiumPreShowBand: Boolean(images.preShowBand),
           preShowBandAlphaRemoved: images.preShowBandAlphaRemoved || 0,
           premiumGroundedMarqueeStructure: Boolean(images.marqueeStructure),
+          premiumWelcomeCheckInBooth: Boolean(images.welcomeCheckInBooth),
           marqueeStructureUsesTrueAlpha: true,
           premiumPhase2Landmarks: Boolean(images.world23Landmarks),
           landmarkAlphaRemoved: images.landmarkAlphaRemoved || 0,
@@ -6321,6 +6375,7 @@
     loadImage('assets/world2_3_checkpoint_stations_v1.webp'),
     loadImage('assets/world2_1_catamaran_arm_layer_base_v1.webp'),
     loadImage('assets/world2_3_marquee_welcome_arch_v1.webp'),
+    loadImage('assets/world2_3_welcome_checkin_booth_v1.webp'),
     loadImage('assets/world2_3_preshow_landmarks_v2.webp'),
     loadImage('assets/world2_3_feedback_fiend_v1.webp'),
   ]).then(([
@@ -6331,7 +6386,7 @@
     environmentSoundcheck, environmentBeach, environmentRooftops,
     environmentStampede, environmentLagoon, environmentPowerup, environmentVictory,
     terrainRemaster, checkpointStations, catamaranRemasterBase,
-    marqueeStructureArt, world23LandmarksRaw, feedbackFiendArt,
+    marqueeStructureArt, welcomeCheckInBoothArt, world23LandmarksRaw, feedbackFiendArt,
   ]) => {
     images.hero = hero;
     images.items = items;
@@ -6362,6 +6417,7 @@
     images.checkpointStations = checkpointStations;
     images.catamaranRemasterBase = catamaranRemasterBase;
     images.marqueeStructure = marqueeStructureArt;
+    images.welcomeCheckInBooth = welcomeCheckInBoothArt;
     images.world23Landmarks = prepareWorld23LandmarkSheet(world23LandmarksRaw);
     images.feedbackFiend = feedbackFiendArt;
     if (images.feedbackFiend) {

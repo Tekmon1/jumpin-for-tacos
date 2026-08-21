@@ -2384,8 +2384,8 @@ test("ships the complete 35,000-unit Neon Neckties concert level", async () => {
   assert.match(runtime, /OLIVIA IS LOADING THE LAST TACOS!/);
   assert.match(runtime, /TACO ROADSTER: READY TO ROLL!/);
   assert.match(runtime, /SHOWTIME! OLIVIA IS TAKING THE SCENIC ROUTE!/);
-  assert.match(html, /level2-3\.js\?v=25/);
-  assert.match(runtime, /SOURCE_VERSION = 'w2-3-v25-clean-welcome-arch'/);
+  assert.match(html, /level2-3\.js\?v=26/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-3-v26-welcome-booth-grounding'/);
   assert.match(runtime, /generatorDefensePlans/);
   assert.match(runtime, /function ensureGeneratorDefensePlatform/);
   assert.match(runtime, /finitePlatformGeometry: world\.platforms\.every/);
@@ -2568,6 +2568,7 @@ test("remasters World 2-3 pre-show exploration and gates the crowd only behind F
 
   assert.match(runtime, /world2_3_neon_neckties_preshow_v1\.png/);
   assert.match(runtime, /world2_3_marquee_welcome_arch_v1\.webp/);
+  assert.match(runtime, /world2_3_welcome_checkin_booth_v1\.webp/);
   assert.doesNotMatch(runtime, /world2_3_marquee_structure_v3\.webp/);
   assert.match(runtime, /world2_3_preshow_landmarks_v2\.webp/);
   assert.match(runtime, /world2_3_feedback_fiend_v1\.webp/);
@@ -2604,6 +2605,12 @@ test("remasters World 2-3 pre-show exploration and gates the crowd only behind F
   assert.match(runtime, /genericPlatformBaseSuppressed: true/);
   assert.match(runtime, /unifiedWelcomeArch: true/);
   assert.match(runtime, /singleMarqueeIdentity: true/);
+  assert.match(runtime, /premiumWelcomeBooth: true/);
+  assert.match(runtime, /welcomeBoothRoofCollisionY: MARQUEE_WELCOME_BOOTH\.roofCollisionY/);
+  assert.match(runtime, /welcomeBoothSignIntegrated: true/);
+  assert.match(runtime, /continuousGroundFoundation: true/);
+  assert.match(runtime, /closedGroundGapWidth: gapsBefore\.reduce/);
+  assert.match(runtime, /id: 'marquee-ground-foundation'/);
   assert.match(runtime, /oldMarqueeLayersRendered: 0/);
   assert.match(runtime, /stageDecks: 0/);
   assert.match(runtime, /supportTowers: 2/);
@@ -2629,6 +2636,7 @@ test("remasters World 2-3 pre-show exploration and gates the crowd only behind F
   assert.match(html, /audio-catalog\.js\?v=10/);
   await access(new URL("../public/game/assets/world2_3_neon_neckties_preshow_v1.png", import.meta.url));
   await access(new URL("../public/game/assets/world2_3_marquee_welcome_arch_v1.webp", import.meta.url));
+  await access(new URL("../public/game/assets/world2_3_welcome_checkin_booth_v1.webp", import.meta.url));
   await access(new URL("../public/game/assets/world2_3_preshow_landmarks_v2.webp", import.meta.url));
   await access(new URL("../public/game/assets/world2_3_feedback_fiend_v1.webp", import.meta.url));
   for (const eventId of [
