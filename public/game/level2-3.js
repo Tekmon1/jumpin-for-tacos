@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const SOURCE_VERSION = 'w2-3-v26-welcome-booth-grounding';
+  const SOURCE_VERSION = 'w2-3-v27-roadie-rooftops-rebuild';
 
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
@@ -105,6 +105,16 @@
     signPanel: Object.freeze({ x: 3156, y: 371, w: 118, h: 29 }),
   });
   const MARQUEE_GROUND_FOUNDATION = Object.freeze({ startX: 3002, endX: 4207 });
+  const ROADIE_ROOFTOPS_STRUCTURE = Object.freeze({
+    startX: 11180,
+    endX: 14540,
+    buildingX: 12720,
+    buildingBottomY: GROUND_Y + 3,
+    buildingDrawWidth: 1780,
+    buildingDrawHeight: 450,
+    liftRailX: 12680,
+    rehearsalDeckY: 136,
+  });
   const WORLD23_PHASE2_STATIONS = Object.freeze([
     Object.freeze({
       id: 'marquee', name: 'Neon Neckties Welcome Arch', completion: 'MARQUEE ONLINE',
@@ -125,21 +135,23 @@
     Object.freeze({
       id: 'rooftops', name: 'Roadie Rooftops Soundcheck', completion: 'SOUNDCHECK COMPLETE',
       start: 11160, end: 14540, accent: '#a4f766', score: 4200, energy: 6,
-      traversal: 'horizontal-rooftop-parkour-single-bass-launch',
-      trigger: Object.freeze({ x: 14020, y: 158, w: 420, h: 104 }),
-      reward: Object.freeze({ x: 13940, y: 170, count: 12, rainbowEvery: 3 }),
+      traversal: 'grounded-loading-bay-road-cases-freight-lift-utility-roofs-bass-launch-truss-final-super-jump',
+      trigger: Object.freeze({ x: 13760, y: 58, w: 720, h: 94 }),
+      reward: Object.freeze({ x: 13820, y: 78, count: 12, columns: 6, rainbowEvery: 3 }),
       platforms: Object.freeze([
-        Object.freeze({ x: 11240, y: 364, w: 520, kind: 'rooftop-tile-run' }),
-        Object.freeze({ x: 11850, y: 326, w: 270, kind: 'rooftop-awning' }),
-        Object.freeze({ x: 12250, y: 272, w: 152, kind: 'rooftop-sign-support' }),
-        Object.freeze({ x: 12530, y: 292, w: 338, kind: 'rooftop-equipment-bridge', moving: true, axis: 'x', range: 64, speed: .74, phase: 1.7 }),
-        Object.freeze({ x: 13000, y: 362, w: 260, kind: 'rooftop-bass-pad', bassPad: true }),
-        Object.freeze({ x: 13180, y: 188, w: 258, kind: 'rooftop-road-case' }),
-        Object.freeze({ x: 13540, y: 206, w: 394, kind: 'rooftop-truss-bridge' }),
-        Object.freeze({ x: 13980, y: 250, w: 490, kind: 'rooftop-soundcheck-deck', summit: true }),
+        Object.freeze({ x: 11260, y: 312, w: 520, kind: 'roadie-loading-awning', routeShape: 'grounded-loading-dock-approach' }),
+        Object.freeze({ x: 11890, y: 326, w: 230, kind: 'roadie-road-case-stack', routeShape: 'horizontal-road-case-transfer' }),
+        Object.freeze({ x: 12240, y: 282, w: 330, kind: 'roadie-maintenance-balcony', routeShape: 'balcony-diagonal-transfer' }),
+        Object.freeze({ x: 12680, y: 360, w: 190, kind: 'roadie-freight-lift', routeShape: 'vertical-freight-lift', moving: true, axis: 'y', range: 80, speed: .38, phase: 0 }),
+        Object.freeze({ x: 12920, y: 278, w: 390, kind: 'roadie-utility-deck', routeShape: 'lift-to-utility-roof' }),
+        Object.freeze({ x: 13420, y: 320, w: 300, kind: 'roadie-vent-housing', routeShape: 'horizontal-duct-transfer' }),
+        Object.freeze({ x: 13800, y: 342, w: 240, kind: 'roadie-bass-launch', routeShape: 'single-bass-powered-launch', bassPad: true }),
+        Object.freeze({ x: 13940, y: 230, w: 360, kind: 'roadie-truss-bridge', routeShape: 'bass-launch-to-truss' }),
+        Object.freeze({ x: 14320, y: 228, w: 190, kind: 'roadie-upper-access-ledge', routeShape: 'short-side-transfer' }),
+        Object.freeze({ x: 13720, y: 136, w: 780, kind: 'roadie-rehearsal-roof', routeShape: 'final-super-double-jump', summit: true }),
       ]),
       characters: Object.freeze([2, 4]),
-      dialogueX: 14160,
+      dialogueX: 14040,
       dialogue: 'ONE MORE TIME. MAKE IT SHAKE.',
     }),
     Object.freeze({
@@ -824,6 +836,40 @@
       marqueeFoundation: true,
     });
 
+    // The former Roadie Rooftops landmark stopped above several generated
+    // route gaps. Absorb only the ground segments beneath this station into
+    // one continuous venue foundation so the new loading wing and rehearsal
+    // tower carry their weight all the way to collision-backed terrain.
+    const roadieGroundSegments = world.platforms.filter((platform) => (
+      platform.ground
+      && Math.abs(platform.y - GROUND_Y) < 1
+      && platform.x < ROADIE_ROOFTOPS_STRUCTURE.endX
+      && platform.x + platform.w > ROADIE_ROOFTOPS_STRUCTURE.startX
+    ));
+    const roadieCoveredStart = Math.min(...roadieGroundSegments.map((platform) => platform.x));
+    const roadieCoveredEnd = Math.max(...roadieGroundSegments.map((platform) => platform.x + platform.w));
+    const roadieFoundationStart = Math.min(roadieCoveredStart, ROADIE_ROOFTOPS_STRUCTURE.startX);
+    const roadieFoundationEnd = Math.max(roadieCoveredEnd, ROADIE_ROOFTOPS_STRUCTURE.endX);
+    const roadieSortedGround = [...roadieGroundSegments].sort((a, b) => a.x - b.x);
+    const roadieGapsBefore = roadieSortedGround.slice(1).map((platform, index) => Math.max(
+      0,
+      platform.x - (roadieSortedGround[index].x + roadieSortedGround[index].w),
+    )).filter((gap) => gap > 0);
+    world.platforms = world.platforms.filter((platform) => !roadieGroundSegments.includes(platform));
+    const roadieFoundation = addPlatform(
+      roadieFoundationStart,
+      GROUND_Y,
+      roadieFoundationEnd - roadieFoundationStart,
+      'rooftops',
+      {
+        id: 'roadie-rooftops-ground-foundation',
+        h: 90,
+        ground: true,
+        mainRoute: true,
+        roadieRooftopsFoundation: true,
+      },
+    );
+
     world.phase2Stations = WORLD23_PHASE2_STATIONS.map((definition) => ({
       ...definition,
       completed: false,
@@ -932,6 +978,42 @@
         genericPlatformBaseSuppressed: true,
         serviceLiftRange: 120,
         majorSuperGap: 260,
+        safeDropToMainRoute: true,
+      },
+      roadieRooftopsArchitecture: {
+        oldFloatingLandmarkRendered: 0,
+        oldGenericPlatformKindsRendered: 0,
+        unifiedGroundedVenueBuilding: true,
+        premiumLoadingAnnex: true,
+        premiumVenueTower: true,
+        fullWallsToTerrain: true,
+        continuousGroundFoundation: true,
+        foundationStartX: roadieFoundation.x,
+        foundationEndX: roadieFoundation.x + roadieFoundation.w,
+        absorbedGroundSegments: roadieGroundSegments.length,
+        closedGroundGaps: roadieGapsBefore,
+        closedGroundGapWidth: roadieGapsBefore.reduce((total, gap) => total + gap, 0),
+        structureFootprintFullySupported: roadieFoundation.x <= ROADIE_ROOFTOPS_STRUCTURE.startX
+          && roadieFoundation.x + roadieFoundation.w >= ROADIE_ROOFTOPS_STRUCTURE.endX,
+        loadingBay: true,
+        maintenanceLevels: 3,
+        finalBuildingVisualHeight: ROADIE_ROOFTOPS_STRUCTURE.buildingDrawHeight,
+        routeVerticalRise: GROUND_Y - ROADIE_ROOFTOPS_STRUCTURE.rehearsalDeckY,
+        targetTraversalSeconds: [18, 25],
+        customTraversalSurfaceCount: WORLD23_PHASE2_STATIONS[1].platforms.length,
+        freightLiftRange: 160,
+        singleBassLaunch: true,
+        customTrussTransfer: true,
+        finalSuperJump: true,
+        premiumMiloAlpha: true,
+        premiumRexAlpha: true,
+        miloCenterX: 14030,
+        rexCenterX: 14330,
+        performerSpeakerOverlap: false,
+        rewardAboveRehearsalRoof: WORLD23_PHASE2_STATIONS[1].reward.y
+          < ROADIE_ROOFTOPS_STRUCTURE.rehearsalDeckY,
+        collisionMatchedCustomSurfaces: true,
+        genericPlatformBaseSuppressed: true,
         safeDropToMainRoute: true,
       },
       catamaranIsolation: {
@@ -3608,6 +3690,71 @@
     ctx.restore();
   }
 
+  function drawRoadieSpeakerCabinet(x, y, width, height, pulse, accent, { launch = false } = {}) {
+    ctx.save();
+    const extrusion = Math.max(7, width * .07);
+    const shell = ctx.createLinearGradient(x, y, x + width, y + height);
+    shell.addColorStop(0, '#45485b');
+    shell.addColorStop(.18, '#171827');
+    shell.addColorStop(.78, '#0b0d18');
+    shell.addColorStop(1, '#343347');
+    ctx.fillStyle = '#090a12';
+    ctx.beginPath();
+    ctx.moveTo(x + width, y + 7);
+    ctx.lineTo(x + width + extrusion, y + 14);
+    ctx.lineTo(x + width + extrusion, y + height - 7);
+    ctx.lineTo(x + width, y + height);
+    ctx.closePath();
+    ctx.fill();
+    roundedRect(x, y, width, height, 9, shell, '#070812', 4);
+    roundedRect(x + 8, y + 10, width - 16, height - 24, 6, '#10111d', '#63677b', 2);
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(x + 11, y + 13, width - 22, height - 30, 5);
+    ctx.clip();
+    ctx.strokeStyle = 'rgba(158,166,184,.16)';
+    ctx.lineWidth = 1;
+    for (let grille = x - height; grille < x + width + height; grille += 7) {
+      ctx.beginPath(); ctx.moveTo(grille, y + 11); ctx.lineTo(grille + height, y + height - 12); ctx.stroke();
+    }
+    ctx.restore();
+    const coneCount = height > 96 ? 2 : 1;
+    for (let cone = 0; cone < coneCount; cone += 1) {
+      const centerX = x + width / 2;
+      const centerY = y + 20 + (cone + .5) * (height - 42) / coneCount;
+      const radius = Math.min(width * .31, (height - 34) / coneCount * .34) * (1 + pulse * .055);
+      const coneGradient = ctx.createRadialGradient(centerX - radius * .24, centerY - radius * .24, 3, centerX, centerY, radius);
+      coneGradient.addColorStop(0, pulse > .34 ? accent : '#53566b');
+      coneGradient.addColorStop(.34, '#25273a');
+      coneGradient.addColorStop(.76, '#0b0d18');
+      coneGradient.addColorStop(1, '#484b60');
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = launch ? 8 + pulse * 19 : 3 + pulse * 8;
+      ctx.fillStyle = coneGradient;
+      ctx.strokeStyle = pulse > .28 ? accent : '#777b8c';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(centerX, centerY, radius, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#11131f';
+      ctx.beginPath(); ctx.arc(centerX, centerY, radius * .28, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = pulse > .42 ? '#fff5be' : accent;
+      ctx.globalAlpha = .48 + pulse * .42;
+      ctx.beginPath(); ctx.arc(centerX - radius * .28, centerY - radius * .28, radius * .1, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    ctx.shadowBlur = 0;
+    for (const bolt of [[9, 9], [width - 9, 9], [9, height - 10], [width - 9, height - 10]]) {
+      ctx.fillStyle = '#d0b36b';
+      ctx.beginPath(); ctx.arc(x + bolt[0], y + bolt[1], 2.2, 0, Math.PI * 2); ctx.fill();
+    }
+    roundedRect(x + 14, y + height - 13, width - 28, 7, 3, '#242637', accent, 1.5);
+    ctx.fillStyle = pulse > .32 ? '#fff170' : '#5e5c6c';
+    for (let meter = 0; meter < 5; meter += 1) ctx.fillRect(x + 19 + meter * 10, y + height - 11, 6, 3);
+    ctx.fillStyle = '#0a0b12';
+    ctx.fillRect(x + 9, y + height, 13, 6);
+    ctx.fillRect(x + width - 22, y + height, 13, 6);
+    ctx.restore();
+  }
+
   function drawPhase2PlatformFacade(platform, time) {
     if (!platform.phase2Style) return;
     const x = platform.x - game.cameraX;
@@ -3711,38 +3858,130 @@
         ctx.fillStyle = '#fff1bd'; ctx.font = '900 8px Arial'; ctx.textAlign = 'left';
         ctx.fillText('POWER', x + 218, platform.y + 47);
       }
-    } else if (style.startsWith('rooftop')) {
-      if (style.includes('bass-pad')) {
-        drawPhase2SpeakerCabinet(x + platform.w / 2 - 64, platform.y + 8, 128, 92, pulse, accent);
-      } else if (style.includes('soundcheck-deck')) {
-        for (let stack = 0; stack < 3; stack += 1) {
-          drawPhase2SpeakerCabinet(x + 18 + stack * 73, platform.y + 9, 62, 72, pulse * .65, accent);
+    } else if (style.startsWith('roadie-')) {
+      const metal = ctx.createLinearGradient(0, platform.y, 0, platform.y + 34);
+      metal.addColorStop(0, '#777d8e');
+      metal.addColorStop(.22, '#313344');
+      metal.addColorStop(1, '#11131f');
+      const drawGratedSurface = (edge = accent, depth = 18) => {
+        roundedRect(x, platform.y, platform.w, depth, 4, metal, '#090a12', 3);
+        ctx.strokeStyle = edge; ctx.lineWidth = 2.3;
+        ctx.beginPath(); ctx.moveTo(x + 5, platform.y + 2); ctx.lineTo(x + platform.w - 5, platform.y + 2); ctx.stroke();
+        ctx.strokeStyle = 'rgba(218,225,232,.32)'; ctx.lineWidth = 1.2;
+        for (let grate = x + 12; grate < x + platform.w - 9; grate += 18) {
+          ctx.beginPath(); ctx.moveTo(grate, platform.y + 6); ctx.lineTo(grate + 7, platform.y + depth - 4); ctx.stroke();
         }
-        roundedRect(x + 254, platform.y + 12, 205, 52, 7, '#17152a', accent, 3);
-        for (let meter = 0; meter < 10; meter += 1) {
-          const active = station?.completed ? 10 : Math.max(2, Math.floor((station?.progress || 0) * 10));
-          ctx.fillStyle = meter < active ? (meter > 7 ? '#ff4fac' : meter > 4 ? '#ffd65a' : '#a4f766') : '#3b3852';
-          ctx.fillRect(x + 270 + meter * 17, platform.y + 27, 10, 20 - meter % 3 * 4);
-        }
-      } else if (style.includes('truss')) {
-        drawPhase2Truss(x + 4, platform.y + 8, platform.w - 8, 45, accent);
-      } else if (style.includes('road-case')) {
-        roundedRect(x + 12, platform.y + 8, platform.w - 24, 70, 7, '#25233a', '#b9b7c7', 3);
-        ctx.strokeStyle = accent; ctx.lineWidth = 2;
-        ctx.strokeRect(x + 28, platform.y + 22, platform.w - 56, 38);
-      } else {
-        const roof = ctx.createLinearGradient(0, platform.y + 5, 0, platform.y + 54);
-        roof.addColorStop(0, '#d97b60'); roof.addColorStop(1, '#663a55');
-        roundedRect(x + 6, platform.y + 7, platform.w - 12, 48, 6, roof, '#ffe0a0', 2);
-        if (style.includes('equipment')) {
-          for (let unit = 0; unit < 3; unit += 1) {
-            roundedRect(x + 24 + unit * 88, platform.y + 17, 68, 28, 4, '#66747d', '#b9e5e3', 2);
-            ctx.strokeStyle = '#35434e';
-            for (let vent = 0; vent < 4; vent += 1) {
-              ctx.beginPath(); ctx.moveTo(x + 34 + unit * 88 + vent * 13, platform.y + 23); ctx.lineTo(x + 34 + unit * 88 + vent * 13, platform.y + 39); ctx.stroke();
-            }
+      };
+      const drawRail = (left, right, railHeight = 24) => {
+        ctx.strokeStyle = '#73798a'; ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(x + left, platform.y); ctx.lineTo(x + left, platform.y - railHeight);
+        ctx.lineTo(x + right, platform.y - railHeight); ctx.lineTo(x + right, platform.y);
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(80,231,255,.62)'; ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.moveTo(x + left, platform.y - railHeight + 6); ctx.lineTo(x + right, platform.y - railHeight + 6); ctx.stroke();
+      };
+
+      if (style === 'roadie-loading-awning') {
+        if (!images.roadieLoadingAnnex) {
+          const awning = ctx.createLinearGradient(0, platform.y, 0, platform.y + 42);
+          awning.addColorStop(0, '#f3c36f'); awning.addColorStop(.24, '#c95b62'); awning.addColorStop(1, '#5e334e');
+          roundedRect(x, platform.y, platform.w, 34, 5, awning, '#321c37', 3);
+          for (let stripe = 0; stripe < 9; stripe += 1) {
+            ctx.fillStyle = stripe % 2 ? 'rgba(80,231,255,.22)' : 'rgba(255,214,90,.25)';
+            ctx.fillRect(x + 12 + stripe * (platform.w - 24) / 9, platform.y + 5, (platform.w - 24) / 18, 24);
+          }
+          ctx.fillStyle = '#ff4fac';
+          for (let scallop = x + 15; scallop < x + platform.w - 5; scallop += 32) {
+            ctx.beginPath(); ctx.arc(scallop, platform.y + 34, 10, 0, Math.PI); ctx.fill();
+          }
+          ctx.strokeStyle = '#353443'; ctx.lineWidth = 6;
+          for (const braceX of [x + 34, x + platform.w - 34]) {
+            ctx.beginPath(); ctx.moveTo(braceX, platform.y + 34); ctx.lineTo(braceX + (braceX < x + platform.w / 2 ? 25 : -25), platform.y + 76); ctx.stroke();
           }
         }
+      } else if (style === 'roadie-road-case-stack') {
+        const caseWidths = [platform.w - 18, platform.w * .55, platform.w * .38];
+        let caseX = x + 9;
+        let caseY = platform.y;
+        caseWidths.forEach((caseWidth, index) => {
+          const caseHeight = index ? 31 : 38;
+          roundedRect(caseX, caseY, caseWidth, caseHeight, 5, '#1a1c29', '#a9afba', 3);
+          ctx.strokeStyle = index === 1 ? '#50e7ff' : index === 2 ? '#ffd65a' : '#ff4fac';
+          ctx.lineWidth = 2; ctx.strokeRect(caseX + 9, caseY + 8, caseWidth - 18, caseHeight - 16);
+          ctx.fillStyle = '#d7b86b';
+          for (const cornerX of [caseX + 6, caseX + caseWidth - 6]) {
+            ctx.fillRect(cornerX - 3, caseY + 3, 6, 6); ctx.fillRect(cornerX - 3, caseY + caseHeight - 9, 6, 6);
+          }
+          caseY += caseHeight - 2;
+          caseX += index === 0 ? 18 : 23;
+        });
+      } else if (style === 'roadie-maintenance-balcony') {
+        drawRail(8, platform.w - 8, 25);
+        drawGratedSurface('#50e7ff', 18);
+        ctx.strokeStyle = '#3a3b4c'; ctx.lineWidth = 7;
+        for (const braceX of [x + 24, x + platform.w - 24]) {
+          ctx.beginPath(); ctx.moveTo(braceX, platform.y + 18); ctx.lineTo(braceX + (braceX < x + platform.w / 2 ? 38 : -38), platform.y + 62); ctx.stroke();
+        }
+      } else if (style === 'roadie-freight-lift') {
+        drawGratedSurface('#ffd65a', 25);
+        ctx.strokeStyle = '#6f7688'; ctx.lineWidth = 5;
+        ctx.strokeRect(x + 8, platform.y - 54, platform.w - 16, 79);
+        ctx.strokeStyle = 'rgba(80,231,255,.72)'; ctx.lineWidth = 2;
+        for (let bar = x + 23; bar < x + platform.w - 14; bar += 29) {
+          ctx.beginPath(); ctx.moveTo(bar, platform.y - 49); ctx.lineTo(bar, platform.y + 19); ctx.stroke();
+        }
+        roundedRect(x + 27, platform.y - 40, platform.w - 54, 20, 4, '#1a1b2a', '#ff4fac', 2);
+        ctx.fillStyle = '#fff0bd'; ctx.font = '900 7px Arial'; ctx.textAlign = 'center';
+        ctx.fillText('ROADIE FREIGHT', x + platform.w / 2, platform.y - 27);
+      } else if (style === 'roadie-utility-deck') {
+        drawRail(9, platform.w - 9, 22);
+        drawGratedSurface('#b780ff', 20);
+        ctx.fillStyle = '#292b3c';
+        for (let panel = 0; panel < 4; panel += 1) {
+          roundedRect(x + 24 + panel * 83, platform.y + 20, 62, 30, 4, '#292b3c', panel % 2 ? '#50e7ff' : '#ff4fac', 1.7);
+          ctx.strokeStyle = '#73798b';
+          for (let vent = 0; vent < 4; vent += 1) {
+            ctx.beginPath(); ctx.moveTo(x + 34 + panel * 83, platform.y + 28 + vent * 5); ctx.lineTo(x + 76 + panel * 83, platform.y + 28 + vent * 5); ctx.stroke();
+          }
+        }
+      } else if (style === 'roadie-vent-housing') {
+        roundedRect(x, platform.y, platform.w, 75, 8, '#343747', '#11131f', 4);
+        roundedRect(x + 14, platform.y + 12, platform.w - 28, 52, 5, '#141620', '#858b99', 2);
+        ctx.strokeStyle = '#707789'; ctx.lineWidth = 2;
+        for (let vent = x + 30; vent < x + platform.w - 20; vent += 18) {
+          ctx.beginPath(); ctx.moveTo(vent, platform.y + 20); ctx.lineTo(vent - 9, platform.y + 56); ctx.stroke();
+        }
+        ctx.fillStyle = station?.completed ? '#a4f766' : '#ff4fac';
+        ctx.beginPath(); ctx.arc(x + platform.w - 19, platform.y + 16, 4, 0, Math.PI * 2); ctx.fill();
+      } else if (style === 'roadie-bass-launch') {
+        drawRoadieSpeakerCabinet(x + 8, platform.y + 5, platform.w - 24, 92, pulse, '#a4f766', { launch: true });
+        ctx.strokeStyle = '#5b5f72'; ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.moveTo(x + 28, platform.y + 97); ctx.lineTo(x + 12, platform.y + 116);
+        ctx.moveTo(x + platform.w - 32, platform.y + 97); ctx.lineTo(x + platform.w - 16, platform.y + 116); ctx.stroke();
+      } else if (style === 'roadie-truss-bridge') {
+        drawPhase2Truss(x, platform.y + 3, platform.w, 48, '#ff4fac');
+        roundedRect(x, platform.y, platform.w, 11, 3, '#36394a', '#fff0bd', 2);
+      } else if (style === 'roadie-upper-access-ledge') {
+        drawRail(8, platform.w - 8, 20);
+        drawGratedSurface('#ffd65a', 18);
+        ctx.strokeStyle = '#36394a'; ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.moveTo(x + 18, platform.y + 18); ctx.lineTo(x - 35, platform.y + 54);
+        ctx.moveTo(x + platform.w - 18, platform.y + 18); ctx.lineTo(x + platform.w + 23, platform.y + 54); ctx.stroke();
+      } else if (style === 'roadie-rehearsal-roof') {
+        drawRail(10, 102, 22);
+        drawRail(platform.w - 102, platform.w - 10, 22);
+        drawGratedSurface(station?.completed ? '#a4f766' : '#50e7ff', 23);
+        const rackX = x + platform.w / 2 - 116;
+        roundedRect(rackX, platform.y + 23, 232, 56, 7, '#131521', '#73798d', 3);
+        for (let meter = 0; meter < 12; meter += 1) {
+          const activeMeters = station?.completed ? 12 : Math.max(2, Math.floor((station?.progress || 0) * 12));
+          ctx.fillStyle = meter < activeMeters
+            ? (meter > 9 ? '#ff4fac' : meter > 5 ? '#ffd65a' : '#a4f766') : '#343647';
+          ctx.fillRect(rackX + 17 + meter * 17, platform.y + 38, 10, 22 - meter % 3 * 4);
+        }
+        ctx.fillStyle = '#f2d27c'; ctx.font = '900 8px Arial'; ctx.textAlign = 'center';
+        ctx.fillText(station?.completed ? 'MASTER RACK • LOCKED' : 'MASTER RACK • STANDBY', x + platform.w / 2, platform.y + 70);
       }
     } else if (style.startsWith('lagoon')) {
       const floating = style.includes('pontoon') || style.includes('rope-deck');
@@ -3803,7 +4042,7 @@
   function drawPlatform(platform, time) {
     const x = platform.x - game.cameraX;
     if (x + platform.w < -100 || x > canvas.width + 100) return;
-    if (platform.phase2StationId === 'marquee') {
+    if (platform.phase2StationId === 'marquee' || platform.phase2StationId === 'rooftops') {
       drawPhase2PlatformFacade(platform, time);
       return;
     }
@@ -4370,6 +4609,142 @@
     ctx.restore();
   }
 
+  function drawWorld23RoadieRooftopsBackplate(station, time) {
+    if (!phase2StationInView(station, 760)) return;
+    const toScreen = (worldX) => worldX - game.cameraX;
+    const pulse = .55 + Math.sin(time * .0034) * .16;
+    ctx.save();
+
+    if (images.roadieLoadingAnnex) {
+      // The authored loading annex is deliberately stretched slightly in the
+      // horizontal direction so its painted freight tower meets the moving
+      // lift's world-space rail while its awning and balcony retain their
+      // authored vertical alignment with the collision route.
+      ctx.drawImage(
+        images.roadieLoadingAnnex,
+        0, 0, images.roadieLoadingAnnex.width, images.roadieLoadingAnnex.height,
+        toScreen(ROADIE_ROOFTOPS_STRUCTURE.startX),
+        ROADIE_ROOFTOPS_STRUCTURE.buildingBottomY - 330,
+        1700,
+        330,
+      );
+    } else {
+      // A continuous, ground-bearing fallback loading complex carries the
+      // ordinary street into the rehearsal tower if authored art is missing.
+    const annexX = toScreen(ROADIE_ROOFTOPS_STRUCTURE.startX + 10);
+    const annexWidth = ROADIE_ROOFTOPS_STRUCTURE.buildingX - ROADIE_ROOFTOPS_STRUCTURE.startX + 80;
+    const wall = ctx.createLinearGradient(0, 238, 0, ROADIE_ROOFTOPS_STRUCTURE.buildingBottomY);
+    wall.addColorStop(0, '#b85355');
+    wall.addColorStop(.52, '#7a354f');
+    wall.addColorStop(1, '#3b253e');
+    roundedRect(annexX, 308, annexWidth, ROADIE_ROOFTOPS_STRUCTURE.buildingBottomY - 308, 5, wall, '#2a1b32', 4);
+    ctx.fillStyle = '#2b2637';
+    ctx.fillRect(annexX, ROADIE_ROOFTOPS_STRUCTURE.buildingBottomY - 15, annexWidth, 15);
+    ctx.fillStyle = '#e2b766';
+    ctx.fillRect(annexX, ROADIE_ROOFTOPS_STRUCTURE.buildingBottomY - 15, annexWidth, 4);
+
+    // Ground-level loading doors and real structural columns keep the long
+    // approach readable as a functioning venue service bay rather than a wall.
+    const loadingDoors = [
+      { x: 11234, w: 274, label: 'ROADIE LOAD-IN' },
+      { x: 11548, w: 286, label: 'EQUIPMENT BAY' },
+      { x: 11922, w: 230, label: 'TOUR CASES' },
+    ];
+    loadingDoors.forEach((door, index) => {
+      const x = toScreen(door.x);
+      const y = index === 2 ? 344 : 332;
+      const h = ROADIE_ROOFTOPS_STRUCTURE.buildingBottomY - y - 13;
+      const doorGradient = ctx.createLinearGradient(0, y, 0, y + h);
+      doorGradient.addColorStop(0, '#343646');
+      doorGradient.addColorStop(1, '#151722');
+      roundedRect(x, y, door.w, h, 5, doorGradient, '#777d8d', 3);
+      ctx.strokeStyle = 'rgba(211,218,225,.25)';
+      ctx.lineWidth = 1.3;
+      for (let seam = y + 18; seam < y + h - 8; seam += 15) {
+        ctx.beginPath(); ctx.moveTo(x + 9, seam); ctx.lineTo(x + door.w - 9, seam); ctx.stroke();
+      }
+      roundedRect(x + 36, y + 11, door.w - 72, 22, 5, '#191a28', index === 1 ? '#50e7ff' : '#ff4fac', 2);
+      ctx.fillStyle = '#fff0bd'; ctx.font = '900 8px Arial'; ctx.textAlign = 'center';
+      ctx.fillText(door.label, x + door.w / 2, y + 26);
+    });
+
+    for (const columnWorldX of [11200, 11860, 12172, 12550, 12710]) {
+      const x = toScreen(columnWorldX);
+      const steel = ctx.createLinearGradient(x, 0, x + 24, 0);
+      steel.addColorStop(0, '#171823'); steel.addColorStop(.48, '#707687'); steel.addColorStop(1, '#20212e');
+      ctx.fillStyle = steel;
+      ctx.fillRect(x, 292, 25, ROADIE_ROOFTOPS_STRUCTURE.buildingBottomY - 292);
+      ctx.fillStyle = '#ffd65a';
+      ctx.fillRect(x - 5, ROADIE_ROOFTOPS_STRUCTURE.buildingBottomY - 9, 35, 9);
+      ctx.strokeStyle = 'rgba(80,231,255,.45)'; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(x + 5, 301); ctx.lineTo(x + 20, ROADIE_ROOFTOPS_STRUCTURE.buildingBottomY - 14); ctx.stroke();
+    }
+
+    // The roadie office and utility balcony form the intermediate climb while
+    // staying visually attached to the loading-bay shell below.
+    const officeX = toScreen(11870);
+    const office = ctx.createLinearGradient(0, 222, 0, 349);
+    office.addColorStop(0, '#d27956'); office.addColorStop(1, '#6d3150');
+    roundedRect(officeX, 222, 690, 129, 7, office, '#30203a', 4);
+    ctx.fillStyle = '#232231';
+    ctx.fillRect(officeX - 18, 213, 726, 15);
+    ctx.fillStyle = '#50e7ff';
+    ctx.fillRect(officeX - 9, 213, 344, 4);
+    ctx.fillStyle = '#ff4fac';
+    ctx.fillRect(officeX + 354, 213, 345, 4);
+    for (let windowIndex = 0; windowIndex < 4; windowIndex += 1) {
+      const x = officeX + 38 + windowIndex * 158;
+      const lit = station.completed || windowIndex / 4 < station.progress;
+      roundedRect(x, 246, 112, 66, 5, lit ? '#173f50' : '#202331', lit ? '#50e7ff' : '#5f6170', 3);
+      ctx.fillStyle = lit ? `rgba(255,214,90,${.24 + pulse * .2})` : 'rgba(255,255,255,.05)';
+      ctx.fillRect(x + 8, 254, 96, 50);
+      ctx.strokeStyle = 'rgba(255,244,204,.35)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(x + 56, 250); ctx.lineTo(x + 56, 308); ctx.stroke();
+    }
+    }
+
+    // Permanently mounted lift rails bridge the ground, balcony, and upper
+    // utility roof; only the carrier platform itself moves in front of them.
+    const railX = toScreen(ROADIE_ROOFTOPS_STRUCTURE.liftRailX);
+    const railTop = 176;
+    const railBottom = ROADIE_ROOFTOPS_STRUCTURE.buildingBottomY;
+    ctx.strokeStyle = '#20212e'; ctx.lineWidth = 11;
+    ctx.beginPath(); ctx.moveTo(railX + 22, railTop); ctx.lineTo(railX + 22, railBottom); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(railX + 166, railTop); ctx.lineTo(railX + 166, railBottom); ctx.stroke();
+    ctx.strokeStyle = '#767d8e'; ctx.lineWidth = 2.5;
+    for (let rungY = railTop + 12; rungY < railBottom - 10; rungY += 26) {
+      ctx.beginPath(); ctx.moveTo(railX + 25, rungY); ctx.lineTo(railX + 163, rungY); ctx.stroke();
+    }
+    ctx.strokeStyle = '#13141e'; ctx.lineWidth = 3.5;
+    ctx.beginPath(); ctx.moveTo(railX + 94, railTop - 22); ctx.lineTo(railX + 94, railBottom); ctx.stroke();
+    ctx.fillStyle = '#ffd65a'; ctx.strokeStyle = '#151621'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(railX + 94, railTop - 22, 14, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+    // Premium authored tower replaces the old floating landmark sheet cell.
+    if (images.roadieVenueTower) {
+      const structure = ROADIE_ROOFTOPS_STRUCTURE;
+      const authoredLiftCrop = Math.round(images.roadieVenueTower.width * .14);
+      ctx.drawImage(
+        images.roadieVenueTower,
+        authoredLiftCrop, 0, images.roadieVenueTower.width - authoredLiftCrop, images.roadieVenueTower.height,
+        toScreen(structure.buildingX),
+        structure.buildingBottomY - structure.buildingDrawHeight,
+        structure.buildingDrawWidth,
+        structure.buildingDrawHeight,
+      );
+    }
+
+    // A thin shared footing visually seals the authored/code-native seam and
+    // matches the continuous ground collision assembled for this district.
+    const footingX = toScreen(ROADIE_ROOFTOPS_STRUCTURE.startX);
+    const footingWidth = ROADIE_ROOFTOPS_STRUCTURE.endX - ROADIE_ROOFTOPS_STRUCTURE.startX;
+    ctx.fillStyle = '#242431';
+    ctx.fillRect(footingX, GROUND_Y - 7, footingWidth, 10);
+    ctx.fillStyle = '#e0b765';
+    ctx.fillRect(footingX, GROUND_Y - 7, footingWidth, 3);
+    ctx.restore();
+  }
+
   function drawWorld23Landmark(cellIndex, worldCenterX, bottomY, targetWidth, alpha = 1) {
     if (!images.world23Landmarks) return false;
     const bounds = images.world23LandmarkBounds?.[cellIndex];
@@ -4430,22 +4805,65 @@
     ctx.restore();
   }
 
+  function drawRoadiePerformerSprite(image, worldCenterX, feetY, targetHeight, time, { mirror = false, phase = 0 } = {}) {
+    if (!image) return false;
+    const targetWidth = targetHeight * image.width / image.height;
+    const screenX = worldCenterX - game.cameraX;
+    if (screenX + targetWidth / 2 < -80 || screenX - targetWidth / 2 > canvas.width + 80) return true;
+    ctx.save();
+    ctx.translate(screenX, feetY);
+    ctx.rotate(Math.sin(time * .004 + phase) * .008);
+    ctx.scale(mirror ? -1 : 1, 1);
+    ctx.drawImage(image, -targetWidth / 2, -targetHeight, targetWidth, targetHeight);
+    ctx.restore();
+    return true;
+  }
+
   function drawWorld23RooftopSoundcheck(station, time) {
     if (!phase2StationInView(station, 620)) return;
     const beatPhase = station.beatPhase ?? ((game.levelTime / BASS_STACK_BEAT_SECONDS) % 1);
     const pulse = 1 - smoothStep(clamp(beatPhase / .34, 0, 1));
-    drawWorld23Landmark(1, 14200, GROUND_Y + 3, 610, .94);
-    const deckY = 250;
-    drawPhase2SpeakerCabinet(13978 - game.cameraX, deckY - 132, 88, 132, pulse, '#a4f766');
-    drawPhase2SpeakerCabinet(14382 - game.cameraX, deckY - 142, 92, 142, pulse, '#b780ff');
-    drawPreShowBandMember(2, 14105 - game.cameraX, deckY, 150, time);
-    drawPreShowBandMember(4, 14276 - game.cameraX, deckY, 146, time, { mirror: true });
+    const deckY = ROADIE_ROOFTOPS_STRUCTURE.rehearsalDeckY;
+    const miloX = 14030;
+    const rexX = 14330;
+
+    // Rebuilt cabinets sit behind the performers and rest on the rehearsal
+    // roof. Milo and Rex are clean-alpha standalone assets, so neither carries
+    // the source sheet's white checkerboard nor intersects a speaker cabinet.
+    drawRoadieSpeakerCabinet(13742 - game.cameraX, deckY - 91, 75, 91, pulse, '#a4f766');
+    drawRoadieSpeakerCabinet(14410 - game.cameraX, deckY - 98, 79, 98, pulse, '#b780ff');
+    roundedRect(14145 - game.cameraX, deckY - 55, 92, 55, 6, '#181a27', '#ffd65a', 2.4);
+    for (let meter = 0; meter < 6; meter += 1) {
+      ctx.fillStyle = meter / 6 < (.28 + pulse * .72) ? ['#a4f766', '#ffd65a', '#ff4fac'][meter % 3] : '#363847';
+      ctx.fillRect(14159 - game.cameraX + meter * 11, deckY - 40, 7, 24 - meter % 2 * 7);
+    }
+    drawRoadiePerformerSprite(images.roadieMilo, miloX, deckY, 124, time, { phase: .3 });
+    drawRoadiePerformerSprite(images.roadieRex, rexX, deckY, 126, time, { phase: 2.1 });
+
+    // Restrained rehearsal accents originate from the actual instruments.
+    ctx.save();
+    ctx.globalAlpha = .18 + pulse * .68;
+    ctx.strokeStyle = '#a4f766'; ctx.lineWidth = 2.2;
+    for (let wave = 0; wave < 3; wave += 1) {
+      ctx.beginPath();
+      ctx.arc(miloX - game.cameraX + 4, deckY - 61, 18 + wave * 10 + pulse * 8, -.8, .8);
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#ffd65a'; ctx.shadowColor = '#ffd65a'; ctx.shadowBlur = 8;
+    for (let spark = 0; spark < 4; spark += 1) {
+      const angle = spark / 4 * Math.PI * 2 + time * .002;
+      ctx.beginPath();
+      ctx.arc(rexX - game.cameraX + 25 + Math.cos(angle) * (12 + pulse * 5), deckY - 66 + Math.sin(angle) * 9, 1.7 + pulse, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
     ctx.save();
     ctx.textAlign = 'center'; ctx.font = '900 9px Arial';
-    ctx.fillStyle = '#a4f766'; ctx.fillText('MILO • BASS', 14105 - game.cameraX, deckY - 158);
-    ctx.fillStyle = '#b780ff'; ctx.fillText('REX • DRUMS', 14276 - game.cameraX, deckY - 154);
+    ctx.fillStyle = '#a4f766'; ctx.fillText('MILO • BASS', miloX - game.cameraX, 17);
+    ctx.fillStyle = '#b780ff'; ctx.fillText('REX • DRUMS', rexX - game.cameraX, 17);
     ctx.fillStyle = '#fff8dc'; ctx.font = '900 8px Arial';
-    ctx.fillText(station.completed ? 'MASTER RACK • LOCKED IN' : 'LIVE ROOFTOP SOUNDCHECK', 14192 - game.cameraX, 79);
+    ctx.fillText(station.completed ? 'MASTER RACK • LOCKED IN' : 'LIVE ROOFTOP SOUNDCHECK', 14192 - game.cameraX, 32);
     ctx.restore();
   }
 
@@ -5759,6 +6177,8 @@
     drawBackground(time);
     const marquee = world23Phase2Station('marquee');
     if (marquee && !game.phase2.preShowHidden) drawWorld23MarqueeBackplate(marquee, time);
+    const rooftops = world23Phase2Station('rooftops');
+    if (rooftops && !game.phase2.preShowHidden) drawWorld23RoadieRooftopsBackplate(rooftops, time);
     for (const platform of world.platforms) drawPlatform(platform, time);
     drawWorld23Phase2Destinations(time);
     drawOpeningScene(time);
@@ -6055,6 +6475,19 @@
               carryingPlayer: player.platform?.id === lift.id,
             } : null;
           })(),
+          roadieFreightLift: (() => {
+            const lift = world.platforms.find((platform) => platform.phase2Style === 'roadie-freight-lift');
+            return lift ? {
+              y: Math.round(lift.y),
+              baseY: lift.baseY,
+              minY: lift.baseY - lift.range,
+              maxY: lift.baseY + lift.range,
+              range: lift.range * 2,
+              axis: lift.axis,
+              moving: lift.moving,
+              carryingPlayer: player.platform?.id === lift.id,
+            } : null;
+          })(),
         },
         boss: {
           name: 'THE FEEDBACK FIEND',
@@ -6168,6 +6601,11 @@
           premiumGroundedMarqueeStructure: Boolean(images.marqueeStructure),
           premiumWelcomeCheckInBooth: Boolean(images.welcomeCheckInBooth),
           marqueeStructureUsesTrueAlpha: true,
+          premiumRoadieLoadingAnnex: Boolean(images.roadieLoadingAnnex),
+          premiumRoadieVenueTower: Boolean(images.roadieVenueTower),
+          premiumRoadieMilo: Boolean(images.roadieMilo),
+          premiumRoadieRex: Boolean(images.roadieRex),
+          roadiePerformerFeetAnchoredToRehearsalDeck: true,
           premiumPhase2Landmarks: Boolean(images.world23Landmarks),
           landmarkAlphaRemoved: images.landmarkAlphaRemoved || 0,
           premiumFeedbackFiend: Boolean(images.feedbackFiend),
@@ -6376,6 +6814,10 @@
     loadImage('assets/world2_1_catamaran_arm_layer_base_v1.webp'),
     loadImage('assets/world2_3_marquee_welcome_arch_v1.webp'),
     loadImage('assets/world2_3_welcome_checkin_booth_v1.webp'),
+    loadImage('assets/world2_3_roadie_loading_annex_v1.webp'),
+    loadImage('assets/world2_3_roadie_venue_tower_v1.webp'),
+    loadImage('assets/world2_3_milo_rooftop_v1.png'),
+    loadImage('assets/world2_3_rex_rooftop_v1.png'),
     loadImage('assets/world2_3_preshow_landmarks_v2.webp'),
     loadImage('assets/world2_3_feedback_fiend_v1.webp'),
   ]).then(([
@@ -6386,7 +6828,9 @@
     environmentSoundcheck, environmentBeach, environmentRooftops,
     environmentStampede, environmentLagoon, environmentPowerup, environmentVictory,
     terrainRemaster, checkpointStations, catamaranRemasterBase,
-    marqueeStructureArt, welcomeCheckInBoothArt, world23LandmarksRaw, feedbackFiendArt,
+    marqueeStructureArt, welcomeCheckInBoothArt, roadieLoadingAnnexArt,
+    roadieVenueTowerArt, roadieMiloArt, roadieRexArt,
+    world23LandmarksRaw, feedbackFiendArt,
   ]) => {
     images.hero = hero;
     images.items = items;
@@ -6418,6 +6862,10 @@
     images.catamaranRemasterBase = catamaranRemasterBase;
     images.marqueeStructure = marqueeStructureArt;
     images.welcomeCheckInBooth = welcomeCheckInBoothArt;
+    images.roadieLoadingAnnex = roadieLoadingAnnexArt;
+    images.roadieVenueTower = roadieVenueTowerArt;
+    images.roadieMilo = roadieMiloArt;
+    images.roadieRex = roadieRexArt;
     images.world23Landmarks = prepareWorld23LandmarkSheet(world23LandmarksRaw);
     images.feedbackFiend = feedbackFiendArt;
     if (images.feedbackFiend) {

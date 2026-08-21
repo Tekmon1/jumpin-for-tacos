@@ -2384,8 +2384,8 @@ test("ships the complete 35,000-unit Neon Neckties concert level", async () => {
   assert.match(runtime, /OLIVIA IS LOADING THE LAST TACOS!/);
   assert.match(runtime, /TACO ROADSTER: READY TO ROLL!/);
   assert.match(runtime, /SHOWTIME! OLIVIA IS TAKING THE SCENIC ROUTE!/);
-  assert.match(html, /level2-3\.js\?v=26/);
-  assert.match(runtime, /SOURCE_VERSION = 'w2-3-v26-welcome-booth-grounding'/);
+  assert.match(html, /level2-3\.js\?v=27/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-3-v27-roadie-rooftops-rebuild'/);
   assert.match(runtime, /generatorDefensePlans/);
   assert.match(runtime, /function ensureGeneratorDefensePlatform/);
   assert.match(runtime, /finitePlatformGeometry: world\.platforms\.every/);
@@ -2569,6 +2569,10 @@ test("remasters World 2-3 pre-show exploration and gates the crowd only behind F
   assert.match(runtime, /world2_3_neon_neckties_preshow_v1\.png/);
   assert.match(runtime, /world2_3_marquee_welcome_arch_v1\.webp/);
   assert.match(runtime, /world2_3_welcome_checkin_booth_v1\.webp/);
+  assert.match(runtime, /world2_3_roadie_loading_annex_v1\.webp/);
+  assert.match(runtime, /world2_3_roadie_venue_tower_v1\.webp/);
+  assert.match(runtime, /world2_3_milo_rooftop_v1\.png/);
+  assert.match(runtime, /world2_3_rex_rooftop_v1\.png/);
   assert.doesNotMatch(runtime, /world2_3_marquee_structure_v3\.webp/);
   assert.match(runtime, /world2_3_preshow_landmarks_v2\.webp/);
   assert.match(runtime, /world2_3_feedback_fiend_v1\.webp/);
@@ -2620,7 +2624,51 @@ test("remasters World 2-3 pre-show exploration and gates the crowd only behind F
   assert.match(runtime, /const marqueeHudGhost = game\.state === 'playing'/);
   assert.match(runtime, /player\.x >= 3000 && player\.x <= 4380 && player\.y < 210/);
   assert.match(runtime, /premiumGroundedMarqueeStructure: Boolean\(images\.marqueeStructure\)/);
-  assert.match(runtime, /horizontal-rooftop-parkour-single-bass-launch/);
+  assert.match(runtime, /grounded-loading-bay-road-cases-freight-lift-utility-roofs-bass-launch-truss-final-super-jump/);
+  for (const roadieSurface of [
+    "roadie-loading-awning",
+    "roadie-road-case-stack",
+    "roadie-maintenance-balcony",
+    "roadie-freight-lift",
+    "roadie-utility-deck",
+    "roadie-vent-housing",
+    "roadie-bass-launch",
+    "roadie-truss-bridge",
+    "roadie-upper-access-ledge",
+    "roadie-rehearsal-roof",
+  ]) {
+    assert.match(runtime, new RegExp(`kind: '${roadieSurface}'`));
+  }
+  for (const removedRoadieSurface of [
+    "rooftop-tile-run",
+    "rooftop-awning",
+    "rooftop-sign-support",
+    "rooftop-equipment-bridge",
+    "rooftop-bass-pad",
+    "rooftop-road-case",
+    "rooftop-truss-bridge",
+    "rooftop-soundcheck-deck",
+  ]) {
+    assert.doesNotMatch(runtime, new RegExp(`kind: '${removedRoadieSurface}'`));
+  }
+  assert.match(runtime, /function drawWorld23RoadieRooftopsBackplate/);
+  assert.match(runtime, /function drawRoadiePerformerSprite/);
+  assert.match(runtime, /platform\.phase2StationId === 'marquee' \|\| platform\.phase2StationId === 'rooftops'/);
+  assert.match(runtime, /id: 'roadie-rooftops-ground-foundation'/);
+  assert.match(runtime, /oldFloatingLandmarkRendered: 0/);
+  assert.match(runtime, /oldGenericPlatformKindsRendered: 0/);
+  assert.match(runtime, /premiumLoadingAnnex: true/);
+  assert.match(runtime, /structureFootprintFullySupported:/);
+  assert.match(runtime, /targetTraversalSeconds: \[18, 25\]/);
+  assert.match(runtime, /performerSpeakerOverlap: false/);
+  assert.match(runtime, /rewardAboveRehearsalRoof:/);
+  assert.match(runtime, /genericPlatformBaseSuppressed: true/);
+  assert.match(runtime, /roadieFreightLift: \(\(\) =>/);
+  assert.match(runtime, /premiumRoadieLoadingAnnex: Boolean\(images\.roadieLoadingAnnex\)/);
+  assert.match(runtime, /premiumRoadieVenueTower: Boolean\(images\.roadieVenueTower\)/);
+  assert.match(runtime, /premiumRoadieMilo: Boolean\(images\.roadieMilo\)/);
+  assert.match(runtime, /premiumRoadieRex: Boolean\(images\.roadieRex\)/);
+  assert.doesNotMatch(runtime, /drawWorld23Landmark\(1,/);
   assert.match(runtime, /waterfront-pontoons-suspended-rehearsal-structures/);
   assert.match(runtime, /fast-forward-flow-ticket-arches-and-moving-signs/);
   assert.match(runtime, /catamaranStart: 22800/);
@@ -2637,6 +2685,10 @@ test("remasters World 2-3 pre-show exploration and gates the crowd only behind F
   await access(new URL("../public/game/assets/world2_3_neon_neckties_preshow_v1.png", import.meta.url));
   await access(new URL("../public/game/assets/world2_3_marquee_welcome_arch_v1.webp", import.meta.url));
   await access(new URL("../public/game/assets/world2_3_welcome_checkin_booth_v1.webp", import.meta.url));
+  await access(new URL("../public/game/assets/world2_3_roadie_loading_annex_v1.webp", import.meta.url));
+  await access(new URL("../public/game/assets/world2_3_roadie_venue_tower_v1.webp", import.meta.url));
+  await access(new URL("../public/game/assets/world2_3_milo_rooftop_v1.png", import.meta.url));
+  await access(new URL("../public/game/assets/world2_3_rex_rooftop_v1.png", import.meta.url));
   await access(new URL("../public/game/assets/world2_3_preshow_landmarks_v2.webp", import.meta.url));
   await access(new URL("../public/game/assets/world2_3_feedback_fiend_v1.webp", import.meta.url));
   for (const eventId of [
