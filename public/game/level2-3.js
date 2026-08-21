@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const SOURCE_VERSION = 'w2-3-v29-roadie-utility-crawler';
+  const SOURCE_VERSION = 'w2-3-v30-speaker-stack-camera';
 
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
@@ -86,6 +86,47 @@
   ];
   const BASS_STACK_LAUNCH_VELOCITY = 600;
   const BASS_STACK_BEAT_SECONDS = 1.34;
+  const SPEAKER_STACK_BASS_LAUNCH_VELOCITY = 1080;
+  const SPEAKER_STACK_BEAT_SECONDS = 1.42;
+  const SPEAKER_STACK_STATION = Object.freeze({
+    id: 'speaker-stack-stampede',
+    name: 'Speaker Stack Stampede',
+    completion: 'MASTER STACK ONLINE',
+    start: 17040,
+    end: 20280,
+    accent: '#a4f766',
+    score: 5600,
+    energy: 7,
+    targetTraversalSeconds: Object.freeze([20, 30]),
+    totalVerticalRise: 1070,
+    structure: Object.freeze({ x: 16920, y: -840, w: 3000, h: 1300 }),
+    trigger: Object.freeze({ x: 19010, y: -704, w: 590, h: 142 }),
+    reward: Object.freeze({ x: 19065, y: -684, count: 14, columns: 7, rainbowEvery: 4 }),
+    camera: Object.freeze({
+      enabledRegion: Object.freeze({ start: 16960, end: 20360 }),
+      upperThresholdFromBottom: .78,
+      lowerThresholdFromBottom: .43,
+      activeTargetFromBottom: .66,
+      minY: -830,
+      maxY: 0,
+      smoothingUp: 5.8,
+      smoothingDown: 4.4,
+      respawnSmoothing: 7,
+      rewardHoldSeconds: 1.1,
+    }),
+    traversal: 'grounded-roadie-cases-amp-transfer-bass-launch-mid-deck-line-array-carriage-cross-stack-high-truss-master-stack',
+    platforms: Object.freeze([
+      Object.freeze({ x: 17160, y: 374, w: 300, kind: 'speaker-road-case-approach', routeShape: 'grounded-equipment-approach' }),
+      Object.freeze({ x: 17520, y: 306, w: 250, kind: 'speaker-amp-transfer', routeShape: 'diagonal-amplifier-transfer' }),
+      Object.freeze({ x: 17865, y: 252, w: 250, kind: 'speaker-lower-service-shelf', routeShape: 'short-horizontal-service-transfer' }),
+      Object.freeze({ x: 18215, y: 142, w: 350, kind: 'speaker-bass-launch', routeShape: 'single-bass-powered-launch', bassPad: true }),
+      Object.freeze({ x: 17720, y: -18, w: 680, kind: 'speaker-mid-maintenance-deck', routeShape: 'bass-launch-to-wide-maintenance-deck' }),
+      Object.freeze({ x: 18420, y: -190, w: 320, kind: 'speaker-line-array-carriage', routeShape: 'moving-sound-hardware', moving: true, axis: 'x', range: 170, speed: .42, phase: .35 }),
+      Object.freeze({ x: 18860, y: -270, w: 400, kind: 'speaker-cross-stack-deck', routeShape: 'carriage-to-cross-stack-transfer' }),
+      Object.freeze({ x: 18100, y: -430, w: 780, kind: 'speaker-high-truss', routeShape: 'supported-upper-truss-crossing' }),
+      Object.freeze({ x: 19020, y: -610, w: 560, kind: 'speaker-master-stack-deck', routeShape: 'final-super-double-jump', summit: true }),
+    ]),
+  });
   const MARQUEE_STRUCTURE = Object.freeze({
     centerX: 3700,
     bottomY: GROUND_Y + 3,
@@ -298,13 +339,6 @@
       { dx: 768, y: 310, w: 205, kind: 'beat-platform' },
       { dx: 1018, y: 366, w: 180, kind: 'awning' },
     ]),
-    stampede: Object.freeze([
-      { dx: 0, y: 374, w: 178, kind: 'speaker-case' },
-      { dx: 220, y: 322, w: 208, kind: 'speaker-stack' },
-      { dx: 472, y: 270, w: 236, kind: 'bass-bridge', summit: true },
-      { dx: 754, y: 322, w: 208, kind: 'speaker-lift', moving: true, axis: 'y', range: 18 },
-      { dx: 1008, y: 374, w: 170, kind: 'speaker-case' },
-    ]),
     lagoon: Object.freeze([
       { dx: 0, y: 378, w: 190, kind: 'surfboard' },
       { dx: 238, y: 330, w: 190, kind: 'leaf-platform' },
@@ -339,8 +373,6 @@
     { id: 'rooftops-upper-spaghetti-sentry', anchorX: 11850, type: 'spaghetti', count: 2, role: 'platform-sentry', section: 'rooftops', purpose: 'Make the first beat platform a discoverable risk-reward route.' },
     { id: 'rooftops-upper-pepper-moving-guard', anchorX: 13500, type: 'pepper', count: 1, role: 'moving-guard', section: 'rooftops', purpose: 'Place one readable guard on the moving roofline.' },
     { id: 'rooftops-upper-berry-sentry', anchorX: 15300, type: 'berry', count: 2, role: 'platform-sentry', section: 'rooftops', purpose: 'Carry the optional route toward the rooftop exit.' },
-    { id: 'stampede-upper-pineapple-sentry', anchorX: 17650, type: 'pineapple', count: 2, role: 'platform-sentry', section: 'stampede', purpose: 'Guard the first speaker-stack climb.' },
-    { id: 'stampede-upper-pepper-moving-guard', anchorX: 19400, type: 'pepper', count: 2, role: 'moving-guard', section: 'stampede', purpose: 'Make the speaker lift a controlled two-stomp timing test.' },
     { id: 'lagoon-upper-spaghetti-champion', anchorX: 21200, type: 'spaghetti', count: 1, role: 'champion', section: 'lagoon', purpose: 'Reward the suspended rehearsal route before Olivia’s catamaran arrives.' },
     { id: 'lagoon-upper-mango-sentry', anchorX: 22950, type: 'mango', count: 2, role: 'platform-sentry', section: 'lagoon', purpose: 'Offer optional combat above the clear catamaran lane.' },
     { id: 'lagoon-upper-berry-moving-guard', anchorX: 24450, type: 'berry', count: 2, role: 'moving-guard', section: 'lagoon', purpose: 'Turn the leaf lift into a risk-reward taco catch route.' },
@@ -432,6 +464,7 @@
   const world = {
     platforms: [], tacos: [], enemies: [], checkpoints: [], generators: [], generatorDefenses: [],
     fans: [], bandCameos: [], phase2Stations: [], bassPads: [],
+    speakerStack: null,
   };
 
   function createWorld23Phase2State() {
@@ -466,6 +499,19 @@
       hitsTaken: 0, retryCount: 0, defeatedAt: 0, lastAttack: null,
     };
   }
+
+  function createSpeakerStackState() {
+    return {
+      beatCycle: -1,
+      beatPhase: 1,
+      activationTimer: 0,
+      activationDuration: 1.45,
+      cameraHold: 0,
+      launches: 0,
+      completedAt: 0,
+      powerStage: 0,
+    };
+  }
   const player = {
     x: 130, y: 370, w: 36, h: 44, vx: 0, vy: 0, dir: 1, grounded: false,
     platform: null, coyote: 0, jumpBuffer: 0, invulnerable: 0, rotation: 0, scale: 1,
@@ -473,7 +519,8 @@
   };
   const game = {
     state: 'title', score: 0, collected: 0, totalTacos: 0, golden: 0, totalGolden: 8,
-    hearts: 3, energy: 0, cameraX: 0, levelTime: 0, startTime: 0, finishTime: 0,
+    hearts: 3, energy: 0, cameraX: 0, cameraY: 0, cameraTargetY: 0,
+    verticalCameraMode: 'ground', levelTime: 0, startTime: 0, finishTime: 0,
     sectionIndex: 0, latestCheckpoint: null, message: '', messageTimer: 0,
     splatCombo: 0, splatTimer: 0, bestSplat: 0, abilities: abilities.createState(),
     confetti: [], particles: [], impactTexts: [],
@@ -504,6 +551,7 @@
     platformOverlapCount: 0,
     generatorDefenseAudit: null,
     phase2: createWorld23Phase2State(),
+    speakerStack: createSpeakerStackState(),
     cableCrawler: createCableCrawlerState(),
     boss: createFeedbackFiendState(),
   };
@@ -517,6 +565,8 @@
   const previewStart = qaMode ? Number(params.get('startX') || 0) : 0;
   const previewStartY = qaMode && params.has('startY')
     ? Number(params.get('startY')) : Number.NaN;
+  const previewCameraY = qaMode && params.has('cameraY')
+    ? Number(params.get('cameraY')) : Number.NaN;
   const previewConcert = qaMode && params.get('concert') === '1';
   const previewConcertTime = qaMode ? Number(params.get('concertTime') || 0) : 0;
   const previewAutoRun = qaMode && params.get('autoRun') === '1';
@@ -860,6 +910,85 @@
       optionalElevatedRoute: true,
     };
     return authoredPlatforms;
+  }
+
+  function buildSpeakerStackStampede() {
+    const definition = SPEAKER_STACK_STATION;
+    const groundSegments = world.platforms.filter((platform) => (
+      platform.ground
+      && Math.abs(platform.y - GROUND_Y) < 1
+      && platform.x < definition.end
+      && platform.x + platform.w > definition.start
+    ));
+    world.platforms = world.platforms.filter((platform) => !groundSegments.includes(platform));
+    const foundation = addPlatform(definition.start, GROUND_Y, definition.end - definition.start, 'stampede', {
+      id: 'speaker-stack-grounded-loading-foundation',
+      h: 90,
+      ground: true,
+      mainRoute: true,
+      speakerStackFoundation: true,
+    });
+
+    const station = {
+      ...definition,
+      completed: false,
+      rewardSpawned: false,
+      activatedAt: 0,
+      platformIds: [],
+      foundationId: foundation.id,
+    };
+    station.platforms.forEach((platformDefinition, index) => {
+      const platform = addPlatform(
+        platformDefinition.x,
+        platformDefinition.y,
+        platformDefinition.w,
+        platformDefinition.kind,
+        {
+          id: `speaker-stack-${index + 1}`,
+          h: platformDefinition.kind === 'speaker-line-array-carriage' ? 28 : 26,
+          upper: true,
+          speakerStackStation: true,
+          speakerStackStyle: platformDefinition.kind,
+          speakerStackRouteShape: platformDefinition.routeShape,
+          speakerStackSummit: Boolean(platformDefinition.summit),
+          speakerStackBassPad: Boolean(platformDefinition.bassPad),
+          moving: Boolean(platformDefinition.moving),
+          axis: platformDefinition.axis || 'y',
+          range: platformDefinition.range || 0,
+          speed: platformDefinition.speed || .72,
+          phase: platformDefinition.phase || 0,
+          enemySupport: false,
+        },
+      );
+      station.platformIds.push(platform.id);
+    });
+    world.speakerStack = station;
+
+    // These curated trails replace the stale summit rewards created by the
+    // former repeated five-platform route groups. Every collectible now sits
+    // on or directly above a collision-backed piece of the new structure.
+    addArc(17184, 322, 5, 48, 38);
+    addArc(17542, 252, 5, 48, 42);
+    addArc(17886, 196, 5, 48, 38);
+    addArc(17786, -72, 8, 72, 58);
+    addArc(18888, -324, 7, 54, 52);
+    addArc(18144, -486, 9, 82, 42);
+
+    game.speakerStackAudit = {
+      sourceVersion: SOURCE_VERSION,
+      legacyRouteGroupCount: 0,
+      oldStockPlatformsRemoved: true,
+      oldRewardCoordinatesRemoved: true,
+      oldUpperSentriesRemoved: true,
+      customPlatformCount: station.platformIds.length,
+      genericPlatformBaseSuppressed: true,
+      groundedFoundation: true,
+      totalVerticalRise: definition.totalVerticalRise,
+      targetTraversalSeconds: [...definition.targetTraversalSeconds],
+      movingSoundHardware: 'line-array-service-carriage',
+      bassLaunchVelocity: SPEAKER_STACK_BASS_LAUNCH_VELOCITY,
+      safeDropToMainRoute: true,
+    };
   }
 
   function buildWorld23Phase2Exploration() {
@@ -1414,9 +1543,12 @@
     // Each pre-concert act now owns a distinct optional upper route rather
     // than inheriting one repeated five-step shape. The lower route remains
     // continuous and forgiving; these authored risers, canopies, rooftops,
-    // speaker stacks, and lagoon leaves carry the risk-reward taco trail.
+    // and lagoon leaves carry the risk-reward taco trail. Speaker Stack
+    // Stampede is intentionally excluded from those repeated route groups and
+    // rebuilt below as one bespoke vertical station.
     buildWorld23AuthoredRoutes();
     buildWorld23Phase2Exploration();
+    buildSpeakerStackStampede();
 
     // Organized continuous taco guidance along the entire playable route.
     for (let x = 190; x < WORLD_WIDTH - 120; x += 44) {
@@ -1620,7 +1752,8 @@
     buildWorld();
     Object.assign(game, {
       state: 'title', score: 0, collected: 0, golden: 0, hearts: 3, energy: 0,
-      cameraX: 0, levelTime: 0, startTime: 0, finishTime: 0, sectionIndex: 0,
+      cameraX: 0, cameraY: 0, cameraTargetY: 0, verticalCameraMode: 'ground',
+      levelTime: 0, startTime: 0, finishTime: 0, sectionIndex: 0,
       latestCheckpoint: null, message: '', messageTimer: 0, splatCombo: 0, splatTimer: 0,
       bestSplat: 0, abilities: abilities.createState(),
       confetti: [], particles: [], impactTexts: [], fireworks: [], cameraShake: 0, hitStop: 0,
@@ -1628,6 +1761,7 @@
       activeMusic: null, musicTransition: null,
       musicTransitionCount: 0, musicOverlapRecoveries: 0, maxMusicPlaying: 0,
       phase2: createWorld23Phase2State(),
+      speakerStack: createSpeakerStackState(),
       cableCrawler: createCableCrawlerState(),
       boss: createFeedbackFiendState(),
       opening: {
@@ -1821,6 +1955,11 @@
       player.x = clamp(previewStart, 0, WORLD_WIDTH - player.w);
       player.y = Number.isFinite(previewStartY) ? previewStartY : 350;
       game.cameraX = clamp(player.x - canvas.width * .42, 0, WORLD_WIDTH - canvas.width);
+    }
+    if (Number.isFinite(previewCameraY)) {
+      game.cameraY = clamp(previewCameraY, SPEAKER_STACK_STATION.camera.minY, SPEAKER_STACK_STATION.camera.maxY);
+      game.cameraTargetY = game.cameraY;
+      game.verticalCameraMode = game.cameraY < 0 ? 'qa-authored-start' : 'ground';
     }
     if (Number.isFinite(previewEnergy)) game.energy = clamp(previewEnergy, 0, 100);
     if (Number.isFinite(previewGolden)) game.golden = Math.max(0, Math.floor(previewGolden));
@@ -2111,6 +2250,8 @@
     if (!game.cableCrawler.defeated && game.cableCrawler.phase !== 'dormant') resetCableCrawlerForRetry();
     if (!game.boss.defeated && game.boss.phase !== 'dormant') resetFeedbackFiendForRetry();
     game.state = 'respawning';
+    game.cameraTargetY = 0;
+    game.verticalCameraMode = 'respawn-return';
     clearInputs();
     abilities.clearForRespawn(game.abilities);
     game.hearts -= 1;
@@ -2141,6 +2282,7 @@
       spawnConfetti(player.x - game.cameraX + player.w / 2, 92, 18);
     }
     game.cameraX = lerp(game.cameraX, clamp(game.respawn.targetX - canvas.width * .42, 0, WORLD_WIDTH - canvas.width), Math.min(1, dt * 6));
+    updateVerticalCamera(dt, { forceGround: true });
     if (!game.respawn.spawnPlaced) return;
 
     const previousY = player.y;
@@ -2538,6 +2680,110 @@
       }
     }
     updateWorld23BassStack();
+  }
+
+  function speakerStackActivationProgress() {
+    if (!world.speakerStack?.completed) return 0;
+    const duration = Math.max(.01, game.speakerStack.activationDuration);
+    return clamp(1 - game.speakerStack.activationTimer / duration, 0, 1);
+  }
+
+  function spawnSpeakerStackReward() {
+    const station = world.speakerStack;
+    if (!station || station.rewardSpawned) return;
+    station.rewardSpawned = true;
+    const columns = Math.min(station.reward.columns, station.reward.count);
+    for (let index = 0; index < station.reward.count; index += 1) {
+      const column = index % columns;
+      const row = Math.floor(index / columns);
+      const type = index % station.reward.rainbowEvery === station.reward.rainbowEvery - 1
+        ? 'rainbow' : 'taco';
+      addTaco(
+        station.reward.x + column * 64,
+        station.reward.y - row * 38 - Math.sin(column / Math.max(1, columns - 1) * Math.PI) * 24,
+        type,
+        { speakerStackReward: true, bonus: true },
+      );
+    }
+  }
+
+  function completeSpeakerStackStampede() {
+    const station = world.speakerStack;
+    if (!station || station.completed) return false;
+    station.completed = true;
+    station.activatedAt = game.levelTime;
+    game.speakerStack.completedAt = game.levelTime;
+    game.speakerStack.activationTimer = game.speakerStack.activationDuration;
+    game.speakerStack.cameraHold = station.camera.rewardHoldSeconds;
+    game.speakerStack.powerStage = 0;
+    game.score += station.score;
+    game.energy = clamp(game.energy + station.energy, 0, 100);
+    game.phase2.toast = {
+      title: station.completion,
+      subtitle: 'THE WHOLE SOUND SYSTEM IS LIVE',
+      color: station.accent,
+      timer: 3,
+    };
+    spawnSpeakerStackReward();
+    const screenX = station.trigger.x + station.trigger.w / 2 - game.cameraX;
+    spawnConfetti(screenX, station.trigger.y + 104, game.reducedShake ? 32 : 72);
+    spawnBurst(screenX, station.trigger.y + 112, '#a4f766', game.reducedShake ? 12 : 30);
+    spawnBurst(screenX, station.trigger.y + 112, '#50e7ff', game.reducedShake ? 8 : 18);
+    game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 3 : 8);
+    playAudio('stage.masterStackOnline', {
+      position: audioPosition(station.trigger.x + station.trigger.w / 2),
+      station: station.id,
+    });
+    showMessage('MASTER STACK ONLINE', 2.8);
+    return true;
+  }
+
+  function updateSpeakerStackStampede(dt) {
+    const station = world.speakerStack;
+    if (!station) return;
+    const beatPosition = game.levelTime / SPEAKER_STACK_BEAT_SECONDS;
+    const beatCycle = Math.floor(beatPosition);
+    const beatPhase = beatPosition - beatCycle;
+    game.speakerStack.beatCycle = beatCycle;
+    game.speakerStack.beatPhase = beatPhase;
+
+    if (station.completed && game.speakerStack.activationTimer > 0) {
+      game.speakerStack.activationTimer = Math.max(0, game.speakerStack.activationTimer - dt);
+      const stage = Math.min(4, Math.floor(speakerStackActivationProgress() * 4.01));
+      if (stage > game.speakerStack.powerStage) {
+        game.speakerStack.powerStage = stage;
+        if (stage === 2) {
+          playAudio('stage.masterStackPulse', {
+            position: audioPosition(station.structure.x + station.structure.w / 2),
+            powerStage: stage,
+          });
+        }
+      }
+    }
+    if (game.speakerStack.cameraHold > 0) {
+      if (player.vy > 80) game.speakerStack.cameraHold = 0;
+      else game.speakerStack.cameraHold = Math.max(0, game.speakerStack.cameraHold - dt);
+    }
+
+    if (!station.completed && intersects(player, station.trigger)) completeSpeakerStackStampede();
+
+    if (!player.grounded || !player.platform?.speakerStackBassPad || beatPhase > .34) return;
+    const pad = player.platform;
+    if (pad.lastLaunchCycle === beatCycle) return;
+    pad.lastLaunchCycle = beatCycle;
+    player.vy = -SPEAKER_STACK_BASS_LAUNCH_VELOCITY;
+    player.grounded = false;
+    player.platform = null;
+    game.speakerStack.launches += 1;
+    const screenX = pad.x + pad.w / 2 - game.cameraX;
+    spawnBurst(screenX, pad.y + 10, '#a4f766', game.reducedShake ? 12 : 28);
+    spawnBurst(screenX, pad.y + 10, '#ff4fac', game.reducedShake ? 6 : 14);
+    game.impactTexts.push({ x: screenX, y: pad.y - 28, text: 'BASS BOOST!', color: '#a4f766', life: .9 });
+    game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 2 : 6);
+    playAudio('stage.masterStackBassLaunch', {
+      position: audioPosition(pad.x + pad.w / 2),
+      bassLaunch: true,
+    });
   }
 
   function cableCrawlerBody() {
@@ -3285,6 +3531,9 @@
     stopRoadsterLoop();
     stopCatamaranLoop();
     game.state = 'concert';
+    game.cameraY = 0;
+    game.cameraTargetY = 0;
+    game.verticalCameraMode = 'ground';
     game.concert.started = true;
     game.concert.entryReason = decision.entryReason;
     game.concert.entryDecision = { ...decision };
@@ -3436,6 +3685,81 @@
     requestAnimationFrame(() => ui.winOverlay.querySelector('[data-next-level]')?.focus());
   }
 
+  function verticalCameraViewportLines(profile) {
+    return {
+      upper: canvas.height * (1 - profile.upperThresholdFromBottom),
+      lower: canvas.height * (1 - profile.lowerThresholdFromBottom),
+      activeTarget: canvas.height * (1 - profile.activeTargetFromBottom),
+    };
+  }
+
+  function updateConfiguredVerticalCamera(dt, profile, { forceGround = false } = {}) {
+    const lines = verticalCameraViewportLines(profile);
+    const playerCenterX = player.x + player.w / 2;
+    const inEnabledRegion = playerCenterX >= profile.enabledRegion.start
+      && playerCenterX <= profile.enabledRegion.end;
+    const eligible = !forceGround && game.state === 'playing' && inEnabledRegion;
+    const screenY = player.y - game.cameraY;
+    let target = game.cameraTargetY;
+    let mode = game.verticalCameraMode;
+
+    if (!eligible) {
+      target = 0;
+      mode = Math.abs(game.cameraY) > .5 ? 'returning-to-ground' : 'ground';
+    } else if (screenY < lines.upper) {
+      target = player.y - lines.activeTarget;
+      mode = 'following-up';
+    } else if (game.cameraY < -.5 && screenY > lines.lower) {
+      target = player.y - lines.lower;
+      mode = 'following-down';
+    } else if (game.cameraY < -.5) {
+      mode = game.speakerStack.cameraHold > 0 ? 'reward-hold' : 'upper-hysteresis-hold';
+    } else {
+      target = 0;
+      mode = 'ground';
+    }
+
+    if (eligible && player.y >= GROUND_Y - player.h - 56) {
+      target = 0;
+      mode = 'returning-to-ground';
+    }
+    if (game.speakerStack.cameraHold > 0 && target > game.cameraTargetY) {
+      target = game.cameraTargetY;
+      mode = 'reward-hold';
+    }
+
+    game.cameraTargetY = clamp(target, profile.minY, profile.maxY);
+    const movingUp = game.cameraTargetY < game.cameraY;
+    const smoothing = forceGround ? profile.respawnSmoothing
+      : movingUp ? profile.smoothingUp : profile.smoothingDown;
+    const damping = 1 - Math.exp(-smoothing * dt);
+    game.cameraY = lerp(game.cameraY, game.cameraTargetY, damping);
+    if (Math.abs(game.cameraY) < .08 && game.cameraTargetY === 0) {
+      game.cameraY = 0;
+      mode = 'ground';
+    }
+    game.verticalCameraMode = mode;
+    game.verticalCameraAudit = {
+      scopedStation: SPEAKER_STACK_STATION.id,
+      enabled: eligible,
+      inEnabledRegion,
+      mode,
+      cameraY: Number(game.cameraY.toFixed(2)),
+      targetY: Number(game.cameraTargetY.toFixed(2)),
+      playerScreenY: Number((player.y - game.cameraY).toFixed(2)),
+      upperLine: Number(lines.upper.toFixed(2)),
+      lowerLine: Number(lines.lower.toFixed(2)),
+      activeTargetLine: Number(lines.activeTarget.toFixed(2)),
+      authoredMinY: profile.minY,
+      authoredMaxY: profile.maxY,
+      normalGroundCameraAnchored: Math.abs(game.cameraY) < 0.08,
+    };
+  }
+
+  function updateVerticalCamera(dt, options = {}) {
+    updateConfiguredVerticalCamera(dt, SPEAKER_STACK_STATION.camera, options);
+  }
+
   function update(dt) {
     updateMusic(dt);
     if (game.settingsOpen) return;
@@ -3469,6 +3793,7 @@
     updateMovingPlatforms();
     updatePlayer(dt);
     updateWorld23Phase2(dt);
+    updateSpeakerStackStampede(dt);
     updateCableCrawler(dt);
     updateFeedbackFiend(dt);
     updateEnemies(dt);
@@ -3495,6 +3820,7 @@
       clamp(cameraTarget, 0, WORLD_WIDTH - canvas.width),
       Math.min(1, dt * (bossCameraActive ? 6 : 9)),
     );
+    updateVerticalCamera(dt);
     const concertEntryStatus = getConcertEntryStatus();
     const concertEntry = resolveConcertEntry(player.x, game.score, concertEntryStatus);
     if (concertEntry.shouldStart) startConcert(0, concertEntry);
@@ -3660,9 +3986,66 @@
     return true;
   }
 
+  function drawSpeakerStackUpperBackground(time) {
+    const image = images.speakerUpperSky;
+    const station = world.speakerStack;
+    if (!image || !station || game.cameraY >= -.5) return;
+    const lift = clamp(-game.cameraY / Math.abs(station.camera.minY), 0, 1);
+    const alpha = smoothStep(clamp((lift - .03) / .56, 0, 1));
+    if (alpha <= 0) return;
+    const viewportAspect = canvas.width / canvas.height;
+    const sourceHeight = Math.min(image.height, image.width / viewportAspect);
+    const maxSourceY = Math.max(0, image.height - sourceHeight);
+    const sourceY = lerp(maxSourceY * .92, maxSourceY * .18, lift);
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(
+      image,
+      0, sourceY, image.width, sourceHeight,
+      0, 0, canvas.width, canvas.height,
+    );
+
+    // Two restrained authored-depth bands keep the distant venue anchored
+    // while the foreground climbs more than 1,000 world units. Their vertical
+    // travel is intentionally slower than the station, producing real
+    // vertical parallax without exposing an image seam.
+    const distantY = 442 + (-game.cameraY) * .08;
+    const venueY = 468 + (-game.cameraY) * .16;
+    ctx.globalAlpha = alpha * .22;
+    ctx.fillStyle = '#17183c';
+    for (let tower = -40; tower < canvas.width + 80; tower += 132) {
+      const height = 32 + (tower / 31 % 4 + 4) % 4 * 9;
+      ctx.fillRect(tower, distantY - height, 10, height);
+      ctx.strokeStyle = tower % 264 ? '#50e7ff' : '#ff4fac';
+      ctx.lineWidth = 1.3;
+      ctx.beginPath();
+      ctx.moveTo(tower + 5, distantY - height);
+      ctx.lineTo(tower + 5, distantY - height - 13);
+      ctx.stroke();
+    }
+    const haze = ctx.createLinearGradient(0, venueY - 90, 0, canvas.height);
+    haze.addColorStop(0, 'rgba(80,231,255,0)');
+    haze.addColorStop(1, 'rgba(24,13,63,.28)');
+    ctx.fillStyle = haze;
+    ctx.fillRect(0, venueY - 90, canvas.width, canvas.height - venueY + 90);
+
+    ctx.globalAlpha = alpha * .12;
+    for (let mote = 0; mote < (game.reducedShake ? 6 : 12); mote += 1) {
+      const x = ((mote * 181 + time * .008 - game.cameraX * .025) % 1080 + 1080) % 1080 - 60;
+      const y = 80 + ((mote * 83 + time * .012) % 330);
+      ctx.fillStyle = mote % 2 ? '#a4f766' : '#50e7ff';
+      ctx.beginPath();
+      ctx.arc(x, y, 1.5 + mote % 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
   function drawBackground(time) {
     const progress = player.x / WORLD_WIDTH;
     if (drawPaintedEnvironment(time)) {
+      drawSpeakerStackUpperBackground(time);
       drawTimeOfDayAtmosphere(progress);
       return;
     }
@@ -3679,6 +4062,7 @@
     drawMidgroundParallax();
     drawNearSceneryParallax();
     if (!images.midground && currentSection().id === 'lagoon') drawLagoonBackdrop(time);
+    drawSpeakerStackUpperBackground(time);
     drawTimeOfDayAtmosphere(progress);
   }
 
@@ -4101,6 +4485,190 @@
     ctx.restore();
   }
 
+  function drawSpeakerStackGratedDeck(x, y, width, { accent = '#a4f766', depth = 24, rail = false } = {}) {
+    const metal = ctx.createLinearGradient(0, y, 0, y + depth);
+    metal.addColorStop(0, '#747a8a');
+    metal.addColorStop(.18, '#2e3240');
+    metal.addColorStop(1, '#11131d');
+    roundedRect(x, y, width, depth, 4, metal, '#090a12', 3);
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(x + 6, y + 2);
+    ctx.lineTo(x + width - 6, y + 2);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(215,223,236,.34)';
+    ctx.lineWidth = 1.2;
+    for (let grate = x + 14; grate < x + width - 8; grate += 19) {
+      ctx.beginPath();
+      ctx.moveTo(grate, y + 6);
+      ctx.lineTo(grate + 8, y + depth - 4);
+      ctx.stroke();
+    }
+    if (rail) {
+      ctx.strokeStyle = '#777d8c';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x + 8, y);
+      ctx.lineTo(x + 8, y - 25);
+      ctx.lineTo(x + 78, y - 25);
+      ctx.moveTo(x + width - 8, y);
+      ctx.lineTo(x + width - 8, y - 25);
+      ctx.lineTo(x + width - 78, y - 25);
+      ctx.stroke();
+    }
+  }
+
+  function drawSpeakerStackFlightCase(x, y, width, height, accent, label) {
+    const shell = ctx.createLinearGradient(x, y, x + width, y + height);
+    shell.addColorStop(0, '#444858');
+    shell.addColorStop(.18, '#171925');
+    shell.addColorStop(.82, '#0d0f18');
+    shell.addColorStop(1, '#333646');
+    roundedRect(x, y, width, height, 6, shell, '#080910', 3);
+    ctx.strokeStyle = '#a9afbb';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x + 7, y + 7, width - 14, height - 14);
+    ctx.fillStyle = '#d1a84d';
+    for (const corner of [[7, 7], [width - 7, 7], [7, height - 7], [width - 7, height - 7]]) {
+      ctx.beginPath();
+      ctx.arc(x + corner[0], y + corner[1], 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = accent;
+    ctx.globalAlpha = .8;
+    ctx.fillRect(x + 13, y + height - 13, width - 26, 5);
+    ctx.globalAlpha = 1;
+    if (label) {
+      ctx.fillStyle = '#fff0b8';
+      ctx.font = '900 7px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, x + width / 2, y + height / 2 + 3, width - 20);
+    }
+  }
+
+  function drawSpeakerStackPlatformFacade(platform, time) {
+    const x = platform.x - game.cameraX;
+    const y = platform.y;
+    const style = platform.speakerStackStyle;
+    const station = world.speakerStack;
+    const activePower = station?.completed ? Math.max(.28, speakerStackActivationProgress()) : .08;
+    const beatPhase = game.speakerStack.beatPhase;
+    const pulse = platform.speakerStackBassPad
+      ? 1 - smoothStep(clamp(beatPhase / .34, 0, 1))
+      : .14 + Math.sin(time * .004 + platform.x) * .035;
+    const accent = station?.completed ? '#a4f766' : '#50e7ff';
+
+    ctx.save();
+    if (style === 'speaker-road-case-approach') {
+      drawSpeakerStackFlightCase(x + 4, y, 126, 78, '#ff4fac', 'NN • ROAD CREW');
+      drawSpeakerStackFlightCase(x + 132, y + 8, 96, 70, '#50e7ff', 'AUDIO');
+      drawSpeakerStackFlightCase(x + 230, y + 18, 66, 60, '#ffd65a', '23');
+      ctx.fillStyle = '#11131d';
+      ctx.fillRect(x + 15, y + 77, platform.w - 30, 7);
+    } else if (style === 'speaker-amp-transfer') {
+      drawSpeakerStackGratedDeck(x, y, platform.w, { accent: '#ffd65a', depth: 22, rail: true });
+      roundedRect(x + 32, y + 22, platform.w - 64, 74, 7, '#11131d', '#656b7c', 3);
+      for (let row = 0; row < 3; row += 1) {
+        ctx.fillStyle = row === 0 ? '#ff4fac' : row === 1 ? '#50e7ff' : '#a4f766';
+        ctx.fillRect(x + 51, y + 36 + row * 17, platform.w - 102, 7);
+        for (let led = 0; led < 7; led += 1) ctx.fillRect(x + 52 + led * 20, y + 46 + row * 17, 7, 3);
+      }
+    } else if (style === 'speaker-lower-service-shelf') {
+      drawSpeakerStackGratedDeck(x, y, platform.w, { accent: '#ff4fac', depth: 23, rail: true });
+      ctx.strokeStyle = '#303442';
+      ctx.lineWidth = 7;
+      ctx.beginPath();
+      ctx.moveTo(x + 26, y + 23); ctx.lineTo(x + 62, y + 70);
+      ctx.moveTo(x + platform.w - 26, y + 23); ctx.lineTo(x + platform.w - 62, y + 70);
+      ctx.stroke();
+      ctx.strokeStyle = '#ff4fac';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x + 48, y + 40); ctx.lineTo(x + platform.w - 48, y + 40); ctx.stroke();
+    } else if (style === 'speaker-bass-launch') {
+      drawSpeakerStackGratedDeck(x, y, platform.w, { accent: '#a4f766', depth: 17 });
+      drawRoadieSpeakerCabinet(x + 35, y + 17, platform.w - 70, 148, pulse, '#a4f766', { launch: true });
+      ctx.strokeStyle = '#5d6373';
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.moveTo(x + 70, y + 165); ctx.lineTo(x + 42, y + 196);
+      ctx.moveTo(x + platform.w - 70, y + 165); ctx.lineTo(x + platform.w - 42, y + 196);
+      ctx.stroke();
+      ctx.globalAlpha = .18 + pulse * .32;
+      ctx.fillStyle = '#a4f766';
+      ctx.beginPath();
+      ctx.ellipse(x + platform.w / 2, y - 7, platform.w * .42, 13 + pulse * 9, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    } else if (style === 'speaker-mid-maintenance-deck') {
+      drawSpeakerStackGratedDeck(x, y, platform.w, { accent: '#50e7ff', depth: 24, rail: true });
+      drawPhase2Truss(x + 18, y + 24, platform.w - 36, 54, '#50e7ff');
+      for (let lamp = x + 55; lamp < x + platform.w - 24; lamp += 120) {
+        ctx.fillStyle = station?.completed ? '#a4f766' : '#ff835c';
+        ctx.shadowColor = ctx.fillStyle;
+        ctx.shadowBlur = 7 + activePower * 9;
+        ctx.beginPath(); ctx.arc(lamp, y + 40, 4, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+    } else if (style === 'speaker-line-array-carriage') {
+      if (images.speakerCarriage) {
+        const drawWidth = platform.w + 118;
+        const drawHeight = drawWidth * (images.speakerCarriage.height / images.speakerCarriage.width);
+        const deckRatio = .438;
+        ctx.drawImage(images.speakerCarriage, x - 59, y - drawHeight * deckRatio, drawWidth, drawHeight);
+      } else {
+        drawSpeakerStackGratedDeck(x, y, platform.w, { accent: '#ffd65a', depth: 28, rail: true });
+        drawPhase2SpeakerCabinet(x + 22, y + 30, 78, 120, pulse, '#ff4fac');
+        drawPhase2SpeakerCabinet(x + platform.w - 100, y + 30, 78, 120, pulse, '#50e7ff');
+      }
+    } else if (style === 'speaker-cross-stack-deck') {
+      drawSpeakerStackGratedDeck(x, y, platform.w, { accent: '#ff4fac', depth: 25, rail: true });
+      for (let cabinet = 0; cabinet < 3; cabinet += 1) {
+        drawPhase2SpeakerCabinet(x + 28 + cabinet * 118, y + 25, 90, 112, pulse, cabinet % 2 ? '#50e7ff' : '#ff4fac');
+      }
+      ctx.strokeStyle = '#6b7080';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(x + 20, y + 136); ctx.lineTo(x + 60, y + 172);
+      ctx.moveTo(x + platform.w - 20, y + 136); ctx.lineTo(x + platform.w - 60, y + 172);
+      ctx.stroke();
+    } else if (style === 'speaker-high-truss') {
+      drawSpeakerStackGratedDeck(x, y, platform.w, { accent: '#ffd65a', depth: 20, rail: true });
+      drawPhase2Truss(x + 10, y + 20, platform.w - 20, 58, '#ffd65a');
+      ctx.strokeStyle = 'rgba(80,231,255,.6)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x + 28, y + 78);
+      ctx.bezierCurveTo(x + platform.w * .3, y + 112, x + platform.w * .7, y + 46, x + platform.w - 28, y + 78);
+      ctx.stroke();
+    } else if (style === 'speaker-master-stack-deck') {
+      drawSpeakerStackGratedDeck(x, y, platform.w, { accent, depth: 26, rail: true });
+      const rackX = x + 118;
+      roundedRect(rackX, y + 26, platform.w - 236, 116, 9, '#11131f', '#747b8b', 4);
+      roundedRect(rackX + 15, y + 42, platform.w - 266, 32, 5, '#060812', accent, 2);
+      const poweredMeters = station?.completed
+        ? Math.max(1, Math.ceil(activePower * 14)) : 2;
+      for (let meter = 0; meter < 14; meter += 1) {
+        const meterHeight = 7 + (meter % 5) * 4;
+        ctx.fillStyle = meter < poweredMeters
+          ? meter > 10 ? '#ff4fac' : meter > 6 ? '#ffd65a' : '#a4f766'
+          : '#303343';
+        ctx.fillRect(rackX + 27 + meter * 17, y + 66 - meterHeight, 10, meterHeight);
+      }
+      ctx.fillStyle = '#fff0bd';
+      ctx.font = '900 10px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(station?.completed ? 'MASTER STACK • ONLINE' : 'MASTER STACK • STANDBY', x + platform.w / 2, y + 102);
+      ctx.strokeStyle = '#373b49';
+      ctx.lineWidth = 7;
+      ctx.beginPath();
+      ctx.moveTo(x + 68, y + 26); ctx.lineTo(x + 104, y + 160);
+      ctx.moveTo(x + platform.w - 68, y + 26); ctx.lineTo(x + platform.w - 104, y + 160);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   function drawPhase2PlatformFacade(platform, time) {
     if (!platform.phase2Style) return;
     const x = platform.x - game.cameraX;
@@ -4403,6 +4971,10 @@
   function drawPlatform(platform, time) {
     const x = platform.x - game.cameraX;
     if (x + platform.w < -100 || x > canvas.width + 100) return;
+    if (platform.speakerStackStation) {
+      drawSpeakerStackPlatformFacade(platform, time);
+      return;
+    }
     if (platform.phase2StationId === 'marquee' || platform.phase2StationId === 'rooftops') {
       drawPhase2PlatformFacade(platform, time);
       return;
@@ -4894,6 +5466,60 @@
 
   function phase2StationInView(station, padding = 280) {
     return station.end - game.cameraX > -padding && station.start - game.cameraX < canvas.width + padding;
+  }
+
+  function drawSpeakerStackStampedeBackplate(time) {
+    const station = world.speakerStack;
+    if (!station || !phase2StationInView(station, 520)) return;
+    const structure = station.structure;
+    const x = structure.x - game.cameraX;
+    if (images.speakerStackStructure) {
+      ctx.save();
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(images.speakerStackStructure, x, structure.y, structure.w, structure.h);
+      ctx.restore();
+    }
+
+    const activation = speakerStackActivationProgress();
+    const powered = station.completed ? Math.max(.22, activation) : 0;
+    if (powered > 0) {
+      const path = [
+        [18395, 426], [18395, 154], [18050, -18], [18570, -190],
+        [19015, -270], [18560, -430], [19300, -610],
+      ];
+      ctx.save();
+      ctx.globalAlpha = .28 + powered * .42;
+      ctx.strokeStyle = powered > .74 ? '#a4f766' : '#50e7ff';
+      ctx.shadowColor = ctx.strokeStyle;
+      ctx.shadowBlur = 12 + powered * 18;
+      ctx.lineWidth = 5;
+      ctx.setLineDash([18, 12]);
+      ctx.lineDashOffset = -time * .035;
+      ctx.beginPath();
+      path.forEach(([worldX, worldY], index) => {
+        const screenX = worldX - game.cameraX;
+        if (index === 0) ctx.moveTo(screenX, worldY);
+        else ctx.lineTo(screenX, worldY);
+      });
+      ctx.stroke();
+      ctx.setLineDash([]);
+      const activeNodes = Math.max(1, Math.ceil(powered * path.length));
+      path.slice(0, activeNodes).forEach(([worldX, worldY], index) => {
+        ctx.fillStyle = index % 2 ? '#ff4fac' : '#a4f766';
+        ctx.beginPath();
+        ctx.arc(worldX - game.cameraX, worldY, 4 + Math.sin(time * .008 + index) * 1.2, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.restore();
+    }
+
+    ctx.save();
+    roundedRect(17120 - game.cameraX, 405, 322, 36, 9, 'rgba(16,14,35,.9)', '#a4f766', 2.5);
+    ctx.fillStyle = '#fff0bd';
+    ctx.font = '900 12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('SPEAKER STACK STAMPEDE', 17281 - game.cameraX, 428, 292);
+    ctx.restore();
   }
 
   function drawWorld23MarqueeBackplate(station, time) {
@@ -6758,10 +7384,13 @@
 
   function drawWorld(time) {
     drawBackground(time);
+    ctx.save();
+    ctx.translate(0, -game.cameraY);
     const marquee = world23Phase2Station('marquee');
     if (marquee && !game.phase2.preShowHidden) drawWorld23MarqueeBackplate(marquee, time);
     const rooftops = world23Phase2Station('rooftops');
     if (rooftops && !game.phase2.preShowHidden) drawWorld23RoadieRooftopsBackplate(rooftops, time);
+    drawSpeakerStackStampedeBackplate(time);
     for (const platform of world.platforms) drawPlatform(platform, time);
     drawWorld23Phase2Destinations(time);
     drawCableCrawler(time);
@@ -6779,6 +7408,7 @@
       vanish: '#ff4fac', vanishRing: '#50e7ff', landingRing: 'rgba(255,214,90,.88)',
     });
     drawPlayer(time);
+    ctx.restore();
   }
 
   function drawConcert(time) {
@@ -6980,7 +7610,10 @@
       drawPlayer(time, true);
     } else {
       drawWorld(time);
+      ctx.save();
+      ctx.translate(0, -game.cameraY);
       drawEffects();
+      ctx.restore();
     }
     ctx.restore();
     drawHUD(time);
@@ -7072,6 +7705,56 @@
               carryingPlayer: player.platform?.id === lift.id,
             } : null;
           })(),
+        },
+        speakerStack: {
+          id: world.speakerStack?.id || SPEAKER_STACK_STATION.id,
+          completed: Boolean(world.speakerStack?.completed),
+          rewardSpawned: Boolean(world.speakerStack?.rewardSpawned),
+          completionMessage: SPEAKER_STACK_STATION.completion,
+          traversal: SPEAKER_STACK_STATION.traversal,
+          targetTraversalSeconds: [...SPEAKER_STACK_STATION.targetTraversalSeconds],
+          totalVerticalRise: SPEAKER_STACK_STATION.totalVerticalRise,
+          groundScreenY: Number((GROUND_Y - game.cameraY).toFixed(2)),
+          masterDeckScreenY: Number((-610 - game.cameraY).toFixed(2)),
+          originalGroundLeavesViewport: GROUND_Y - game.cameraY > canvas.height,
+          upperDestinationAboveGroundViewport: -610 < 0,
+          bassLaunchVelocity: SPEAKER_STACK_BASS_LAUNCH_VELOCITY,
+          bassLaunches: game.speakerStack.launches,
+          beatSeconds: SPEAKER_STACK_BEAT_SECONDS,
+          activationProgress: Number(speakerStackActivationProgress().toFixed(3)),
+          cameraHold: Number(game.speakerStack.cameraHold.toFixed(3)),
+          platformCount: world.platforms.filter((platform) => platform.speakerStackStation).length,
+          oldStockPlatforms: world.platforms.filter((platform) => (
+            platform.routeAct === 'stampede' || ['speaker-case', 'speaker-stack', 'bass-bridge', 'speaker-lift'].includes(platform.routeKind)
+          )).length,
+          customPlatformBaseSuppressed: true,
+          structureUsesTrueAlpha: true,
+          authoredUpperEnvironment: Boolean(images.speakerUpperSky),
+          premiumStructure: Boolean(images.speakerStackStructure),
+          premiumMovingCarriage: Boolean(images.speakerCarriage),
+          carriage: (() => {
+            const carriage = world.platforms.find((platform) => platform.speakerStackStyle === 'speaker-line-array-carriage');
+            return carriage ? {
+              x: Math.round(carriage.x),
+              baseX: carriage.baseX,
+              minX: carriage.baseX - carriage.range,
+              maxX: carriage.baseX + carriage.range,
+              y: Math.round(carriage.y),
+              axis: carriage.axis,
+              moving: carriage.moving,
+              carryingPlayer: player.platform?.id === carriage.id,
+            } : null;
+          })(),
+          audit: game.speakerStackAudit,
+        },
+        verticalCamera: game.verticalCameraAudit || {
+          scopedStation: SPEAKER_STACK_STATION.id,
+          enabled: false,
+          mode: game.verticalCameraMode,
+          cameraY: Number(game.cameraY.toFixed(2)),
+          targetY: Number(game.cameraTargetY.toFixed(2)),
+          authoredMinY: SPEAKER_STACK_STATION.camera.minY,
+          authoredMaxY: SPEAKER_STACK_STATION.camera.maxY,
         },
         cableCrawler: {
           name: 'CABLE CRAWLER',
@@ -7213,6 +7896,9 @@
           premiumRoadieMilo: Boolean(images.roadieMilo),
           premiumRoadieRex: Boolean(images.roadieRex),
           premiumCableCrawler: Boolean(images.cableCrawler),
+          premiumSpeakerStackStructure: Boolean(images.speakerStackStructure),
+          premiumSpeakerStackCarriage: Boolean(images.speakerCarriage),
+          speakerStackFoundationGrounded: Boolean(world.platforms.find((platform) => platform.speakerStackFoundation)),
           roadiePerformerFeetAnchoredToRehearsalDeck: true,
           premiumPhase2Landmarks: Boolean(images.world23Landmarks),
           landmarkAlphaRemoved: images.landmarkAlphaRemoved || 0,
@@ -7240,6 +7926,8 @@
           authoredActs: Object.values(environmentImageKeys).filter((key) => Boolean(images[key])).length,
           terrainFamilies: Object.keys(terrainRows).length,
           checkpointFamilies: world.checkpoints.length,
+          authoredUpperSpeakerSky: Boolean(images.speakerUpperSky),
+          verticalParallaxScopedToSpeakerStack: true,
           noTiling: true,
           subpixelMotion: true,
         },
@@ -7414,6 +8102,7 @@
     loadImage('assets/world2_3_env_beach_v1.webp'),
     loadImage('assets/world2_3_env_rooftops_v1.webp'),
     loadImage('assets/world2_3_env_stampede_v1.webp'),
+    loadImage('assets/world2_3_speaker_upper_sky_v1.webp'),
     loadImage('assets/world2_3_env_lagoon_v1.webp'),
     loadImage('assets/world2_3_env_powerup_v1.webp'),
     loadImage('assets/world2_3_env_victory_v1.webp'),
@@ -7429,6 +8118,8 @@
     loadImage('assets/world2_3_milo_rooftop_v1.png'),
     loadImage('assets/world2_3_rex_rooftop_v1.png'),
     loadImage('assets/world2_3_cable_crawler_v1.webp'),
+    loadImage('assets/world2_3_speaker_stack_stampede_v1.webp'),
+    loadImage('assets/world2_3_speaker_carriage_v1.webp'),
     loadImage('assets/world2_3_preshow_landmarks_v2.webp'),
     loadImage('assets/world2_3_feedback_fiend_v1.webp'),
   ]).then(([
@@ -7437,11 +8128,12 @@
     concertAudienceArt, nova, bandReplacements, preShowBandRaw, neonPinata, tacoTambourine,
     islandCatamaran,
     environmentSoundcheck, environmentBeach, environmentRooftops,
-    environmentStampede, environmentLagoon, environmentPowerup, environmentVictory,
+    environmentStampede, speakerUpperSkyArt, environmentLagoon, environmentPowerup, environmentVictory,
     terrainRemaster, checkpointStations, catamaranRemasterBase,
     marqueeStructureArt, welcomeCheckInBoothArt, roadieLoadingAnnexArt,
     roadieVenueTowerArt, roadieServiceClusterArt, roadieFreightCageArt,
     roadieMiloArt, roadieRexArt, cableCrawlerArt,
+    speakerStackStructureArt, speakerCarriageArt,
     world23LandmarksRaw, feedbackFiendArt,
   ]) => {
     images.hero = hero;
@@ -7466,6 +8158,7 @@
     images.environmentBeach = environmentBeach;
     images.environmentRooftops = environmentRooftops;
     images.environmentStampede = environmentStampede;
+    images.speakerUpperSky = speakerUpperSkyArt;
     images.environmentLagoon = environmentLagoon;
     images.environmentPowerup = environmentPowerup;
     images.environmentVictory = environmentVictory;
@@ -7481,6 +8174,8 @@
     images.roadieMilo = roadieMiloArt;
     images.roadieRex = roadieRexArt;
     images.cableCrawler = cableCrawlerArt;
+    images.speakerStackStructure = speakerStackStructureArt;
+    images.speakerCarriage = speakerCarriageArt;
     if (images.cableCrawler) {
       images.cableCrawlerBounds = measureAlphaBoundsByGrid(images.cableCrawler, 4, 1);
     }

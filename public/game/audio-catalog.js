@@ -657,6 +657,9 @@
     events[id] = event(worldTwoAsset(`${file}-01.wav`), { priority, duckDb, cooldownMs });
   });
   Object.assign(events, {
+    'stage.masterStackBassLaunch': event(worldTwoAsset('surf-wave-hit-01.wav'), { priority: 4, duckDb: 3.5, cooldownMs: 260, gain: .76 }),
+    'stage.masterStackPulse': event(worldTwoAsset('stage-generator-activate-01.wav'), { priority: 3, duckDb: 3, cooldownMs: 520, gain: .64 }),
+    'stage.masterStackOnline': event(worldTwoAsset('concert-finale-lift-01.wav'), { priority: 5, duckDb: 6, duckReleaseSeconds: .65, cooldownMs: 700, gain: .74 }),
     'boss.cableCrawler.enter': event(worldTwoAsset('stage-generator-activate-01.wav'), { priority: 4, duckDb: 4, cooldownMs: 500, gain: .76 }),
     'boss.cableCrawler.sweepWarn': event(worldTwoAsset('hazard-geyser-warn-01.wav'), { priority: 3, duckDb: 2.5, cooldownMs: 420, gain: .68 }),
     'boss.cableCrawler.cableSweep': event(worldTwoAsset('surf-obstacle-clear-01.wav'), { priority: 4, duckDb: 3.5, cooldownMs: 360, gain: .78 }),

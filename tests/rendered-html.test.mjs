@@ -2384,8 +2384,8 @@ test("ships the complete 35,000-unit Neon Neckties concert level", async () => {
   assert.match(runtime, /OLIVIA IS LOADING THE LAST TACOS!/);
   assert.match(runtime, /TACO ROADSTER: READY TO ROLL!/);
   assert.match(runtime, /SHOWTIME! OLIVIA IS TAKING THE SCENIC ROUTE!/);
-  assert.match(html, /level2-3\.js\?v=29/);
-  assert.match(runtime, /SOURCE_VERSION = 'w2-3-v29-roadie-utility-crawler'/);
+  assert.match(html, /level2-3\.js\?v=30/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-3-v30-speaker-stack-camera'/);
   assert.match(runtime, /generatorDefensePlans/);
   assert.match(runtime, /function ensureGeneratorDefensePlatform/);
   assert.match(runtime, /finitePlatformGeometry: world\.platforms\.every/);
@@ -2526,6 +2526,76 @@ test("ships the complete 35,000-unit Neon Neckties concert level", async () => {
   assert.match(html, /Skip Concert/);
   assert.equal(manifest.orientation, "landscape");
   assert.equal(manifest.display, "fullscreen");
+});
+
+test("rebuilds Speaker Stack Stampede as a true vertical station with a scoped hysteresis camera", async () => {
+  const runtime = await readFile(new URL("../public/game/level2-3.js", import.meta.url), "utf8");
+  const html = await readFile(new URL("../public/game/level2-3.html", import.meta.url), "utf8");
+  const audio = await readFile(new URL("../public/game/audio-catalog.js", import.meta.url), "utf8");
+
+  assert.match(runtime, /const SPEAKER_STACK_STATION = Object\.freeze/);
+  assert.match(runtime, /completion: 'MASTER STACK ONLINE'/);
+  assert.match(runtime, /targetTraversalSeconds: Object\.freeze\(\[20, 30\]\)/);
+  assert.match(runtime, /totalVerticalRise: 1070/);
+  assert.match(runtime, /grounded-roadie-cases-amp-transfer-bass-launch-mid-deck-line-array-carriage-cross-stack-high-truss-master-stack/);
+  for (const surface of [
+    "speaker-road-case-approach",
+    "speaker-amp-transfer",
+    "speaker-lower-service-shelf",
+    "speaker-bass-launch",
+    "speaker-mid-maintenance-deck",
+    "speaker-line-array-carriage",
+    "speaker-cross-stack-deck",
+    "speaker-high-truss",
+    "speaker-master-stack-deck",
+  ]) {
+    assert.match(runtime, new RegExp(`kind: '${surface}'`));
+  }
+  for (const removedSurface of ["speaker-case", "speaker-stack", "bass-bridge", "speaker-lift"]) {
+    assert.doesNotMatch(runtime, new RegExp(`kind: '${removedSurface}'`));
+  }
+  assert.doesNotMatch(runtime, /stampede: Object\.freeze\(\[/);
+  assert.doesNotMatch(runtime, /stampede-upper-pineapple-sentry|stampede-upper-pepper-moving-guard/);
+  assert.match(runtime, /function buildSpeakerStackStampede/);
+  assert.match(runtime, /id: 'speaker-stack-grounded-loading-foundation'/);
+  assert.match(runtime, /genericPlatformBaseSuppressed: true/);
+  assert.match(runtime, /oldStockPlatformsRemoved: true/);
+  assert.match(runtime, /oldRewardCoordinatesRemoved: true/);
+  assert.match(runtime, /SPEAKER_STACK_BASS_LAUNCH_VELOCITY = 1080/);
+  assert.match(runtime, /player\.vy = -SPEAKER_STACK_BASS_LAUNCH_VELOCITY/);
+  assert.match(runtime, /function drawSpeakerStackStampedeBackplate/);
+  assert.match(runtime, /function drawSpeakerStackPlatformFacade/);
+  assert.match(runtime, /platform\.speakerStackStation/);
+  assert.match(runtime, /world2_3_speaker_stack_stampede_v1\.webp/);
+  assert.match(runtime, /world2_3_speaker_carriage_v1\.webp/);
+  assert.match(runtime, /world2_3_speaker_upper_sky_v1\.webp/);
+  await access(new URL("../public/game/assets/world2_3_speaker_stack_stampede_v1.webp", import.meta.url));
+  await access(new URL("../public/game/assets/world2_3_speaker_carriage_v1.webp", import.meta.url));
+  await access(new URL("../public/game/assets/world2_3_speaker_upper_sky_v1.webp", import.meta.url));
+
+  assert.match(runtime, /upperThresholdFromBottom: \.78/);
+  assert.match(runtime, /lowerThresholdFromBottom: \.43/);
+  assert.match(runtime, /activeTargetFromBottom: \.66/);
+  assert.match(runtime, /minY: -830/);
+  assert.match(runtime, /smoothingUp: 5\.8/);
+  assert.match(runtime, /smoothingDown: 4\.4/);
+  assert.match(runtime, /function verticalCameraViewportLines/);
+  assert.match(runtime, /function updateConfiguredVerticalCamera/);
+  assert.match(runtime, /Math\.exp\(-smoothing \* dt\)/);
+  assert.match(runtime, /screenY < lines\.upper/);
+  assert.match(runtime, /screenY > lines\.lower/);
+  assert.match(runtime, /game\.cameraTargetY = 0;[\s\S]*game\.verticalCameraMode = 'respawn-return'/);
+  assert.match(runtime, /ctx\.translate\(0, -game\.cameraY\)/);
+  assert.match(runtime, /verticalParallaxScopedToSpeakerStack: true/);
+  assert.match(runtime, /originalGroundLeavesViewport: GROUND_Y - game\.cameraY > canvas\.height/);
+  assert.match(runtime, /camera changes are scoped|scopedStation: SPEAKER_STACK_STATION\.id/);
+
+  for (const eventId of ["stage.masterStackBassLaunch", "stage.masterStackPulse", "stage.masterStackOnline"]) {
+    assert.match(runtime, new RegExp(eventId.replaceAll(".", "\\.")));
+    assert.match(audio, new RegExp(`'${eventId.replaceAll(".", "\\.")}'`));
+  }
+  assert.match(html, /audio-catalog\.js\?v=12/);
+  assert.match(html, /level2-3\.js\?v=30/);
 });
 
 test("remasters World 2-3 pre-show exploration and gates the crowd only behind Feedback Fiend", async () => {
@@ -2704,7 +2774,7 @@ test("remasters World 2-3 pre-show exploration and gates the crowd only behind F
   assert.match(runtime, /damageMethod: 'three-stomps-on-open-amp-core'/);
   assert.match(runtime, /resetFeedbackFiendForRetry/);
   assert.match(runtime, /bossReady = game\.boss\.defeated/);
-  assert.match(html, /audio-catalog\.js\?v=11/);
+  assert.match(html, /audio-catalog\.js\?v=12/);
   await access(new URL("../public/game/assets/world2_3_neon_neckties_preshow_v1.png", import.meta.url));
   await access(new URL("../public/game/assets/world2_3_marquee_welcome_arch_v1.webp", import.meta.url));
   await access(new URL("../public/game/assets/world2_3_welcome_checkin_booth_v1.webp", import.meta.url));
@@ -3039,7 +3109,7 @@ test("keeps every remaining level runtime on the shared Phase 3 audio engine", a
     const catalogPosition = html.indexOf('src="audio-catalog.js');
     const enginePosition = html.indexOf('src="audio-engine.js');
     const runtimePosition = html.indexOf(`src="${runtimeName}`);
-    const expectedCatalogVersion = pageName === "level2-3.html" ? 11 : 9;
+    const expectedCatalogVersion = pageName === "level2-3.html" ? 12 : 9;
     assert.match(
       html,
       new RegExp(`src="audio-catalog\\.js\\?v=${expectedCatalogVersion}"`),
