@@ -2384,8 +2384,8 @@ test("ships the complete 35,000-unit Neon Neckties concert level", async () => {
   assert.match(runtime, /OLIVIA IS LOADING THE LAST TACOS!/);
   assert.match(runtime, /TACO ROADSTER: READY TO ROLL!/);
   assert.match(runtime, /SHOWTIME! OLIVIA IS TAKING THE SCENIC ROUTE!/);
-  assert.match(html, /level2-3\.js\?v=27/);
-  assert.match(runtime, /SOURCE_VERSION = 'w2-3-v27-roadie-rooftops-rebuild'/);
+  assert.match(html, /level2-3\.js\?v=28/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-3-v28-roadie-proportion-fix'/);
   assert.match(runtime, /generatorDefensePlans/);
   assert.match(runtime, /function ensureGeneratorDefensePlatform/);
   assert.match(runtime, /finitePlatformGeometry: world\.platforms\.every/);
@@ -2659,6 +2659,17 @@ test("remasters World 2-3 pre-show exploration and gates the crowd only behind F
   assert.match(runtime, /oldGenericPlatformKindsRendered: 0/);
   assert.match(runtime, /premiumLoadingAnnex: true/);
   assert.match(runtime, /structureFootprintFullySupported:/);
+  assert.match(runtime, /buildingX: 13720/);
+  assert.match(runtime, /buildingDrawWidth: 762/);
+  assert.match(runtime, /venueSourceWidth: 1481/);
+  assert.match(runtime, /venueSourceHeight: 875/);
+  assert.match(runtime, /venueSourceAspectPreserved:/);
+  assert.match(runtime, /fullVenueSourceRendered: true/);
+  assert.match(runtime, /modularUtilitySupports: 2/);
+  assert.match(runtime, /routeGeometryChanged: false/);
+  assert.match(runtime, /performerPlacementChanged: false/);
+  assert.match(runtime, /sourceAspectDrawWidth = Math\.round/);
+  assert.doesNotMatch(runtime, /authoredLiftCrop/);
   assert.match(runtime, /targetTraversalSeconds: \[18, 25\]/);
   assert.match(runtime, /performerSpeakerOverlap: false/);
   assert.match(runtime, /rewardAboveRehearsalRoof:/);

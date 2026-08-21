@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const SOURCE_VERSION = 'w2-3-v27-roadie-rooftops-rebuild';
+  const SOURCE_VERSION = 'w2-3-v28-roadie-proportion-fix';
 
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
@@ -108,10 +108,16 @@
   const ROADIE_ROOFTOPS_STRUCTURE = Object.freeze({
     startX: 11180,
     endX: 14540,
-    buildingX: 12720,
+    loadingAnnexEndX: 12880,
+    buildingX: 13720,
     buildingBottomY: GROUND_Y + 3,
-    buildingDrawWidth: 1780,
+    buildingDrawWidth: 762,
     buildingDrawHeight: 450,
+    venueSourceWidth: 1481,
+    venueSourceHeight: 875,
+    previousVenueCropFraction: .14,
+    previousBuildingDrawWidth: 1780,
+    previousBuildingDrawHeight: 450,
     liftRailX: 12680,
     rehearsalDeckY: 136,
   });
@@ -997,7 +1003,35 @@
           && roadieFoundation.x + roadieFoundation.w >= ROADIE_ROOFTOPS_STRUCTURE.endX,
         loadingBay: true,
         maintenanceLevels: 3,
+        venueSourceDimensions: [
+          ROADIE_ROOFTOPS_STRUCTURE.venueSourceWidth,
+          ROADIE_ROOFTOPS_STRUCTURE.venueSourceHeight,
+        ],
+        previousVenueDrawDimensions: [
+          ROADIE_ROOFTOPS_STRUCTURE.previousBuildingDrawWidth,
+          ROADIE_ROOFTOPS_STRUCTURE.previousBuildingDrawHeight,
+        ],
+        previousVenueCropFraction: ROADIE_ROOFTOPS_STRUCTURE.previousVenueCropFraction,
+        correctedVenueDrawDimensions: [
+          ROADIE_ROOFTOPS_STRUCTURE.buildingDrawWidth,
+          ROADIE_ROOFTOPS_STRUCTURE.buildingDrawHeight,
+        ],
+        venueSourceAspect: Number((
+          ROADIE_ROOFTOPS_STRUCTURE.venueSourceWidth / ROADIE_ROOFTOPS_STRUCTURE.venueSourceHeight
+        ).toFixed(4)),
+        correctedVenueDisplayAspect: Number((
+          ROADIE_ROOFTOPS_STRUCTURE.buildingDrawWidth / ROADIE_ROOFTOPS_STRUCTURE.buildingDrawHeight
+        ).toFixed(4)),
+        venueSourceAspectPreserved: Math.abs(
+          ROADIE_ROOFTOPS_STRUCTURE.buildingDrawWidth / ROADIE_ROOFTOPS_STRUCTURE.buildingDrawHeight
+          - ROADIE_ROOFTOPS_STRUCTURE.venueSourceWidth / ROADIE_ROOFTOPS_STRUCTURE.venueSourceHeight
+        ) < .002,
+        fullVenueSourceRendered: true,
+        modularUtilitySupports: 2,
+        routeGeometryChanged: false,
+        performerPlacementChanged: false,
         finalBuildingVisualHeight: ROADIE_ROOFTOPS_STRUCTURE.buildingDrawHeight,
+        finalBuildingVisualWidth: ROADIE_ROOFTOPS_STRUCTURE.buildingDrawWidth,
         routeVerticalRise: GROUND_Y - ROADIE_ROOFTOPS_STRUCTURE.rehearsalDeckY,
         targetTraversalSeconds: [18, 25],
         customTraversalSurfaceCount: WORLD23_PHASE2_STATIONS[1].platforms.length,
@@ -4632,7 +4666,7 @@
       // A continuous, ground-bearing fallback loading complex carries the
       // ordinary street into the rehearsal tower if authored art is missing.
     const annexX = toScreen(ROADIE_ROOFTOPS_STRUCTURE.startX + 10);
-    const annexWidth = ROADIE_ROOFTOPS_STRUCTURE.buildingX - ROADIE_ROOFTOPS_STRUCTURE.startX + 80;
+    const annexWidth = ROADIE_ROOFTOPS_STRUCTURE.loadingAnnexEndX - ROADIE_ROOFTOPS_STRUCTURE.startX;
     const wall = ctx.createLinearGradient(0, 238, 0, ROADIE_ROOFTOPS_STRUCTURE.buildingBottomY);
     wall.addColorStop(0, '#b85355');
     wall.addColorStop(.52, '#7a354f');
@@ -4703,6 +4737,72 @@
     }
     }
 
+    // Two compact, ground-bearing service modules support the utility-deck and
+    // vent collisions between the authored loading annex and rehearsal tower.
+    // They preserve the approved route width without stretching either source
+    // building into an implausibly wide facade.
+    const drawGroundedServiceModule = (worldX, topY, width, label, accent, panelCount) => {
+      const x = toScreen(worldX);
+      const bottomY = ROADIE_ROOFTOPS_STRUCTURE.buildingBottomY;
+      const wall = ctx.createLinearGradient(0, topY, 0, bottomY);
+      wall.addColorStop(0, '#9b4652');
+      wall.addColorStop(.48, '#66324a');
+      wall.addColorStop(1, '#30243a');
+      roundedRect(x, topY, width, bottomY - topY, 5, wall, '#201927', 4);
+      ctx.fillStyle = '#252735';
+      ctx.fillRect(x + 7, topY + 8, width - 14, 14);
+      ctx.fillStyle = accent;
+      ctx.fillRect(x + 12, topY + 11, width - 24, 3);
+
+      const bayWidth = (width - 34) / panelCount;
+      for (let panel = 0; panel < panelCount; panel += 1) {
+        const panelX = x + 14 + panel * bayWidth;
+        const panelY = topY + 36;
+        const panelHeight = Math.max(48, bottomY - panelY - 18);
+        const panelGradient = ctx.createLinearGradient(0, panelY, 0, panelY + panelHeight);
+        panelGradient.addColorStop(0, '#343747');
+        panelGradient.addColorStop(1, '#151722');
+        roundedRect(panelX, panelY, bayWidth - 8, panelHeight, 4, panelGradient, '#747a89', 2);
+        ctx.strokeStyle = 'rgba(211,218,225,.22)';
+        ctx.lineWidth = 1.2;
+        for (let seamY = panelY + 14; seamY < panelY + panelHeight - 8; seamY += 14) {
+          ctx.beginPath();
+          ctx.moveTo(panelX + 8, seamY);
+          ctx.lineTo(panelX + bayWidth - 16, seamY);
+          ctx.stroke();
+        }
+      }
+
+      ctx.fillStyle = '#171924';
+      ctx.fillRect(x + 8, bottomY - 15, width - 16, 15);
+      ctx.fillStyle = '#d7b66a';
+      ctx.fillRect(x + 5, bottomY - 7, width - 10, 7);
+      ctx.fillStyle = '#fff2c7';
+      ctx.font = '900 8px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, x + width / 2, topY + 19);
+
+      ctx.strokeStyle = '#1c1e2a';
+      ctx.lineWidth = 5;
+      for (const columnX of [x + 9, x + width - 9]) {
+        ctx.beginPath();
+        ctx.moveTo(columnX, topY + 20);
+        ctx.lineTo(columnX, bottomY - 6);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = 'rgba(80,231,255,.38)';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(x + 18, topY + 27);
+      ctx.lineTo(x + width - 18, bottomY - 19);
+      ctx.moveTo(x + width - 18, topY + 27);
+      ctx.lineTo(x + 18, bottomY - 19);
+      ctx.stroke();
+    };
+
+    drawGroundedServiceModule(12890, 298, 430, 'POWER + SIGNAL', '#b780ff', 3);
+    drawGroundedServiceModule(13410, 395, 330, 'VENT SERVICE', '#50e7ff', 2);
+
     // Permanently mounted lift rails bridge the ground, balcony, and upper
     // utility roof; only the carrier platform itself moves in front of them.
     const railX = toScreen(ROADIE_ROOFTOPS_STRUCTURE.liftRailX);
@@ -4720,16 +4820,23 @@
     ctx.fillStyle = '#ffd65a'; ctx.strokeStyle = '#151621'; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.arc(railX + 94, railTop - 22, 14, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 
-    // Premium authored tower replaces the old floating landmark sheet cell.
+    // Preserve the premium authored tower's full source ratio. The previous
+    // pass cropped 14% from the left and stretched the remainder into a
+    // 1780 x 450 box, visibly widening the entire building. At 450 px high the
+    // 1481 x 875 source is 762 px wide, which naturally matches the existing
+    // 780 px rehearsal-roof collision and keeps Milo, Rex, and the sound rack
+    // on their approved gameplay coordinates.
     if (images.roadieVenueTower) {
       const structure = ROADIE_ROOFTOPS_STRUCTURE;
-      const authoredLiftCrop = Math.round(images.roadieVenueTower.width * .14);
+      const sourceAspectDrawWidth = Math.round(
+        structure.buildingDrawHeight * images.roadieVenueTower.width / images.roadieVenueTower.height,
+      );
       ctx.drawImage(
         images.roadieVenueTower,
-        authoredLiftCrop, 0, images.roadieVenueTower.width - authoredLiftCrop, images.roadieVenueTower.height,
+        0, 0, images.roadieVenueTower.width, images.roadieVenueTower.height,
         toScreen(structure.buildingX),
         structure.buildingBottomY - structure.buildingDrawHeight,
-        structure.buildingDrawWidth,
+        sourceAspectDrawWidth,
         structure.buildingDrawHeight,
       );
     }
