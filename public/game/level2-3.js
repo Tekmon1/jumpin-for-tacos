@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const SOURCE_VERSION = 'w2-3-v28-roadie-proportion-fix';
+  const SOURCE_VERSION = 'w2-3-v29-roadie-utility-crawler';
 
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
@@ -121,6 +121,32 @@
     liftRailX: 12680,
     rehearsalDeckY: 136,
   });
+  const ROADIE_SERVICE_CLUSTER = Object.freeze({
+    equipmentName: 'POWER + SIGNAL',
+    equipment: Object.freeze({
+      x: 12890, y: 180, w: 455, h: 300,
+      source: Object.freeze({ x: 0, y: 0, w: 1190, h: 785 }),
+      label: Object.freeze({ x: 13028, y: 298, w: 178, h: 22 }),
+    }),
+    vent: Object.freeze({
+      x: 13405, y: 260, w: 350, h: 245,
+      source: Object.freeze({ x: 1130, y: 300, w: 692, h: 485 }),
+      label: Object.freeze({ x: 13508, y: 348, w: 142, h: 20 }),
+      fanCenters: Object.freeze([
+        Object.freeze({ x: 13513, y: 385, r: 39 }),
+        Object.freeze({ x: 13610, y: 385, r: 39 }),
+      ]),
+    }),
+  });
+  const CABLE_CRAWLER_MAX_HEALTH = 3;
+  const CABLE_CRAWLER_ARENA = Object.freeze({
+    left: 12920,
+    right: 13310,
+    platformY: 278,
+    trigger: Object.freeze({ x: 12938, y: 178, w: 350, h: 104 }),
+    safeDropToMainRoute: true,
+  });
+  const CABLE_CRAWLER_X = 13115;
   const WORLD23_PHASE2_STATIONS = Object.freeze([
     Object.freeze({
       id: 'marquee', name: 'Neon Neckties Welcome Arch', completion: 'MARQUEE ONLINE',
@@ -149,7 +175,7 @@
         Object.freeze({ x: 11890, y: 326, w: 230, kind: 'roadie-road-case-stack', routeShape: 'horizontal-road-case-transfer' }),
         Object.freeze({ x: 12240, y: 282, w: 330, kind: 'roadie-maintenance-balcony', routeShape: 'balcony-diagonal-transfer' }),
         Object.freeze({ x: 12680, y: 360, w: 190, kind: 'roadie-freight-lift', routeShape: 'vertical-freight-lift', moving: true, axis: 'y', range: 80, speed: .38, phase: 0 }),
-        Object.freeze({ x: 12920, y: 278, w: 390, kind: 'roadie-utility-deck', routeShape: 'lift-to-utility-roof' }),
+        Object.freeze({ x: 12920, y: 278, w: 390, kind: 'roadie-crawler-service-deck', routeShape: 'lift-to-supported-crawler-deck' }),
         Object.freeze({ x: 13420, y: 320, w: 300, kind: 'roadie-vent-housing', routeShape: 'horizontal-duct-transfer' }),
         Object.freeze({ x: 13800, y: 342, w: 240, kind: 'roadie-bass-launch', routeShape: 'single-bass-powered-launch', bassPad: true }),
         Object.freeze({ x: 13940, y: 230, w: 360, kind: 'roadie-truss-bridge', routeShape: 'bass-launch-to-truss' }),
@@ -429,6 +455,17 @@
       lastAttack: null, normalEvadeWindows: true,
     };
   }
+
+  function createCableCrawlerState() {
+    return {
+      phase: 'dormant', phaseTimer: 0,
+      health: CABLE_CRAWLER_MAX_HEALTH, maxHealth: CABLE_CRAWLER_MAX_HEALTH,
+      attackCycle: 0, invulnerable: 0, sweep: null, plugTargets: [],
+      triggered: false, announced: false, defeated: false, rewardSpawned: false,
+      utilityPowered: false, concertFallbackPowered: false,
+      hitsTaken: 0, retryCount: 0, defeatedAt: 0, lastAttack: null,
+    };
+  }
   const player = {
     x: 130, y: 370, w: 36, h: 44, vx: 0, vy: 0, dir: 1, grounded: false,
     platform: null, coyote: 0, jumpBuffer: 0, invulnerable: 0, rotation: 0, scale: 1,
@@ -467,6 +504,7 @@
     platformOverlapCount: 0,
     generatorDefenseAudit: null,
     phase2: createWorld23Phase2State(),
+    cableCrawler: createCableCrawlerState(),
     boss: createFeedbackFiendState(),
   };
 
@@ -506,6 +544,11 @@
   const previewGenerators = qaMode && params.has('generators')
     ? Number(params.get('generators')) : Number.NaN;
   const previewPhase2Complete = qaMode ? String(params.get('phase2Complete') || '') : '';
+  const previewCableCrawler = qaMode && params.get('cableCrawler') === '1';
+  const previewCableCrawlerHealth = qaMode && params.has('cableCrawlerHealth')
+    ? Math.max(1, Math.min(CABLE_CRAWLER_MAX_HEALTH, Number(params.get('cableCrawlerHealth')))) : Number.NaN;
+  const previewCableCrawlerPhase = qaMode ? String(params.get('cableCrawlerPhase') || '') : '';
+  const previewCableCrawlerDefeated = qaMode && params.get('cableCrawlerDefeated') === '1';
   const previewBoss = qaMode && params.get('boss') === '1';
   const previewBossHealth = qaMode && params.has('bossHealth')
     ? Math.max(1, Math.min(FEEDBACK_FIEND_MAX_HEALTH, Number(params.get('bossHealth')))) : Number.NaN;
@@ -1028,6 +1071,14 @@
         ) < .002,
         fullVenueSourceRendered: true,
         modularUtilitySupports: 2,
+        serviceClusterArtVersion: 'world2_3_roadie_service_cluster_v1',
+        centralEquipmentBuildingName: ROADIE_SERVICE_CLUSTER.equipmentName,
+        dimensionalEquipmentRoom: true,
+        dimensionalVentService: true,
+        ventFanAnimation: 'restrained-powered-rotation',
+        freightCageArtVersion: 'world2_3_roadie_freight_cage_v1',
+        freightLiftMechanicsPreserved: true,
+        crawlerServiceDeckSupportedByEquipmentRoom: true,
         routeGeometryChanged: false,
         performerPlacementChanged: false,
         finalBuildingVisualHeight: ROADIE_ROOFTOPS_STRUCTURE.buildingDrawHeight,
@@ -1049,6 +1100,14 @@
         collisionMatchedCustomSurfaces: true,
         genericPlatformBaseSuppressed: true,
         safeDropToMainRoute: true,
+        cableCrawler: {
+          optional: true,
+          maxHealth: CABLE_CRAWLER_MAX_HEALTH,
+          attacks: ['cable-sweep', 'power-plug-pop'],
+          damageMethod: 'three-stomps-on-exposed-core',
+          blocksMainRoute: false,
+          replacesFeedbackFiend: false,
+        },
       },
       catamaranIsolation: {
         stationEnd: world23Phase2Station('lagoon')?.end || 0,
@@ -1569,6 +1628,7 @@
       activeMusic: null, musicTransition: null,
       musicTransitionCount: 0, musicOverlapRecoveries: 0, maxMusicPlaying: 0,
       phase2: createWorld23Phase2State(),
+      cableCrawler: createCableCrawlerState(),
       boss: createFeedbackFiendState(),
       opening: {
         timer: 0, phase: 'loading', carX: OPENING_ROADSTER_X + 38,
@@ -1788,6 +1848,20 @@
     }
     game.pinata.hits = previewPinataHits;
     applyWorld23Phase2PreviewState();
+    if (previewCableCrawler) {
+      player.x = Math.max(player.x, CABLE_CRAWLER_ARENA.left + 38);
+      player.y = Math.min(player.y, CABLE_CRAWLER_ARENA.platformY - player.h);
+      game.cameraX = clamp(CABLE_CRAWLER_X - canvas.width * .5, 0, WORLD_WIDTH - canvas.width);
+      startCableCrawler();
+      if (Number.isFinite(previewCableCrawlerHealth)) game.cableCrawler.health = previewCableCrawlerHealth;
+      if (previewCableCrawlerPhase) {
+        enterCableCrawlerPhase(
+          previewCableCrawlerPhase,
+          previewCableCrawlerPhase === 'vulnerable' ? 8 : 2.4,
+        );
+      }
+      if (previewCableCrawlerDefeated) defeatCableCrawler();
+    }
     if (previewBoss) {
       player.x = Math.max(player.x, FEEDBACK_FIEND_ARENA.left + 150);
       game.cameraX = clamp(
@@ -2034,6 +2108,7 @@
 
   function beginRespawn() {
     if (game.state === 'respawning' || game.respawn.active) return;
+    if (!game.cableCrawler.defeated && game.cableCrawler.phase !== 'dormant') resetCableCrawlerForRetry();
     if (!game.boss.defeated && game.boss.phase !== 'dormant') resetFeedbackFiendForRetry();
     game.state = 'respawning';
     clearInputs();
@@ -2463,6 +2538,237 @@
       }
     }
     updateWorld23BassStack();
+  }
+
+  function cableCrawlerBody() {
+    return {
+      x: CABLE_CRAWLER_X - 67,
+      y: CABLE_CRAWLER_ARENA.platformY - 94,
+      w: 134,
+      h: 94,
+    };
+  }
+
+  function cableCrawlerCore() {
+    return {
+      x: CABLE_CRAWLER_X - 43,
+      y: CABLE_CRAWLER_ARENA.platformY - 105,
+      w: 86,
+      h: 48,
+    };
+  }
+
+  function enterCableCrawlerPhase(phase, duration) {
+    const crawler = game.cableCrawler;
+    crawler.phase = phase;
+    crawler.phaseTimer = duration;
+    crawler.lastAttack = phase;
+    if (phase === 'sweepCharge') {
+      crawler.attackCycle += 1;
+      crawler.sweep = null;
+      crawler.plugTargets.length = 0;
+      playAudio('boss.cableCrawler.sweepWarn', { position: audioPosition(CABLE_CRAWLER_X) });
+    } else if (phase === 'cableSweep') {
+      crawler.sweep = { timer: duration, duration, resolved: false };
+      playAudio('boss.cableCrawler.cableSweep', { position: audioPosition(CABLE_CRAWLER_X) });
+    } else if (phase === 'plugTelegraph') {
+      const playerCenter = clamp(
+        player.x + player.w / 2,
+        CABLE_CRAWLER_ARENA.left + 52,
+        CABLE_CRAWLER_ARENA.right - 52,
+      );
+      const opposite = playerCenter < CABLE_CRAWLER_X
+        ? CABLE_CRAWLER_ARENA.right - 70
+        : CABLE_CRAWLER_ARENA.left + 70;
+      crawler.plugTargets = [playerCenter, opposite].map((x) => ({
+        x, telegraph: duration, impact: 0, resolved: false,
+      }));
+      playAudio('boss.cableCrawler.plugWarn', { position: audioPosition(playerCenter) });
+    } else if (phase === 'plugImpact') {
+      crawler.plugTargets.forEach((target) => {
+        target.telegraph = 0;
+        target.impact = duration;
+        target.resolved = false;
+        spawnBurst(target.x - game.cameraX, CABLE_CRAWLER_ARENA.platformY - 5, '#ffd65a', game.reducedShake ? 5 : 11);
+      });
+      playAudio('boss.cableCrawler.plugImpact', { position: audioPosition(CABLE_CRAWLER_X) });
+    } else if (phase === 'vulnerable') {
+      crawler.invulnerable = 0;
+      crawler.sweep = null;
+      crawler.plugTargets.length = 0;
+      playAudio('boss.cableCrawler.vulnerable', { position: audioPosition(CABLE_CRAWLER_X) });
+      showMessage('CABLES TANGLED — STOMP THE GLOWING CORE!', 1.65);
+    }
+  }
+
+  function startCableCrawler() {
+    const crawler = game.cableCrawler;
+    if (crawler.defeated || crawler.phase !== 'dormant') return;
+    crawler.triggered = true;
+    crawler.sweep = null;
+    crawler.plugTargets.length = 0;
+    enterCableCrawlerPhase('intro', 1.05);
+    if (!crawler.announced) {
+      crawler.announced = true;
+      showMessage('CABLE CRAWLER — UNTANGLE THE ROADIE SYSTEMS!', 2.05);
+      playAudio('boss.cableCrawler.enter', { position: audioPosition(CABLE_CRAWLER_X) });
+      game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 2 : 5);
+    }
+  }
+
+  function resetCableCrawlerForRetry() {
+    const previous = game.cableCrawler;
+    const retryCount = (previous.retryCount || 0) + 1;
+    const triggered = previous.triggered;
+    const announced = previous.announced;
+    game.cableCrawler = createCableCrawlerState();
+    game.cableCrawler.retryCount = retryCount;
+    game.cableCrawler.triggered = triggered;
+    game.cableCrawler.announced = announced;
+  }
+
+  function spawnCableCrawlerReward() {
+    const crawler = game.cableCrawler;
+    if (crawler.rewardSpawned) return;
+    crawler.rewardSpawned = true;
+    for (let index = 0; index < 8; index += 1) {
+      addTaco(
+        CABLE_CRAWLER_ARENA.left + 42 + index * 43,
+        CABLE_CRAWLER_ARENA.platformY - 64 - Math.sin(index / 7 * Math.PI) * 46,
+        index === 3 ? 'rainbow' : 'taco',
+        { cableCrawlerReward: true, bonus: true },
+      );
+    }
+  }
+
+  function defeatCableCrawler() {
+    const crawler = game.cableCrawler;
+    if (crawler.defeated) return;
+    crawler.defeated = true;
+    crawler.defeatedAt = game.levelTime;
+    crawler.health = 0;
+    crawler.phase = 'defeated';
+    crawler.phaseTimer = 1.45;
+    crawler.sweep = null;
+    crawler.plugTargets.length = 0;
+    crawler.utilityPowered = true;
+    game.score += 5200;
+    game.energy = clamp(game.energy + 7, 0, 100);
+    spawnCableCrawlerReward();
+    spawnConfetti(CABLE_CRAWLER_X - game.cameraX, CABLE_CRAWLER_ARENA.platformY - 75, game.reducedShake ? 38 : 86);
+    spawnBurst(CABLE_CRAWLER_X - game.cameraX, CABLE_CRAWLER_ARENA.platformY - 70, '#50e7ff', game.reducedShake ? 12 : 28);
+    spawnBurst(CABLE_CRAWLER_X - game.cameraX, CABLE_CRAWLER_ARENA.platformY - 62, '#a4f766', game.reducedShake ? 9 : 20);
+    game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 4 : 9);
+    game.hitStop = Math.max(game.hitStop, .1);
+    showMessage('ROADIE SYSTEMS ONLINE', 2.05);
+    playAudio('boss.cableCrawler.defeat', { position: audioPosition(CABLE_CRAWLER_X) });
+  }
+
+  function damageCableCrawler() {
+    const crawler = game.cableCrawler;
+    if (crawler.phase !== 'vulnerable' || crawler.invulnerable > 0 || crawler.defeated) return;
+    crawler.health -= 1;
+    crawler.hitsTaken += 1;
+    crawler.invulnerable = .72;
+    const core = cableCrawlerCore();
+    player.y = Math.min(player.y, core.y - player.h - 1);
+    player.vy = -heroPhysics.enemyBounceVelocity;
+    player.grounded = false;
+    player.platform = null;
+    game.score += 1450;
+    game.energy = clamp(game.energy + 2, 0, 100);
+    spawnBurst(CABLE_CRAWLER_X - game.cameraX, core.y + 18, '#fff170', game.reducedShake ? 11 : 24);
+    game.cameraShake = Math.max(game.cameraShake, game.reducedShake ? 3 : 7);
+    game.hitStop = Math.max(game.hitStop, .065);
+    playAudio('boss.cableCrawler.damage', { position: audioPosition(CABLE_CRAWLER_X), hit: crawler.hitsTaken });
+    if (crawler.health <= 0) {
+      defeatCableCrawler();
+      return;
+    }
+    showMessage(`CABLE CRAWLER UNPLUGGED — ${crawler.health} HIT${crawler.health === 1 ? '' : 'S'} LEFT!`, 1.35);
+    enterCableCrawlerPhase('hurt', .72);
+  }
+
+  function updateCableCrawlerHazards(dt) {
+    const crawler = game.cableCrawler;
+    if (crawler.sweep) {
+      crawler.sweep.timer = Math.max(0, crawler.sweep.timer - dt);
+      const progress = 1 - crawler.sweep.timer / crawler.sweep.duration;
+      const sweepX = lerp(
+        CABLE_CRAWLER_ARENA.left + 26,
+        CABLE_CRAWLER_ARENA.right - 26,
+        smoothStep(progress),
+      );
+      const hazard = {
+        x: sweepX - 33,
+        y: CABLE_CRAWLER_ARENA.platformY - 47,
+        w: 66,
+        h: 35,
+      };
+      if (!crawler.sweep.resolved && intersects(player, hazard)) {
+        crawler.sweep.resolved = true;
+        hurtPlayer(sweepX);
+      }
+      if (crawler.sweep.timer <= 0) crawler.sweep = null;
+    }
+
+    for (const target of crawler.plugTargets) {
+      target.telegraph = Math.max(0, target.telegraph - dt);
+      target.impact = Math.max(0, target.impact - dt);
+      if (target.impact <= 0 || target.resolved) continue;
+      const hazard = {
+        x: target.x - 34,
+        y: CABLE_CRAWLER_ARENA.platformY - 128,
+        w: 68,
+        h: 128,
+      };
+      if (intersects(player, hazard)) {
+        target.resolved = true;
+        hurtPlayer(target.x);
+      }
+    }
+  }
+
+  function updateCableCrawler(dt) {
+    const crawler = game.cableCrawler;
+    crawler.invulnerable = Math.max(0, crawler.invulnerable - dt);
+    if (crawler.phase === 'dormant') {
+      if (intersects(player, CABLE_CRAWLER_ARENA.trigger)) startCableCrawler();
+      return;
+    }
+    if (crawler.phase === 'cleared') return;
+
+    updateCableCrawlerHazards(dt);
+    if (!crawler.defeated) {
+      const core = cableCrawlerCore();
+      if (crawler.phase === 'vulnerable' && intersects(player, core)
+        && heroCore.isStomp(player, core, { topTolerance: 52 })) {
+        damageCableCrawler();
+        return;
+      }
+      const body = cableCrawlerBody();
+      if (intersects(player, body) && crawler.phase !== 'vulnerable' && crawler.phase !== 'hurt') {
+        hurtPlayer(CABLE_CRAWLER_X);
+      }
+    }
+
+    crawler.phaseTimer = Math.max(0, crawler.phaseTimer - dt);
+    if (crawler.phaseTimer > 0) return;
+    if (crawler.phase === 'intro' || crawler.phase === 'hurt') {
+      enterCableCrawlerPhase('sweepCharge', 1.1);
+    } else if (crawler.phase === 'sweepCharge') {
+      enterCableCrawlerPhase('cableSweep', 1.55);
+    } else if (crawler.phase === 'cableSweep') {
+      enterCableCrawlerPhase('plugTelegraph', 1.2);
+    } else if (crawler.phase === 'plugTelegraph') {
+      enterCableCrawlerPhase('plugImpact', .5);
+    } else if (crawler.phase === 'plugImpact') {
+      enterCableCrawlerPhase('vulnerable', 2.75);
+    } else if (crawler.phase === 'vulnerable') {
+      enterCableCrawlerPhase('sweepCharge', 1.1);
+    } else if (crawler.phase === 'defeated') {
+      crawler.phase = 'cleared';
+    }
   }
 
   function feedbackFiendBody() {
@@ -2963,6 +3269,11 @@
     };
     game.phase2.concertFallbackSystems = [...fallbackSystems];
     game.phase2.preShowHidden = true;
+    game.cableCrawler.concertFallbackPowered = !game.cableCrawler.defeated;
+    game.cableCrawler.utilityPowered = true;
+    game.cableCrawler.phase = 'cleared';
+    game.cableCrawler.sweep = null;
+    game.cableCrawler.plugTargets.length = 0;
     game.boss.defeated = true;
     game.boss.gateOpen = true;
     game.boss.phase = 'cleared';
@@ -3158,6 +3469,7 @@
     updateMovingPlatforms();
     updatePlayer(dt);
     updateWorld23Phase2(dt);
+    updateCableCrawler(dt);
     updateFeedbackFiend(dt);
     updateEnemies(dt);
     updateCollectibles(dt);
@@ -3958,36 +4270,51 @@
           ctx.beginPath(); ctx.moveTo(braceX, platform.y + 18); ctx.lineTo(braceX + (braceX < x + platform.w / 2 ? 38 : -38), platform.y + 62); ctx.stroke();
         }
       } else if (style === 'roadie-freight-lift') {
-        drawGratedSurface('#ffd65a', 25);
-        ctx.strokeStyle = '#6f7688'; ctx.lineWidth = 5;
-        ctx.strokeRect(x + 8, platform.y - 54, platform.w - 16, 79);
-        ctx.strokeStyle = 'rgba(80,231,255,.72)'; ctx.lineWidth = 2;
-        for (let bar = x + 23; bar < x + platform.w - 14; bar += 29) {
-          ctx.beginPath(); ctx.moveTo(bar, platform.y - 49); ctx.lineTo(bar, platform.y + 19); ctx.stroke();
-        }
-        roundedRect(x + 27, platform.y - 40, platform.w - 54, 20, 4, '#1a1b2a', '#ff4fac', 2);
-        ctx.fillStyle = '#fff0bd'; ctx.font = '900 7px Arial'; ctx.textAlign = 'center';
-        ctx.fillText('ROADIE FREIGHT', x + platform.w / 2, platform.y - 27);
-      } else if (style === 'roadie-utility-deck') {
-        drawRail(9, platform.w - 9, 22);
-        drawGratedSurface('#b780ff', 20);
-        ctx.fillStyle = '#292b3c';
-        for (let panel = 0; panel < 4; panel += 1) {
-          roundedRect(x + 24 + panel * 83, platform.y + 20, 62, 30, 4, '#292b3c', panel % 2 ? '#50e7ff' : '#ff4fac', 1.7);
-          ctx.strokeStyle = '#73798b';
-          for (let vent = 0; vent < 4; vent += 1) {
-            ctx.beginPath(); ctx.moveTo(x + 34 + panel * 83, platform.y + 28 + vent * 5); ctx.lineTo(x + 76 + panel * 83, platform.y + 28 + vent * 5); ctx.stroke();
+        if (images.roadieFreightCage) {
+          ctx.drawImage(images.roadieFreightCage, x - 10, platform.y - 122, platform.w + 20, 147);
+        } else {
+          const cageMetal = ctx.createLinearGradient(0, platform.y - 92, 0, platform.y + 24);
+          cageMetal.addColorStop(0, '#6f7688'); cageMetal.addColorStop(.3, '#2b2e3a'); cageMetal.addColorStop(1, '#11131d');
+          roundedRect(x + 4, platform.y - 92, platform.w - 8, 116, 5, cageMetal, '#090a10', 4);
+          ctx.strokeStyle = '#d5a63e'; ctx.lineWidth = 4;
+          ctx.strokeRect(x + 16, platform.y - 63, platform.w - 32, 77);
+          ctx.strokeStyle = 'rgba(80,231,255,.58)'; ctx.lineWidth = 1.5;
+          for (let meshX = x + 24; meshX < x + platform.w - 18; meshX += 18) {
+            ctx.beginPath(); ctx.moveTo(meshX, platform.y - 61); ctx.lineTo(meshX + 26, platform.y + 12); ctx.stroke();
           }
+          drawGratedSurface('#ffd65a', 25);
+          roundedRect(x + 27, platform.y - 88, platform.w - 54, 21, 4, '#1a1b2a', '#ff4fac', 2);
         }
+        ctx.fillStyle = '#fff0bd'; ctx.font = '900 7px Arial'; ctx.textAlign = 'center';
+        ctx.fillText('ROADIE FREIGHT', x + platform.w / 2, platform.y - 87);
+      } else if (style === 'roadie-crawler-service-deck') {
+        roundedRect(x, platform.y, platform.w, 17, 4, '#343846', game.cableCrawler.utilityPowered ? '#a4f766' : '#b780ff', 3);
+        ctx.strokeStyle = '#747b89'; ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(x + 9, platform.y); ctx.lineTo(x + 9, platform.y - 20); ctx.lineTo(x + 72, platform.y - 20);
+        ctx.moveTo(x + platform.w - 9, platform.y); ctx.lineTo(x + platform.w - 9, platform.y - 20); ctx.lineTo(x + platform.w - 72, platform.y - 20);
+        ctx.stroke();
+        ctx.strokeStyle = '#2d303d'; ctx.lineWidth = 6;
+        for (const braceX of [x + 38, x + platform.w - 38]) {
+          ctx.beginPath(); ctx.moveTo(braceX, platform.y + 16); ctx.lineTo(braceX + (braceX < x + platform.w / 2 ? 34 : -34), platform.y + 48); ctx.stroke();
+        }
+        for (const lampX of [x + 22, x + platform.w - 22]) {
+          ctx.fillStyle = game.cableCrawler.utilityPowered ? '#a4f766' : '#ff835c';
+          ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 7;
+          ctx.beginPath(); ctx.arc(lampX, platform.y + 7, 3, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.shadowBlur = 0;
       } else if (style === 'roadie-vent-housing') {
-        roundedRect(x, platform.y, platform.w, 75, 8, '#343747', '#11131f', 4);
-        roundedRect(x + 14, platform.y + 12, platform.w - 28, 52, 5, '#141620', '#858b99', 2);
-        ctx.strokeStyle = '#707789'; ctx.lineWidth = 2;
-        for (let vent = x + 30; vent < x + platform.w - 20; vent += 18) {
-          ctx.beginPath(); ctx.moveTo(vent, platform.y + 20); ctx.lineTo(vent - 9, platform.y + 56); ctx.stroke();
-        }
-        ctx.fillStyle = station?.completed ? '#a4f766' : '#ff4fac';
-        ctx.beginPath(); ctx.arc(x + platform.w - 19, platform.y + 16, 4, 0, Math.PI * 2); ctx.fill();
+        roundedRect(x, platform.y, platform.w, 14, 4, '#343846', game.cableCrawler.utilityPowered ? '#a4f766' : '#50e7ff', 3);
+        ctx.strokeStyle = '#727987'; ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(x + 7, platform.y); ctx.lineTo(x + 7, platform.y - 18); ctx.lineTo(x + 62, platform.y - 18);
+        ctx.moveTo(x + platform.w - 7, platform.y); ctx.lineTo(x + platform.w - 7, platform.y - 18); ctx.lineTo(x + platform.w - 62, platform.y - 18);
+        ctx.stroke();
+        ctx.fillStyle = game.cableCrawler.utilityPowered ? '#a4f766' : '#ff4fac';
+        ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 8;
+        ctx.beginPath(); ctx.arc(x + platform.w - 20, platform.y + 7, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.shadowBlur = 0;
       } else if (style === 'roadie-bass-launch') {
         drawRoadieSpeakerCabinet(x + 8, platform.y + 5, platform.w - 24, 92, pulse, '#a4f766', { launch: true });
         ctx.strokeStyle = '#5b5f72'; ctx.lineWidth = 6;
@@ -4737,88 +5064,117 @@
     }
     }
 
-    // Two compact, ground-bearing service modules support the utility-deck and
-    // vent collisions between the authored loading annex and rehearsal tower.
-    // They preserve the approved route width without stretching either source
-    // building into an implausibly wide facade.
-    const drawGroundedServiceModule = (worldX, topY, width, label, accent, panelCount) => {
-      const x = toScreen(worldX);
-      const bottomY = ROADIE_ROOFTOPS_STRUCTURE.buildingBottomY;
-      const wall = ctx.createLinearGradient(0, topY, 0, bottomY);
-      wall.addColorStop(0, '#9b4652');
-      wall.addColorStop(.48, '#66324a');
-      wall.addColorStop(1, '#30243a');
-      roundedRect(x, topY, width, bottomY - topY, 5, wall, '#201927', 4);
-      ctx.fillStyle = '#252735';
-      ctx.fillRect(x + 7, topY + 8, width - 14, 14);
-      ctx.fillStyle = accent;
-      ctx.fillRect(x + 12, topY + 11, width - 24, 3);
+    // A single authored service-cluster sheet replaces the former flat boxes.
+    // Its two source crops are scaled independently so the POWER + SIGNAL roof
+    // and lower HVAC cabinet align with their approved collision surfaces.
+    const equipment = ROADIE_SERVICE_CLUSTER.equipment;
+    const vent = ROADIE_SERVICE_CLUSTER.vent;
+    const servicePowered = game.cableCrawler.utilityPowered || station.completed;
+    if (images.roadieServiceCluster) {
+      ctx.drawImage(
+        images.roadieServiceCluster,
+        equipment.source.x, equipment.source.y, equipment.source.w, equipment.source.h,
+        toScreen(equipment.x), equipment.y, equipment.w, equipment.h,
+      );
+      ctx.drawImage(
+        images.roadieServiceCluster,
+        vent.source.x, vent.source.y, vent.source.w, vent.source.h,
+        toScreen(vent.x), vent.y, vent.w, vent.h,
+      );
+    } else {
+      const equipmentX = toScreen(equipment.x);
+      const wall = ctx.createLinearGradient(0, equipment.y, 0, ROADIE_ROOFTOPS_STRUCTURE.buildingBottomY);
+      wall.addColorStop(0, '#c06452'); wall.addColorStop(.55, '#74334b'); wall.addColorStop(1, '#33243a');
+      roundedRect(equipmentX, equipment.y + 95, equipment.w, 205, 7, wall, '#1b1b27', 5);
+      roundedRect(equipmentX + 38, equipment.y + 142, 178, 143, 6, '#232633', '#858b99', 3);
+      for (let seam = 0; seam < 7; seam += 1) {
+        ctx.strokeStyle = 'rgba(214,220,230,.28)'; ctx.lineWidth = 1.3;
+        ctx.beginPath(); ctx.moveTo(equipmentX + 49, equipment.y + 158 + seam * 15);
+        ctx.lineTo(equipmentX + 205, equipment.y + 158 + seam * 15); ctx.stroke();
+      }
+      roundedRect(equipmentX + 258, equipment.y + 152, 150, 94, 5, '#171b27', '#50e7ff', 3);
+      for (let jack = 0; jack < 12; jack += 1) {
+        ctx.fillStyle = ['#50e7ff', '#ff4fac', '#ffd65a'][jack % 3];
+        ctx.beginPath(); ctx.arc(equipmentX + 278 + (jack % 4) * 34, equipment.y + 174 + Math.floor(jack / 4) * 25, 4, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.strokeStyle = '#242633'; ctx.lineWidth = 8;
+      ctx.beginPath(); ctx.moveTo(equipmentX + 278, equipment.y + 246); ctx.lineTo(equipmentX + 278, 455);
+      ctx.moveTo(equipmentX + 322, equipment.y + 246); ctx.lineTo(equipmentX + 322, 455); ctx.stroke();
 
-      const bayWidth = (width - 34) / panelCount;
-      for (let panel = 0; panel < panelCount; panel += 1) {
-        const panelX = x + 14 + panel * bayWidth;
-        const panelY = topY + 36;
-        const panelHeight = Math.max(48, bottomY - panelY - 18);
-        const panelGradient = ctx.createLinearGradient(0, panelY, 0, panelY + panelHeight);
-        panelGradient.addColorStop(0, '#343747');
-        panelGradient.addColorStop(1, '#151722');
-        roundedRect(panelX, panelY, bayWidth - 8, panelHeight, 4, panelGradient, '#747a89', 2);
-        ctx.strokeStyle = 'rgba(211,218,225,.22)';
-        ctx.lineWidth = 1.2;
-        for (let seamY = panelY + 14; seamY < panelY + panelHeight - 8; seamY += 14) {
-          ctx.beginPath();
-          ctx.moveTo(panelX + 8, seamY);
-          ctx.lineTo(panelX + bayWidth - 16, seamY);
-          ctx.stroke();
+      const ventX = toScreen(vent.x);
+      roundedRect(ventX, vent.y + 58, vent.w, 150, 8, '#292d39', '#747b88', 4);
+      for (const centerX of [ventX + 107, ventX + 209]) {
+        ctx.fillStyle = '#10131d'; ctx.strokeStyle = '#8c929e'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.arc(centerX, vent.y + 125, 43, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        for (let blade = 0; blade < 6; blade += 1) {
+          const angle = blade * Math.PI / 3;
+          ctx.strokeStyle = '#4e5564'; ctx.lineWidth = 5;
+          ctx.beginPath(); ctx.moveTo(centerX, vent.y + 125);
+          ctx.lineTo(centerX + Math.cos(angle) * 31, vent.y + 125 + Math.sin(angle) * 31); ctx.stroke();
         }
       }
-
-      ctx.fillStyle = '#171924';
-      ctx.fillRect(x + 8, bottomY - 15, width - 16, 15);
-      ctx.fillStyle = '#d7b66a';
-      ctx.fillRect(x + 5, bottomY - 7, width - 10, 7);
-      ctx.fillStyle = '#fff2c7';
-      ctx.font = '900 8px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText(label, x + width / 2, topY + 19);
-
-      ctx.strokeStyle = '#1c1e2a';
-      ctx.lineWidth = 5;
-      for (const columnX of [x + 9, x + width - 9]) {
-        ctx.beginPath();
-        ctx.moveTo(columnX, topY + 20);
-        ctx.lineTo(columnX, bottomY - 6);
-        ctx.stroke();
-      }
-      ctx.strokeStyle = 'rgba(80,231,255,.38)';
-      ctx.lineWidth = 1.6;
-      ctx.beginPath();
-      ctx.moveTo(x + 18, topY + 27);
-      ctx.lineTo(x + width - 18, bottomY - 19);
-      ctx.moveTo(x + width - 18, topY + 27);
-      ctx.lineTo(x + 18, bottomY - 19);
-      ctx.stroke();
-    };
-
-    drawGroundedServiceModule(12890, 298, 430, 'POWER + SIGNAL', '#b780ff', 3);
-    drawGroundedServiceModule(13410, 395, 330, 'VENT SERVICE', '#50e7ff', 2);
-
-    // Permanently mounted lift rails bridge the ground, balcony, and upper
-    // utility roof; only the carrier platform itself moves in front of them.
-    const railX = toScreen(ROADIE_ROOFTOPS_STRUCTURE.liftRailX);
-    const railTop = 176;
-    const railBottom = ROADIE_ROOFTOPS_STRUCTURE.buildingBottomY;
-    ctx.strokeStyle = '#20212e'; ctx.lineWidth = 11;
-    ctx.beginPath(); ctx.moveTo(railX + 22, railTop); ctx.lineTo(railX + 22, railBottom); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(railX + 166, railTop); ctx.lineTo(railX + 166, railBottom); ctx.stroke();
-    ctx.strokeStyle = '#767d8e'; ctx.lineWidth = 2.5;
-    for (let rungY = railTop + 12; rungY < railBottom - 10; rungY += 26) {
-      ctx.beginPath(); ctx.moveTo(railX + 25, rungY); ctx.lineTo(railX + 163, rungY); ctx.stroke();
     }
-    ctx.strokeStyle = '#13141e'; ctx.lineWidth = 3.5;
-    ctx.beginPath(); ctx.moveTo(railX + 94, railTop - 22); ctx.lineTo(railX + 94, railBottom); ctx.stroke();
-    ctx.fillStyle = '#ffd65a'; ctx.strokeStyle = '#151621'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.arc(railX + 94, railTop - 22, 14, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+    const drawMountedServiceLabel = (panel, text, accent) => {
+      const x = toScreen(panel.x);
+      roundedRect(x, panel.y, panel.w, panel.h, 4, 'rgba(19,21,31,.95)', accent, 2);
+      ctx.fillStyle = '#fff2c7';
+      ctx.font = `900 ${text.length > 13 ? 8 : 9}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.fillText(text, x + panel.w / 2, panel.y + panel.h * .7);
+      ctx.fillStyle = '#d8b76b';
+      for (const boltX of [x + 6, x + panel.w - 6]) {
+        ctx.beginPath(); ctx.arc(boltX, panel.y + 5, 1.5, 0, Math.PI * 2); ctx.fill();
+      }
+    };
+    drawMountedServiceLabel(equipment.label, ROADIE_SERVICE_CLUSTER.equipmentName, servicePowered ? '#a4f766' : '#b780ff');
+    drawMountedServiceLabel(vent.label, 'VENT SERVICE', servicePowered ? '#a4f766' : '#50e7ff');
+
+    // Subtle rotating highlights communicate airflow without covering the
+    // authored fan blades or turning the utility annex into a particle cloud.
+    for (let fanIndex = 0; fanIndex < vent.fanCenters.length; fanIndex += 1) {
+      const fan = vent.fanCenters[fanIndex];
+      const fanX = toScreen(fan.x);
+      ctx.save();
+      ctx.translate(fanX, fan.y);
+      ctx.rotate(servicePowered ? time * .0014 * (fanIndex ? -1 : 1) : 0);
+      ctx.strokeStyle = servicePowered ? 'rgba(164,247,102,.58)' : 'rgba(80,231,255,.22)';
+      ctx.lineWidth = 2;
+      for (let blade = 0; blade < 4; blade += 1) {
+        ctx.rotate(Math.PI / 2);
+        ctx.beginPath(); ctx.moveTo(7, 0); ctx.quadraticCurveTo(22, -8, fan.r - 4, 0); ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // Permanently mounted reinforced guide rails bridge the ground, balcony,
+    // and upper utility roof; the authored cage is the only moving component.
+    const railX = toScreen(ROADIE_ROOFTOPS_STRUCTURE.liftRailX);
+    const railTop = 158;
+    const railBottom = ROADIE_ROOFTOPS_STRUCTURE.buildingBottomY;
+    const railMetal = ctx.createLinearGradient(railX, 0, railX + 188, 0);
+    railMetal.addColorStop(0, '#151722'); railMetal.addColorStop(.45, '#747b8a'); railMetal.addColorStop(1, '#202331');
+    for (const columnX of [railX + 14, railX + 168]) {
+      roundedRect(columnX, railTop, 20, railBottom - railTop, 3, railMetal, '#0b0d14', 3);
+      ctx.fillStyle = '#d8b768';
+      ctx.fillRect(columnX - 4, railBottom - 8, 28, 8);
+    }
+    ctx.strokeStyle = '#535967'; ctx.lineWidth = 4;
+    for (let braceY = railTop + 24; braceY < railBottom - 26; braceY += 42) {
+      ctx.beginPath();
+      ctx.moveTo(railX + 33, braceY); ctx.lineTo(railX + 168, braceY + 34);
+      ctx.moveTo(railX + 168, braceY); ctx.lineTo(railX + 33, braceY + 34);
+      ctx.stroke();
+    }
+    roundedRect(railX + 40, railTop - 42, 102, 44, 7, '#252936', '#d8b768', 3);
+    ctx.fillStyle = '#0f1119'; ctx.strokeStyle = '#777e8c'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(railX + 91, railTop - 20, 15, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = '#151720'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(railX + 91, railTop - 5); ctx.lineTo(railX + 91, railBottom); ctx.stroke();
+    ctx.fillStyle = servicePowered ? '#a4f766' : '#ff835c';
+    ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = servicePowered ? 9 : 4;
+    ctx.beginPath(); ctx.arc(railX + 126, railTop - 26, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
 
     // Preserve the premium authored tower's full source ratio. The previous
     // pass cropped 14% from the left and stretched the remainder into a
@@ -5050,6 +5406,126 @@
     if (rooftops) drawWorld23RooftopSoundcheck(rooftops, time);
     if (lagoon) drawWorld23LagoonRehearsal(lagoon, time);
     if (golden && encore) drawWorld23GoldenTicket(golden, encore, time);
+  }
+
+  function drawCableCrawler(time) {
+    if (game.phase2.preShowHidden) return;
+    const left = CABLE_CRAWLER_ARENA.left - game.cameraX;
+    const right = CABLE_CRAWLER_ARENA.right - game.cameraX;
+    if (right < -120 || left > canvas.width + 120) return;
+    const crawler = game.cableCrawler;
+    const centerX = CABLE_CRAWLER_X - game.cameraX;
+    const active = !['dormant', 'cleared'].includes(crawler.phase) && !crawler.defeated;
+
+    if (crawler.sweep) {
+      const progress = 1 - crawler.sweep.timer / crawler.sweep.duration;
+      const sweepX = lerp(left + 26, right - 26, smoothStep(progress));
+      ctx.save();
+      ctx.strokeStyle = '#ffd65a'; ctx.lineWidth = 10; ctx.lineCap = 'round';
+      ctx.shadowColor = '#ff4fac'; ctx.shadowBlur = 13;
+      ctx.beginPath();
+      ctx.moveTo(centerX, CABLE_CRAWLER_ARENA.platformY - 61);
+      ctx.quadraticCurveTo((centerX + sweepX) / 2, CABLE_CRAWLER_ARENA.platformY - 84, sweepX, CABLE_CRAWLER_ARENA.platformY - 29);
+      ctx.stroke();
+      ctx.fillStyle = '#fff170';
+      ctx.beginPath(); ctx.arc(sweepX, CABLE_CRAWLER_ARENA.platformY - 29, 9, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    for (const target of crawler.plugTargets) {
+      const x = target.x - game.cameraX;
+      ctx.save();
+      if (target.telegraph > 0) {
+        const urgency = 1 - clamp(target.telegraph / 1.2, 0, 1);
+        ctx.strokeStyle = urgency > .65 ? '#fff170' : '#50e7ff';
+        ctx.lineWidth = 3 + urgency * 2;
+        ctx.setLineDash([7, 5]);
+        ctx.beginPath();
+        ctx.ellipse(x, CABLE_CRAWLER_ARENA.platformY - 5, 34, 9, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = `rgba(255,79,172,${.08 + urgency * .2})`;
+        ctx.fillRect(x - 24, CABLE_CRAWLER_ARENA.platformY - 92, 48, 87);
+      } else if (target.impact > 0) {
+        const fade = clamp(target.impact / .5, 0, 1);
+        ctx.fillStyle = `rgba(255,241,112,${.42 + fade * .38})`;
+        ctx.shadowColor = '#ff4fac'; ctx.shadowBlur = 18;
+        ctx.beginPath();
+        ctx.moveTo(x - 31, CABLE_CRAWLER_ARENA.platformY);
+        ctx.lineTo(x - 9, CABLE_CRAWLER_ARENA.platformY - 128);
+        ctx.lineTo(x + 9, CABLE_CRAWLER_ARENA.platformY - 128);
+        ctx.lineTo(x + 31, CABLE_CRAWLER_ARENA.platformY);
+        ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    if (crawler.defeated || crawler.utilityPowered) {
+      ctx.save();
+      ctx.strokeStyle = '#a4f766'; ctx.lineWidth = 7; ctx.lineCap = 'round';
+      ctx.shadowColor = '#50e7ff'; ctx.shadowBlur = 11;
+      ctx.beginPath();
+      ctx.moveTo(centerX + 43, CABLE_CRAWLER_ARENA.platformY - 31);
+      ctx.bezierCurveTo(centerX + 88, CABLE_CRAWLER_ARENA.platformY - 18, centerX + 128, 315, 13307 - game.cameraX, 315);
+      ctx.stroke();
+      ctx.fillStyle = '#fff170';
+      roundedRect(13295 - game.cameraX, 305, 25, 22, 5, '#252936', '#a4f766', 2);
+      ctx.restore();
+    }
+
+    const frame = crawler.defeated || crawler.phase === 'cleared' ? 3
+      : crawler.phase === 'vulnerable' || crawler.phase === 'hurt' ? 2
+        : ['sweepCharge', 'cableSweep', 'plugTelegraph', 'plugImpact'].includes(crawler.phase) ? 1 : 0;
+    if (images.cableCrawler && images.cableCrawlerBounds?.[frame]) {
+      const bounds = images.cableCrawlerBounds[frame];
+      const height = frame === 1 ? 142 : frame === 2 ? 110 : frame === 3 ? 82 : 104;
+      const width = height * bounds.w / bounds.h;
+      const warningShake = crawler.phase === 'sweepCharge' ? Math.sin(time * .08) * 2 : 0;
+      ctx.save();
+      ctx.translate(centerX + warningShake, CABLE_CRAWLER_ARENA.platformY);
+      ctx.shadowColor = crawler.phase === 'vulnerable' ? '#fff170'
+        : crawler.utilityPowered ? '#a4f766' : '#ff4fac';
+      ctx.shadowBlur = active ? 13 : 5;
+      ctx.drawImage(
+        images.cableCrawler,
+        bounds.x, bounds.y, bounds.w, bounds.h,
+        -width / 2, -height, width, height,
+      );
+      ctx.restore();
+    } else {
+      ctx.save();
+      ctx.translate(centerX, CABLE_CRAWLER_ARENA.platformY - 45);
+      ctx.strokeStyle = '#50e7ff'; ctx.lineWidth = 9; ctx.lineCap = 'round';
+      for (const direction of [-1, 1]) {
+        ctx.beginPath(); ctx.moveTo(direction * 18, 5); ctx.quadraticCurveTo(direction * 48, 30, direction * 64, 42); ctx.stroke();
+      }
+      ctx.fillStyle = '#222532'; ctx.strokeStyle = '#ffd65a'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(0, 0, 42, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = crawler.phase === 'vulnerable' ? '#fff170' : '#ff4fac';
+      ctx.beginPath(); ctx.arc(0, -7, 16, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    if (active) {
+      const barWidth = 148;
+      roundedRect(centerX - barWidth / 2, 143, barWidth, 28, 8, 'rgba(18,12,31,.9)', '#50e7ff', 2);
+      ctx.fillStyle = '#fff3cc'; ctx.font = '900 9px Arial'; ctx.textAlign = 'center';
+      ctx.fillText('CABLE CRAWLER', centerX, 154);
+      ctx.fillStyle = '#292b38'; ctx.fillRect(centerX - 58, 159, 116, 6);
+      ctx.fillStyle = '#ff4fac'; ctx.fillRect(centerX - 58, 159, 116 * (crawler.health / crawler.maxHealth), 6);
+    }
+
+    if (crawler.phase === 'vulnerable') {
+      const core = cableCrawlerCore();
+      const coreX = core.x + core.w / 2 - game.cameraX;
+      const pulse = .86 + Math.sin(time * .02) * .14;
+      ctx.save();
+      ctx.strokeStyle = '#fff170'; ctx.lineWidth = 3; ctx.shadowColor = '#fff170'; ctx.shadowBlur = 15;
+      ctx.beginPath(); ctx.ellipse(coreX, core.y + 5, 43 * pulse, 13 * pulse, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = '#fff8dc'; ctx.font = '900 8px Arial'; ctx.textAlign = 'center';
+      ctx.fillText('STOMP!', coreX, core.y - 11);
+      ctx.restore();
+    }
   }
 
   function drawFeedbackFiendArena(time) {
@@ -6288,6 +6764,7 @@
     if (rooftops && !game.phase2.preShowHidden) drawWorld23RoadieRooftopsBackplate(rooftops, time);
     for (const platform of world.platforms) drawPlatform(platform, time);
     drawWorld23Phase2Destinations(time);
+    drawCableCrawler(time);
     drawOpeningScene(time);
     for (const cameo of world.bandCameos) drawBandCameo(cameo, time);
     drawBoat(time);
@@ -6596,6 +7073,27 @@
             } : null;
           })(),
         },
+        cableCrawler: {
+          name: 'CABLE CRAWLER',
+          phase: game.cableCrawler.phase,
+          health: game.cableCrawler.health,
+          maxHealth: game.cableCrawler.maxHealth,
+          triggered: game.cableCrawler.triggered,
+          defeated: game.cableCrawler.defeated,
+          hitsTaken: game.cableCrawler.hitsTaken,
+          retryCount: game.cableCrawler.retryCount,
+          rewardSpawned: game.cableCrawler.rewardSpawned,
+          utilityPowered: game.cableCrawler.utilityPowered,
+          concertFallbackPowered: game.cableCrawler.concertFallbackPowered,
+          arena: { ...CABLE_CRAWLER_ARENA, bossX: CABLE_CRAWLER_X },
+          attacks: ['cable-sweep', 'power-plug-pop'],
+          damageMethod: 'three-stomps-on-exposed-core',
+          normalHeroCapable: true,
+          superHeroRequired: false,
+          blocksMainRoute: false,
+          activeSweep: Boolean(game.cableCrawler.sweep),
+          activePlugTargets: game.cableCrawler.plugTargets.length,
+        },
         boss: {
           name: 'THE FEEDBACK FIEND',
           phase: game.boss.phase,
@@ -6710,8 +7208,11 @@
           marqueeStructureUsesTrueAlpha: true,
           premiumRoadieLoadingAnnex: Boolean(images.roadieLoadingAnnex),
           premiumRoadieVenueTower: Boolean(images.roadieVenueTower),
+          premiumRoadieServiceCluster: Boolean(images.roadieServiceCluster),
+          premiumRoadieFreightCage: Boolean(images.roadieFreightCage),
           premiumRoadieMilo: Boolean(images.roadieMilo),
           premiumRoadieRex: Boolean(images.roadieRex),
+          premiumCableCrawler: Boolean(images.cableCrawler),
           roadiePerformerFeetAnchoredToRehearsalDeck: true,
           premiumPhase2Landmarks: Boolean(images.world23Landmarks),
           landmarkAlphaRemoved: images.landmarkAlphaRemoved || 0,
@@ -6923,8 +7424,11 @@
     loadImage('assets/world2_3_welcome_checkin_booth_v1.webp'),
     loadImage('assets/world2_3_roadie_loading_annex_v1.webp'),
     loadImage('assets/world2_3_roadie_venue_tower_v1.webp'),
+    loadImage('assets/world2_3_roadie_service_cluster_v1.webp'),
+    loadImage('assets/world2_3_roadie_freight_cage_v1.webp'),
     loadImage('assets/world2_3_milo_rooftop_v1.png'),
     loadImage('assets/world2_3_rex_rooftop_v1.png'),
+    loadImage('assets/world2_3_cable_crawler_v1.webp'),
     loadImage('assets/world2_3_preshow_landmarks_v2.webp'),
     loadImage('assets/world2_3_feedback_fiend_v1.webp'),
   ]).then(([
@@ -6936,7 +7440,8 @@
     environmentStampede, environmentLagoon, environmentPowerup, environmentVictory,
     terrainRemaster, checkpointStations, catamaranRemasterBase,
     marqueeStructureArt, welcomeCheckInBoothArt, roadieLoadingAnnexArt,
-    roadieVenueTowerArt, roadieMiloArt, roadieRexArt,
+    roadieVenueTowerArt, roadieServiceClusterArt, roadieFreightCageArt,
+    roadieMiloArt, roadieRexArt, cableCrawlerArt,
     world23LandmarksRaw, feedbackFiendArt,
   ]) => {
     images.hero = hero;
@@ -6971,8 +7476,14 @@
     images.welcomeCheckInBooth = welcomeCheckInBoothArt;
     images.roadieLoadingAnnex = roadieLoadingAnnexArt;
     images.roadieVenueTower = roadieVenueTowerArt;
+    images.roadieServiceCluster = roadieServiceClusterArt;
+    images.roadieFreightCage = roadieFreightCageArt;
     images.roadieMilo = roadieMiloArt;
     images.roadieRex = roadieRexArt;
+    images.cableCrawler = cableCrawlerArt;
+    if (images.cableCrawler) {
+      images.cableCrawlerBounds = measureAlphaBoundsByGrid(images.cableCrawler, 4, 1);
+    }
     images.world23Landmarks = prepareWorld23LandmarkSheet(world23LandmarksRaw);
     images.feedbackFiend = feedbackFiendArt;
     if (images.feedbackFiend) {

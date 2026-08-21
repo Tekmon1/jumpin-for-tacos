@@ -2384,8 +2384,8 @@ test("ships the complete 35,000-unit Neon Neckties concert level", async () => {
   assert.match(runtime, /OLIVIA IS LOADING THE LAST TACOS!/);
   assert.match(runtime, /TACO ROADSTER: READY TO ROLL!/);
   assert.match(runtime, /SHOWTIME! OLIVIA IS TAKING THE SCENIC ROUTE!/);
-  assert.match(html, /level2-3\.js\?v=28/);
-  assert.match(runtime, /SOURCE_VERSION = 'w2-3-v28-roadie-proportion-fix'/);
+  assert.match(html, /level2-3\.js\?v=29/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-3-v29-roadie-utility-crawler'/);
   assert.match(runtime, /generatorDefensePlans/);
   assert.match(runtime, /function ensureGeneratorDefensePlatform/);
   assert.match(runtime, /finitePlatformGeometry: world\.platforms\.every/);
@@ -2571,8 +2571,11 @@ test("remasters World 2-3 pre-show exploration and gates the crowd only behind F
   assert.match(runtime, /world2_3_welcome_checkin_booth_v1\.webp/);
   assert.match(runtime, /world2_3_roadie_loading_annex_v1\.webp/);
   assert.match(runtime, /world2_3_roadie_venue_tower_v1\.webp/);
+  assert.match(runtime, /world2_3_roadie_service_cluster_v1\.webp/);
+  assert.match(runtime, /world2_3_roadie_freight_cage_v1\.webp/);
   assert.match(runtime, /world2_3_milo_rooftop_v1\.png/);
   assert.match(runtime, /world2_3_rex_rooftop_v1\.png/);
+  assert.match(runtime, /world2_3_cable_crawler_v1\.webp/);
   assert.doesNotMatch(runtime, /world2_3_marquee_structure_v3\.webp/);
   assert.match(runtime, /world2_3_preshow_landmarks_v2\.webp/);
   assert.match(runtime, /world2_3_feedback_fiend_v1\.webp/);
@@ -2630,7 +2633,7 @@ test("remasters World 2-3 pre-show exploration and gates the crowd only behind F
     "roadie-road-case-stack",
     "roadie-maintenance-balcony",
     "roadie-freight-lift",
-    "roadie-utility-deck",
+    "roadie-crawler-service-deck",
     "roadie-vent-housing",
     "roadie-bass-launch",
     "roadie-truss-bridge",
@@ -2666,6 +2669,12 @@ test("remasters World 2-3 pre-show exploration and gates the crowd only behind F
   assert.match(runtime, /venueSourceAspectPreserved:/);
   assert.match(runtime, /fullVenueSourceRendered: true/);
   assert.match(runtime, /modularUtilitySupports: 2/);
+  assert.match(runtime, /centralEquipmentBuildingName: ROADIE_SERVICE_CLUSTER\.equipmentName/);
+  assert.match(runtime, /equipmentName: 'POWER \+ SIGNAL'/);
+  assert.match(runtime, /dimensionalEquipmentRoom: true/);
+  assert.match(runtime, /dimensionalVentService: true/);
+  assert.match(runtime, /freightLiftMechanicsPreserved: true/);
+  assert.doesNotMatch(runtime, /function drawGroundedServiceModule/);
   assert.match(runtime, /routeGeometryChanged: false/);
   assert.match(runtime, /performerPlacementChanged: false/);
   assert.match(runtime, /sourceAspectDrawWidth = Math\.round/);
@@ -2677,8 +2686,11 @@ test("remasters World 2-3 pre-show exploration and gates the crowd only behind F
   assert.match(runtime, /roadieFreightLift: \(\(\) =>/);
   assert.match(runtime, /premiumRoadieLoadingAnnex: Boolean\(images\.roadieLoadingAnnex\)/);
   assert.match(runtime, /premiumRoadieVenueTower: Boolean\(images\.roadieVenueTower\)/);
+  assert.match(runtime, /premiumRoadieServiceCluster: Boolean\(images\.roadieServiceCluster\)/);
+  assert.match(runtime, /premiumRoadieFreightCage: Boolean\(images\.roadieFreightCage\)/);
   assert.match(runtime, /premiumRoadieMilo: Boolean\(images\.roadieMilo\)/);
   assert.match(runtime, /premiumRoadieRex: Boolean\(images\.roadieRex\)/);
+  assert.match(runtime, /premiumCableCrawler: Boolean\(images\.cableCrawler\)/);
   assert.doesNotMatch(runtime, /drawWorld23Landmark\(1,/);
   assert.match(runtime, /waterfront-pontoons-suspended-rehearsal-structures/);
   assert.match(runtime, /fast-forward-flow-ticket-arches-and-moving-signs/);
@@ -2692,14 +2704,17 @@ test("remasters World 2-3 pre-show exploration and gates the crowd only behind F
   assert.match(runtime, /damageMethod: 'three-stomps-on-open-amp-core'/);
   assert.match(runtime, /resetFeedbackFiendForRetry/);
   assert.match(runtime, /bossReady = game\.boss\.defeated/);
-  assert.match(html, /audio-catalog\.js\?v=10/);
+  assert.match(html, /audio-catalog\.js\?v=11/);
   await access(new URL("../public/game/assets/world2_3_neon_neckties_preshow_v1.png", import.meta.url));
   await access(new URL("../public/game/assets/world2_3_marquee_welcome_arch_v1.webp", import.meta.url));
   await access(new URL("../public/game/assets/world2_3_welcome_checkin_booth_v1.webp", import.meta.url));
   await access(new URL("../public/game/assets/world2_3_roadie_loading_annex_v1.webp", import.meta.url));
   await access(new URL("../public/game/assets/world2_3_roadie_venue_tower_v1.webp", import.meta.url));
+  await access(new URL("../public/game/assets/world2_3_roadie_service_cluster_v1.webp", import.meta.url));
+  await access(new URL("../public/game/assets/world2_3_roadie_freight_cage_v1.webp", import.meta.url));
   await access(new URL("../public/game/assets/world2_3_milo_rooftop_v1.png", import.meta.url));
   await access(new URL("../public/game/assets/world2_3_rex_rooftop_v1.png", import.meta.url));
+  await access(new URL("../public/game/assets/world2_3_cable_crawler_v1.webp", import.meta.url));
   await access(new URL("../public/game/assets/world2_3_preshow_landmarks_v2.webp", import.meta.url));
   await access(new URL("../public/game/assets/world2_3_feedback_fiend_v1.webp", import.meta.url));
   for (const eventId of [
@@ -2707,6 +2722,10 @@ test("remasters World 2-3 pre-show exploration and gates the crowd only behind F
     "concert.start",
     "concert.tambourineAccent",
     "checkpoint.activate",
+    "boss.cableCrawler.enter",
+    "boss.cableCrawler.cableSweep",
+    "boss.cableCrawler.plugImpact",
+    "boss.cableCrawler.defeat",
     "boss.feedbackFiend.enter",
     "boss.feedbackFiend.shockwave",
     "boss.feedbackFiend.defeat",
@@ -2714,6 +2733,36 @@ test("remasters World 2-3 pre-show exploration and gates the crowd only behind F
     assert.match(runtime, new RegExp(eventId.replaceAll(".", "\\.")));
     assert.match(audio, new RegExp(`'${eventId.replaceAll(".", "\\.")}'`));
   }
+});
+
+test("remasters the Roadie utility cluster and keeps Cable Crawler optional and repeat-safe", async () => {
+  const runtime = await readFile(new URL("../public/game/level2-3.js", import.meta.url), "utf8");
+
+  assert.match(runtime, /const CABLE_CRAWLER_MAX_HEALTH = 3/);
+  assert.match(runtime, /const CABLE_CRAWLER_ARENA = Object\.freeze/);
+  assert.match(runtime, /safeDropToMainRoute: true/);
+  assert.match(runtime, /function createCableCrawlerState/);
+  assert.match(runtime, /function startCableCrawler/);
+  assert.match(runtime, /function updateCableCrawlerHazards/);
+  assert.match(runtime, /function damageCableCrawler/);
+  assert.match(runtime, /function defeatCableCrawler/);
+  assert.match(runtime, /function resetCableCrawlerForRetry/);
+  assert.match(runtime, /function drawCableCrawler/);
+  assert.match(runtime, /attacks: \['cable-sweep', 'power-plug-pop'\]/);
+  assert.match(runtime, /damageMethod: 'three-stomps-on-exposed-core'/);
+  assert.match(runtime, /normalHeroCapable: true/);
+  assert.match(runtime, /superHeroRequired: false/);
+  assert.match(runtime, /blocksMainRoute: false/);
+  assert.match(runtime, /if \(crawler\.rewardSpawned\) return/);
+  assert.match(runtime, /if \(crawler\.defeated\) return/);
+  assert.match(runtime, /ROADIE SYSTEMS ONLINE/);
+  assert.match(runtime, /game\.cableCrawler\.concertFallbackPowered = !game\.cableCrawler\.defeated/);
+  assert.match(runtime, /game\.cableCrawler\.utilityPowered = true/);
+  assert.match(runtime, /resetCableCrawlerForRetry\(\)/);
+  assert.match(runtime, /updateCableCrawler\(dt\)/);
+  assert.match(runtime, /drawCableCrawler\(time\)/);
+  assert.match(runtime, /drawMountedServiceLabel\(equipment\.label, ROADIE_SERVICE_CLUSTER\.equipmentName/);
+  assert.match(runtime, /drawMountedServiceLabel\(vent\.label, 'VENT SERVICE'/);
 });
 
 test("ships the Neon Neckties full-song arrangement and review studio", async () => {
@@ -2990,7 +3039,7 @@ test("keeps every remaining level runtime on the shared Phase 3 audio engine", a
     const catalogPosition = html.indexOf('src="audio-catalog.js');
     const enginePosition = html.indexOf('src="audio-engine.js');
     const runtimePosition = html.indexOf(`src="${runtimeName}`);
-    const expectedCatalogVersion = pageName === "level2-3.html" ? 10 : 9;
+    const expectedCatalogVersion = pageName === "level2-3.html" ? 11 : 9;
     assert.match(
       html,
       new RegExp(`src="audio-catalog\\.js\\?v=${expectedCatalogVersion}"`),

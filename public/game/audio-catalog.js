@@ -657,6 +657,14 @@
     events[id] = event(worldTwoAsset(`${file}-01.wav`), { priority, duckDb, cooldownMs });
   });
   Object.assign(events, {
+    'boss.cableCrawler.enter': event(worldTwoAsset('stage-generator-activate-01.wav'), { priority: 4, duckDb: 4, cooldownMs: 500, gain: .76 }),
+    'boss.cableCrawler.sweepWarn': event(worldTwoAsset('hazard-geyser-warn-01.wav'), { priority: 3, duckDb: 2.5, cooldownMs: 420, gain: .68 }),
+    'boss.cableCrawler.cableSweep': event(worldTwoAsset('surf-obstacle-clear-01.wav'), { priority: 4, duckDb: 3.5, cooldownMs: 360, gain: .78 }),
+    'boss.cableCrawler.plugWarn': event(worldTwoAsset('hazard-coconut-deflect-01.wav'), { priority: 3, duckDb: 2.5, cooldownMs: 360, gain: .72 }),
+    'boss.cableCrawler.plugImpact': event(worldTwoAsset('hazard-coconut-cannon-fire-01.wav'), { priority: 4, duckDb: 3.5, cooldownMs: 180, maxPolyphony: 1, gain: .76 }),
+    'boss.cableCrawler.vulnerable': event(worldTwoAsset('stage-generator-activate-01.wav'), { priority: 4, duckDb: 4, cooldownMs: 520, gain: .76 }),
+    'boss.cableCrawler.damage': event(worldTwoAsset('enemy-stomp-pepper-01.wav'), { priority: 5, duckDb: 5.5, cooldownMs: 180, gain: .86 }),
+    'boss.cableCrawler.defeat': event(worldTwoAsset('concert-finale-lift-01.wav'), { priority: 5, duckDb: 7, duckReleaseSeconds: .72, cooldownMs: 700, gain: .74 }),
     'boss.feedbackFiend.enter': event(worldTwoAsset('concert-start-01.wav'), { priority: 5, duckDb: 6.5, cooldownMs: 600, gain: .82 }),
     'boss.feedbackFiend.charge': event(worldTwoAsset('hazard-geyser-warn-01.wav'), { priority: 4, duckDb: 3.5, cooldownMs: 420, gain: .78 }),
     'boss.feedbackFiend.shockwave': event(worldTwoAsset('surf-wave-hit-01.wav'), { priority: 4, duckDb: 4.5, cooldownMs: 260, gain: .86 }),
