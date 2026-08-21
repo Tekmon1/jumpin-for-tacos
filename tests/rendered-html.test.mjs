@@ -2384,8 +2384,8 @@ test("ships the complete 35,000-unit Neon Neckties concert level", async () => {
   assert.match(runtime, /OLIVIA IS LOADING THE LAST TACOS!/);
   assert.match(runtime, /TACO ROADSTER: READY TO ROLL!/);
   assert.match(runtime, /SHOWTIME! OLIVIA IS TAKING THE SCENIC ROUTE!/);
-  assert.match(html, /level2-3\.js\?v=30/);
-  assert.match(runtime, /SOURCE_VERSION = 'w2-3-v30-speaker-stack-camera'/);
+  assert.match(html, /level2-3\.js\?v=31/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-3-v31-speaker-stack-proportion-grounding'/);
   assert.match(runtime, /generatorDefensePlans/);
   assert.match(runtime, /function ensureGeneratorDefensePlatform/);
   assert.match(runtime, /finitePlatformGeometry: world\.platforms\.every/);
@@ -2565,7 +2565,28 @@ test("rebuilds Speaker Stack Stampede as a true vertical station with a scoped h
   assert.match(runtime, /player\.vy = -SPEAKER_STACK_BASS_LAUNCH_VELOCITY/);
   assert.match(runtime, /function drawSpeakerStackStampedeBackplate/);
   assert.match(runtime, /function drawSpeakerStackPlatformFacade/);
+  assert.match(runtime, /function drawSpeakerStackFoundation/);
+  assert.match(runtime, /function drawSpeakerStackGroundSupport/);
+  assert.match(runtime, /function drawSpeakerStackGroundSupports/);
   assert.match(runtime, /platform\.speakerStackStation/);
+  assert.match(runtime, /platform\.speakerStackFoundation/);
+  assert.match(runtime, /sourceWidth: 1536/);
+  assert.match(runtime, /sourceHeight: 1024/);
+  assert.match(runtime, /sourceAlphaBottom: 978/);
+  assert.match(runtime, /previousDrawWidth: 3000/);
+  assert.match(runtime, /previousDrawHeight: 1300/);
+  assert.match(runtime, /drawHeight: 1300/);
+  assert.match(runtime, /const uniformScale = structure\.drawHeight \/ images\.speakerStackStructure\.height/);
+  assert.match(runtime, /const drawWidth = images\.speakerStackStructure\.width \* uniformScale/);
+  assert.match(runtime, /structure\.centerX - game\.cameraX - drawWidth \/ 2/);
+  assert.doesNotMatch(runtime, /structure\.x, structure\.y, structure\.w, structure\.h/);
+  assert.match(runtime, /const SPEAKER_STACK_GROUND_SUPPORTS = Object\.freeze/);
+  assert.match(runtime, /groundSupportCount: SPEAKER_STACK_GROUND_SUPPORTS\.length/);
+  assert.match(runtime, /foundationArtMatchesCollision: true/);
+  assert.match(runtime, /placement: 'speaker-stack-upper'/);
+  assert.match(runtime, /const toastY = toast\.placement === 'speaker-stack-upper' \? 350 : 446/);
+  assert.match(runtime, /ROADIE LOAD FLOOR • 23/);
+  assert.match(runtime, /Wide steel feet and visible anchor bolts establish the actual terrain/);
   assert.match(runtime, /world2_3_speaker_stack_stampede_v1\.webp/);
   assert.match(runtime, /world2_3_speaker_carriage_v1\.webp/);
   assert.match(runtime, /world2_3_speaker_upper_sky_v1\.webp/);
@@ -2595,7 +2616,7 @@ test("rebuilds Speaker Stack Stampede as a true vertical station with a scoped h
     assert.match(audio, new RegExp(`'${eventId.replaceAll(".", "\\.")}'`));
   }
   assert.match(html, /audio-catalog\.js\?v=12/);
-  assert.match(html, /level2-3\.js\?v=30/);
+  assert.match(html, /level2-3\.js\?v=31/);
 });
 
 test("remasters World 2-3 pre-show exploration and gates the crowd only behind Feedback Fiend", async () => {

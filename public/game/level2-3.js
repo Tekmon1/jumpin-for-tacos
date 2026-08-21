@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const SOURCE_VERSION = 'w2-3-v30-speaker-stack-camera';
+  const SOURCE_VERSION = 'w2-3-v31-speaker-stack-proportion-grounding';
 
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
@@ -99,9 +99,18 @@
     energy: 7,
     targetTraversalSeconds: Object.freeze([20, 30]),
     totalVerticalRise: 1070,
-    structure: Object.freeze({ x: 16920, y: -840, w: 3000, h: 1300 }),
-    trigger: Object.freeze({ x: 19010, y: -704, w: 590, h: 142 }),
-    reward: Object.freeze({ x: 19065, y: -684, count: 14, columns: 7, rainbowEvery: 4 }),
+    structure: Object.freeze({
+      centerX: 18420,
+      y: -840,
+      drawHeight: 1300,
+      sourceWidth: 1536,
+      sourceHeight: 1024,
+      sourceAlphaBottom: 978,
+      previousDrawWidth: 3000,
+      previousDrawHeight: 1300,
+    }),
+    trigger: Object.freeze({ x: 18710, y: -704, w: 550, h: 142 }),
+    reward: Object.freeze({ x: 18755, y: -684, count: 14, columns: 7, rainbowEvery: 4 }),
     camera: Object.freeze({
       enabledRegion: Object.freeze({ start: 16960, end: 20360 }),
       upperThresholdFromBottom: .78,
@@ -116,17 +125,25 @@
     }),
     traversal: 'grounded-roadie-cases-amp-transfer-bass-launch-mid-deck-line-array-carriage-cross-stack-high-truss-master-stack',
     platforms: Object.freeze([
-      Object.freeze({ x: 17160, y: 374, w: 300, kind: 'speaker-road-case-approach', routeShape: 'grounded-equipment-approach' }),
-      Object.freeze({ x: 17520, y: 306, w: 250, kind: 'speaker-amp-transfer', routeShape: 'diagonal-amplifier-transfer' }),
-      Object.freeze({ x: 17865, y: 252, w: 250, kind: 'speaker-lower-service-shelf', routeShape: 'short-horizontal-service-transfer' }),
-      Object.freeze({ x: 18215, y: 142, w: 350, kind: 'speaker-bass-launch', routeShape: 'single-bass-powered-launch', bassPad: true }),
-      Object.freeze({ x: 17720, y: -18, w: 680, kind: 'speaker-mid-maintenance-deck', routeShape: 'bass-launch-to-wide-maintenance-deck' }),
-      Object.freeze({ x: 18420, y: -190, w: 320, kind: 'speaker-line-array-carriage', routeShape: 'moving-sound-hardware', moving: true, axis: 'x', range: 170, speed: .42, phase: .35 }),
-      Object.freeze({ x: 18860, y: -270, w: 400, kind: 'speaker-cross-stack-deck', routeShape: 'carriage-to-cross-stack-transfer' }),
-      Object.freeze({ x: 18100, y: -430, w: 780, kind: 'speaker-high-truss', routeShape: 'supported-upper-truss-crossing' }),
-      Object.freeze({ x: 19020, y: -610, w: 560, kind: 'speaker-master-stack-deck', routeShape: 'final-super-double-jump', summit: true }),
+      Object.freeze({ x: 17180, y: 374, w: 300, kind: 'speaker-road-case-approach', routeShape: 'grounded-equipment-approach' }),
+      Object.freeze({ x: 17510, y: 306, w: 250, kind: 'speaker-amp-transfer', routeShape: 'diagonal-amplifier-transfer' }),
+      Object.freeze({ x: 17825, y: 252, w: 250, kind: 'speaker-lower-service-shelf', routeShape: 'short-horizontal-service-transfer' }),
+      Object.freeze({ x: 18170, y: 142, w: 340, kind: 'speaker-bass-launch', routeShape: 'single-bass-powered-launch', bassPad: true }),
+      Object.freeze({ x: 17720, y: -18, w: 650, kind: 'speaker-mid-maintenance-deck', routeShape: 'bass-launch-to-wide-maintenance-deck' }),
+      Object.freeze({ x: 18280, y: -190, w: 300, kind: 'speaker-line-array-carriage', routeShape: 'moving-sound-hardware', moving: true, axis: 'x', range: 150, speed: .42, phase: .35 }),
+      Object.freeze({ x: 18680, y: -270, w: 380, kind: 'speaker-cross-stack-deck', routeShape: 'carriage-to-cross-stack-transfer' }),
+      Object.freeze({ x: 17780, y: -430, w: 760, kind: 'speaker-high-truss', routeShape: 'supported-upper-truss-crossing' }),
+      Object.freeze({ x: 18720, y: -610, w: 520, kind: 'speaker-master-stack-deck', routeShape: 'final-super-double-jump', summit: true }),
     ]),
   });
+  const SPEAKER_STACK_GROUND_SUPPORTS = Object.freeze([
+    Object.freeze({ x: 17550, topY: 402, w: 88, accent: '#ffd65a', kind: 'left-line-array-foot' }),
+    Object.freeze({ x: 17930, topY: 401, w: 104, accent: '#50e7ff', kind: 'left-rack-foot' }),
+    Object.freeze({ x: 18120, topY: 398, w: 132, accent: '#ff4fac', kind: 'master-woofer-left-cradle' }),
+    Object.freeze({ x: 18560, topY: 398, w: 132, accent: '#a4f766', kind: 'master-woofer-right-cradle' }),
+    Object.freeze({ x: 18820, topY: 401, w: 104, accent: '#50e7ff', kind: 'right-rack-foot' }),
+    Object.freeze({ x: 19220, topY: 402, w: 88, accent: '#ffd65a', kind: 'right-line-array-foot' }),
+  ]);
   const MARQUEE_STRUCTURE = Object.freeze({
     centerX: 3700,
     bottomY: GROUND_Y + 3,
@@ -967,12 +984,12 @@
     // These curated trails replace the stale summit rewards created by the
     // former repeated five-platform route groups. Every collectible now sits
     // on or directly above a collision-backed piece of the new structure.
-    addArc(17184, 322, 5, 48, 38);
-    addArc(17542, 252, 5, 48, 42);
-    addArc(17886, 196, 5, 48, 38);
+    addArc(17204, 322, 5, 48, 38);
+    addArc(17532, 252, 5, 48, 42);
+    addArc(17846, 196, 5, 48, 38);
     addArc(17786, -72, 8, 72, 58);
-    addArc(18888, -324, 7, 54, 52);
-    addArc(18144, -486, 9, 82, 42);
+    addArc(18708, -324, 7, 54, 52);
+    addArc(17824, -486, 9, 78, 42);
 
     game.speakerStackAudit = {
       sourceVersion: SOURCE_VERSION,
@@ -988,6 +1005,21 @@
       movingSoundHardware: 'line-array-service-carriage',
       bassLaunchVelocity: SPEAKER_STACK_BASS_LAUNCH_VELOCITY,
       safeDropToMainRoute: true,
+      sourceAspectRatio: definition.structure.sourceWidth / definition.structure.sourceHeight,
+      previousRenderAspectRatio: definition.structure.previousDrawWidth / definition.structure.previousDrawHeight,
+      correctedRenderAspectRatio: definition.structure.sourceWidth / definition.structure.sourceHeight,
+      previousHorizontalScale: definition.structure.previousDrawWidth / definition.structure.sourceWidth,
+      correctedUniformScale: definition.structure.drawHeight / definition.structure.sourceHeight,
+      horizontalStretchFactorRemoved: (
+        definition.structure.previousDrawWidth / definition.structure.sourceWidth
+      ) / (definition.structure.previousDrawHeight / definition.structure.sourceHeight),
+      measuredAlphaGroundGap: GROUND_Y - (
+        definition.structure.y
+        + definition.structure.sourceAlphaBottom
+          * (definition.structure.drawHeight / definition.structure.sourceHeight)
+      ),
+      groundSupportCount: SPEAKER_STACK_GROUND_SUPPORTS.length,
+      foundationArtMatchesCollision: true,
     };
   }
 
@@ -2722,6 +2754,7 @@
       title: station.completion,
       subtitle: 'THE WHOLE SOUND SYSTEM IS LIVE',
       color: station.accent,
+      placement: 'speaker-stack-upper',
       timer: 3,
     };
     spawnSpeakerStackReward();
@@ -2754,7 +2787,7 @@
         game.speakerStack.powerStage = stage;
         if (stage === 2) {
           playAudio('stage.masterStackPulse', {
-            position: audioPosition(station.structure.x + station.structure.w / 2),
+            position: audioPosition(station.structure.centerX),
             powerStage: stage,
           });
         }
@@ -4519,6 +4552,155 @@
     }
   }
 
+  function drawSpeakerStackFoundation(platform, time) {
+    const x = platform.x - game.cameraX;
+    const y = platform.y;
+    const pulse = .48 + Math.sin(time * .0024) * .08;
+    const base = ctx.createLinearGradient(0, y, 0, y + platform.h);
+    base.addColorStop(0, '#313647');
+    base.addColorStop(.16, '#1b1e2b');
+    base.addColorStop(1, '#0b0d16');
+
+    ctx.save();
+    ctx.fillStyle = base;
+    ctx.fillRect(x, y, platform.w, platform.h);
+
+    // The reinforced loading-floor lip is exactly the collision contact line.
+    // Taco Hero stands at y=GROUND_Y; no decorative ledge sits above it.
+    const lip = ctx.createLinearGradient(0, y, 0, y + 17);
+    lip.addColorStop(0, '#8b92a3');
+    lip.addColorStop(.28, '#3d4353');
+    lip.addColorStop(1, '#171a25');
+    ctx.fillStyle = lip;
+    ctx.fillRect(x, y, platform.w, 17);
+    ctx.fillStyle = '#0a0c13';
+    ctx.fillRect(x, y + 17, platform.w, 7);
+    ctx.strokeStyle = '#a4f766';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(x, y + 1.5);
+    ctx.lineTo(x + platform.w, y + 1.5);
+    ctx.stroke();
+
+    // Repeating bolted bays make the collision-backed floor read as installed
+    // roadie infrastructure rather than a generic terrain strip.
+    for (let bayX = x; bayX < x + platform.w; bayX += 128) {
+      const bayW = Math.min(128, x + platform.w - bayX);
+      ctx.strokeStyle = 'rgba(153,163,181,.38)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(bayX + 2, y + 25, Math.max(0, bayW - 4), platform.h - 28);
+      ctx.beginPath();
+      ctx.moveTo(bayX + 8, y + 30);
+      ctx.lineTo(bayX + bayW - 8, y + platform.h - 7);
+      ctx.moveTo(bayX + bayW - 8, y + 30);
+      ctx.lineTo(bayX + 8, y + platform.h - 7);
+      ctx.stroke();
+      ctx.fillStyle = '#d7b45b';
+      for (const boltX of [bayX + 9, bayX + bayW - 9]) {
+        ctx.beginPath();
+        ctx.arc(boltX, y + 10, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    const cableRamp = (worldX, width, accent) => {
+      const rampX = worldX - game.cameraX;
+      const ramp = ctx.createLinearGradient(0, y - 2, 0, y + 12);
+      ramp.addColorStop(0, '#555b6b');
+      ramp.addColorStop(1, '#151822');
+      ctx.fillStyle = ramp;
+      ctx.beginPath();
+      ctx.moveTo(rampX, y);
+      ctx.lineTo(rampX + 11, y - 10);
+      ctx.lineTo(rampX + width - 11, y - 10);
+      ctx.lineTo(rampX + width, y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = accent;
+      ctx.globalAlpha = .5 + pulse * .25;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#0a0c12';
+      ctx.lineWidth = 3;
+      for (let cable = rampX + 18; cable < rampX + width - 10; cable += 18) {
+        ctx.beginPath();
+        ctx.moveTo(cable, y - 8);
+        ctx.lineTo(cable + 6, y - 1);
+        ctx.stroke();
+      }
+    };
+    cableRamp(18010, 116, '#ff4fac');
+    cableRamp(18908, 128, '#50e7ff');
+
+    ctx.fillStyle = 'rgba(255,240,189,.72)';
+    ctx.font = '900 7px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('ROADIE LOAD FLOOR • 23', 18420 - game.cameraX, y + 14);
+    ctx.restore();
+  }
+
+  function drawSpeakerStackGroundSupport(support, time) {
+    const x = support.x - game.cameraX;
+    const top = support.topY;
+    const bottom = GROUND_Y;
+    const height = bottom - top;
+    if (x + support.w < -80 || x > canvas.width + 80 || height <= 0) return;
+    const postWidth = Math.max(11, support.w * .15);
+    const shimmer = .62 + Math.sin(time * .003 + support.x) * .1;
+    const metal = ctx.createLinearGradient(x, top, x + support.w, bottom);
+    metal.addColorStop(0, '#7d8494');
+    metal.addColorStop(.24, '#292d39');
+    metal.addColorStop(.72, '#141722');
+    metal.addColorStop(1, '#656c7b');
+
+    ctx.save();
+    ctx.fillStyle = metal;
+    ctx.fillRect(x + 7, top, postWidth, height - 6);
+    ctx.fillRect(x + support.w - postWidth - 7, top, postWidth, height - 6);
+    ctx.strokeStyle = '#777f90';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(x + 12, top + 7);
+    ctx.lineTo(x + support.w - 12, bottom - 11);
+    ctx.moveTo(x + support.w - 12, top + 7);
+    ctx.lineTo(x + 12, bottom - 11);
+    ctx.stroke();
+    ctx.strokeStyle = support.accent;
+    ctx.globalAlpha = shimmer;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x + 4, top - 3, support.w - 8, 9);
+    ctx.globalAlpha = 1;
+
+    // Wide steel feet and visible anchor bolts establish the actual terrain
+    // contact. These are structure, not a contact shadow.
+    const plate = ctx.createLinearGradient(0, bottom - 10, 0, bottom);
+    plate.addColorStop(0, '#8f96a4');
+    plate.addColorStop(1, '#252935');
+    roundedRect(x - 7, bottom - 10, support.w + 14, 10, 3, plate, '#090b12', 2);
+    ctx.fillStyle = '#d6ad4d';
+    for (const boltX of [x + 3, x + support.w - 3]) {
+      ctx.beginPath();
+      ctx.arc(boltX, bottom - 5, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (support.kind.includes('cradle')) {
+      ctx.strokeStyle = '#3b414f';
+      ctx.lineWidth = 7;
+      ctx.beginPath();
+      ctx.moveTo(x + support.w * .24, top + 3);
+      ctx.lineTo(x + 5, bottom - 8);
+      ctx.moveTo(x + support.w * .76, top + 3);
+      ctx.lineTo(x + support.w - 5, bottom - 8);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawSpeakerStackGroundSupports(time) {
+    SPEAKER_STACK_GROUND_SUPPORTS.forEach((support) => drawSpeakerStackGroundSupport(support, time));
+  }
+
   function drawSpeakerStackFlightCase(x, y, width, height, accent, label) {
     const shell = ctx.createLinearGradient(x, y, x + width, y + height);
     shell.addColorStop(0, '#444858');
@@ -4971,6 +5153,10 @@
   function drawPlatform(platform, time) {
     const x = platform.x - game.cameraX;
     if (x + platform.w < -100 || x > canvas.width + 100) return;
+    if (platform.speakerStackFoundation) {
+      drawSpeakerStackFoundation(platform, time);
+      return;
+    }
     if (platform.speakerStackStation) {
       drawSpeakerStackPlatformFacade(platform, time);
       return;
@@ -5472,20 +5658,32 @@
     const station = world.speakerStack;
     if (!station || !phase2StationInView(station, 520)) return;
     const structure = station.structure;
-    const x = structure.x - game.cameraX;
     if (images.speakerStackStructure) {
+      // v30 forced the 1536:1024 source into 3000:1300, applying a 53.8%
+      // wider X scale than Y. Height now determines one uniform scale and the
+      // width follows from the real source aspect ratio.
+      const uniformScale = structure.drawHeight / images.speakerStackStructure.height;
+      const drawWidth = images.speakerStackStructure.width * uniformScale;
+      const drawX = structure.centerX - game.cameraX - drawWidth / 2;
       ctx.save();
       ctx.imageSmoothingEnabled = true;
-      ctx.drawImage(images.speakerStackStructure, x, structure.y, structure.w, structure.h);
+      ctx.drawImage(
+        images.speakerStackStructure,
+        drawX,
+        structure.y,
+        drawWidth,
+        structure.drawHeight,
+      );
       ctx.restore();
     }
+    drawSpeakerStackGroundSupports(time);
 
     const activation = speakerStackActivationProgress();
     const powered = station.completed ? Math.max(.22, activation) : 0;
     if (powered > 0) {
       const path = [
-        [18395, 426], [18395, 154], [18050, -18], [18570, -190],
-        [19015, -270], [18560, -430], [19300, -610],
+        [18370, 426], [18370, 154], [18040, -18], [18420, -190],
+        [18820, -270], [18480, -430], [18960, -610],
       ];
       ctx.save();
       ctx.globalAlpha = .28 + powered * .42;
@@ -7022,25 +7220,26 @@
     }
     if (game.phase2.toast) {
       const toast = game.phase2.toast;
+      const toastY = toast.placement === 'speaker-stack-upper' ? 350 : 446;
       const entrance = smoothStep(clamp((2.75 - toast.timer) / .24, 0, 1));
       const exit = smoothStep(clamp(toast.timer / .28, 0, 1));
       const alpha = entrance * exit;
       ctx.save();
       ctx.globalAlpha = alpha;
       ctx.translate(0, (1 - entrance) * 22);
-      roundedRect(604, 446, 334, 72, 18, 'rgba(20,10,48,.92)', toast.color, 4);
+      roundedRect(604, toastY, 334, 72, 18, 'rgba(20,10,48,.92)', toast.color, 4);
       ctx.fillStyle = toast.color;
       ctx.font = '900 18px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText(toast.title, 771, 474, 306);
+      ctx.fillText(toast.title, 771, toastY + 28, 306);
       ctx.fillStyle = '#fff8dc';
       ctx.font = '900 9px Arial';
-      ctx.fillText(toast.subtitle, 771, 497, 306);
+      ctx.fillText(toast.subtitle, 771, toastY + 51, 306);
       ctx.fillStyle = toast.color;
       for (let sparkle = 0; sparkle < 6; sparkle += 1) {
         const angle = time * .003 + sparkle * Math.PI / 3;
         ctx.beginPath();
-        ctx.arc(771 + Math.cos(angle) * 142, 482 + Math.sin(angle) * 25, 2.5, 0, Math.PI * 2);
+        ctx.arc(771 + Math.cos(angle) * 142, toastY + 36 + Math.sin(angle) * 25, 2.5, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.restore();
@@ -7714,6 +7913,34 @@
           traversal: SPEAKER_STACK_STATION.traversal,
           targetTraversalSeconds: [...SPEAKER_STACK_STATION.targetTraversalSeconds],
           totalVerticalRise: SPEAKER_STACK_STATION.totalVerticalRise,
+          structureRender: (() => {
+            const structure = SPEAKER_STACK_STATION.structure;
+            const sourceWidth = images.speakerStackStructure?.width || structure.sourceWidth;
+            const sourceHeight = images.speakerStackStructure?.height || structure.sourceHeight;
+            const uniformScale = structure.drawHeight / sourceHeight;
+            const drawWidth = sourceWidth * uniformScale;
+            return {
+              sourceWidth,
+              sourceHeight,
+              sourceAspectRatio: Number((sourceWidth / sourceHeight).toFixed(4)),
+              previousDrawWidth: structure.previousDrawWidth,
+              previousDrawHeight: structure.previousDrawHeight,
+              previousAspectRatio: Number((structure.previousDrawWidth / structure.previousDrawHeight).toFixed(4)),
+              correctedDrawWidth: Number(drawWidth.toFixed(2)),
+              correctedDrawHeight: structure.drawHeight,
+              correctedAspectRatio: Number((drawWidth / structure.drawHeight).toFixed(4)),
+              uniformScale: Number(uniformScale.toFixed(4)),
+              alphaBottomWorldY: Number((
+                structure.y + structure.sourceAlphaBottom * uniformScale
+              ).toFixed(2)),
+              groundContactY: GROUND_Y,
+              structuralSupportGap: Number((
+                GROUND_Y - (structure.y + structure.sourceAlphaBottom * uniformScale)
+              ).toFixed(2)),
+              supportCount: SPEAKER_STACK_GROUND_SUPPORTS.length,
+              independentXYStretching: false,
+            };
+          })(),
           groundScreenY: Number((GROUND_Y - game.cameraY).toFixed(2)),
           masterDeckScreenY: Number((-610 - game.cameraY).toFixed(2)),
           originalGroundLeavesViewport: GROUND_Y - game.cameraY > canvas.height,
