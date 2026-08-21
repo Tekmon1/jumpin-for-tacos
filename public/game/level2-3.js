@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const SOURCE_VERSION = 'w2-3-v31-speaker-stack-proportion-grounding';
+  const SOURCE_VERSION = 'w2-3-v32-speaker-stack-foundation-completion';
 
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
@@ -136,14 +136,23 @@
       Object.freeze({ x: 18720, y: -610, w: 520, kind: 'speaker-master-stack-deck', routeShape: 'final-super-double-jump', summit: true }),
     ]),
   });
-  const SPEAKER_STACK_GROUND_SUPPORTS = Object.freeze([
-    Object.freeze({ x: 17550, topY: 402, w: 88, accent: '#ffd65a', kind: 'left-line-array-foot' }),
-    Object.freeze({ x: 17930, topY: 401, w: 104, accent: '#50e7ff', kind: 'left-rack-foot' }),
-    Object.freeze({ x: 18120, topY: 398, w: 132, accent: '#ff4fac', kind: 'master-woofer-left-cradle' }),
-    Object.freeze({ x: 18560, topY: 398, w: 132, accent: '#a4f766', kind: 'master-woofer-right-cradle' }),
-    Object.freeze({ x: 18820, topY: 401, w: 104, accent: '#50e7ff', kind: 'right-rack-foot' }),
-    Object.freeze({ x: 19220, topY: 402, w: 88, accent: '#ffd65a', kind: 'right-line-array-foot' }),
-  ]);
+  const SPEAKER_STACK_STRUCTURAL_FOUNDATION = Object.freeze({
+    startX: 17448,
+    endX: 19392,
+    topY: 390,
+    equipmentTopY: 408,
+    basePlateY: 450,
+    groundY: GROUND_Y,
+    bays: Object.freeze([
+      Object.freeze({ x: 17464, w: 304, accent: '#ffd65a', kind: 'line-array-cradle', label: 'ARRAY A' }),
+      Object.freeze({ x: 17780, w: 310, accent: '#50e7ff', kind: 'power-distribution', label: 'POWER' }),
+      Object.freeze({ x: 18102, w: 326, accent: '#ff4fac', kind: 'woofer-mount', label: 'SUB L' }),
+      Object.freeze({ x: 18440, w: 326, accent: '#a4f766', kind: 'woofer-mount', label: 'SUB R' }),
+      Object.freeze({ x: 18778, w: 300, accent: '#50e7ff', kind: 'amplifier-service', label: 'AMP BUS' }),
+      Object.freeze({ x: 19090, w: 286, accent: '#ffd65a', kind: 'line-array-cradle', label: 'ARRAY B' }),
+    ]),
+    loadColumns: Object.freeze([17454, 17770, 18092, 18430, 18768, 19080, 19366]),
+  });
   const MARQUEE_STRUCTURE = Object.freeze({
     centerX: 3700,
     bottomY: GROUND_Y + 3,
@@ -1018,7 +1027,13 @@
         + definition.structure.sourceAlphaBottom
           * (definition.structure.drawHeight / definition.structure.sourceHeight)
       ),
-      groundSupportCount: SPEAKER_STACK_GROUND_SUPPORTS.length,
+      continuousStructuralFoundation: true,
+      foundationSpan: SPEAKER_STACK_STRUCTURAL_FOUNDATION.endX - SPEAKER_STACK_STRUCTURAL_FOUNDATION.startX,
+      foundationBayCount: SPEAKER_STACK_STRUCTURAL_FOUNDATION.bays.length,
+      foundationLoadColumnCount: SPEAKER_STACK_STRUCTURAL_FOUNDATION.loadColumns.length,
+      lightweightGroundFeetRemoved: true,
+      foundationNonWalkableBackdrop: true,
+      foundationMeetsGroundAt: SPEAKER_STACK_STRUCTURAL_FOUNDATION.groundY,
       foundationArtMatchesCollision: true,
     };
   }
@@ -4639,66 +4654,179 @@
     ctx.restore();
   }
 
-  function drawSpeakerStackGroundSupport(support, time) {
-    const x = support.x - game.cameraX;
-    const top = support.topY;
-    const bottom = GROUND_Y;
-    const height = bottom - top;
-    if (x + support.w < -80 || x > canvas.width + 80 || height <= 0) return;
-    const postWidth = Math.max(11, support.w * .15);
-    const shimmer = .62 + Math.sin(time * .003 + support.x) * .1;
-    const metal = ctx.createLinearGradient(x, top, x + support.w, bottom);
-    metal.addColorStop(0, '#7d8494');
-    metal.addColorStop(.24, '#292d39');
-    metal.addColorStop(.72, '#141722');
-    metal.addColorStop(1, '#656c7b');
+  function drawSpeakerStackFoundationBay(bay, time) {
+    const x = bay.x - game.cameraX;
+    const foundation = SPEAKER_STACK_STRUCTURAL_FOUNDATION;
+    const top = foundation.equipmentTopY;
+    const bottom = foundation.basePlateY;
+    if (x + bay.w < -80 || x > canvas.width + 80) return;
 
-    ctx.save();
-    ctx.fillStyle = metal;
-    ctx.fillRect(x + 7, top, postWidth, height - 6);
-    ctx.fillRect(x + support.w - postWidth - 7, top, postWidth, height - 6);
-    ctx.strokeStyle = '#777f90';
-    ctx.lineWidth = 5;
+    const pulse = .68 + Math.sin(time * .0025 + bay.x * .013) * .14;
+    const shell = ctx.createLinearGradient(x, top, x + bay.w, bottom);
+    shell.addColorStop(0, '#454b5b');
+    shell.addColorStop(.16, '#202431');
+    shell.addColorStop(.72, '#10131d');
+    shell.addColorStop(1, '#2f3441');
+    roundedRect(x, top, bay.w, bottom - top, 4, shell, '#080a11', 3);
+
+    // Each bay is a complete load-bearing module rather than decorative art
+    // pasted over a generic platform.
+    ctx.strokeStyle = '#7d8494';
+    ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.moveTo(x + 12, top + 7);
-    ctx.lineTo(x + support.w - 12, bottom - 11);
-    ctx.moveTo(x + support.w - 12, top + 7);
-    ctx.lineTo(x + 12, bottom - 11);
+    ctx.moveTo(x + 9, top + 6);
+    ctx.lineTo(x + 39, bottom - 6);
+    ctx.moveTo(x + bay.w - 9, top + 6);
+    ctx.lineTo(x + bay.w - 39, bottom - 6);
     ctx.stroke();
-    ctx.strokeStyle = support.accent;
-    ctx.globalAlpha = shimmer;
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x + 4, top - 3, support.w - 8, 9);
-    ctx.globalAlpha = 1;
 
-    // Wide steel feet and visible anchor bolts establish the actual terrain
-    // contact. These are structure, not a contact shadow.
-    const plate = ctx.createLinearGradient(0, bottom - 10, 0, bottom);
-    plate.addColorStop(0, '#8f96a4');
-    plate.addColorStop(1, '#252935');
-    roundedRect(x - 7, bottom - 10, support.w + 14, 10, 3, plate, '#090b12', 2);
-    ctx.fillStyle = '#d6ad4d';
-    for (const boltX of [x + 3, x + support.w - 3]) {
+    if (bay.kind === 'power-distribution' || bay.kind === 'amplifier-service') {
+      const panelW = Math.min(116, bay.w * .42);
+      const panelX = x + bay.w / 2 - panelW / 2;
+      roundedRect(panelX, top + 7, panelW, 27, 3, '#090b12', '#616979', 2);
+      for (let meter = 0; meter < 5; meter += 1) {
+        ctx.fillStyle = meter < 3 ? bay.accent : '#c8566c';
+        ctx.globalAlpha = pulse;
+        ctx.fillRect(panelX + 12 + meter * 19, top + 13, 12, 4);
+        ctx.fillRect(panelX + 12 + meter * 19, top + 23, 12, 3);
+      }
+      ctx.globalAlpha = 1;
+    } else if (bay.kind === 'woofer-mount') {
+      ctx.strokeStyle = '#737b8b';
+      ctx.lineWidth = 5;
       ctx.beginPath();
-      ctx.arc(boltX, bottom - 5, 2.5, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    if (support.kind.includes('cradle')) {
-      ctx.strokeStyle = '#3b414f';
-      ctx.lineWidth = 7;
-      ctx.beginPath();
-      ctx.moveTo(x + support.w * .24, top + 3);
-      ctx.lineTo(x + 5, bottom - 8);
-      ctx.moveTo(x + support.w * .76, top + 3);
-      ctx.lineTo(x + support.w - 5, bottom - 8);
+      ctx.moveTo(x + 53, bottom - 4);
+      ctx.lineTo(x + 92, top + 5);
+      ctx.lineTo(x + bay.w - 92, top + 5);
+      ctx.lineTo(x + bay.w - 53, bottom - 4);
       ctx.stroke();
+      ctx.strokeStyle = bay.accent;
+      ctx.globalAlpha = pulse * .78;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x + bay.w / 2 - 58, top + 10, 116, 17);
+      ctx.globalAlpha = 1;
+    } else {
+      ctx.strokeStyle = '#697181';
+      ctx.lineWidth = 3;
+      for (let braceX = x + 54; braceX < x + bay.w - 20; braceX += 62) {
+        ctx.beginPath();
+        ctx.moveTo(braceX - 20, bottom - 5);
+        ctx.lineTo(braceX + 20, top + 5);
+        ctx.moveTo(braceX - 20, top + 5);
+        ctx.lineTo(braceX + 20, bottom - 5);
+        ctx.stroke();
+      }
     }
-    ctx.restore();
+
+    ctx.fillStyle = 'rgba(255,240,189,.82)';
+    ctx.font = '900 7px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(bay.label, x + bay.w / 2, bottom - 7);
+    ctx.fillStyle = bay.accent;
+    ctx.globalAlpha = pulse;
+    ctx.fillRect(x + 10, top + 2, bay.w - 20, 3);
+    ctx.globalAlpha = 1;
   }
 
-  function drawSpeakerStackGroundSupports(time) {
-    SPEAKER_STACK_GROUND_SUPPORTS.forEach((support) => drawSpeakerStackGroundSupport(support, time));
+  function drawSpeakerStackStructuralFoundation(time) {
+    const foundation = SPEAKER_STACK_STRUCTURAL_FOUNDATION;
+    const x = foundation.startX - game.cameraX;
+    const width = foundation.endX - foundation.startX;
+    if (x + width < -100 || x > canvas.width + 100) return;
+
+    const loadBeam = ctx.createLinearGradient(0, foundation.topY, 0, foundation.equipmentTopY + 2);
+    loadBeam.addColorStop(0, '#9299a8');
+    loadBeam.addColorStop(.18, '#424858');
+    loadBeam.addColorStop(.68, '#171a24');
+    loadBeam.addColorStop(1, '#080a10');
+
+    ctx.save();
+    // The continuous header overlaps the source artwork's true alpha edge by
+    // a few pixels, so every cabinet transfers its visual weight into the base.
+    ctx.fillStyle = loadBeam;
+    ctx.fillRect(x, foundation.topY, width, foundation.equipmentTopY - foundation.topY + 2);
+    ctx.strokeStyle = '#0a0c12';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x, foundation.topY, width, foundation.equipmentTopY - foundation.topY + 2);
+    ctx.strokeStyle = 'rgba(164,247,102,.72)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x + 6, foundation.topY + 3);
+    ctx.lineTo(x + width - 6, foundation.topY + 3);
+    ctx.stroke();
+
+    foundation.bays.forEach((bay) => drawSpeakerStackFoundationBay(bay, time));
+
+    // Full-height steel columns distribute the load across the entire station
+    // footprint; none of the massive cabinets is left sitting on a tiny foot.
+    for (const columnWorldX of foundation.loadColumns) {
+      const columnX = columnWorldX - game.cameraX;
+      const column = ctx.createLinearGradient(columnX, 0, columnX + 26, 0);
+      column.addColorStop(0, '#1a1d28');
+      column.addColorStop(.32, '#8a91a0');
+      column.addColorStop(.58, '#333846');
+      column.addColorStop(1, '#0c0e15');
+      ctx.fillStyle = column;
+      ctx.fillRect(columnX, foundation.topY + 3, 26, foundation.groundY - foundation.topY - 3);
+      ctx.strokeStyle = '#090b12';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(columnX, foundation.topY + 3, 26, foundation.groundY - foundation.topY - 3);
+      ctx.strokeStyle = 'rgba(255,214,90,.58)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(columnX + 7, foundation.topY + 8);
+      ctx.lineTo(columnX + 19, foundation.basePlateY - 3);
+      ctx.moveTo(columnX + 19, foundation.topY + 8);
+      ctx.lineTo(columnX + 7, foundation.basePlateY - 3);
+      ctx.stroke();
+    }
+
+    // Segmented load plates make the contact line structural rather than a
+    // shadow. They terminate exactly at the collision-backed ground surface.
+    for (let plateX = foundation.startX; plateX < foundation.endX; plateX += 162) {
+      const plateScreenX = plateX - game.cameraX;
+      const plateW = Math.min(154, foundation.endX - plateX);
+      const plate = ctx.createLinearGradient(0, foundation.basePlateY, 0, foundation.groundY);
+      plate.addColorStop(0, '#9da4b2');
+      plate.addColorStop(.28, '#4b5160');
+      plate.addColorStop(1, '#181b25');
+      roundedRect(
+        plateScreenX,
+        foundation.basePlateY,
+        plateW,
+        foundation.groundY - foundation.basePlateY,
+        2,
+        plate,
+        '#080a10',
+        2,
+      );
+      ctx.fillStyle = '#d6ad4d';
+      for (const boltX of [plateScreenX + 10, plateScreenX + plateW - 10]) {
+        ctx.beginPath();
+        ctx.arc(boltX, foundation.groundY - 5, 2.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // A restrained cable channel ties the power bays together without hiding
+    // the load-bearing panels or the terrain contact line.
+    ctx.strokeStyle = '#0a0b11';
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.moveTo(x + 150, foundation.basePlateY - 5);
+    ctx.bezierCurveTo(
+      x + width * .34,
+      foundation.basePlateY - 18,
+      x + width * .66,
+      foundation.basePlateY + 2,
+      x + width - 150,
+      foundation.basePlateY - 6,
+    );
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(80,231,255,.58)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
   }
 
   function drawSpeakerStackFlightCase(x, y, width, height, accent, label) {
@@ -5658,6 +5786,7 @@
     const station = world.speakerStack;
     if (!station || !phase2StationInView(station, 520)) return;
     const structure = station.structure;
+    drawSpeakerStackStructuralFoundation(time);
     if (images.speakerStackStructure) {
       // v30 forced the 1536:1024 source into 3000:1300, applying a 53.8%
       // wider X scale than Y. Height now determines one uniform scale and the
@@ -5676,8 +5805,6 @@
       );
       ctx.restore();
     }
-    drawSpeakerStackGroundSupports(time);
-
     const activation = speakerStackActivationProgress();
     const powered = station.completed ? Math.max(.22, activation) : 0;
     if (powered > 0) {
@@ -7937,7 +8064,13 @@
               structuralSupportGap: Number((
                 GROUND_Y - (structure.y + structure.sourceAlphaBottom * uniformScale)
               ).toFixed(2)),
-              supportCount: SPEAKER_STACK_GROUND_SUPPORTS.length,
+              continuousStructuralFoundation: true,
+              foundationStartX: SPEAKER_STACK_STRUCTURAL_FOUNDATION.startX,
+              foundationEndX: SPEAKER_STACK_STRUCTURAL_FOUNDATION.endX,
+              foundationBayCount: SPEAKER_STACK_STRUCTURAL_FOUNDATION.bays.length,
+              foundationLoadColumnCount: SPEAKER_STACK_STRUCTURAL_FOUNDATION.loadColumns.length,
+              foundationGroundContactY: SPEAKER_STACK_STRUCTURAL_FOUNDATION.groundY,
+              lightweightGroundFeetRemoved: true,
               independentXYStretching: false,
             };
           })(),
