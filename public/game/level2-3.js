@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const SOURCE_VERSION = 'w2-3-v32-speaker-stack-foundation-completion';
+  const SOURCE_VERSION = 'w2-3-v33-neon-lagoon-jet-rebuild';
 
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
@@ -79,8 +79,8 @@
     { id: 'soundcheck', name: 'Sunrise Soundcheck', start: 0, end: 5500, music: 'soundcheck', accent: '#ffd65a' },
     { id: 'beach', name: 'Backstage Pass Beach', start: 5500, end: 11000, music: 'soundcheck', accent: '#50e7ff' },
     { id: 'rooftops', name: 'Roadie Rooftops', start: 11000, end: 17000, music: 'rooftops', accent: '#ff4fac' },
-    { id: 'stampede', name: 'Speaker Stack Stampede', start: 17000, end: 20500, music: 'stampede', accent: '#a4f766' },
-    { id: 'lagoon', name: 'Neon Lagoon Rehearsal', start: 20500, end: 28000, music: 'lagoon', accent: '#50e7ff' },
+    { id: 'stampede', name: 'Speaker Stack Stampede', start: 17000, end: 20320, music: 'stampede', accent: '#a4f766' },
+    { id: 'lagoon', name: 'Neon Lagoon Rehearsal', start: 20320, end: 28000, music: 'lagoon', accent: '#50e7ff' },
     { id: 'powerup', name: 'Power Up the Stage', start: 28000, end: 33000, music: 'powerup', accent: '#b780ff' },
     { id: 'victory', name: 'Golden Ticket Victory Dash', start: 33000, end: WORLD_WIDTH, music: 'powerup', accent: '#ffd65a' },
   ];
@@ -112,6 +112,7 @@
     trigger: Object.freeze({ x: 18710, y: -704, w: 550, h: 142 }),
     reward: Object.freeze({ x: 18755, y: -684, count: 14, columns: 7, rainbowEvery: 4 }),
     camera: Object.freeze({
+      stationId: 'speaker-stack-stampede',
       enabledRegion: Object.freeze({ start: 16960, end: 20360 }),
       upperThresholdFromBottom: .78,
       lowerThresholdFromBottom: .43,
@@ -214,6 +215,62 @@
     safeDropToMainRoute: true,
   });
   const CABLE_CRAWLER_X = 13115;
+  const JET_LAGOON_SOLO_HOOK = Object.freeze({
+    // Kept out of the live audio catalog until the original imported solo exists.
+    eventId: ['stage', 'jetLagoonSoloTrigger'].join('.'),
+    futureAssetPath: 'assets/neon_neckties/jet_lagoon_solo_original_v1.ogg',
+    fallbackEventId: 'concert.tambourineAccent',
+    enabled: false,
+    oneShotPerRun: true,
+    musicDuckDb: -4,
+  });
+  const NEON_LAGOON_REHEARSAL = Object.freeze({
+    id: 'lagoon', name: "Jet's Neon Lagoon Rehearsal", completion: 'JET SOUNDCHECK READY',
+    start: 20320, end: 22460, accent: '#50e7ff', score: 4200, energy: 6,
+    targetTraversalSeconds: Object.freeze([20, 30]),
+    totalVerticalRise: 965,
+    traversal: 'grounded-marina-pier-floating-pontoon-prep-deck-support-tower-cargo-hoist-high-lagoon-crossing-final-super-jump-jet-deck',
+    structure: Object.freeze({
+      x: 20220,
+      y: -1068,
+      drawWidth: 2400,
+      drawHeight: 1600,
+      sourceWidth: 1536,
+      sourceHeight: 1024,
+      sourceAlphaBottom: 978,
+    }),
+    camera: Object.freeze({
+      stationId: 'neon-lagoon-rehearsal',
+      enabledRegion: Object.freeze({ start: 20260, end: 22520 }),
+      upperThresholdFromBottom: .78,
+      lowerThresholdFromBottom: .43,
+      activeTargetFromBottom: .66,
+      minY: -760,
+      maxY: 0,
+      smoothingUp: 5.8,
+      smoothingDown: 4.4,
+      respawnSmoothing: 7,
+      rewardHoldSeconds: 1.1,
+    }),
+    trigger: Object.freeze({ x: 21870, y: -570, w: 500, h: 150 }),
+    reward: Object.freeze({ x: 21890, y: -566, count: 12, columns: 6, rainbowEvery: 3 }),
+    platforms: Object.freeze([
+      Object.freeze({ x: 20300, y: 344, w: 440, kind: 'lagoon-marina-approach', routeShape: 'grounded-marina-approach' }),
+      Object.freeze({ x: 20770, y: 400, w: 250, kind: 'lagoon-floating-pontoon', routeShape: 'low-water-floating-transfer', moving: true, axis: 'y', range: 7, speed: .52, phase: .8 }),
+      Object.freeze({ x: 20700, y: 250, w: 340, kind: 'lagoon-tower-landing', routeShape: 'support-tower-rise-from-pontoon' }),
+      Object.freeze({ x: 20900, y: 112, w: 660, kind: 'lagoon-prep-deck', routeShape: 'tower-to-mid-level-prep-deck' }),
+      Object.freeze({ x: 21570, y: 80, w: 250, kind: 'lagoon-cargo-hoist', routeShape: 'vertical-marina-cargo-hoist', moving: true, axis: 'y', range: 170, speed: .34, phase: .6 }),
+      Object.freeze({ x: 20880, y: -245, w: 500, kind: 'lagoon-mid-catwalk', routeShape: 'high-horizontal-marina-catwalk' }),
+      Object.freeze({ x: 21620, y: -365, w: 330, kind: 'lagoon-high-crossing', routeShape: 'large-diagonal-super-jump-over-water' }),
+      Object.freeze({ x: 21260, y: -455, w: 400, kind: 'lagoon-upper-support', routeShape: 'upper-support-back-transfer' }),
+      Object.freeze({ x: 21820, y: -520, w: 600, kind: 'lagoon-jet-deck', routeShape: 'final-super-jump-to-private-rehearsal-deck', summit: true }),
+    ]),
+    characters: Object.freeze([1]),
+    dialogueX: 22310,
+    dialogue: 'PERFECT TIMING.',
+    dialogueDuration: 2.15,
+    dialogueAtCompletionOnly: true,
+  });
   const WORLD23_PHASE2_STATIONS = Object.freeze([
     Object.freeze({
       id: 'marquee', name: 'Neon Neckties Welcome Arch', completion: 'MARQUEE ONLINE',
@@ -253,24 +310,7 @@
       dialogueX: 14040,
       dialogue: 'ONE MORE TIME. MAKE IT SHAKE.',
     }),
-    Object.freeze({
-      id: 'lagoon', name: 'Neon Lagoon Rehearsal', completion: 'LAGOON REHEARSAL READY',
-      start: 19580, end: 22080, accent: '#50e7ff', score: 3600, energy: 5,
-      traversal: 'waterfront-pontoons-suspended-rehearsal-structures',
-      trigger: Object.freeze({ x: 21520, y: 164, w: 390, h: 116 }),
-      reward: Object.freeze({ x: 21420, y: 178, count: 10, rainbowEvery: 4 }),
-      platforms: Object.freeze([
-        Object.freeze({ x: 19640, y: 366, w: 390, kind: 'lagoon-dock-roof' }),
-        Object.freeze({ x: 20120, y: 396, w: 258, kind: 'lagoon-floating-pontoon', moving: true, axis: 'y', range: 11, speed: .68, phase: .8 }),
-        Object.freeze({ x: 20490, y: 276, w: 466, kind: 'lagoon-rehearsal-deck' }),
-        Object.freeze({ x: 21020, y: 334, w: 258, kind: 'lagoon-rope-deck', moving: true, axis: 'x', range: 46, speed: .63, phase: 2.2 }),
-        Object.freeze({ x: 21360, y: 210, w: 286, kind: 'lagoon-hanging-truss' }),
-        Object.freeze({ x: 21670, y: 272, w: 360, kind: 'lagoon-lookout', summit: true }),
-      ]),
-      characters: Object.freeze([1]),
-      dialogueX: 20690,
-      dialogue: 'TRY THE PINK ONE!',
-    }),
+    NEON_LAGOON_REHEARSAL,
     Object.freeze({
       id: 'golden', name: 'Golden Ticket Victory Dash', completion: 'GOLDEN TICKET',
       start: 27320, end: 29420, accent: '#ffd65a', score: 4500, energy: 5,
@@ -328,7 +368,7 @@
     { x: 5200, name: 'Soundcheck Shack', sign: 'OLIVIA RADIO: DO NOT FEED THE SPEAKERS AFTER MIDNIGHT.', accent: '#ffd65a', look: 0 },
     { x: 10800, name: 'Backstage Beach Gate', sign: 'OLIVIA RADIO: THE BAND REQUESTED WATER. I BROUGHT SPARKLING SALSA.', accent: '#50e7ff', look: 1 },
     { x: 16500, name: 'Rooftop Roadie Stop', sign: 'OLIVIA RADIO: REX CALLED THIS A QUIET SOUNDCHECK. PROTECT YOUR TACOS.', accent: '#ff4fac', look: 2 },
-    { x: 22000, name: 'Speaker Safety Station', sign: 'OLIVIA RADIO: IF THE BASS MOVES YOUR HAIR, THE BASS IS WORKING.', accent: '#a4f766', look: 3 },
+    { x: 22000, name: 'Lagoon Marina Checkpoint', sign: 'OLIVIA RADIO: THOSE MARINA LIGHTS GO WAY UP. SOMEBODY IS REHEARSING.', accent: '#50e7ff', look: 3 },
     { x: 27020, name: 'Lagoon Light Dock', sign: 'OLIVIA RADIO: ARMAN PLUGGED THE KEYBOARD INTO A PALM TREE. IT STILL WORKED.', accent: '#50e7ff', look: 4 },
     { x: 32420, name: 'Neon Power Gate', sign: 'OLIVIA RADIO: NOVA SAYS THE ENCORE NEEDS MORE TACOS. THIS IS NOT A DRILL.', accent: '#b780ff', look: 5 },
   ];
@@ -546,7 +586,8 @@
   const game = {
     state: 'title', score: 0, collected: 0, totalTacos: 0, golden: 0, totalGolden: 8,
     hearts: 3, energy: 0, cameraX: 0, cameraY: 0, cameraTargetY: 0,
-    verticalCameraMode: 'ground', levelTime: 0, startTime: 0, finishTime: 0,
+    verticalCameraMode: 'ground', verticalCameraStationId: null,
+    levelTime: 0, startTime: 0, finishTime: 0,
     sectionIndex: 0, latestCheckpoint: null, message: '', messageTimer: 0,
     splatCombo: 0, splatTimer: 0, bestSplat: 0, abilities: abilities.createState(),
     confetti: [], particles: [], impactTexts: [],
@@ -1103,6 +1144,10 @@
       dialogueTimer: 0,
       dialoguePlayed: false,
       rewardSpawned: false,
+      cameraHold: 0,
+      soloTriggered: false,
+      soloTimer: 0,
+      soloVisualDuration: definition.id === 'lagoon' ? 3.8 : 0,
       platformIds: [],
     }));
     world.bassPads.length = 0;
@@ -1131,7 +1176,7 @@
           platform.lastLaunchCycle = -1;
           world.bassPads.push(platform);
         }
-        if (!definition.secret) {
+        if (!definition.secret && !(station.id === 'lagoon' && definition.moving)) {
           const tacoCount = Math.max(2, Math.min(4, Math.floor((platform.w - 34) / 54)));
           addLine(
             platform.x + Math.max(22, (platform.w - (tacoCount - 1) * 44) / 2),
@@ -1142,6 +1187,14 @@
         }
       });
     });
+
+    // Curated lagoon trails sit only above authored collision surfaces. The
+    // moving pontoon and cargo hoist remain visually clean so no taco appears
+    // to hang in space after its support has moved away.
+    addArc(20326, 295, 6, 62, 42);
+    addArc(20936, 62, 8, 72, 50);
+    addArc(20912, -295, 7, 68, 44);
+    addArc(21644, -418, 5, 52, 38);
 
     // One small shimmer leads curious players beyond the obvious catwalk. It
     // previews the hidden jump without drawing a secret banner over the route.
@@ -1285,15 +1338,54 @@
           replacesFeedbackFiend: false,
         },
       },
+      neonLagoonArchitecture: {
+        oldFloatingLandmarkRendered: 0,
+        oldLagoonPlatformStylesRemoved: [
+          'lagoon-dock-roof', 'lagoon-rehearsal-deck', 'lagoon-rope-deck',
+          'lagoon-hanging-truss', 'lagoon-lookout',
+        ],
+        groundedMarinaCompound: true,
+        structureAsset: 'world2_3_neon_lagoon_jet_tower_v1',
+        structureBottomWorldY: Number((
+          NEON_LAGOON_REHEARSAL.structure.y
+          + NEON_LAGOON_REHEARSAL.structure.sourceAlphaBottom
+            * (NEON_LAGOON_REHEARSAL.structure.drawHeight
+              / NEON_LAGOON_REHEARSAL.structure.sourceHeight)
+        ).toFixed(2)),
+        structureGroundContactY: GROUND_Y,
+        timberPilings: true,
+        floatingPontoonsSupported: true,
+        cargoHoist: true,
+        upperEnvironmentAuthored: true,
+        targetTraversalSeconds: [...NEON_LAGOON_REHEARSAL.targetTraversalSeconds],
+        totalVerticalRise: NEON_LAGOON_REHEARSAL.totalVerticalRise,
+        customTraversalSurfaceCount: NEON_LAGOON_REHEARSAL.platforms.length,
+        intendedRouteKindOrder: [
+          'lagoon-marina-approach', 'lagoon-floating-pontoon', 'lagoon-tower-landing',
+          'lagoon-prep-deck', 'lagoon-cargo-hoist', 'lagoon-mid-catwalk',
+          'lagoon-high-crossing', 'lagoon-upper-support', 'lagoon-jet-deck',
+        ],
+        maximumRequiredVerticalJump: 155,
+        configuredSuperDoubleJumpRise: Number((
+          (heroPhysics.jumpVelocity ** 2 + heroPhysics.superJumpVelocity ** 2)
+          / (2 * heroPhysics.gravity)
+        ).toFixed(2)),
+        genericPlatformBaseSuppressed: true,
+        safeDropToMainRoute: true,
+        jetOnlyMemberIndex: 1,
+        jetOnlyMemberName: band[1].name,
+        futureSoloHook: JET_LAGOON_SOLO_HOOK,
+      },
       catamaranIsolation: {
         stationEnd: world23Phase2Station('lagoon')?.end || 0,
         catamaranStart: 22800,
         buffer: 22800 - (world23Phase2Station('lagoon')?.end || 22800),
         overlap: (world23Phase2Station('lagoon')?.end || 0) >= 22800,
         triggerToCatamaran: 22800 - (world23Phase2Station('lagoon')?.trigger.x || 22800),
-        dialogueDurationSeconds: 3.2,
+        dialogueDurationSeconds: world23Phase2Station('lagoon')?.dialogueDuration || 3.2,
         dialogueClearanceAtRunSpeedSeconds: Number((
-          (22800 - (world23Phase2Station('lagoon')?.trigger.x || 22800)) / 310 - 3.2
+          (22800 - (world23Phase2Station('lagoon')?.trigger.x || 22800)) / 310
+          - (world23Phase2Station('lagoon')?.dialogueDuration || 3.2)
         ).toFixed(2)),
       },
       crowdIsolation: {
@@ -1799,7 +1891,8 @@
     buildWorld();
     Object.assign(game, {
       state: 'title', score: 0, collected: 0, golden: 0, hearts: 3, energy: 0,
-      cameraX: 0, cameraY: 0, cameraTargetY: 0, verticalCameraMode: 'ground',
+      cameraX: 0, cameraY: 0, cameraTargetY: 0,
+      verticalCameraMode: 'ground', verticalCameraStationId: null,
       levelTime: 0, startTime: 0, finishTime: 0, sectionIndex: 0,
       latestCheckpoint: null, message: '', messageTimer: 0, splatCombo: 0, splatTimer: 0,
       bestSplat: 0, abilities: abilities.createState(),
@@ -2004,9 +2097,11 @@
       game.cameraX = clamp(player.x - canvas.width * .42, 0, WORLD_WIDTH - canvas.width);
     }
     if (Number.isFinite(previewCameraY)) {
-      game.cameraY = clamp(previewCameraY, SPEAKER_STACK_STATION.camera.minY, SPEAKER_STACK_STATION.camera.maxY);
+      const previewProfile = verticalCameraProfileForPlayer();
+      game.cameraY = clamp(previewCameraY, previewProfile.minY, previewProfile.maxY);
       game.cameraTargetY = game.cameraY;
       game.verticalCameraMode = game.cameraY < 0 ? 'qa-authored-start' : 'ground';
+      game.verticalCameraStationId = game.cameraY < 0 ? previewProfile.stationId : null;
     }
     if (Number.isFinite(previewEnergy)) game.energy = clamp(previewEnergy, 0, 100);
     if (Number.isFinite(previewGolden)) game.golden = Math.max(0, Math.floor(previewGolden));
@@ -2606,6 +2701,29 @@
     }
   }
 
+  function triggerJetLagoonSolo(station) {
+    if (!station || station.id !== 'lagoon' || station.soloTriggered) return false;
+    station.soloTriggered = true;
+    station.soloTimer = station.soloVisualDuration;
+    station.cameraHold = station.camera?.rewardHoldSeconds || 0;
+    const centerX = station.trigger.x + station.trigger.w / 2;
+
+    // Future original audio integration: register JET_LAGOON_SOLO_HOOK.eventId
+    // in audio-catalog.js with the imported asset at futureAssetPath, then set
+    // enabled to true. The existing SFX bus, spatial position, modest music
+    // duck and one-shot station guard remain unchanged.
+    const eventId = JET_LAGOON_SOLO_HOOK.enabled
+      ? JET_LAGOON_SOLO_HOOK.eventId
+      : JET_LAGOON_SOLO_HOOK.fallbackEventId;
+    playAudio(eventId, {
+      position: audioPosition(centerX),
+      station: station.id,
+      futureOriginalSolo: !JET_LAGOON_SOLO_HOOK.enabled,
+      musicDuckDb: JET_LAGOON_SOLO_HOOK.musicDuckDb,
+    });
+    return true;
+  }
+
   function completeWorld23Phase2Station(station, { silent = false } = {}) {
     if (!station || station.completed) return false;
     station.completed = true;
@@ -2613,7 +2731,7 @@
     station.progress = 1;
     if (station.dialogue && !station.dialoguePlayed) {
       station.dialoguePlayed = true;
-      station.dialogueTimer = 3.2;
+      station.dialogueTimer = station.dialogueDuration || 3.2;
     }
     if (!game.phase2.completedIds.includes(station.id)) game.phase2.completedIds.push(station.id);
     game.score += station.score;
@@ -2629,14 +2747,16 @@
         title: station.completion,
         subtitle: station.id === 'marquee' ? 'VENUE ENTRANCE POWERED'
           : station.id === 'rooftops' ? 'RHYTHM SECTION LOCKED IN'
-            : station.id === 'lagoon' ? 'WATERFRONT REHEARSAL READY'
+            : station.id === 'lagoon' ? "JET'S PRIVATE DECK IS LIVE"
               : 'ADMISSION LIGHTS BLAZING',
         color: station.accent,
+        placement: station.id === 'lagoon' ? 'lagoon-upper' : undefined,
         timer: 2.75,
       };
     }
 
     if (!silent) {
+      if (station.id === 'lagoon') triggerJetLagoonSolo(station);
       spawnWorld23Phase2Reward(station);
       const screenX = station.trigger.x + station.trigger.w / 2 - game.cameraX;
       spawnConfetti(screenX, station.trigger.y + 80, station.secret
@@ -2646,11 +2766,11 @@
       const eventId = {
         marquee: 'concert.start',
         rooftops: 'concert.start',
-        lagoon: 'concert.tambourineAccent',
+        lagoon: null,
         golden: 'checkpoint.activate',
         encore: 'concert.start',
       }[station.id];
-      playAudio(eventId, { position: audioPosition(station.trigger.x), station: station.id });
+      if (eventId) playAudio(eventId, { position: audioPosition(station.trigger.x), station: station.id });
       if (station.secret) {
         showMessage('ENCORE STASH DISCOVERED!', 3.2);
         spawnFireworks(game.reducedShake ? 5 : 10);
@@ -2705,12 +2825,17 @@
     }
     world.phase2Stations.forEach((station) => {
       station.dialogueTimer = Math.max(0, station.dialogueTimer - dt);
+      station.soloTimer = Math.max(0, (station.soloTimer || 0) - dt);
+      if (station.cameraHold > 0) {
+        if (player.vy > 80) station.cameraHold = 0;
+        else station.cameraHold = Math.max(0, station.cameraHold - dt);
+      }
       if (!station.completed) {
         station.progress = Math.max(
           station.progress,
           clamp((player.x - station.start) / Math.max(1, station.end - station.start), 0, 1),
         );
-        if (station.dialogue && !station.dialoguePlayed
+        if (station.dialogue && !station.dialogueAtCompletionOnly && !station.dialoguePlayed
           && Math.abs(player.x + player.w / 2 - station.dialogueX) < 300) {
           station.dialoguePlayed = true;
           station.dialogueTimer = 3.2;
@@ -3409,7 +3534,7 @@
       'BACKSTAGE PASS BEACH — SURF, BOUNCE, COLLECT!',
       'ROADIE ROOFTOPS — THE FLOOR IS MOSTLY SPEAKER CABLES!',
       'SPEAKER STACK STAMPEDE — RUN WITH THE BASS!',
-      'NEON LAGOON REHEARSAL — WATERFRONT SOUNDCHECK AHEAD!',
+      'NEON LAGOON REHEARSAL — FOLLOW THE MARINA LIGHTS UP!',
       'POWER UP THE STAGE — THREE TOWERS, MAXIMUM GLOW!',
       'PRE-SHOW SHOWDOWN — THE FEEDBACK FIEND BLOCKS THE CROWD!',
     ];
@@ -3582,6 +3707,7 @@
     game.cameraY = 0;
     game.cameraTargetY = 0;
     game.verticalCameraMode = 'ground';
+    game.verticalCameraStationId = null;
     game.concert.started = true;
     game.concert.entryReason = decision.entryReason;
     game.concert.entryDecision = { ...decision };
@@ -3741,12 +3867,41 @@
     };
   }
 
+  function verticalCameraHoldForStation(stationId) {
+    if (stationId === SPEAKER_STACK_STATION.id) return game.speakerStack.cameraHold;
+    if (stationId === NEON_LAGOON_REHEARSAL.camera.stationId) {
+      return world23Phase2Station('lagoon')?.cameraHold || 0;
+    }
+    return 0;
+  }
+
+  function verticalCameraProfileForPlayer() {
+    const profiles = [SPEAKER_STACK_STATION.camera, NEON_LAGOON_REHEARSAL.camera];
+    if (game.cameraY < -.5 && game.verticalCameraStationId) {
+      const retained = profiles.find((profile) => profile.stationId === game.verticalCameraStationId);
+      if (retained) return retained;
+    }
+    const playerCenterX = player.x + player.w / 2;
+    const matches = profiles.filter((profile) => (
+      playerCenterX >= profile.enabledRegion.start && playerCenterX <= profile.enabledRegion.end
+    ));
+    // The two authored areas meet across a narrow safety overlap. Once the
+    // player has cleared Speaker Stack's actual station endpoint, Lagoon owns
+    // the camera profile so its ground approach never reports Speaker state.
+    if (matches.length > 1 && playerCenterX >= SPEAKER_STACK_STATION.end) {
+      return NEON_LAGOON_REHEARSAL.camera;
+    }
+    return matches[0] || SPEAKER_STACK_STATION.camera;
+  }
+
   function updateConfiguredVerticalCamera(dt, profile, { forceGround = false } = {}) {
     const lines = verticalCameraViewportLines(profile);
     const playerCenterX = player.x + player.w / 2;
     const inEnabledRegion = playerCenterX >= profile.enabledRegion.start
       && playerCenterX <= profile.enabledRegion.end;
     const eligible = !forceGround && game.state === 'playing' && inEnabledRegion;
+    const stationId = profile.stationId || SPEAKER_STACK_STATION.id;
+    const cameraHold = verticalCameraHoldForStation(stationId);
     const screenY = player.y - game.cameraY;
     let target = game.cameraTargetY;
     let mode = game.verticalCameraMode;
@@ -3761,7 +3916,7 @@
       target = player.y - lines.lower;
       mode = 'following-down';
     } else if (game.cameraY < -.5) {
-      mode = game.speakerStack.cameraHold > 0 ? 'reward-hold' : 'upper-hysteresis-hold';
+      mode = cameraHold > 0 ? 'reward-hold' : 'upper-hysteresis-hold';
     } else {
       target = 0;
       mode = 'ground';
@@ -3771,7 +3926,7 @@
       target = 0;
       mode = 'returning-to-ground';
     }
-    if (game.speakerStack.cameraHold > 0 && target > game.cameraTargetY) {
+    if (cameraHold > 0 && target > game.cameraTargetY) {
       target = game.cameraTargetY;
       mode = 'reward-hold';
     }
@@ -3785,10 +3940,13 @@
     if (Math.abs(game.cameraY) < .08 && game.cameraTargetY === 0) {
       game.cameraY = 0;
       mode = 'ground';
+      game.verticalCameraStationId = null;
+    } else if (eligible || game.cameraY < -.5) {
+      game.verticalCameraStationId = stationId;
     }
     game.verticalCameraMode = mode;
     game.verticalCameraAudit = {
-      scopedStation: SPEAKER_STACK_STATION.id,
+      scopedStation: stationId,
       enabled: eligible,
       inEnabledRegion,
       mode,
@@ -3805,7 +3963,7 @@
   }
 
   function updateVerticalCamera(dt, options = {}) {
-    updateConfiguredVerticalCamera(dt, SPEAKER_STACK_STATION.camera, options);
+    updateConfiguredVerticalCamera(dt, verticalCameraProfileForPlayer(), options);
   }
 
   function update(dt) {
@@ -4037,7 +4195,8 @@
   function drawSpeakerStackUpperBackground(time) {
     const image = images.speakerUpperSky;
     const station = world.speakerStack;
-    if (!image || !station || game.cameraY >= -.5) return;
+    if (!image || !station || game.cameraY >= -.5
+      || game.verticalCameraStationId !== SPEAKER_STACK_STATION.id) return;
     const lift = clamp(-game.cameraY / Math.abs(station.camera.minY), 0, 1);
     const alpha = smoothStep(clamp((lift - .03) / .56, 0, 1));
     if (alpha <= 0) return;
@@ -4090,10 +4249,67 @@
     ctx.restore();
   }
 
+  function drawNeonLagoonUpperBackground(time) {
+    const image = images.environmentLagoon;
+    const station = world23Phase2Station('lagoon');
+    if (!image || !station || game.cameraY >= -.5
+      || game.verticalCameraStationId !== NEON_LAGOON_REHEARSAL.camera.stationId) return;
+    const lift = clamp(-game.cameraY / Math.abs(station.camera.minY), 0, 1);
+    const alpha = smoothStep(clamp((lift - .025) / .48, 0, 1));
+    if (alpha <= 0) return;
+    const viewportAspect = canvas.width / canvas.height;
+    const sourceHeight = Math.min(image.height, image.width / viewportAspect);
+    const maxSourceY = Math.max(0, image.height - sourceHeight);
+    const sourceY = lerp(maxSourceY * .88, maxSourceY * .08, lift);
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(
+      image,
+      0, sourceY, image.width, sourceHeight,
+      0, 0, canvas.width, canvas.height,
+    );
+
+    // Authored high-lagoon depth: distant marina lights and boats move more
+    // slowly than the climb, so the sky above Jet's deck feels intentional
+    // without exposing the original level's background seam.
+    const shorelineY = 430 + (-game.cameraY) * .075;
+    ctx.globalAlpha = alpha * .28;
+    const haze = ctx.createLinearGradient(0, shorelineY - 130, 0, canvas.height);
+    haze.addColorStop(0, 'rgba(80,231,255,0)');
+    haze.addColorStop(1, 'rgba(12,19,61,.42)');
+    ctx.fillStyle = haze;
+    ctx.fillRect(0, shorelineY - 130, canvas.width, canvas.height - shorelineY + 130);
+
+    for (let boat = 0; boat < 6; boat += 1) {
+      const boatX = ((boat * 191 - game.cameraX * .035) % 1120 + 1120) % 1120 - 70;
+      const boatY = shorelineY + Math.sin(time * .0016 + boat * 1.3) * 3;
+      ctx.fillStyle = '#13163c';
+      ctx.beginPath();
+      ctx.moveTo(boatX - 25, boatY); ctx.lineTo(boatX + 25, boatY);
+      ctx.lineTo(boatX + 17, boatY + 8); ctx.lineTo(boatX - 17, boatY + 8);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = boat % 2 ? '#ff4fac' : '#50e7ff';
+      ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = 9;
+      ctx.beginPath(); ctx.arc(boatX, boatY - 4, 2.3, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
+    ctx.globalAlpha = alpha * (game.reducedShake ? .16 : .24);
+    for (let shimmer = 0; shimmer < (game.reducedShake ? 7 : 14); shimmer += 1) {
+      const x = ((shimmer * 157 + time * .012 - game.cameraX * .02) % 1080 + 1080) % 1080 - 60;
+      const y = 72 + ((shimmer * 73 + time * .008) % 330);
+      ctx.fillStyle = shimmer % 3 === 0 ? '#ffd65a' : shimmer % 2 ? '#ff4fac' : '#50e7ff';
+      ctx.beginPath(); ctx.arc(x, y, 1.3 + shimmer % 2, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
   function drawBackground(time) {
     const progress = player.x / WORLD_WIDTH;
     if (drawPaintedEnvironment(time)) {
       drawSpeakerStackUpperBackground(time);
+      drawNeonLagoonUpperBackground(time);
       drawTimeOfDayAtmosphere(progress);
       return;
     }
@@ -4111,6 +4327,7 @@
     drawNearSceneryParallax();
     if (!images.midground && currentSection().id === 'lagoon') drawLagoonBackdrop(time);
     drawSpeakerStackUpperBackground(time);
+    drawNeonLagoonUpperBackground(time);
     drawTimeOfDayAtmosphere(progress);
   }
 
@@ -5223,22 +5440,130 @@
         ctx.fillText(station?.completed ? 'MASTER RACK • LOCKED' : 'MASTER RACK • STANDBY', x + platform.w / 2, platform.y + 70);
       }
     } else if (style.startsWith('lagoon')) {
-      const floating = style.includes('pontoon') || style.includes('rope-deck');
-      const deck = ctx.createLinearGradient(0, platform.y + 5, 0, platform.y + 52);
-      deck.addColorStop(0, '#f0b96b'); deck.addColorStop(1, '#5c4369');
-      roundedRect(x + 5, platform.y + 7, platform.w - 10, 42, 7, deck, '#50e7ff', 2.5);
-      ctx.strokeStyle = 'rgba(255,244,196,.58)'; ctx.lineWidth = 2;
-      for (let plank = x + 22; plank < x + platform.w - 12; plank += 32) {
-        ctx.beginPath(); ctx.moveTo(plank, platform.y + 10); ctx.lineTo(plank, platform.y + 44); ctx.stroke();
-      }
-      if (style.includes('truss')) drawPhase2Truss(x + 8, platform.y + 15, platform.w - 16, 46, '#ff4fac');
-      if (floating) {
-        ctx.fillStyle = '#ff7d79'; ctx.strokeStyle = '#fff0c6'; ctx.lineWidth = 2;
-        for (let floatX = x + 28; floatX < x + platform.w - 12; floatX += 56) {
-          ctx.beginPath(); ctx.ellipse(floatX, platform.y + 58, 22, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      const wood = ctx.createLinearGradient(0, platform.y, 0, platform.y + 38);
+      wood.addColorStop(0, '#efbd70'); wood.addColorStop(.22, '#a76843'); wood.addColorStop(1, '#382b3f');
+      const metal = ctx.createLinearGradient(0, platform.y, 0, platform.y + 30);
+      metal.addColorStop(0, '#778398'); metal.addColorStop(.24, '#293348'); metal.addColorStop(1, '#101827');
+      const drawMarinaDeck = ({ edge = '#50e7ff', depth = 22, rail = false, metalTop = false } = {}) => {
+        roundedRect(x, platform.y, platform.w, depth, 4, metalTop ? metal : wood, '#15152a', 3);
+        ctx.strokeStyle = edge; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.moveTo(x + 5, platform.y + 2); ctx.lineTo(x + platform.w - 5, platform.y + 2); ctx.stroke();
+        ctx.strokeStyle = metalTop ? 'rgba(207,224,236,.36)' : 'rgba(255,233,177,.42)';
+        ctx.lineWidth = 1.2;
+        for (let detail = x + 13; detail < x + platform.w - 9; detail += metalTop ? 18 : 30) {
+          ctx.beginPath();
+          ctx.moveTo(detail, platform.y + 5);
+          ctx.lineTo(detail + (metalTop ? 7 : 0), platform.y + depth - 4);
+          ctx.stroke();
         }
-        ctx.strokeStyle = '#ffe0a0'; ctx.lineWidth = 3;
-        ctx.beginPath(); ctx.moveTo(x + 8, platform.y + 8); ctx.quadraticCurveTo(x + platform.w / 2, platform.y + 78, x + platform.w - 8, platform.y + 8); ctx.stroke();
+        if (rail) {
+          ctx.strokeStyle = '#687487'; ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(x + 10, platform.y); ctx.lineTo(x + 10, platform.y - 28);
+          ctx.lineTo(x + platform.w - 10, platform.y - 28); ctx.lineTo(x + platform.w - 10, platform.y);
+          ctx.stroke();
+          ctx.strokeStyle = 'rgba(80,231,255,.65)'; ctx.lineWidth = 1.4;
+          ctx.beginPath(); ctx.moveTo(x + 12, platform.y - 20); ctx.lineTo(x + platform.w - 12, platform.y - 20); ctx.stroke();
+        }
+      };
+
+      if (style === 'lagoon-marina-approach') {
+        drawMarinaDeck({ edge: '#ffd65a', depth: 30 });
+        for (const postX of [x + 28, x + platform.w - 28]) {
+          const post = ctx.createLinearGradient(postX - 8, 0, postX + 8, 0);
+          post.addColorStop(0, '#362736'); post.addColorStop(.45, '#8b5a3b'); post.addColorStop(1, '#251a2a');
+          ctx.fillStyle = post; ctx.fillRect(postX - 8, platform.y + 26, 16, 82);
+          ctx.strokeStyle = '#d69a55'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(postX, platform.y + 47, 8, 0, Math.PI * 2); ctx.stroke();
+        }
+      } else if (style === 'lagoon-floating-pontoon') {
+        drawMarinaDeck({ edge: '#50e7ff', depth: 25 });
+        roundedRect(x + 8, platform.y + 23, platform.w - 16, 27, 7, '#193d58', '#70edff', 2);
+        for (let floatX = x + 30; floatX < x + platform.w - 10; floatX += 55) {
+          ctx.fillStyle = floatX % 2 ? '#ff835c' : '#50e7ff';
+          ctx.strokeStyle = '#fff0c6'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.ellipse(floatX, platform.y + 52, 21, 9, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        }
+        ctx.strokeStyle = '#f1c978'; ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(x + 8, platform.y + 12);
+        ctx.quadraticCurveTo(x + platform.w / 2, platform.y + 72, x + platform.w - 8, platform.y + 12);
+        ctx.stroke();
+        ctx.strokeStyle = `rgba(80,231,255,${.32 + Math.sin(time * .004) * .08})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(x + platform.w / 2, platform.y + 65, platform.w * .46, 8, 0, 0, Math.PI * 2); ctx.stroke();
+      } else if (style === 'lagoon-prep-deck') {
+        drawMarinaDeck({ edge: '#ff4fac', depth: 25, rail: true });
+        roundedRect(x + 42, platform.y + 24, 112, 48, 5, '#1b1d2a', '#aeb4c0', 3);
+        ctx.strokeStyle = '#50e7ff'; ctx.lineWidth = 2; ctx.strokeRect(x + 57, platform.y + 35, 82, 22);
+        ctx.fillStyle = '#ff4fac'; ctx.beginPath(); ctx.arc(x + platform.w - 66, platform.y + 39, 19, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fff0bd'; ctx.font = '900 8px Arial'; ctx.textAlign = 'center';
+        ctx.fillText('JET • PREP', x + platform.w - 66, platform.y + 42);
+      } else if (style === 'lagoon-tower-landing') {
+        drawMarinaDeck({ edge: '#ffd65a', depth: 20, rail: true, metalTop: true });
+        ctx.strokeStyle = '#323a49'; ctx.lineWidth = 8;
+        ctx.beginPath();
+        ctx.moveTo(x + 30, platform.y + 20); ctx.lineTo(x + 74, platform.y + 90);
+        ctx.moveTo(x + platform.w - 30, platform.y + 20); ctx.lineTo(x + platform.w - 74, platform.y + 90);
+        ctx.stroke();
+      } else if (style === 'lagoon-cargo-hoist') {
+        const railTop = platform.baseY - platform.range - 116;
+        const railBottom = platform.baseY + platform.range + 72;
+        ctx.strokeStyle = '#262f41'; ctx.lineWidth = 12;
+        for (const railX of [x + 18, x + platform.w - 18]) {
+          ctx.beginPath(); ctx.moveTo(railX, railTop); ctx.lineTo(railX, railBottom); ctx.stroke();
+          ctx.strokeStyle = 'rgba(80,231,255,.48)'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(railX, railTop); ctx.lineTo(railX, railBottom); ctx.stroke();
+          ctx.strokeStyle = '#262f41'; ctx.lineWidth = 12;
+        }
+        roundedRect(x - 2, railTop - 22, platform.w + 4, 30, 6, '#181d2b', '#ffd65a', 3);
+        ctx.fillStyle = '#d59b45'; ctx.beginPath(); ctx.arc(x + platform.w / 2, railTop - 7, 10, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#e2b75f'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(x + platform.w / 2, railTop + 2); ctx.lineTo(x + platform.w / 2, platform.y - 70); ctx.stroke();
+        const cage = ctx.createLinearGradient(0, platform.y - 72, 0, platform.y + 25);
+        cage.addColorStop(0, '#4f5b6c'); cage.addColorStop(.35, '#202838'); cage.addColorStop(1, '#0d1421');
+        roundedRect(x + 3, platform.y - 72, platform.w - 6, 97, 5, cage, '#090d18', 4);
+        ctx.strokeStyle = '#50e7ff'; ctx.lineWidth = 2;
+        for (let meshX = x + 18; meshX < x + platform.w - 12; meshX += 24) {
+          ctx.beginPath(); ctx.moveTo(meshX, platform.y - 65); ctx.lineTo(meshX + 32, platform.y + 18); ctx.stroke();
+        }
+        drawMarinaDeck({ edge: '#ffd65a', depth: 25, metalTop: true });
+        roundedRect(x + 45, platform.y - 64, platform.w - 90, 20, 4, '#181828', '#ff4fac', 2);
+        ctx.fillStyle = '#fff0bd'; ctx.font = '900 7px Arial'; ctx.textAlign = 'center';
+        ctx.fillText('MARINA CARGO HOIST', x + platform.w / 2, platform.y - 51);
+      } else if (style === 'lagoon-mid-catwalk') {
+        drawMarinaDeck({ edge: '#50e7ff', depth: 20, rail: true, metalTop: true });
+        drawPhase2Truss(x + 12, platform.y + 20, platform.w - 24, 54, '#50e7ff');
+        ctx.fillStyle = '#ffd65a';
+        for (let bulb = x + 30; bulb < x + platform.w - 20; bulb += 52) {
+          ctx.beginPath(); ctx.arc(bulb, platform.y + 31, 3, 0, Math.PI * 2); ctx.fill();
+        }
+      } else if (style === 'lagoon-high-crossing') {
+        drawMarinaDeck({ edge: '#ff4fac', depth: 22, rail: true });
+        ctx.strokeStyle = '#e1bd6f'; ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(x + 10, platform.y - 26);
+        ctx.quadraticCurveTo(x + platform.w / 2, platform.y + 62, x + platform.w - 10, platform.y - 26);
+        ctx.stroke();
+        ctx.strokeStyle = '#343a4b'; ctx.lineWidth = 7;
+        ctx.beginPath(); ctx.moveTo(x + 34, platform.y + 22); ctx.lineTo(x + 76, platform.y + 76);
+        ctx.moveTo(x + platform.w - 34, platform.y + 22); ctx.lineTo(x + platform.w - 76, platform.y + 76); ctx.stroke();
+      } else if (style === 'lagoon-upper-support') {
+        drawMarinaDeck({ edge: '#ffd65a', depth: 21, rail: true, metalTop: true });
+        ctx.strokeStyle = '#343a48'; ctx.lineWidth = 7;
+        for (const braceX of [x + 30, x + platform.w - 30]) {
+          ctx.beginPath(); ctx.moveTo(braceX, platform.y + 20); ctx.lineTo(braceX + (braceX < x + platform.w / 2 ? 54 : -54), platform.y + 84); ctx.stroke();
+        }
+      } else if (style === 'lagoon-jet-deck') {
+        drawMarinaDeck({ edge: station?.completed ? '#ffd65a' : '#50e7ff', depth: 27, rail: true });
+        roundedRect(x + 32, platform.y + 27, 156, 62, 7, '#151925', '#687284', 3);
+        const activeMeters = station?.completed ? 10 : Math.max(2, Math.floor((station?.progress || 0) * 10));
+        for (let meter = 0; meter < 10; meter += 1) {
+          ctx.fillStyle = meter < activeMeters ? meter > 7 ? '#ff4fac' : meter > 4 ? '#ffd65a' : '#50e7ff' : '#303444';
+          ctx.fillRect(x + 48 + meter * 12, platform.y + 67 - meter % 4 * 5, 7, 14 + meter % 4 * 5);
+        }
+        ctx.fillStyle = '#fff0bd'; ctx.font = '900 8px Arial'; ctx.textAlign = 'center';
+        ctx.fillText(station?.completed ? 'JET DECK • LIVE' : 'PRIVATE REHEARSAL • STANDBY', x + 110, platform.y + 82, 138);
       }
     } else if (style.startsWith('golden')) {
       if (style.includes('ticket-ring')) {
@@ -5289,7 +5614,9 @@
       drawSpeakerStackPlatformFacade(platform, time);
       return;
     }
-    if (platform.phase2StationId === 'marquee' || platform.phase2StationId === 'rooftops') {
+    if (platform.phase2StationId === 'marquee'
+      || platform.phase2StationId === 'rooftops'
+      || platform.phase2StationId === 'lagoon') {
       drawPhase2PlatformFacade(platform, time);
       return;
     }
@@ -5667,12 +5994,17 @@
       x: memberIndex * cellWidth, y: 0, w: cellWidth, h: images.preShowBand.height,
     };
     const drawWidth = height * (bounds.w / bounds.h);
-    const beat = Math.sin(time * (memberIndex === 4 ? .018 : .009) + memberIndex * .7);
+    const performanceIntensity = clamp(options.performanceIntensity || 0, 0, 1);
+    const beatRate = (memberIndex === 4 ? .018 : .009) * (1 + performanceIntensity * 1.65);
+    const beat = Math.sin(time * beatRate + memberIndex * .7);
     ctx.save();
     ctx.translate(centerX, bottomY);
     if (options.mirror) ctx.scale(-1, 1);
-    ctx.rotate(beat * (memberIndex === 4 ? .018 : .008));
-    ctx.scale(1 + Math.max(0, beat) * .008, 1 - Math.max(0, beat) * .006);
+    ctx.rotate(beat * ((memberIndex === 4 ? .018 : .008) + performanceIntensity * .025));
+    ctx.scale(
+      1 + Math.max(0, beat) * (.008 + performanceIntensity * .018),
+      1 - Math.max(0, beat) * (.006 + performanceIntensity * .012),
+    );
     ctx.shadowColor = member.color;
     ctx.shadowBlur = options.glow === false ? 0 : 8 + Math.max(0, beat) * 5;
     ctx.drawImage(
@@ -6281,27 +6613,141 @@
     ctx.restore();
   }
 
-  function drawWorld23LagoonRehearsal(station, time) {
-    if (!phase2StationInView(station, 620)) return;
-    const glow = station.completed ? .52 : .18 + station.progress * .2;
+  function drawWorld23LagoonRehearsalBackplate(station, time) {
+    if (!phase2StationInView(station, 760)) return;
+    const structure = station.structure;
+    const screenX = structure.x - game.cameraX;
+    const waterPulse = .22 + (station.completed ? .16 : station.progress * .08);
+
     ctx.save();
-    const water = ctx.createLinearGradient(0, 360, 0, GROUND_Y);
-    water.addColorStop(0, `rgba(80,231,255,${glow})`);
+    const water = ctx.createLinearGradient(0, GROUND_Y - 38, 0, GROUND_Y + 66);
+    water.addColorStop(0, 'rgba(80,231,255,0)');
+    water.addColorStop(.48, `rgba(80,231,255,${waterPulse})`);
     water.addColorStop(1, 'rgba(255,79,172,0)');
     ctx.fillStyle = water;
-    ctx.fillRect(19580 - game.cameraX, 360, station.end - station.start, GROUND_Y - 360);
-    ctx.restore();
-    drawWorld23Landmark(2, 21635, GROUND_Y + 4, 650, .95);
-    for (let light = 0; light < 6; light += 1) {
-      const screenX = 20480 - game.cameraX + light * 270;
-      const active = station.completed || light / 6 < station.progress;
-      ctx.save(); ctx.fillStyle = active ? (light % 2 ? '#ff4fac' : '#50e7ff') : '#453d61';
-      ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = active ? 14 : 3;
-      ctx.beginPath(); ctx.arc(screenX, 238 + Math.sin(time * .004 + light) * 3, 5, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    ctx.fillRect(screenX - 40, GROUND_Y - 38, structure.drawWidth + 80, 104);
+    ctx.strokeStyle = `rgba(80,231,255,${.26 + Math.sin(time * .003) * .06})`;
+    ctx.lineWidth = 2;
+    for (let ripple = 0; ripple < 5; ripple += 1) {
+      ctx.beginPath();
+      ctx.ellipse(
+        screenX + 180 + ripple * 430,
+        GROUND_Y + 5 + Math.sin(time * .002 + ripple) * 3,
+        128 + ripple % 2 * 34,
+        7,
+        0, 0, Math.PI * 2,
+      );
+      ctx.stroke();
     }
-    drawPreShowBandMember(1, 20715 - game.cameraX, 276, 150, time, { mirror: true });
-    ctx.save(); ctx.fillStyle = '#50e7ff'; ctx.font = '900 9px Arial'; ctx.textAlign = 'center';
-    ctx.fillText('JET • LAGOON GUITAR REHEARSAL', 20715 - game.cameraX, 116); ctx.restore();
+    ctx.restore();
+
+    if (images.neonLagoonTower) {
+      ctx.save();
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(
+        images.neonLagoonTower,
+        screenX, structure.y, structure.drawWidth, structure.drawHeight,
+      );
+      ctx.restore();
+    } else {
+      // Asset-load fallback retains the physical support contract instead of
+      // reverting to the removed floating-landmark implementation.
+      ctx.save();
+      ctx.strokeStyle = '#31506b'; ctx.lineWidth = 18;
+      for (const postX of [20320, 20830, 21430, 22180]) {
+        ctx.beginPath(); ctx.moveTo(postX - game.cameraX, GROUND_Y);
+        ctx.lineTo(postX - game.cameraX, -520); ctx.stroke();
+      }
+      ctx.strokeStyle = '#50e7ff'; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.moveTo(20320 - game.cameraX, 340);
+      ctx.lineTo(22180 - game.cameraX, -520); ctx.stroke();
+      ctx.restore();
+    }
+
+    const activation = station.completed
+      ? clamp(1 - station.soloTimer / Math.max(.01, station.soloVisualDuration), .25, 1)
+      : station.progress * .42;
+    const powerPath = [
+      [20380, 342], [20850, 250], [20980, 112], [21695, 80], [21375, -245],
+      [21780, -365], [21470, -455], [22310, -520],
+    ];
+    ctx.save();
+    ctx.globalAlpha = .18 + activation * .52;
+    ctx.strokeStyle = activation > .72 ? '#ffd65a' : '#50e7ff';
+    ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = 10 + activation * 14;
+    ctx.lineWidth = 4;
+    ctx.setLineDash([16, 12]); ctx.lineDashOffset = -time * .028;
+    ctx.beginPath();
+    powerPath.forEach(([worldX, worldY], index) => {
+      if (index === 0) ctx.moveTo(worldX - game.cameraX, worldY);
+      else ctx.lineTo(worldX - game.cameraX, worldY);
+    });
+    ctx.stroke(); ctx.setLineDash([]);
+    const litNodes = Math.max(1, Math.ceil((station.completed ? 1 : station.progress) * powerPath.length));
+    powerPath.slice(0, litNodes).forEach(([worldX, worldY], index) => {
+      ctx.fillStyle = ['#50e7ff', '#ff4fac', '#ffd65a'][index % 3];
+      ctx.beginPath(); ctx.arc(worldX - game.cameraX, worldY, 4 + activation * 2, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.restore();
+  }
+
+  function drawWorld23LagoonRehearsal(station, time) {
+    if (!phase2StationInView(station, 760)) return;
+    const soloActive = station.soloTimer > 0;
+    const soloElapsed = station.soloVisualDuration - station.soloTimer;
+    const soloEnvelope = soloActive
+      ? smoothStep(clamp(soloElapsed / .35, 0, 1)) * smoothStep(clamp(station.soloTimer / .45, 0, 1))
+      : station.completed ? .18 : 0;
+    // The far-right deck bay keeps Jet clear of the persistent HUD and hides
+    // him from lower crossings until the player earns the summit reveal.
+    const jetX = 22310;
+    const deckY = -520;
+
+    ctx.save();
+    const deckGlow = ctx.createRadialGradient(
+      jetX - game.cameraX, deckY - 60, 15,
+      jetX - game.cameraX, deckY - 60, 240,
+    );
+    deckGlow.addColorStop(0, `rgba(80,231,255,${.08 + soloEnvelope * .3})`);
+    deckGlow.addColorStop(.55, `rgba(255,79,172,${soloEnvelope * .12})`);
+    deckGlow.addColorStop(1, 'rgba(255,214,90,0)');
+    ctx.fillStyle = deckGlow;
+    ctx.fillRect(jetX - game.cameraX - 260, deckY - 250, 520, 320);
+
+    const meterCount = station.completed ? 12 : Math.max(2, Math.floor(station.progress * 12));
+    for (let meter = 0; meter < 12; meter += 1) {
+      const meterX = 21880 - game.cameraX + meter * 14;
+      const meterHeight = 8 + (meter * 7 % 22) + soloEnvelope * (8 + meter % 3 * 5);
+      ctx.fillStyle = meter < meterCount
+        ? meter > 8 ? '#ff4fac' : meter > 4 ? '#ffd65a' : '#50e7ff'
+        : '#343746';
+      ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = meter < meterCount ? 6 : 0;
+      ctx.fillRect(meterX, deckY - 78 - meterHeight, 8, meterHeight);
+    }
+    ctx.shadowBlur = 0;
+
+    if (soloEnvelope > .05) {
+      for (let spark = 0; spark < (game.reducedShake ? 5 : 10); spark += 1) {
+        const angle = time * .006 + spark * Math.PI * 2 / 10;
+        const radius = 44 + spark % 3 * 14;
+        ctx.fillStyle = ['#50e7ff', '#ff4fac', '#ffd65a'][spark % 3];
+        ctx.globalAlpha = soloEnvelope * (.48 + spark % 2 * .26);
+        ctx.beginPath();
+        ctx.arc(
+          jetX - game.cameraX + Math.cos(angle) * radius,
+          deckY - 84 + Math.sin(angle) * radius * .5,
+          2 + spark % 2,
+          0, Math.PI * 2,
+        );
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+
+    drawPreShowBandMember(1, jetX - game.cameraX, deckY, 154, time, {
+      mirror: true,
+      performanceIntensity: soloEnvelope,
+    });
   }
 
   function drawWorld23GoldenTicket(station, encore, time) {
@@ -7328,7 +7774,8 @@
       const speaker = activeDialogue.id === 'rooftops' ? 'MILO + REX • ROOFTOP SOUNDCHECK'
         : activeDialogue.id === 'lagoon' ? 'JET • LAGOON REHEARSAL'
           : 'ARMAN • GOLDEN TICKET';
-      const entrance = smoothStep(clamp((3.2 - activeDialogue.dialogueTimer) / .2, 0, 1));
+      const dialogueDuration = activeDialogue.dialogueDuration || 3.2;
+      const entrance = smoothStep(clamp((dialogueDuration - activeDialogue.dialogueTimer) / .2, 0, 1));
       const exit = smoothStep(clamp(activeDialogue.dialogueTimer / .25, 0, 1));
       ctx.save();
       ctx.globalAlpha = entrance * exit;
@@ -7347,7 +7794,7 @@
     }
     if (game.phase2.toast) {
       const toast = game.phase2.toast;
-      const toastY = toast.placement === 'speaker-stack-upper' ? 350 : 446;
+      const toastY = ['speaker-stack-upper', 'lagoon-upper'].includes(toast.placement) ? 350 : 446;
       const entrance = smoothStep(clamp((2.75 - toast.timer) / .24, 0, 1));
       const exit = smoothStep(clamp(toast.timer / .28, 0, 1));
       const alpha = entrance * exit;
@@ -7717,6 +8164,8 @@
     const rooftops = world23Phase2Station('rooftops');
     if (rooftops && !game.phase2.preShowHidden) drawWorld23RoadieRooftopsBackplate(rooftops, time);
     drawSpeakerStackStampedeBackplate(time);
+    const lagoon = world23Phase2Station('lagoon');
+    if (lagoon && !game.phase2.preShowHidden) drawWorld23LagoonRehearsalBackplate(lagoon, time);
     for (const platform of world.platforms) drawPlatform(platform, time);
     drawWorld23Phase2Destinations(time);
     drawCableCrawler(time);
@@ -8031,6 +8480,20 @@
               carryingPlayer: player.platform?.id === lift.id,
             } : null;
           })(),
+          lagoonCargoHoist: (() => {
+            const lift = world.platforms.find((platform) => platform.phase2Style === 'lagoon-cargo-hoist');
+            return lift ? {
+              y: Math.round(lift.y),
+              baseY: lift.baseY,
+              minY: lift.baseY - lift.range,
+              maxY: lift.baseY + lift.range,
+              travel: lift.range * 2,
+              axis: lift.axis,
+              moving: lift.moving,
+              carryingPlayer: player.platform?.id === lift.id,
+              visibleRailsAndPulley: true,
+            } : null;
+          })(),
         },
         speakerStack: {
           id: world.speakerStack?.id || SPEAKER_STACK_STATION.id,
@@ -8107,14 +8570,67 @@
           })(),
           audit: game.speakerStackAudit,
         },
+        neonLagoon: (() => {
+          const station = world23Phase2Station('lagoon');
+          const structure = station?.structure || NEON_LAGOON_REHEARSAL.structure;
+          const scale = structure.drawHeight / structure.sourceHeight;
+          return {
+            id: station?.id || 'lagoon',
+            completed: Boolean(station?.completed),
+            rewardSpawned: Boolean(station?.rewardSpawned),
+            completionMessage: station?.completion || NEON_LAGOON_REHEARSAL.completion,
+            traversal: station?.traversal || NEON_LAGOON_REHEARSAL.traversal,
+            targetTraversalSeconds: [...NEON_LAGOON_REHEARSAL.targetTraversalSeconds],
+            totalVerticalRise: NEON_LAGOON_REHEARSAL.totalVerticalRise,
+            platformCount: world.platforms.filter((platform) => platform.phase2StationId === 'lagoon').length,
+            oldPlatformKindsPresent: world.platforms.filter((platform) => [
+              'lagoon-dock-roof', 'lagoon-rehearsal-deck', 'lagoon-rope-deck',
+              'lagoon-hanging-truss', 'lagoon-lookout',
+            ].includes(platform.phase2Style)).length,
+            customPlatformBaseSuppressed: true,
+            premiumStructure: Boolean(images.neonLagoonTower),
+            neutralBackgroundPixelsRemoved: images.neonLagoonAlphaRemoved || 0,
+            cleanRuntimeAlpha: Boolean(images.neonLagoonTower && images.neonLagoonAlphaRemoved > 0),
+            enclosedNeutralBackgroundRemoved: true,
+            structureRender: {
+              sourceWidth: structure.sourceWidth,
+              sourceHeight: structure.sourceHeight,
+              drawWidth: structure.drawWidth,
+              drawHeight: structure.drawHeight,
+              uniformScale: Number(scale.toFixed(4)),
+              alphaBottomWorldY: Number((structure.y + structure.sourceAlphaBottom * scale).toFixed(2)),
+              groundContactY: GROUND_Y,
+            },
+            jet: {
+              memberIndex: station?.characters?.[0],
+              name: band[station?.characters?.[0] ?? 1].name,
+              role: band[station?.characters?.[0] ?? 1].role,
+              onlyBandMemberAtStation: station?.characters?.length === 1 && station.characters[0] === 1,
+              casualPreShowArt: Boolean(images.preShowBand),
+              transparentRuntimeArt: Boolean(images.preShowBand && images.preShowBandAlphaRemoved > 0),
+              groundedDeckY: -520,
+              soloTriggered: Boolean(station?.soloTriggered),
+              soloTimer: Number((station?.soloTimer || 0).toFixed(3)),
+            },
+            futureSoloHook: { ...JET_LAGOON_SOLO_HOOK },
+            groundScreenY: Number((GROUND_Y - game.cameraY).toFixed(2)),
+            jetDeckScreenY: Number((-520 - game.cameraY).toFixed(2)),
+            originalGroundLeavesViewport: GROUND_Y - game.cameraY > canvas.height,
+            upperEnvironmentAuthored: Boolean(images.environmentLagoon),
+            safeDropToMainRoute: true,
+            catamaranStart: 22800,
+            stationEnd: station?.end || NEON_LAGOON_REHEARSAL.end,
+            catamaranBuffer: 22800 - (station?.end || NEON_LAGOON_REHEARSAL.end),
+          };
+        })(),
         verticalCamera: game.verticalCameraAudit || {
-          scopedStation: SPEAKER_STACK_STATION.id,
+          scopedStation: game.verticalCameraStationId || verticalCameraProfileForPlayer().stationId,
           enabled: false,
           mode: game.verticalCameraMode,
           cameraY: Number(game.cameraY.toFixed(2)),
           targetY: Number(game.cameraTargetY.toFixed(2)),
-          authoredMinY: SPEAKER_STACK_STATION.camera.minY,
-          authoredMaxY: SPEAKER_STACK_STATION.camera.maxY,
+          authoredMinY: verticalCameraProfileForPlayer().minY,
+          authoredMaxY: verticalCameraProfileForPlayer().maxY,
         },
         cableCrawler: {
           name: 'CABLE CRAWLER',
@@ -8287,7 +8803,8 @@
           terrainFamilies: Object.keys(terrainRows).length,
           checkpointFamilies: world.checkpoints.length,
           authoredUpperSpeakerSky: Boolean(images.speakerUpperSky),
-          verticalParallaxScopedToSpeakerStack: true,
+          authoredUpperLagoonSky: Boolean(images.environmentLagoon),
+          verticalParallaxScopedToConfiguredStations: true,
           noTiling: true,
           subpixelMotion: true,
         },
@@ -8364,7 +8881,7 @@
     };
   }
 
-  function prepareNeutralBackgroundSheet(source, counterKey) {
+  function prepareNeutralBackgroundSheet(source, counterKey, { removeAllMatching = false } = {}) {
     if (!source) return null;
     const sheet = document.createElement('canvas');
     sheet.width = source.width;
@@ -8412,6 +8929,18 @@
       if (x < sheet.width - 1) enqueue(index + 1);
       if (index >= sheet.width) enqueue(index - sheet.width);
       if (index < total - sheet.width) enqueue(index + sheet.width);
+    }
+    // Some generated environment compounds enclose checkerboard cells inside
+    // railings and support bays. For those assets only, clear every matching
+    // near-white neutral cell after the conservative edge flood fill. This is
+    // intentionally opt-in so existing character sheets keep white costume
+    // details intact.
+    if (removeAllMatching) {
+      for (let index = 0; index < total; index += 1) {
+        if (visited[index] || !isBackground(index)) continue;
+        data[index * 4 + 3] = 0;
+        removed += 1;
+      }
     }
     sheetContext.putImageData(pixels, 0, 0);
     images[counterKey] = removed;
@@ -8480,6 +9009,7 @@
     loadImage('assets/world2_3_cable_crawler_v1.webp'),
     loadImage('assets/world2_3_speaker_stack_stampede_v1.webp'),
     loadImage('assets/world2_3_speaker_carriage_v1.webp'),
+    loadImage('assets/world2_3_neon_lagoon_jet_tower_v1.png'),
     loadImage('assets/world2_3_preshow_landmarks_v2.webp'),
     loadImage('assets/world2_3_feedback_fiend_v1.webp'),
   ]).then(([
@@ -8493,7 +9023,7 @@
     marqueeStructureArt, welcomeCheckInBoothArt, roadieLoadingAnnexArt,
     roadieVenueTowerArt, roadieServiceClusterArt, roadieFreightCageArt,
     roadieMiloArt, roadieRexArt, cableCrawlerArt,
-    speakerStackStructureArt, speakerCarriageArt,
+    speakerStackStructureArt, speakerCarriageArt, neonLagoonTowerRaw,
     world23LandmarksRaw, feedbackFiendArt,
   ]) => {
     images.hero = hero;
@@ -8536,6 +9066,11 @@
     images.cableCrawler = cableCrawlerArt;
     images.speakerStackStructure = speakerStackStructureArt;
     images.speakerCarriage = speakerCarriageArt;
+    images.neonLagoonTower = prepareNeutralBackgroundSheet(
+      neonLagoonTowerRaw,
+      'neonLagoonAlphaRemoved',
+      { removeAllMatching: true },
+    );
     if (images.cableCrawler) {
       images.cableCrawlerBounds = measureAlphaBoundsByGrid(images.cableCrawler, 4, 1);
     }

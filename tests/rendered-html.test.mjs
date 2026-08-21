@@ -2384,8 +2384,8 @@ test("ships the complete 35,000-unit Neon Neckties concert level", async () => {
   assert.match(runtime, /OLIVIA IS LOADING THE LAST TACOS!/);
   assert.match(runtime, /TACO ROADSTER: READY TO ROLL!/);
   assert.match(runtime, /SHOWTIME! OLIVIA IS TAKING THE SCENIC ROUTE!/);
-  assert.match(html, /level2-3\.js\?v=32/);
-  assert.match(runtime, /SOURCE_VERSION = 'w2-3-v32-speaker-stack-foundation-completion'/);
+  assert.match(html, /level2-3\.js\?v=33/);
+  assert.match(runtime, /SOURCE_VERSION = 'w2-3-v33-neon-lagoon-jet-rebuild'/);
   assert.match(runtime, /generatorDefensePlans/);
   assert.match(runtime, /function ensureGeneratorDefensePlatform/);
   assert.match(runtime, /finitePlatformGeometry: world\.platforms\.every/);
@@ -2589,7 +2589,7 @@ test("rebuilds Speaker Stack Stampede as a true vertical station with a scoped h
   assert.doesNotMatch(runtime, /SPEAKER_STACK_GROUND_SUPPORTS|drawSpeakerStackGroundSupport/);
   assert.match(runtime, /foundationArtMatchesCollision: true/);
   assert.match(runtime, /placement: 'speaker-stack-upper'/);
-  assert.match(runtime, /const toastY = toast\.placement === 'speaker-stack-upper' \? 350 : 446/);
+  assert.match(runtime, /\['speaker-stack-upper', 'lagoon-upper'\]\.includes\(toast\.placement\) \? 350 : 446/);
   assert.match(runtime, /ROADIE LOAD FLOOR • 23/);
   assert.match(runtime, /Full-height steel columns distribute the load across the entire station/);
   assert.match(runtime, /terminate exactly at the collision-backed ground surface/);
@@ -2613,16 +2613,16 @@ test("rebuilds Speaker Stack Stampede as a true vertical station with a scoped h
   assert.match(runtime, /screenY > lines\.lower/);
   assert.match(runtime, /game\.cameraTargetY = 0;[\s\S]*game\.verticalCameraMode = 'respawn-return'/);
   assert.match(runtime, /ctx\.translate\(0, -game\.cameraY\)/);
-  assert.match(runtime, /verticalParallaxScopedToSpeakerStack: true/);
+  assert.match(runtime, /verticalParallaxScopedToConfiguredStations: true/);
   assert.match(runtime, /originalGroundLeavesViewport: GROUND_Y - game\.cameraY > canvas\.height/);
-  assert.match(runtime, /camera changes are scoped|scopedStation: SPEAKER_STACK_STATION\.id/);
+  assert.match(runtime, /camera changes are scoped|stationId: 'speaker-stack-stampede'/);
 
   for (const eventId of ["stage.masterStackBassLaunch", "stage.masterStackPulse", "stage.masterStackOnline"]) {
     assert.match(runtime, new RegExp(eventId.replaceAll(".", "\\.")));
     assert.match(audio, new RegExp(`'${eventId.replaceAll(".", "\\.")}'`));
   }
   assert.match(html, /audio-catalog\.js\?v=12/);
-  assert.match(html, /level2-3\.js\?v=32/);
+  assert.match(html, /level2-3\.js\?v=33/);
 });
 
 test("remasters World 2-3 pre-show exploration and gates the crowd only behind Feedback Fiend", async () => {
@@ -2634,13 +2634,13 @@ test("remasters World 2-3 pre-show exploration and gates the crowd only behind F
   for (const station of [
     "Neon Neckties Welcome Arch",
     "Roadie Rooftops Soundcheck",
-    "Neon Lagoon Rehearsal",
+    "Jet's Neon Lagoon Rehearsal",
     "Golden Ticket Victory Dash",
     "Encore Stash",
   ]) {
-    assert.match(runtime, new RegExp(`name: '${station}'`));
+    assert.match(runtime, new RegExp(`name: ['\"]${station.replaceAll("'", "\\'")}['\"]`));
   }
-  for (const completion of ["MARQUEE ONLINE", "SOUNDCHECK COMPLETE", "LAGOON REHEARSAL READY", "GOLDEN TICKET"]) {
+  for (const completion of ["MARQUEE ONLINE", "SOUNDCHECK COMPLETE", "JET SOUNDCHECK READY", "GOLDEN TICKET"]) {
     assert.match(runtime, new RegExp(`completion: '${completion}'`));
   }
   assert.match(runtime, /completion: 'ENCORE STASH DISCOVERED!'/);
@@ -2649,7 +2649,7 @@ test("remasters World 2-3 pre-show exploration and gates the crowd only behind F
   assert.match(runtime, /characters: Object\.freeze\(\[2, 4\]\)/);
   assert.match(runtime, /dialogue: 'ONE MORE TIME\. MAKE IT SHAKE\.'/);
   assert.match(runtime, /characters: Object\.freeze\(\[1\]\)/);
-  assert.match(runtime, /dialogue: 'TRY THE PINK ONE!'/);
+  assert.match(runtime, /dialogue: 'PERFECT TIMING\.'/);
   assert.match(runtime, /characters: Object\.freeze\(\[3\]\)/);
   assert.match(runtime, /dialogue: 'ALMOST SHOWTIME\.'/);
   assert.match(runtime, /member: 0,[\s\S]*activity: 'carrying-microphone-case'/);
@@ -2753,7 +2753,7 @@ test("remasters World 2-3 pre-show exploration and gates the crowd only behind F
   }
   assert.match(runtime, /function drawWorld23RoadieRooftopsBackplate/);
   assert.match(runtime, /function drawRoadiePerformerSprite/);
-  assert.match(runtime, /platform\.phase2StationId === 'marquee' \|\| platform\.phase2StationId === 'rooftops'/);
+  assert.match(runtime, /platform\.phase2StationId === 'marquee'[\s\S]*platform\.phase2StationId === 'rooftops'[\s\S]*platform\.phase2StationId === 'lagoon'/);
   assert.match(runtime, /id: 'roadie-rooftops-ground-foundation'/);
   assert.match(runtime, /oldFloatingLandmarkRendered: 0/);
   assert.match(runtime, /oldGenericPlatformKindsRendered: 0/);
@@ -2789,7 +2789,7 @@ test("remasters World 2-3 pre-show exploration and gates the crowd only behind F
   assert.match(runtime, /premiumRoadieRex: Boolean\(images\.roadieRex\)/);
   assert.match(runtime, /premiumCableCrawler: Boolean\(images\.cableCrawler\)/);
   assert.doesNotMatch(runtime, /drawWorld23Landmark\(1,/);
-  assert.match(runtime, /waterfront-pontoons-suspended-rehearsal-structures/);
+  assert.match(runtime, /grounded-marina-pier-floating-pontoon-prep-deck-support-tower-cargo-hoist-high-lagoon-crossing-final-super-jump-jet-deck/);
   assert.match(runtime, /fast-forward-flow-ticket-arches-and-moving-signs/);
   assert.match(runtime, /catamaranStart: 22800/);
   assert.match(runtime, /bossToCrowdBuffer/);
@@ -2812,6 +2812,7 @@ test("remasters World 2-3 pre-show exploration and gates the crowd only behind F
   await access(new URL("../public/game/assets/world2_3_milo_rooftop_v1.png", import.meta.url));
   await access(new URL("../public/game/assets/world2_3_rex_rooftop_v1.png", import.meta.url));
   await access(new URL("../public/game/assets/world2_3_cable_crawler_v1.webp", import.meta.url));
+  await access(new URL("../public/game/assets/world2_3_neon_lagoon_jet_tower_v1.png", import.meta.url));
   await access(new URL("../public/game/assets/world2_3_preshow_landmarks_v2.webp", import.meta.url));
   await access(new URL("../public/game/assets/world2_3_feedback_fiend_v1.webp", import.meta.url));
   for (const eventId of [
@@ -2830,6 +2831,79 @@ test("remasters World 2-3 pre-show exploration and gates the crowd only behind F
     assert.match(runtime, new RegExp(eventId.replaceAll(".", "\\.")));
     assert.match(audio, new RegExp(`'${eventId.replaceAll(".", "\\.")}'`));
   }
+});
+
+test("rebuilds Neon Lagoon as Jet's grounded private vertical rehearsal compound", async () => {
+  const runtime = await readFile(new URL("../public/game/level2-3.js", import.meta.url), "utf8");
+  const html = await readFile(new URL("../public/game/level2-3.html", import.meta.url), "utf8");
+
+  assert.match(runtime, /const NEON_LAGOON_REHEARSAL = Object\.freeze/);
+  assert.match(runtime, /name: "Jet's Neon Lagoon Rehearsal"/);
+  assert.match(runtime, /targetTraversalSeconds: Object\.freeze\(\[20, 30\]\)/);
+  assert.match(runtime, /totalVerticalRise: 965/);
+  assert.match(runtime, /completion: 'JET SOUNDCHECK READY'/);
+  assert.match(runtime, /characters: Object\.freeze\(\[1\]\)/);
+  assert.match(runtime, /dialogueX: 22310/);
+  assert.match(runtime, /dialogueAtCompletionOnly: true/);
+  assert.match(runtime, /id: 'stampede',[^\n]*end: 20320/);
+  assert.match(runtime, /id: 'lagoon',[^\n]*start: 20320, end: 28000/);
+  assert.match(runtime, /name: 'Lagoon Marina Checkpoint'/);
+  for (const surface of [
+    "lagoon-marina-approach",
+    "lagoon-floating-pontoon",
+    "lagoon-prep-deck",
+    "lagoon-tower-landing",
+    "lagoon-cargo-hoist",
+    "lagoon-mid-catwalk",
+    "lagoon-high-crossing",
+    "lagoon-upper-support",
+    "lagoon-jet-deck",
+  ]) {
+    assert.match(runtime, new RegExp(`kind: '${surface}'`));
+  }
+  for (const removedSurface of [
+    "lagoon-dock-roof",
+    "lagoon-rehearsal-deck",
+    "lagoon-rope-deck",
+    "lagoon-hanging-truss",
+    "lagoon-lookout",
+  ]) {
+    assert.doesNotMatch(runtime, new RegExp(`kind: '${removedSurface}'`));
+  }
+  assert.match(runtime, /stationId: 'neon-lagoon-rehearsal'/);
+  assert.match(runtime, /enabledRegion: Object\.freeze\(\{ start: 20260, end: 22520 \}\)/);
+  assert.match(runtime, /minY: -760/);
+  assert.match(runtime, /function drawNeonLagoonUpperBackground/);
+  assert.match(runtime, /function drawWorld23LagoonRehearsalBackplate/);
+  assert.match(runtime, /function drawWorld23LagoonRehearsal\(/);
+  assert.doesNotMatch(runtime, /drawWorld23Landmark\(2,/);
+  assert.match(runtime, /const jetX = 22310/);
+  assert.match(runtime, /world2_3_neon_lagoon_jet_tower_v1\.png/);
+  assert.match(runtime, /\{ removeAllMatching: true \}/);
+  assert.match(runtime, /enclosedNeutralBackgroundRemoved: true/);
+  assert.match(runtime, /genericPlatformBaseSuppressed: true/);
+  assert.match(runtime, /groundedMarinaCompound: true/);
+  assert.match(runtime, /timberPilings: true/);
+  assert.match(runtime, /floatingPontoonsSupported: true/);
+  assert.match(runtime, /cargoHoist: true/);
+  assert.match(runtime, /upperEnvironmentAuthored: true/);
+  assert.match(runtime, /maximumRequiredVerticalJump: 155/);
+  assert.match(runtime, /configuredSuperDoubleJumpRise:/);
+  assert.match(runtime, /onlyBandMemberAtStation: station\?\.characters\?\.length === 1 && station\.characters\[0\] === 1/);
+  assert.match(runtime, /transparentRuntimeArt: Boolean\(images\.preShowBand && images\.preShowBandAlphaRemoved > 0\)/);
+  assert.match(runtime, /const JET_LAGOON_SOLO_HOOK = Object\.freeze/);
+  assert.match(runtime, /eventId: \['stage', 'jetLagoonSoloTrigger'\]\.join\('\.'\)/);
+  assert.match(runtime, /futureAssetPath: 'assets\/neon_neckties\/jet_lagoon_solo_original_v1\.ogg'/);
+  assert.match(runtime, /fallbackEventId: 'concert\.tambourineAccent'/);
+  assert.match(runtime, /enabled: false/);
+  assert.match(runtime, /oneShotPerRun: true/);
+  assert.match(runtime, /function triggerJetLagoonSolo/);
+  assert.match(runtime, /matches\.length > 1 && playerCenterX >= SPEAKER_STACK_STATION\.end/);
+  assert.match(runtime, /catamaranStart: 22800/);
+  assert.match(runtime, /catamaranBuffer: 22800 -/);
+  assert.match(runtime, /game\.phase2\.preShowHidden = true/);
+  assert.match(html, /level2-3\.js\?v=33/);
+  await access(new URL("../public/game/assets/world2_3_neon_lagoon_jet_tower_v1.png", import.meta.url));
 });
 
 test("remasters the Roadie utility cluster and keeps Cable Crawler optional and repeat-safe", async () => {
